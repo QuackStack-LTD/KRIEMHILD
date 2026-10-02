@@ -1,0 +1,17 @@
+{
+  "name": "kriemhild",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "demo": "node scripts/tasks.mjs demo",
+    "benchmark": "node scripts/benchmark.mjs",
+    "package": "node scripts/package.mjs",
+    "notices": "node scripts/notices.mjs",
+    "setup": "node scripts/tasks.mjs setup",
+    "build": "node scripts/tasks.mjs build",
+    "start": "node scripts/tasks.mjs start",
+    "test": "node scripts/tasks.mjs test",
+    "test:e2e": "node scripts/tasks.mjs e2e",
+    "format": "node scripts/tasks.mjs format"
+  }
+}

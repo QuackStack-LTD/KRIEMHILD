@@ -1,0 +1,22 @@
+import {spawnSync} from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const windows=process.platform==='win32';
+const local=path.join(root,'.tools/go/bin',windows?'go.exe':'go');
+const go=process.env.KRIEMHILD_GO||(fs.existsSync(local)?local:'go');
+const os=process.env.GOOS||process.platform.replace('win32','windows');
+const arch=process.env.GOARCH||(process.arch==='x64'?'amd64':process.arch);
+const destination=process.env.KRIEMHILD_PACKAGE_DIR?path.resolve(process.env.KRIEMHILD_PACKAGE_DIR):path.join(root,'dist',`kriemhild-${os}-${arch}`);
+if(fs.existsSync(destination))throw new Error(`Package directory already exists: ${destination}. Choose a fresh dist directory before repackaging.`);
+if(!fs.existsSync(path.join(root,'apps/web/out-dev/index.html')))throw new Error('Build the frontend first.');
+fs.mkdirSync(destination,{recursive:true});
+for(const target of ['kriemhild','kriemhild-tool','kriemhild-admin']){const result=spawnSync(go,['build','-trimpath','-o',path.join(destination,target+(os==='windows'?'.exe':'')),`./cmd/${target}`],{cwd:root,env:{...process.env,CGO_ENABLED:'0',GOOS:os,GOARCH:arch},stdio:'inherit'});if(result.error||result.status!==0)throw new Error('Package build failed');}
+fs.cpSync(path.join(root,'apps/web/out-dev'),path.join(destination,'web'),{recursive:true});
+for(const file of ['LICENSE','README.md'])fs.copyFileSync(path.join(root,file),path.join(destination,file));
+fs.mkdirSync(path.join(destination,'docs'),{recursive:true});
+for(const file of ['DEVELOPMENT_GUIDE.md','IMPLEMENTATION_STATUS.md','PLATFORM_PLAN.md'])fs.copyFileSync(path.join(root,'docs',file),path.join(destination,'docs',file));
+for(const file of ['DEPENDENCY_NOTICES.md','dependencies.json'])if(fs.existsSync(path.join(root,'docs',file)))fs.copyFileSync(path.join(root,'docs',file),path.join(destination,file));
+fs.writeFileSync(path.join(destination,'RUN.txt'),'Run from this directory:\n  ./kriemhild -web web -data worlds -addr 127.0.0.1:4784\nWindows: use kriemhild.exe instead. Open http://127.0.0.1:4784.\nNo Node.js or Go installation is required to run this package.\n');
+console.log(destination);
