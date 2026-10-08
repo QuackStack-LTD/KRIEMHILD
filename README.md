@@ -61,21 +61,17 @@ Enable **World → Map → Real-world geology & climate** for derived climate zo
 
 ## Docker and project database
 
-```sh
-docker compose up --build -d
-```
-
-Open http://127.0.0.1:8124. The container serves both React and the Go API and stores SQLite data in a named volume. **Save world ZIP** also saves the complete project to the selected database; the saved-world picker reopens it after a restart. ZIP and folder imports are stored there too. Unsaved edits and exploration still require saving before shutdown.
-
-For PostgreSQL, copy `.env.example` to `.env`, set a URL-safe password, then run:
+Copy `.env.example` to `.env` and set a strong URL-safe PostgreSQL password. The single `docker-compose.yml` starts the app and PostgreSQL:
 
 ```sh
-docker compose -f compose.yml -f compose.postgres.yml up --build -d
+docker compose up -d
 ```
 
-With no `DATABASE_URL`, the server uses SQLite. With PostgreSQL configured, it requires that database to be available. See [container setup, readiness audit and release workflows](docs/CONTAINERS.md) for configuration, persistence, testing and GHCR publishing.
+Open http://127.0.0.1:8124. The container serves both React and the Go API. Worlds, generation progress, edits and explored detail are saved automatically; camera and display changes save after a brief batching interval. **View → Save → Saved worlds** reopens earlier worlds after a restart, including unfinished generation. The autosave indicator reports pending writes or failures. ZIP export remains available for portable backups.
 
-Use **View ? Save ? Save world ZIP** to preserve a complete world, explored detail and edits. **Open world ZIP** or **Open world folder** restores the stored data after a server restart without regenerating the world or depending on its old server cache. See [Portable world projects](docs/WORLD_PROJECTS.md) for the manifest, chunks, hierarchy and validation. Unsaved sessions and undo history remain session-local. Sessions expire after 30 minutes of inactivity and are reclaimed when creating a new map. Palette edits, generation settings, seed and display settings persist in browser local storage under KRIEMHILD-specific keys. This is a local application; it starts on the loopback interface.
+Running the binary or image without `DATABASE_URL` still uses embedded SQLite. With PostgreSQL configured, it requires that database to be available. See [container setup and releases](docs/CONTAINERS.md) and [autosave storage design](docs/AUTOSAVE.md).
+
+Use **View → Save → Save world ZIP** for a portable backup of a completed world, explored detail and edits. **Open world ZIP** or **Open world folder** restores it without regenerating geography or depending on old server caches. See [Portable world projects](docs/WORLD_PROJECTS.md) for the manifest and validation. Active sessions expire after 30 minutes of inactivity, but their autosaved worlds remain in the database. The visible undo history resets when reopening. This is a local application; it starts on the loopback interface.
 
 ## Validation
 

@@ -2,21 +2,21 @@ import {MapCamera,detailAtScale,detailName,smooth} from './map-camera.js';
 import {DetailTiles} from './detail-tiles.js';
 import {makeDetailPalette,tileImage,drawDetailFeatures,drawDetailOverlay} from './detail-render.js';
 
-export function createExplorer(container,source,brushOn){
+export function createExplorer(container,source,brushOn,onCameraChange=()=>{}){
   const canvas=document.createElement('canvas');canvas.id='detailMap';canvas.className='detail-map';canvas.tabIndex=0;canvas.setAttribute('aria-label','Explore terrain: scroll to zoom at cursor, drag to pan, plus or minus to zoom, zero to fit');container.append(canvas);
   const ctx=canvas.getContext('2d'),camera=new MapCamera(),abort=new AbortController();
   let solver=null,tiles=null,palette=null,layer='terrain',active=false,frame=0,drag=null,width=0,height=0,disposed=false,images=new WeakMap();
   const status=document.getElementById('detailStatus');
   function listen(el,event,fn,opts={}){el.addEventListener(event,fn,{...opts,signal:abort.signal});}
   function queue(force=false){if(force&&frame){cancelAnimationFrame(frame);frame=0;}if(!frame&&!disposed)frame=requestAnimationFrame(render);}
-  function fit(){if(!solver)return;camera.fit(width,height,solver.W-1,solver.H-1);queue(true);}
+  function fit(){if(!solver)return;camera.fit(width,height,solver.W-1,solver.H-1);queue(true);onCameraChange();}
   function resize(){const oldW=width,oldH=height;const center=camera.point(oldW/2,oldH/2);width=container.clientWidth;height=container.clientHeight;const dpr=Math.min(2,devicePixelRatio||1);canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);if(solver){camera.minimum=Math.min(width/(solver.W-1),height/(solver.H-1));if(!oldW||camera.scale<=camera.minimum)fit();else{camera.x=width/2-center.x*camera.scale;camera.y=height/2-center.y*camera.scale;}}queue(true);}
   const observer=new ResizeObserver(resize);observer.observe(container);resize();
   function local(e){const r=canvas.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top};}
-  function zoom(x,y,factor){camera.zoomAt(x,y,factor);queue(true);}
+  function zoom(x,y,factor){camera.zoomAt(x,y,factor);queue(true);onCameraChange();}
   listen(canvas,'wheel',e=>{e.preventDefault();const p=local(e),delta=e.deltaY*(e.deltaMode===1?16:e.deltaMode===2?height:1);zoom(p.x,p.y,Math.exp(-delta*.0015));},{passive:false});
   listen(canvas,'pointerdown',e=>{canvas.focus({preventScroll:true});if(brushOn())return;drag={id:e.pointerId,x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);canvas.classList.add('dragging');});
-  listen(canvas,'pointermove',e=>{if(!drag)return;camera.x+=e.clientX-drag.x;camera.y+=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;queue(true);});
+  listen(canvas,'pointermove',e=>{if(!drag)return;camera.x+=e.clientX-drag.x;camera.y+=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;queue(true);onCameraChange();});
   const release=()=>{drag=null;canvas.classList.remove('dragging');};listen(canvas,'pointerup',release);listen(canvas,'pointercancel',release);
   for(const name of ['mousemove','mouseleave','mousedown','mouseup','contextmenu'])listen(canvas,name,e=>{if(name==='contextmenu')e.preventDefault();if(name==='mousedown'&&!brushOn())return;source.dispatchEvent(new MouseEvent(name,{clientX:e.clientX,clientY:e.clientY,button:e.button,buttons:e.buttons,bubbles:false,cancelable:true}));});
   listen(canvas,'keydown',e=>{if(['+','=','-','0'].includes(e.key)){e.preventDefault();e.stopPropagation();if(e.key==='0')fit();else zoom(width/2,height/2,e.key==='-'?.5:2);}});

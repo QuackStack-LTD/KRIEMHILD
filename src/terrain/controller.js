@@ -4,6 +4,7 @@ import './patterns.js';
 import './presets.js';
 import './editor.js';
 import { RemoteSolver } from './api.js';
+import { AutosaveQueue } from './autosave.js';
 import { createExplorer } from './explorer.js';
 import { reliefShades, shadePixel } from './relief.js';
 import { installEnvironmentOverlays, fieldColor, overlayLegend, drawPhysicalEntities } from './environment-view.js';
@@ -17,7 +18,7 @@ export function mountTerrain() {
   let paintQueue = Promise.resolve();
   function listen(target, event, handler) {
     target.addEventListener(event, (...args) => {
-      try { Promise.resolve(handler(...args)).catch(error => { if (!disposed) showError(error.message); }); }
+      try { Promise.resolve(handler(...args)).catch(error => { if (!disposed) showError(error.message); }).finally(()=>{if(['click','change','input','keydown','mouseup'].includes(event))queueAutosave();}); }
       catch (error) { if (!disposed) showError(error.message); }
     }, { signal: lifecycle.signal });
   }
@@ -129,7 +130,7 @@ export function mountTerrain() {
   let roughness = null; // per cell, -1…1: small bumps so flat areas don't look like plastic
   let heightBuf = null;
   let blurBuf = null;
-  const explorer = createExplorer(ui.canvasWrap,ui.canvas,()=>ui.brushOn.checked);
+  const explorer = createExplorer(ui.canvasWrap,ui.canvas,()=>ui.brushOn.checked,queueAutosave);
 
   // ---- colours --------------------------------------------------------------
 
@@ -410,6 +411,7 @@ export function mountTerrain() {
 
   async function generate() {
     if (disposed || projectBusy) return;
+    await flushAutosave();
     updateModeControls();
     persistSettings();
     const ticket = ++generation;
@@ -468,6 +470,7 @@ export function mountTerrain() {
     for (let i = 0; i < roughness.length; i++) roughness[i] = rng() * 2 - 1;
 
     setupSurface();
+    queueAutosave();
     schedule();
   }
 
@@ -621,7 +624,7 @@ export function mountTerrain() {
       draw();
       if (!paused && solver.status === 'running') schedule();
     } catch (error) { if (active === solver) { paused = true; showError(error.message); updatePanel(); } }
-    finally { inFlight = false; }
+    finally { inFlight = false;if(active.autosaveError)queueAutosave(); }
   }
 
   async function stepOnce() {
@@ -816,7 +819,7 @@ export function mountTerrain() {
         return;
       }
       if (disposed || !ui.view3d.checked || view) return; // switched off again while loading
-      view = viewModule.createView(ui.canvasWrap);
+      view = viewModule.createView(ui.canvasWrap,queueAutosave);
       ui.canvasWrap.classList.add('is-3d');
       if (solver) {
         view.setMap(solver.W, solver.H, ui.canvas, { sphere: solver.wrapX,waterFields:solver.environment?.fields,solver });
@@ -1591,6 +1594,25 @@ export function mountTerrain() {
     'climLayout','climStrength','selection','radius','stability','stabilityStrength','cleanupPasses',
     'speed','instant','voronoi','jitter','textures','iconSize','contShow','height3d','environmentOverlay'];
   let projectBusy=false;
+  const viewClient=crypto.randomUUID();let viewSequence=0;
+  function captureProjectUI(compact=false){
+    const palette=exportable();
+    const compatible=palette.types.length===solver.T&&palette.types.every((t,i)=>t.id===solver.config.types[i].id);
+    return {seedUsed,presetId,palette:compatible?palette:solver.config,settings:Object.fromEntries(settingIds.map(id=>{const el=$(id);return [id,el.type==='checkbox'?el.checked:el.value];})),camera2d:explorer.cameraState(),view3d:!!view,camera3d:view?.cameraState(),paused,activeTab:document.querySelector('[role="tab"][aria-selected="true"]')?.id,brush:{on:ui.brushOn.checked,type:ui.brushType.value,size:ui.brushSize.value},...(!compact?{offsets:Array.from(offsets),roughness:Array.from(roughness)}:{})};
+  }
+  const autosaver=new AutosaveQueue(async({active,payload})=>{await active.autosave(payload);},(state,error)=>{
+    if(disposed)return;
+    $('autosaveStatus').textContent=state==='error'?`Autosave failed: ${error.message} Retrying…`:state==='saved'?'All changes saved':state==='saving'?'Saving changes…':'Changes pending…';
+    if(state==='saved')void refreshProjects();
+  });
+  function queueAutosave(){if(disposed||projectBusy||!solver)return;autosaver.schedule({active:solver,payload:{ui:captureProjectUI(),client:viewClient,sequence:++viewSequence}});}
+  async function flushAutosave(){if(!solver)return;await paintQueue;queueAutosave();try{await autosaver.flush();}catch(error){if(error.status!==404)throw error;autosaver.discard();}}
+  // Capture controls managed by child editors as well as map gestures.
+  for(const event of ['input','change','click','pointerup','pointercancel','wheel','keyup'])document.addEventListener(event,()=>{setTimeout(queueAutosave,0);},{signal:lifecycle.signal,passive:true});
+  function beaconView(){if(!solver||projectBusy)return;const body=JSON.stringify({ui:captureProjectUI(true),merge:true,client:viewClient,sequence:++viewSequence});if(new Blob([body]).size<60000)navigator.sendBeacon(`/api/sessions/${solver.id}/autosave`,new Blob([body],{type:'application/json'}));}
+  window.addEventListener('pagehide',beaconView,{signal:lifecycle.signal});
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')beaconView();},{signal:lifecycle.signal});
+  window.addEventListener('beforeunload',e=>{if(autosaver.pending||autosaver.running||solver?.autosaveError){beaconView();e.preventDefault();e.returnValue='';}},{signal:lifecycle.signal});
   function projectControls(busy){projectBusy=busy;for(const id of ['saveProject','openProject','openProjectFolder','openStoredProject','generate'])$(id).disabled=busy;}
   async function refreshProjects(){
     try{const data=await RemoteSolver.savedProjects(),select=$('storedProjects'),selected=select.value;select.replaceChildren(new Option(data.projects.length?'Select a saved world':'No saved worlds',''));
@@ -1607,7 +1629,7 @@ export function mountTerrain() {
     projectControls(true);$('projectStatus').textContent='Saving world fields, explored tiles and edits…';
     try{
       await paintQueue;const active=solver;
-      const uiState={seedUsed,presetId,palette:exportable(),settings:Object.fromEntries(settingIds.map(id=>{const el=$(id);return [id,el.type==='checkbox'?el.checked:el.value];})),camera2d:explorer.cameraState(),view3d:!!view,camera3d:view?.cameraState(),offsets:Array.from(offsets),roughness:Array.from(roughness)};
+      const uiState=captureProjectUI();
       const blob=await active.saveProject(uiState);
       const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`KRIEMHILD-${seedUsed}.world.zip`;a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);
       $('projectStatus').textContent='World ZIP saved, including all generated detail. It can be reopened after the server is restarted.';
@@ -1616,6 +1638,7 @@ export function mountTerrain() {
   });
   async function openWorld(files,folder,storedID=null){
     if(projectBusy||(!files.length&&!storedID))return;
+    await flushAutosave();
     projectControls(true);clearTimeout(regenTimer);stop();const ticket=++generation;
     $('projectStatus').textContent='Validating and loading stored world data…';let next;
     try{
@@ -1637,14 +1660,16 @@ export function mountTerrain() {
       const rng=makeRng(seedUsed^0x9e3779b9),restoreArray=(value,n)=>Array.isArray(value)&&value.length===n&&value.every(Number.isFinite)?Float32Array.from(value):Float32Array.from({length:n},()=>rng()*2-1);
       offsets=restoreArray(saved.offsets,solver.N*2);roughness=restoreArray(saved.roughness,solver.N);
       typeRgb=config.types.map(t=>parseColor(t.color,t.id));maskColors=new Map();maskHeights.clear();
-      undoStack.length=0;brush.painting=false;paused=false;autoCleaned=true;solveMs=0;
+      undoStack.length=0;brush.painting=false;paused=solver.status==='running';autoCleaned=solver.status==='done';solveMs=0;
       setPreset(PRESETS.some(p=>p.id===saved.presetId)?saved.presetId:null);updateModeControls();editor.render();kindEditor.render();climateEditor.render();updateAddButton();updateBrushTypes();
       setupSurface();draw();explorer.restoreCamera(saved.camera2d);
       ui.view3d.checked=saved.view3d===true;await setView3d(ui.view3d.checked);view?.restoreCamera(saved.camera3d);
-      await previous?.dispose();save();persistSettings();showError('');
+      if(previous?.id!==next.id)await previous?.dispose();save();persistSettings();showError('');
+      if(saved.activeTab&&$(saved.activeTab))selectTab($(saved.activeTab));
+      if(saved.brush){ui.brushOn.checked=!!saved.brush.on;ui.brushType.value=saved.brush.type;ui.brushSize.value=saved.brush.size;updateBrushControls();}
       $('projectStatus').textContent=`World loaded from project · ${next.storedDetailCount} stored detail tiles. Missing detail will be generated only when explored.`;
       void refreshProjects();
-    }catch(error){if(next&&next!==solver)await next.dispose();showError(error.message);$('projectStatus').textContent='Project could not be opened.';schedule();}finally{projectControls(false);}
+    }catch(error){if(next&&next!==solver)await next.dispose();showError(error.message);$('projectStatus').textContent='Project could not be opened.';schedule();}finally{projectControls(false);queueAutosave();}
   }
   for(const [id,folder] of [['openProject',false],['openProjectFolder',true]])listen($(id),'change',()=>{const files=[...$(id).files];$(id).value='';void openWorld(files,folder);});
   function persistSettings() {
@@ -1783,6 +1808,7 @@ export function mountTerrain() {
     else if (merged) save();
   })();
   return () => {
+    beaconView();autosaver.dispose();
     disposed = true;
     generation++;
     lifecycle.abort();

@@ -15,6 +15,7 @@
 !tests/
 !tests/detail-camera.test.mjs
 !tests/water-surface.test.mjs
+!tests/autosave.test.mjs
 **/.tools
 **/.tools/**
 **/data

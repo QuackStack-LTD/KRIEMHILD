@@ -645,6 +645,8 @@ func decodeProject(files map[string][]byte, cacheRoot ...string) (*session, erro
 }
 
 func (s *Server) importProject(w http.ResponseWriter, r *http.Request) {
+	s.openMu.Lock()
+	defer s.openMu.Unlock()
 	r.Body = http.MaxBytesReader(w, r.Body, maxProjectBytes)
 	select {
 	case s.slots <- struct{}{}:
@@ -666,7 +668,7 @@ func (s *Server) importProject(w http.ResponseWriter, r *http.Request) {
 	if s.projects != nil {
 		archive, err := encodeProject(v)
 		if err == nil {
-			err = s.persistProject(r.Context(), v, archive)
+			err = s.replaceWorld(v.worldID, func() error { return s.persistProject(r.Context(), v, archive) })
 		}
 		if err != nil {
 			if v.dir != "" {

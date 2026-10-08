@@ -19,26 +19,34 @@ import (
 )
 
 type session struct {
-	mu         sync.Mutex
-	solver     *terrain.Solver
-	last       time.Time
-	undo       map[string]terrain.Snapshot
-	order      []string
-	detail     *terrain.DetailModel
-	dir        string
-	cacheRoot  string
-	tiles      map[string]bool
-	generation json.RawMessage
-	projectUI  json.RawMessage
-	worldID    string
-	base       *terrain.Snapshot
-	edits      []json.RawMessage
+	mu              sync.Mutex
+	solver          *terrain.Solver
+	last            time.Time
+	undo            map[string]terrain.Snapshot
+	order           []string
+	detail          *terrain.DetailModel
+	dir             string
+	cacheRoot       string
+	tiles           map[string]bool
+	generation      json.RawMessage
+	projectUI       json.RawMessage
+	worldID         string
+	base            *terrain.Snapshot
+	edits           []json.RawMessage
+	persisted       bool
+	dirty           bool
+	detailPersisted bool
+	savedTiles      map[string]bool
+	viewClient      string
+	viewSequence    uint64
+	retired         bool
 }
 type Server struct {
 	mu          sync.Mutex
 	sessions    map[string]*session
 	mux         *http.ServeMux
 	slots       chan struct{}
+	openMu      sync.Mutex
 	detailSlots chan struct{}
 	projects    *storage.Store
 	cacheRoot   string
@@ -82,6 +90,7 @@ func NewWithOptions(dist string, options Options) *Server {
 	s.mux.HandleFunc("POST /api/sessions/{id}/{action}", s.action)
 	s.mux.HandleFunc("GET /api/sessions/{id}/detail/{level}/{x}/{y}", s.detailTile)
 	s.mux.HandleFunc("POST /api/sessions/{id}/project", s.saveProject)
+	s.mux.HandleFunc("POST /api/sessions/{id}/autosave", s.saveView)
 	s.mux.HandleFunc("POST /api/projects/import", s.importProject)
 	s.mux.HandleFunc("GET /api/projects", s.listProjects)
 	s.mux.HandleFunc("POST /api/projects/{id}/open", s.openStoredProject)
@@ -237,10 +246,22 @@ func (s *Server) create(w http.ResponseWriter, r *http.Request) {
 	}
 	id := token()
 	gen, _ := json.Marshal(req)
-	s.sessions[id] = &session{solver: solver, last: time.Now(), undo: map[string]terrain.Snapshot{}, generation: gen, cacheRoot: s.cacheRoot}
+	v := &session{solver: solver, last: time.Now(), undo: map[string]terrain.Snapshot{}, generation: gen, cacheRoot: s.cacheRoot, worldID: token()}
+	s.sessions[id] = v
+	v.mu.Lock()
 	s.mu.Unlock()
+	defer v.mu.Unlock()
+	if err := s.autosave(v, true); err != nil {
+		// Retain the session identity so the caller can retry persistence.
+		state := view(solver, true)
+		state["id"] = id
+		state["autosaveError"] = "Autosave failed; retry before closing."
+		respond(w, 201, state)
+		return
+	}
 	state := view(solver, true)
 	state["id"] = id
+	state["worldId"] = v.worldID
 	respond(w, 201, state)
 }
 func (s *Server) remove(w http.ResponseWriter, r *http.Request) {
@@ -294,8 +315,11 @@ func (s *Server) detailTile(w http.ResponseWriter, r *http.Request) {
 		fail(w, 400, err.Error())
 		return
 	}
-	if r.Context().Err() != nil {
-		return
+	if !v.savedTiles[detailKey(args[0], args[1], args[2])] {
+		if err := s.autosave(v, false); err != nil {
+			fail(w, 503, "Could not autosave explored terrain; retry.")
+			return
+		}
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
@@ -335,9 +359,6 @@ func (s *Server) action(w http.ResponseWriter, r *http.Request) {
 			if time.Since(start) > 30*time.Millisecond {
 				break
 			}
-			if r.Context().Err() != nil {
-				return
-			}
 		}
 	case "cleanup":
 		if req.Count < 1 || req.Count > 50 {
@@ -360,6 +381,10 @@ func (s *Server) action(w http.ResponseWriter, r *http.Request) {
 		if len(v.order) > 30 {
 			delete(v.undo, v.order[0])
 			v.order = v.order[1:]
+		}
+		if err := s.autosave(v, true); err != nil {
+			fail(w, 503, "Could not autosave undo state; retry.")
+			return
 		}
 		respond(w, 200, map[string]string{"token": id})
 		return
@@ -396,15 +421,15 @@ func (s *Server) action(w http.ResponseWriter, r *http.Request) {
 			if time.Since(start) > 100*time.Millisecond {
 				break
 			}
-			if r.Context().Err() != nil {
-				return
-			}
 		}
 	default:
 		fail(w, 404, "Unknown map action.")
 		return
 	}
 	out["state"] = view(solver, false)
+	if err := s.autosave(v, true); err != nil {
+		out["autosaveError"] = "Autosave failed. Changes remain in this session; retry before closing."
+	}
 	out["solveMs"] = float64(time.Since(start).Microseconds()) / 1000
 	respond(w, 200, out)
 }

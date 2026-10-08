@@ -8,7 +8,7 @@ import { createDetailScene } from './detail-scene.js';
 
 const MAX_VERTICES = 250000; // bigger maps sample every n-th cell
 
-export function createView(container) {
+export function createView(container,onCameraChange=()=>{}) {
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.domElement.className = 'view3d';
@@ -20,6 +20,7 @@ export function createView(container) {
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.zoomToCursor = true;
+  controls.addEventListener('change',onCameraChange);
   controls.maxPolarAngle = Math.PI * 0.47; // don't go under the map
 
   scene.add(new THREE.HemisphereLight(0xffffff, 0x3a4048, 1.3));

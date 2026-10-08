@@ -1,3 +1,4 @@
+# Dependencies, builds and local tools
 node_modules/
 dist/
 .tools/
@@ -5,9 +6,12 @@ dist/
 bin/
 *.log
 artifacts/
+# Local world databases and exports
 data/
+*.sqlite*
+*.world.zip
+
+# Local credentials; keep the shareable configuration template
 .env
 .env.*
 !.env.example
-*.sqlite*
-*.world.zip

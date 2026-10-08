@@ -251,7 +251,8 @@ export default function App() {
             <label className="button">Open world ZIP<input id="openProject" type="file" accept=".zip,application/zip" hidden /></label>
             <label className="button">Open world folder<input id="openProjectFolder" type="file" webkitdirectory="" multiple hidden /></label>
           </div>
-          <p className="hint" id="projectStatus" role="status">World projects include geography, explored detail and edits. Keep the ZIP to reopen or share the world.</p>
+          <p className="hint" id="autosaveStatus" role="status">Worlds and explored detail save automatically.</p>
+          <p className="hint" id="projectStatus" role="status">Reopen previous worlds below. ZIP files provide portable backups.</p>
           <label className="field"><span>Saved worlds</span><select id="storedProjects"><option value="">No saved worlds</option></select></label>
           <div className="save-row"><button id="refreshProjects" type="button">Refresh saved worlds</button><button id="openStoredProject" type="button">Open saved world</button></div>
           <div className="save-row">

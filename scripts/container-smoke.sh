@@ -64,7 +64,7 @@ exercise() {
   done
   [[ "$status" == done ]]
   curl -fsS "$base/api/sessions/$id/detail/2/0/0" > "$work/tile.json"
-  curl -fsS "$base/api/sessions/$id/project" -H 'Content-Type: application/json' --data '{"ui":{"seedUsed":42}}' -o "$work/world.zip"
+  curl -fsS "$base/api/sessions/$id/autosave" -H 'Content-Type: application/json' --data '{"ui":{"seedUsed":42,"camera2d":{"scale":120}}}' > "$work/autosaved.json"
   world=$(curl -fsS "$base/api/projects" | python3 -c 'import json,sys;print(json.load(sys.stdin)["projects"][0]["id"])')
   curl -fsS -X DELETE "$base/api/sessions/$id" >/dev/null
   stop_app
@@ -78,9 +78,11 @@ import json,sys
 original,restored=(json.load(open(p)) for p in sys.argv[1:])
 assert original['environment'] == restored['environment'], 'geography changed on restart'
 assert restored['storedDetailCount'] >= 3, 'detail hierarchy missing'
+assert restored['projectUI']['camera2d']['scale'] == 120, 'camera state missing'
 PY
+  curl -fsS "$base/api/sessions/$id/project" -H 'Content-Type: application/json' --data '{"ui":{"seedUsed":42}}' -o "$work/world.zip"
   stop_app
-  echo "$driver: frontend, non-root runtime, save, restart, stored detail and graceful shutdown passed"
+  echo "$driver: frontend, non-root runtime, autosave, restart, stored detail, ZIP export and graceful shutdown passed"
 }
 exercise sqlite "$prefix-sqlite"
 docker run -d --name "$postgres" --network "$network" \
@@ -88,7 +90,7 @@ docker run -d --name "$postgres" --network "$network" \
   -v "$prefix-pg:/var/lib/postgresql/data" postgres:17-alpine >/dev/null
 ready=false
 for ((i=0;i<60;i++)); do
-  if docker exec "$postgres" pg_isready -U kriemhild -d kriemhild >/dev/null 2>&1; then ready=true; break; fi
+  if docker exec "$postgres" pg_isready -h 127.0.0.1 -p 5432 -U kriemhild -d kriemhild >/dev/null 2>&1; then ready=true; break; fi
   sleep 1
 done
 [[ "$ready" == true ]]

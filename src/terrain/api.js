@@ -9,7 +9,7 @@ async function request(path, body, method = 'POST') {
   }
   if (response.status === 204) return;
   const data = await response.json();
-  if (!response.ok) throw new Error(data.error || `Server error (${response.status})`);
+  if (!response.ok) {const error=new Error(data.error || `Server error (${response.status})`);error.status=response.status;throw error;}
   return data;
 }
 
@@ -18,6 +18,12 @@ export class RemoteSolver extends globalThis.TerrainWFC.SolverView {
   static async create(payload) { return new RemoteSolver(await request('sessions', payload)); }
   static async savedProjects(){return request('projects',undefined,'GET');}
   static async openSavedProject(id){return new RemoteSolver(await request(`projects/${encodeURIComponent(id)}/open`,{}));}
+  async autosave(payload) {
+    await this.pending;
+    const result=await request(`sessions/${this.id}/autosave`,payload);
+    if(!result.saved)throw new Error('Server persistence is disabled.');
+    this.worldId=result.worldId;this.autosaveError=null;return result;
+  }
   static async importProject(files,folder=false) {
     let body=files[0],headers={'Content-Type':'application/zip'};
     if(folder){body=new FormData();for(const file of files)body.append(file.webkitRelativePath||file.name,file,file.name);headers={};}
@@ -56,6 +62,7 @@ export class RemoteSolver extends globalThis.TerrainWFC.SolverView {
     const run = this.pending.then(async () => {
       const result = await request(`sessions/${this.id}/${action}`, body);
       if (result.state) this.apply(result.state);
+      if(result.autosaveError){this.autosaveError=result.autosaveError;throw new Error(result.autosaveError);}
       return result;
     });
     this.pending = run.catch(() => {});

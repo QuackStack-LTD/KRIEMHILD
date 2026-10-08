@@ -27,6 +27,15 @@ test('World ZIP survives deletion of the original session and a Go server proces
     const cell=state.dom.findIndex(mask=>mask!==0),type=31-Math.clz32(state.dom[cell]);
     const painted=await json(`sessions/${initial.id}/paint`,{cells:[cell],type});assert.equal(painted.painted,true);
     state=painted.state;while(state.status==='running')state=(await json(`sessions/${initial.id}/step`,{count:10000})).state;
+    // Nothing has been exported: server autosaves alone must survive a real restart.
+    await json(`sessions/${initial.id}/autosave`,{ui:{seedUsed:123,camera2d:{center:{x:12,y:10},scale:200}}});
+    const worlds=await fetch(origin+'/api/projects').then(r=>r.json());
+    await stop();await launch();
+    const autosaved=await json(`projects/${worlds.projects[0].id}/open`,{});
+    assert.deepEqual(autosaved.environment,initial.environment);assert.deepEqual(autosaved.dom,state.dom);assert.deepEqual(autosaved.pinned,state.pinned);
+    assert.equal(autosaved.projectUI.camera2d.scale,200);
+    assert.equal(await fetch(origin+`/api/sessions/${autosaved.id}`+tilePath).then(r=>r.text()),tile);
+    initial.id=autosaved.id;
     const saved=await fetch(origin+`/api/sessions/${initial.id}/project`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ui:{seedUsed:123,camera2d:{center:{x:12,y:10},scale:200}}})});
     assert.equal(saved.status,200);const archive=Buffer.from(await saved.arrayBuffer());
     assert.ok(archive.includes(Buffer.from('detail/tiles/5/12/10.json')),'ZIP omitted the explored tile');

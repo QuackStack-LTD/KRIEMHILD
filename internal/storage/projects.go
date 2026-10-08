@@ -1,6 +1,5 @@
-// Package storage keeps portable world archives in PostgreSQL or embedded SQLite.
-// Sessions and rendering caches remain disposable; database records contain the
-// complete archive, including explored tiles, without filesystem dependencies.
+// Package storage keeps world checkpoints, explored tiles and legacy portable
+// archives in PostgreSQL or embedded SQLite without working-cache dependencies.
 package storage
 
 import (
@@ -117,13 +116,16 @@ func (s *Store) migrate(ctx context.Context) error {
 	if err = tx.QueryRowContext(ctx, "SELECT COALESCE(MAX(version),0) FROM kriemhild_schema").Scan(&version); err != nil {
 		return err
 	}
-	if version > 1 {
+	if version > 2 {
 		return errors.New("database schema is newer than this server")
 	}
 	if _, err = tx.ExecContext(ctx, statements[1]); err != nil {
 		return err
 	}
-	if _, err = tx.ExecContext(ctx, "INSERT INTO kriemhild_schema(version) VALUES(1) ON CONFLICT(version) DO NOTHING"); err != nil {
+	if _, err = tx.ExecContext(ctx, "CREATE TABLE IF NOT EXISTS kriemhild_world_parts (world_id TEXT NOT NULL REFERENCES kriemhild_projects(id) ON DELETE CASCADE, path TEXT NOT NULL, data BYTEA NOT NULL, PRIMARY KEY(world_id,path))"); err != nil {
+		return err
+	}
+	if _, err = tx.ExecContext(ctx, "INSERT INTO kriemhild_schema(version) VALUES(2) ON CONFLICT(version) DO NOTHING"); err != nil {
 		return err
 	}
 	return tx.Commit()
@@ -132,10 +134,66 @@ func (s *Store) Save(ctx context.Context, p Project, archive []byte) error {
 	if p.ID == "" || len(archive) == 0 {
 		return errors.New("project ID and archive are required")
 	}
-	_, err := s.db.ExecContext(ctx, `INSERT INTO kriemhild_projects(id,seed,width,height,detail_tiles,bytes,updated_at,archive)
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	_, err = tx.ExecContext(ctx, `INSERT INTO kriemhild_projects(id,seed,width,height,detail_tiles,bytes,updated_at,archive)
  VALUES($1,$2,$3,$4,$5,$6,$7,$8)
  ON CONFLICT(id) DO UPDATE SET seed=excluded.seed,width=excluded.width,height=excluded.height,detail_tiles=excluded.detail_tiles,bytes=excluded.bytes,updated_at=excluded.updated_at,archive=excluded.archive`, p.ID, p.Seed, p.Width, p.Height, p.DetailTiles, len(archive), time.Now().UTC().UnixMilli(), archive)
-	return err
+	if err != nil {
+		return err
+	}
+	if _, err = tx.ExecContext(ctx, "DELETE FROM kriemhild_world_parts WHERE world_id=$1", p.ID); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+// SaveParts atomically commits only the changed checkpoint, view or detail tiles.
+// Complete ZIP archives remain a backward-compatible import/export format.
+func (s *Store) SaveParts(ctx context.Context, p Project, parts map[string][]byte) error {
+	if p.ID == "" || len(parts) == 0 {
+		return errors.New("world identity and parts required")
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	_, err = tx.ExecContext(ctx, `INSERT INTO kriemhild_projects(id,seed,width,height,detail_tiles,bytes,updated_at,archive)
+ VALUES($1,$2,$3,$4,$5,0,$6,$7) ON CONFLICT(id) DO UPDATE SET seed=excluded.seed,width=excluded.width,height=excluded.height,detail_tiles=excluded.detail_tiles,updated_at=excluded.updated_at,archive=excluded.archive`, p.ID, p.Seed, p.Width, p.Height, p.DetailTiles, time.Now().UTC().UnixMilli(), []byte{})
+	if err != nil {
+		return err
+	}
+	for path, data := range parts {
+		if _, err = tx.ExecContext(ctx, `INSERT INTO kriemhild_world_parts(world_id,path,data) VALUES($1,$2,$3) ON CONFLICT(world_id,path) DO UPDATE SET data=excluded.data`, p.ID, path, data); err != nil {
+			return err
+		}
+	}
+	if _, err = tx.ExecContext(ctx, "UPDATE kriemhild_projects SET bytes=(SELECT COALESCE(SUM(LENGTH(data)),0) FROM kriemhild_world_parts WHERE world_id=$1) WHERE id=$1", p.ID); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func (s *Store) LoadParts(ctx context.Context, id string) (map[string][]byte, error) {
+	rows, err := s.db.QueryContext(ctx, "SELECT path,data FROM kriemhild_world_parts WHERE world_id=$1", id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	parts := map[string][]byte{}
+	for rows.Next() {
+		var path string
+		var data []byte
+		if err = rows.Scan(&path, &data); err != nil {
+			return nil, err
+		}
+		parts[path] = data
+	}
+	return parts, rows.Err()
 }
 func (s *Store) List(ctx context.Context) ([]Project, error) {
 	rows, err := s.db.QueryContext(ctx, "SELECT id,seed,width,height,detail_tiles,bytes,updated_at FROM kriemhild_projects ORDER BY updated_at DESC,id LIMIT 1000")

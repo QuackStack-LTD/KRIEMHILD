@@ -1,11 +1,27 @@
-# Overlay: docker compose -f compose.yml -f compose.postgres.yml up --build -d
+name: kriemhild
 services:
   kriemhild:
+    image: ghcr.io/quackstack-ltd/kriemhild:latest
+    pull_policy: always
+    ports:
+      - "127.0.0.1:8124:8124"
     environment:
+      KRIEMHILD_ADDR: 0.0.0.0:8124
+      KRIEMHILD_DATA_DIR: /data
       DATABASE_URL: postgres://kriemhild:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/kriemhild?sslmode=disable
+    volumes:
+      - kriemhild-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+    stop_grace_period: 40s
     depends_on:
       postgres:
         condition: service_healthy
+
   postgres:
     image: postgres:17-alpine
     environment:
@@ -15,11 +31,15 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: [CMD-SHELL, "pg_isready -U kriemhild -d kriemhild"]
+      # The initialization server is socket-only; wait for the final TCP server.
+      test: [CMD, pg_isready, -h, 127.0.0.1, -p, "5432", -U, kriemhild, -d, kriemhild]
+      start_period: 30s
       interval: 5s
       timeout: 5s
       retries: 12
     restart: unless-stopped
     stop_grace_period: 40s
+
 volumes:
+  kriemhild-data:
   postgres-data:
