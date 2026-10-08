@@ -1591,7 +1591,16 @@ export function mountTerrain() {
     'climLayout','climStrength','selection','radius','stability','stabilityStrength','cleanupPasses',
     'speed','instant','voronoi','jitter','textures','iconSize','contShow','height3d','environmentOverlay'];
   let projectBusy=false;
-  function projectControls(busy){projectBusy=busy;for(const id of ['saveProject','openProject','openProjectFolder','generate'])$(id).disabled=busy;}
+  function projectControls(busy){projectBusy=busy;for(const id of ['saveProject','openProject','openProjectFolder','openStoredProject','generate'])$(id).disabled=busy;}
+  async function refreshProjects(){
+    try{const data=await RemoteSolver.savedProjects(),select=$('storedProjects'),selected=select.value;select.replaceChildren(new Option(data.projects.length?'Select a saved world':'No saved worlds',''));
+      for(const p of data.projects)select.add(new Option(`${p.width}×${p.height} · ${p.seed||p.id.slice(0,8)} · ${p.detailTiles} tiles · ${new Date(p.updatedAt).toLocaleString()}`,p.id));
+      if([...select.options].some(o=>o.value===selected))select.value=selected;
+    }catch(error){$('projectStatus').textContent='Saved worlds unavailable: '+error.message;}
+  }
+  listen($('refreshProjects'),'click',refreshProjects);
+  listen($('openStoredProject'),'click',()=>{const id=$('storedProjects').value;if(id)void openWorld([],false,id);});
+  void refreshProjects();
   listen($('saveProject'),'click',async()=>{
     if(projectBusy)return;
     if(!solver||solver.status!=='done'){showError('Finish generating the world before saving its project.');return;}
@@ -1602,14 +1611,15 @@ export function mountTerrain() {
       const blob=await active.saveProject(uiState);
       const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`KRIEMHILD-${seedUsed}.world.zip`;a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);
       $('projectStatus').textContent='World ZIP saved, including all generated detail. It can be reopened after the server is restarted.';
+      void refreshProjects();
     }catch(error){showError(error.message);$('projectStatus').textContent='Project was not saved.';}finally{projectControls(false);}
   });
-  async function openWorld(files,folder){
-    if(projectBusy||!files.length)return;
+  async function openWorld(files,folder,storedID=null){
+    if(projectBusy||(!files.length&&!storedID))return;
     projectControls(true);clearTimeout(regenTimer);stop();const ticket=++generation;
     $('projectStatus').textContent='Validating and loading stored world data…';let next;
     try{
-      next=await RemoteSolver.importProject(files,folder);
+      next=storedID?await RemoteSolver.openSavedProject(storedID):await RemoteSolver.importProject(files,folder);
       if(disposed||ticket!==generation){await next.dispose();return;}
       const saved=next.projectUI||{},palette=normalize(saved.palette||next.config);
       if(palette.types.length!==next.T||palette.types.some((t,i)=>t.id!==next.config.types[i].id))throw new Error('Saved display palette does not match the world.');
@@ -1633,6 +1643,7 @@ export function mountTerrain() {
       ui.view3d.checked=saved.view3d===true;await setView3d(ui.view3d.checked);view?.restoreCamera(saved.camera3d);
       await previous?.dispose();save();persistSettings();showError('');
       $('projectStatus').textContent=`World loaded from project · ${next.storedDetailCount} stored detail tiles. Missing detail will be generated only when explored.`;
+      void refreshProjects();
     }catch(error){if(next&&next!==solver)await next.dispose();showError(error.message);$('projectStatus').textContent='Project could not be opened.';schedule();}finally{projectControls(false);}
   }
   for(const [id,folder] of [['openProject',false],['openProjectFolder',true]])listen($(id),'change',()=>{const files=[...$(id).files];$(id).value='';void openWorld(files,folder);});

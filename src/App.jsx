@@ -252,6 +252,8 @@ export default function App() {
             <label className="button">Open world folder<input id="openProjectFolder" type="file" webkitdirectory="" multiple hidden /></label>
           </div>
           <p className="hint" id="projectStatus" role="status">World projects include geography, explored detail and edits. Keep the ZIP to reopen or share the world.</p>
+          <label className="field"><span>Saved worlds</span><select id="storedProjects"><option value="">No saved worlds</option></select></label>
+          <div className="save-row"><button id="refreshProjects" type="button">Refresh saved worlds</button><button id="openStoredProject" type="button">Open saved world</button></div>
           <div className="save-row">
             <button id="savePng" type="button">PNG image</button>
             <button id="saveSvg" type="button" title="Vector map: Voronoi shapes, flat colours (no textures)">SVG vector</button>

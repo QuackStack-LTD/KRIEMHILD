@@ -5,3 +5,9 @@ dist/
 bin/
 *.log
 artifacts/
+data/
+.env
+.env.*
+!.env.example
+*.sqlite*
+*.world.zip

@@ -1,0 +1,25 @@
+# Overlay: docker compose -f compose.yml -f compose.postgres.yml up --build -d
+services:
+  kriemhild:
+    environment:
+      DATABASE_URL: postgres://kriemhild:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/kriemhild?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: kriemhild
+      POSTGRES_USER: kriemhild
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U kriemhild -d kriemhild"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+    stop_grace_period: 40s
+volumes:
+  postgres-data:

@@ -16,6 +16,8 @@ async function request(path, body, method = 'POST') {
 // Read-only solver mirror for rendering/hover. Every mutation is executed in Go.
 export class RemoteSolver extends globalThis.TerrainWFC.SolverView {
   static async create(payload) { return new RemoteSolver(await request('sessions', payload)); }
+  static async savedProjects(){return request('projects',undefined,'GET');}
+  static async openSavedProject(id){return new RemoteSolver(await request(`projects/${encodeURIComponent(id)}/open`,{}));}
   static async importProject(files,folder=false) {
     let body=files[0],headers={'Content-Type':'application/zip'};
     if(folder){body=new FormData();for(const file of files)body.append(file.webkitRelativePath||file.name,file,file.name);headers={};}

@@ -4,7 +4,7 @@ React frontend and native Go backend reproducing the local **TerrainGenOnSteroid
 
 ## Run
 
-Install Node.js 22.12+ and Go 1.24+, then run from this folder:
+Install Node.js 22.12+ and Go 1.26+, then run from this folder:
 
 ```sh
 npm install
@@ -16,6 +16,7 @@ Open **http://127.0.0.1:8124**. On Windows, `start.bat` performs the same steps.
 For development, run these in separate terminals:
 
 ```sh
+npm run build
 go run ./cmd/kriemhild
 npm run dev
 ```
@@ -56,7 +57,23 @@ Enable **World → Map → Real-world geology & climate** for derived climate zo
 
 `src/App.jsx` renders the interface in React. `src/terrain/controller.js` mounts and disposes the original canvas/editor interactions using a React effect. Rendering stays in the browser; generation, stepping, cleanup, painting, and undo execute in Go through `src/terrain/api.js`. Client solver helpers only compile palette/display data and calculate hover probabilities; there is no browser generation fallback.
 
-`internal/terrain/` contains the native Go algorithms and embedded default palette. `internal/httpapi/` owns isolated, serialized map sessions and validates API inputs. `cmd/kriemhild/` serves the API and built frontend. The backend has no third-party Go dependencies or JavaScript runtime.
+`internal/terrain/` contains the native Go algorithms and embedded default palette. `internal/httpapi/` owns isolated, serialized map sessions and validates API inputs. `internal/storage/` stores complete world projects using embedded SQLite or PostgreSQL. `cmd/kriemhild/` serves the API and built frontend. The backend uses pure-Go database drivers and needs no JavaScript runtime.
+
+## Docker and project database
+
+```sh
+docker compose up --build -d
+```
+
+Open http://127.0.0.1:8124. The container serves both React and the Go API and stores SQLite data in a named volume. **Save world ZIP** also saves the complete project to the selected database; the saved-world picker reopens it after a restart. ZIP and folder imports are stored there too. Unsaved edits and exploration still require saving before shutdown.
+
+For PostgreSQL, copy `.env.example` to `.env`, set a URL-safe password, then run:
+
+```sh
+docker compose -f compose.yml -f compose.postgres.yml up --build -d
+```
+
+With no `DATABASE_URL`, the server uses SQLite. With PostgreSQL configured, it requires that database to be available. See [container setup, readiness audit and release workflows](docs/CONTAINERS.md) for configuration, persistence, testing and GHCR publishing.
 
 Use **View ? Save ? Save world ZIP** to preserve a complete world, explored detail and edits. **Open world ZIP** or **Open world folder** restores the stored data after a server restart without regenerating the world or depending on its old server cache. See [Portable world projects](docs/WORLD_PROJECTS.md) for the manifest, chunks, hierarchy and validation. Unsaved sessions and undo history remain session-local. Sessions expire after 30 minutes of inactivity and are reclaimed when creating a new map. Palette edits, generation settings, seed and display settings persist in browser local storage under KRIEMHILD-specific keys. This is a local application; it starts on the loopback interface.
 

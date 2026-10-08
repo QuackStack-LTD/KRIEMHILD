@@ -65,10 +65,13 @@ func (v *session) initStorage() error {
 	if v.dir != "" {
 		return nil
 	}
-	if err := os.MkdirAll(filepath.Join(".tools", "projects"), 0700); err != nil {
+	if v.cacheRoot == "" {
+		v.cacheRoot = filepath.Join(".tools", "projects")
+	}
+	if err := os.MkdirAll(v.cacheRoot, 0700); err != nil {
 		return err
 	}
-	dir, err := os.MkdirTemp(filepath.Join(".tools", "projects"), "world-")
+	dir, err := os.MkdirTemp(v.cacheRoot, "world-")
 	if err != nil {
 		return err
 	}
@@ -205,6 +208,10 @@ func (s *Server) saveProject(w http.ResponseWriter, r *http.Request) {
 	data, err := encodeProject(v)
 	if err != nil {
 		fail(w, 500, err.Error())
+		return
+	}
+	if err := s.persistProject(r.Context(), v, data); err != nil {
+		fail(w, 503, "Could not save the world to the project database. Please retry.")
 		return
 	}
 	w.Header().Set("Content-Type", "application/zip")
@@ -423,7 +430,7 @@ func readProjectFiles(r *http.Request) (map[string][]byte, error) {
 	return files, nil
 }
 
-func decodeProject(files map[string][]byte) (*session, error) {
+func decodeProject(files map[string][]byte, cacheRoot ...string) (*session, error) {
 	manifest := ""
 	for name := range files {
 		if path.Base(name) == "manifest.json" {
@@ -525,6 +532,9 @@ func decodeProject(files map[string][]byte) (*session, error) {
 		return nil, err
 	}
 	v := &session{solver: &solver, base: &base, edits: edits.Operations, generation: m.Generation, projectUI: data["view/builder.json"], worldID: m.ID, last: time.Now(), undo: map[string]terrain.Snapshot{}}
+	if len(cacheRoot) > 0 {
+		v.cacheRoot = cacheRoot[0]
+	}
 	if len(v.projectUI) == 0 || !json.Valid(v.projectUI) {
 		return nil, fmt.Errorf("invalid builder metadata")
 	}
@@ -648,10 +658,23 @@ func (s *Server) importProject(w http.ResponseWriter, r *http.Request) {
 		fail(w, 400, err.Error())
 		return
 	}
-	v, err := decodeProject(files)
+	v, err := decodeProject(files, s.cacheRoot)
 	if err != nil {
 		fail(w, 400, err.Error())
 		return
+	}
+	if s.projects != nil {
+		archive, err := encodeProject(v)
+		if err == nil {
+			err = s.persistProject(r.Context(), v, archive)
+		}
+		if err != nil {
+			if v.dir != "" {
+				os.RemoveAll(v.dir)
+			}
+			fail(w, 503, "Could not store the imported world in the project database. Please retry.")
+			return
+		}
 	}
 	s.mu.Lock()
 	if len(s.sessions) >= 32 {

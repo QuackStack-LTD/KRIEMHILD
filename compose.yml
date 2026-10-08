@@ -1,0 +1,21 @@
+name: kriemhild
+services:
+  kriemhild:
+    build: .
+    image: kriemhild:local
+    ports:
+      - "127.0.0.1:8124:8124"
+    environment:
+      KRIEMHILD_ADDR: 0.0.0.0:8124
+      KRIEMHILD_DATA_DIR: /data
+    volumes:
+      - kriemhild-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+    stop_grace_period: 40s
+volumes:
+  kriemhild-data:

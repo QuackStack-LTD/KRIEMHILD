@@ -1,11 +1,13 @@
 package httpapi
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
+	"kriemhild/internal/storage"
 	"kriemhild/internal/terrain"
 	"net/http"
 	"os"
@@ -24,6 +26,7 @@ type session struct {
 	order      []string
 	detail     *terrain.DetailModel
 	dir        string
+	cacheRoot  string
 	tiles      map[string]bool
 	generation json.RawMessage
 	projectUI  json.RawMessage
@@ -37,12 +40,38 @@ type Server struct {
 	mux         *http.ServeMux
 	slots       chan struct{}
 	detailSlots chan struct{}
+	projects    *storage.Store
+	cacheRoot   string
+}
+
+type Options struct {
+	Projects *storage.Store
+	CacheDir string
 }
 
 func New(dist string) *Server {
+	return NewWithOptions(dist, Options{})
+}
+func NewWithOptions(dist string, options Options) *Server {
 	s := &Server{sessions: map[string]*session{}, mux: http.NewServeMux(), slots: make(chan struct{}, 4), detailSlots: make(chan struct{}, 3)}
+	s.projects = options.Projects
+	s.cacheRoot = options.CacheDir
+	if s.cacheRoot == "" {
+		s.cacheRoot = filepath.Join(".tools", "projects")
+	}
 	s.mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
 		respond(w, 200, map[string]string{"name": "KRIEMHILD", "status": "ok", "engine": "native-go"})
+	})
+	s.mux.HandleFunc("GET /api/ready", func(w http.ResponseWriter, r *http.Request) {
+		if s.projects != nil {
+			ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+			defer cancel()
+			if s.projects.Ping(ctx) != nil {
+				fail(w, 503, "Project database is unavailable")
+				return
+			}
+		}
+		respond(w, 200, map[string]string{"status": "ready"})
 	})
 	s.mux.HandleFunc("GET /api/defaults", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -54,6 +83,8 @@ func New(dist string) *Server {
 	s.mux.HandleFunc("GET /api/sessions/{id}/detail/{level}/{x}/{y}", s.detailTile)
 	s.mux.HandleFunc("POST /api/sessions/{id}/project", s.saveProject)
 	s.mux.HandleFunc("POST /api/projects/import", s.importProject)
+	s.mux.HandleFunc("GET /api/projects", s.listProjects)
+	s.mux.HandleFunc("POST /api/projects/{id}/open", s.openStoredProject)
 	s.mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { fail(w, 404, "API route not found") })
 	s.mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" && r.Method != "HEAD" {
@@ -206,7 +237,7 @@ func (s *Server) create(w http.ResponseWriter, r *http.Request) {
 	}
 	id := token()
 	gen, _ := json.Marshal(req)
-	s.sessions[id] = &session{solver: solver, last: time.Now(), undo: map[string]terrain.Snapshot{}, generation: gen}
+	s.sessions[id] = &session{solver: solver, last: time.Now(), undo: map[string]terrain.Snapshot{}, generation: gen, cacheRoot: s.cacheRoot}
 	s.mu.Unlock()
 	state := view(solver, true)
 	state["id"] = id

@@ -15,6 +15,7 @@ vm.runInContext(fs.readFileSync(path.join(root,'src/terrain/presets.js'),'utf8')
 const plain = value => JSON.parse(JSON.stringify(value));
 const defaults = { width: 24, height: 16, radius2: 2, selection: 'random', stability: 3, continents: { count: 12, strength: 5 }, climate: { strength: 2, layout: 'both' }, seed: 12345 };
 let server;
+let databaseDir;
 const base = 'http://127.0.0.1:18125';
 before(async () => {
   const local = path.join(root, '.tools/go/bin', process.platform === 'win32' ? 'go.exe' : 'go');
@@ -23,14 +24,19 @@ before(async () => {
   const binary = path.join(root, 'bin', process.platform === 'win32' ? 'kriemhild-test.exe' : 'kriemhild-test');
   const build = spawnSync(go, ['build', '-o', binary, './cmd/kriemhild'], { cwd: root, encoding: 'utf8' });
   assert.equal(build.status, 0, build.stderr || build.error?.message);
-  server = spawn(binary, ['-addr', '127.0.0.1:18125'], { cwd: root, stdio: 'pipe' });
+  fs.mkdirSync(path.join(root,'.tools'),{recursive:true});
+  databaseDir=fs.mkdtempSync(path.join(root,'.tools','parity-db-'));
+  server = spawn(binary, ['-addr', '127.0.0.1:18125'], { cwd: root, stdio: 'pipe', env:{...process.env,KRIEMHILD_DATA_DIR:databaseDir,DATABASE_URL:'',DATABASE_URL_FILE:''},windowsHide:true });
   for (let i = 0; i < 100; i++) {
     try { if ((await fetch(base + '/api/health')).ok) return; } catch {}
     await delay(50);
   }
   throw new Error('Test server did not start');
 });
-after(() => server?.kill());
+after(async () => {
+  if(server&&server.exitCode===null)await new Promise(resolve=>{server.once('exit',resolve);server.kill();});
+  if(databaseDir)fs.rmSync(databaseDir,{recursive:true,force:true});
+});
 async function api(route, body, method = 'POST', expected = 200) {
   const response = await fetch(base + '/api/' + route, { method, headers: { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
   const data = response.status === 204 ? null : await response.json();
