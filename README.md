@@ -1,72 +1,75 @@
 # KRIEMHILD
-KRIEMHILD - Knowledge Record of Intertwined Eras, Maps, Histories, &amp; Invented Legendary Domains
 
-A local-first worldbuilding and writing platform built around independent historical Ages, with a Next.js frontend and primarily Go backend. Creative decisions belong to the author; AI and LLM features are excluded.
-
-The development build now includes connected society/domain dossiers, story planning, family graphs, local and tactical maps, storyboards, author-controlled language/economy/terrain experiments, portable backups and text imports, Git conflict review, publication exports, and optional hosted/shared writing. These extend the P1/P2 Age, terrain, time and manuscript foundations. See the [current development guide](docs/DEVELOPMENT_GUIDE.md) for workflows and the [phase status](docs/IMPLEMENTATION_STATUS.md) for implemented scope and open acceptance gates. This is a development build, not a declaration that every roadmap phase is finished.
+React frontend and native Go backend reproducing the local **TerrainGenOnSteroids** application. This project is self-contained; the neighboring source directory is not needed to build or run it.
 
 ## Run
 
-Prerequisites: Node.js 22 or newer, npm, and Go 1.25 or newer. On this development machine a verified Go toolchain is already available in the ignored `.tools/go` folder; the scripts find it automatically. Other machines can install Go normally or set `KRIEMHILD_GO` to the Go executable.
+Install Node.js 22.12+ and Go 1.24+, then run from this folder:
 
-From the `KRIEMHILD` directory:
-
-```powershell
-npm.cmd run setup
-npm.cmd run build
-npm.cmd start
+```sh
+npm install
+npm start
 ```
 
-Open **http://127.0.0.1:4784** for the current development build. In shells other than Windows PowerShell, use `npm` in place of `npm.cmd`. Setup downloads dependencies; the built application works without an internet connection. No Node server is required at runtime.
+Open **http://127.0.0.1:8124**. On Windows, `start.bat` performs the same steps. The launcher also recognizes a portable Go installation at `.tools/go`.
 
-The preserved P1 preview on this development machine uses **http://127.0.0.1:4780**, `worlds/`, `bin/kriemhild.exe` and `apps/web/out/`. The preserved P2 preview uses **http://127.0.0.1:4782**, `worlds-p2/`, `bin/kriemhild-p2.exe` and `apps/web/out-p2/`. Current builds use separate paths and port-scoped sessions. Native import can migrate a format-1 backup into a new format-2 world without changing its source. Open projects with new optional features using the current build.
+For development, run these in separate terminals:
 
-For this machine, dependencies and the compiled application have already been prepared, so `npm.cmd start` is sufficient when the server is not already running. Stop it with Ctrl+C. Stop the server before rebuilding its executable on Windows.
-
-Current projects are stored in `worlds-dev/<world UUID>/`, independently of Git. Choose another library or port with:
-
-```powershell
-npm.cmd start -- -data "C:\My Worlds" -addr 127.0.0.1:4784
+```sh
+go run ./cmd/kriemhild
+npm run dev
 ```
 
-You can also run `bin/kriemhild-dev.exe` directly (or `bin/kriemhild-dev` on Linux/macOS). Its default frontend directory is `apps/web/out-dev`. Pass `-web` to choose another directory. Local mode binds to loopback. Hosted mode requires an explicit origin and accounts; see the development guide before deploying it.
+Open http://127.0.0.1:5173. Vite forwards `/api` requests to Go on port 8124.
 
-`npm.cmd run demo` creates a **new** three-Age reference world, printing its URL. `npm.cmd run package` creates a self-contained local package under `dist/`; no Go or Node runtime is needed to use that package. An existing package directory is never overwritten. Set `KRIEMHILD_PACKAGE_DIR` to a fresh output directory to rebuild a package.
+For a production build:
 
-## Test
-
-```powershell
-npm.cmd test
-npm.cmd --prefix apps/web exec -- playwright install chromium
-npm.cmd run test:e2e
+```sh
+npm run build
+go build -o bin/kriemhild ./cmd/kriemhild
+./bin/kriemhild -addr 127.0.0.1:8124 -dist dist
 ```
 
-`npm test` runs Go storage, API, domain, migration, Git, map, experiment and permission tests, Go vet and TypeScript checks. Browser tests require a current `npm run build`; they start isolated local and hosted servers on ports 4781 and 4783, using only the ignored `.test-worlds-dev` and `.test-hosted-dev` libraries. The browser installation is needed once per Playwright browser version.
+On Windows, use `bin/kriemhild.exe`. Ship the binary with `dist/`; Node.js is only needed for building the frontend. Three.js and Delaunator are bundled locally, so 3D viewing and SVG export work without a CDN.
 
-GitHub Actions is configured to run the build and validation suite on **every push to `main` and every pull request targeting `main`**, on Ubuntu and Windows. The [verification workflow](.github/workflows/verification.yml) also checks Go races on Linux, builds the Docker image and produces Windows/Linux/macOS package artifacts. Browser reports and failure traces are retained for seven days; packages for fourteen days. These configured jobs are not evidence of a remote CI run until the changes are pushed. Focused browser tests (`test.only`) fail CI.
+## Preserved behavior
 
-The validation tests are included in the repository:
+- Original dark layout, map canvas, brush toolbar, and World / Terrain / Generator / View tabs.
+- Seeded WFC with random/entropy cell selection, neighborhood radii, weights, neighbor boosts, propagation, backtracking, local repairs, stability, and cleanup.
+- Continental kinds, latitude climate bands, editable terrain palettes, presets, browser persistence, JSON import/export.
+- Physical environment: continuous terrain, tectonics, temperature, wind, precipitation, rain shadows, priority-flood drainage, geological and biome suitability, and numerical overlays.
+- Brush painting with environmental/adjacency constraints, right-click eyedropper, 30-stroke undo, animation, pause/resume, and single stepping.
+- Voronoi/square rendering, terrain textures, landscape/globe 3D, PNG and SVG export.
+- Shortcuts: **G** generate, **Space** pause/resume, **S** step, **C** cleanup, **B** brush, **Ctrl/Cmd+Z** undo.
 
-- [Storage, Age isolation and crash recovery](internal/project/store_test.go)
-- [Rich-text document validation](internal/project/model_test.go)
-- [HTTP API, image upload and access boundaries](internal/httpapi/server_test.go)
-- [Browser acceptance and recovery workflows](apps/web/tests/p1.spec.ts)
-- [Terrain, dated history, calendars and format safety](internal/project/p2_test.go)
-- [P2 flood and historical writing journey](apps/web/tests/p2.spec.ts)
-- [Domains, migration, semantic Git merging and shared drafts](internal/project/later_phases_test.go)
-- [Local maps, conlang, text imports, family paths and cache integrity](internal/project/deep_authoring_test.go)
-- [True format-1 archive migration](internal/project/legacy_import_test.go)
-- [Hosted authentication and role enforcement](internal/httpapi/access_test.go)
-- [Connected writing and concurrent browser editing](apps/web/tests/later-phases.spec.ts)
-- [Keyboard map editing, offline editions and text import](apps/web/tests/deep-authoring.spec.ts)
+The app starts with the original terrain-rule engine. Presets compose with both Physical environment and Real-world geology & climate: selecting a preset keeps the switches enabled, and enabling physics keeps the preset selected. Each preset supplies land coverage, latitude, temperature, rainfall, plate activity and relief appropriate to its theme. Terrain weights, neighbor boosts, radius, stability and point count remain effective within environmental constraints. Turning physics off restores the named preset's original palette. Physical mode uses environmental masks instead of legacy adjacency/climate-band weights. Its Points control distributes land/ocean regions; higher counts generally produce smaller landmasses. High land coverage may still join them into a supercontinent.
 
-`npm.cmd run benchmark` measures a small, reproducible storage/API workload on isolated port 4786. It stores its report in `.tools/benchmark-latest.json`. This baseline does not satisfy the roadmap's much larger reference-world, rendering or accessibility gates.
+Physical elevation builds broad continental shelves, coastal lowlands, highlands and mountain systems before adding valleys, ridges and individual peaks. Mountain belts vary in width and height, with foothills and supporting terrain around their summits. Active margins and volcanic edifices explicitly permit steeper slopes. Reef development is restricted to coherent suitable regions rather than covering every warm coastline; the same seed reproduces these structures. Extreme elevations use a gradual height limit to avoid identical flat summits. The map shades elevation slopes; 3D uses the numerical elevations directly without the smoothing applied to discrete WFC tiles. **Relief %** adjusts mountain prominence.
 
-See [the P1 guide](docs/P1_GUIDE.md) for a manual acceptance walkthrough, recovery instructions, API details and the current boundaries. See [the storage format](docs/P1_STORAGE.md) for the save protocol and historical invariants.
+Physical lowlands, plateaus and valleys also have continuous elevation. Water is a separate layer: ocean connectivity and basin water balance determine coverage, allowing enclosed dry land below sea level. Lakes have local surface levels and varied bed depths; oceans have shelves, slopes, trenches and submerged peaks. Reef habitat produces fringing, barrier, patch and atoll patterns. The 3D water mesh covers only wet cells. See [continuous terrain and water](docs/CONTINUOUS_TERRAIN.md) for fields, generation and validation.
 
-## Planning and research
+Physical worlds have a 24,576-cell limit; rules-only worlds allow dimensions up to 256 × 256. All four borders retain the source's ocean constraint, including sphere mode. These are procedural approximations, not a scientific climate simulator. A custom physical palette must retain the required biomes; renaming one preserves its `environmentType` mapping.
 
-- [Comprehensive platform plan](docs/PLATFORM_PLAN.md): product workflows, domain features, historical semantics, architecture, persistence, implementation phases and acceptance gates.
-- [Assessment of all 80 reference repositories](docs/REPOSITORY_ASSESSMENT.md): useful ideas, reuse candidates, exclusions and optional service decisions for every checkout.
-- [Specification coverage](docs/SPECIFICATION_COVERAGE.md): all 65 specification sections, first-release requirements and resolved ambiguities.
-- [Research inventory](docs/research/repository-inventory.json): local origins, revisions and evidence paths. Research scripts expect the original sibling repositories in the surrounding worldbuilding directory.
+## Architecture
+
+Enable **World → Map → Real-world geology & climate** for derived climate zones, explicit rivers, sediment-driven dunes, tectonic volcanoes, and water/fertility-dependent farms and villages. View exposes every underlying field, including wind arrows and climate categories. The switch is saved; switching it off keeps the earlier physical model available. See [the guide audit and implementation](docs/GEOSPATIAL_REALISM.md) for the causal rules, calibration tests and model limits.
+
+`src/App.jsx` renders the interface in React. `src/terrain/controller.js` mounts and disposes the original canvas/editor interactions using a React effect. Rendering stays in the browser; generation, stepping, cleanup, painting, and undo execute in Go through `src/terrain/api.js`. Client solver helpers only compile palette/display data and calculate hover probabilities; there is no browser generation fallback.
+
+`internal/terrain/` contains the native Go algorithms and embedded default palette. `internal/httpapi/` owns isolated, serialized map sessions and validates API inputs. `cmd/kriemhild/` serves the API and built frontend. The backend has no third-party Go dependencies or JavaScript runtime.
+
+Use **View ? Save ? Save world ZIP** to preserve a complete world, explored detail and edits. **Open world ZIP** or **Open world folder** restores the stored data after a server restart without regenerating the world or depending on its old server cache. See [Portable world projects](docs/WORLD_PROJECTS.md) for the manifest, chunks, hierarchy and validation. Unsaved sessions and undo history remain session-local. Sessions expire after 30 minutes of inactivity and are reclaimed when creating a new map. Palette edits, generation settings, seed and display settings persist in browser local storage under KRIEMHILD-specific keys. This is a local application; it starts on the loopback interface.
+
+## Validation
+
+```sh
+go test ./...
+go vet ./...
+npm test
+npm run build
+```
+
+`npm test` builds a separate Go test server. WFC retains exact domain/statistic comparisons against the JavaScript reference; physical generation is checked for determinism, consistent water surfaces and preset composition. Go tests check landmass distribution, mountains, lowland/depth variation, dry/wet basins, drainage and reef habitats. Browser audits exercise modes, presets, overlays, editing and persistence. See [the migration analysis](docs/TERRAINGEN_ANALYSIS.md) for compatibility details.
+
+
+Physical maps now support hierarchical exploration in 2D and 3D: scroll toward the cursor to reveal deterministic detail, drag to navigate, and use World view to return. Eight refinement bands preserve parent elevations, water bodies and drainage, with World through Maximum detail labels. See [Hierarchical terrain exploration](docs/HIERARCHICAL_DETAIL.md) for the model, controls, API and current limits.

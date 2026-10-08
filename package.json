@@ -1,17 +1,22 @@
 {
   "name": "kriemhild",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "demo": "node scripts/tasks.mjs demo",
-    "benchmark": "node scripts/benchmark.mjs",
-    "package": "node scripts/package.mjs",
-    "notices": "node scripts/notices.mjs",
-    "setup": "node scripts/tasks.mjs setup",
-    "build": "node scripts/tasks.mjs build",
-    "start": "node scripts/tasks.mjs start",
-    "test": "node scripts/tasks.mjs test",
-    "test:e2e": "node scripts/tasks.mjs e2e",
-    "format": "node scripts/tasks.mjs format"
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "test": "node --test tests/*.test.mjs",
+    "start": "node scripts/start.mjs"
+  },
+  "dependencies": {
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "three": "0.170.0",
+    "delaunator": "5.0.1"
+  },
+  "devDependencies": {
+    "vite": "^7.3.0",
+    "@vitejs/plugin-react": "^5.1.0"
   }
 }

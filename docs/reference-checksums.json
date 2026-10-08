@@ -1,0 +1,46 @@
+﻿[
+    {
+        "file":  "editor.js",
+        "sha256":  "77760ddae6fb5ef6a546e665b0b231c0f9c38cc16a53d132d2678abf4113b21b"
+    },
+    {
+        "file":  "environment.js",
+        "sha256":  "e6add786e2cadcd2384347c0a2be1f136ebb9f03d69c6bf65ceea1371f389d33"
+    },
+    {
+        "file":  "index.html",
+        "sha256":  "2219345aef755cf1ca47ed68d928575be9404ed0d44e7900bc7db0f452ca376a"
+    },
+    {
+        "file":  "main.js",
+        "sha256":  "46af0a9316cea7b3513a98c0b4910ba3db7b4346c93768c263a4469a21cb71b6"
+    },
+    {
+        "file":  "patterns.js",
+        "sha256":  "44fc2ff6dccd9a4b3edae912415c099845fe826c7491258653dca52d3886832e"
+    },
+    {
+        "file":  "presets.js",
+        "sha256":  "1df44acb431cb1e99bd4d6a8e6394257e676635f85debee50531d434bf440293"
+    },
+    {
+        "file":  "style.css",
+        "sha256":  "9f579a5e1d2be7f435a8bec096b4966f65a5be80134d6fb170853e55318a50c3"
+    },
+    {
+        "file":  "svgexport.js",
+        "sha256":  "d050b6c9aa3bd544763a376aa94eac09ba0763ff89627f4f6e2a046171137527"
+    },
+    {
+        "file":  "tiles.json",
+        "sha256":  "3f5d0c65d8f4e9b1daefcd90ed468f8c293a71e0a1221817a4724f4ebb336b9e"
+    },
+    {
+        "file":  "view3d.js",
+        "sha256":  "48e02c997998b0917fc6395085a39a308ef7328c8ef2eb281fbe84ea55679012"
+    },
+    {
+        "file":  "wfc.js",
+        "sha256":  "d0e669a3fcb82e01b8c6170237ef9564803e6f5f9a26c1105d22ec9a6fe39d33"
+    }
+]

@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Terrain Generator</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- three.js for the 3D view; only downloaded the first time 3D is switched on -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <main class="app">
+    <section class="stage">
+      <div class="canvas-wrap">
+        <canvas id="map" aria-label="Generated terrain map"></canvas>
+      </div>
+      <div class="toolbar">
+        <label class="check"><input id="brushOn" type="checkbox"> Brush <kbd>B</kbd></label>
+        <span class="swatch" id="brushSwatch"></span>
+        <select id="brushType" aria-label="Terrain type to paint"></select>
+        <label class="tool-size">Size
+          <input id="brushSize" type="range" min="0" max="12" step="1" value="2">
+          <output id="brushSizeOut"></output>
+        </label>
+        <button id="undo" type="button" title="Undo the last stroke (Ctrl+Z)" disabled>Undo</button>
+      </div>
+      <div id="brushCursor" hidden></div>
+      <div class="hover" id="hover">Hover over a cell to see what it can still become.</div>
+    </section>
+
+    <aside class="panel">
+      <header class="panel-head">
+        <h1>Terrain Generator</h1>
+        <label class="preset">
+          <span>Preset</span>
+          <select id="preset" aria-describedby="presetDesc"></select>
+        </label>
+        <p class="preset-desc" id="presetDesc"></p>
+      </header>
+
+      <div class="action-bar">
+        <div class="actions">
+          <button id="generate" class="primary" title="Generate a new map (G)">Generate</button>
+          <button id="pause" title="Pause or resume (Space)">Pause</button>
+          <button id="step" title="Collapse one cell (S)">Step</button>
+          <button id="cleanup" title="Run one cleanup pass on the finished map (C)" disabled>Clean up</button>
+        </div>
+        <label class="seed-row">
+          <span>Seed</span>
+          <input id="seed" type="text" placeholder="random each time" spellcheck="false">
+        </label>
+        <details class="status">
+          <summary id="statusLine">Loading…</summary>
+          <dl class="stats" id="stats"></dl>
+        </details>
+      </div>
+
+      <div class="error" id="error" hidden></div>
+
+      <nav class="tabs" role="tablist" aria-label="Settings">
+        <button role="tab" id="tab-world" aria-controls="panel-world" aria-selected="true">World</button>
+        <button role="tab" id="tab-terrain" aria-controls="panel-terrain" aria-selected="false" tabindex="-1">Terrain</button>
+        <button role="tab" id="tab-generator" aria-controls="panel-generator" aria-selected="false" tabindex="-1">Generator</button>
+        <button role="tab" id="tab-view" aria-controls="panel-view" aria-selected="false" tabindex="-1">View</button>
+      </nav>
+
+      <div class="tab-body">
+      <!-- World: what the map is -->
+      <section class="tab-panel" id="panel-world" role="tabpanel" aria-labelledby="tab-world">
+        <section class="group">
+          <h2>Map</h2>
+          <label class="check"><input id="environment" type="checkbox" checked> Physical environment</label>
+          <p class="hint">Continuous elevation, plate boundaries, wind, rain shadows and drainage. All land is enclosed by an ocean frame. Uncheck for original adjacency rules.</p>
+          <div class="row3"><label>Land %<input id="landCoverage" type="number" min="1" max="75" value="42"></label><label>Plates<input id="plateCount" type="number" min="3" max="32" value="12"></label></div>
+          <div class="row3"><label>Temperature offset ?C<input id="temperatureOffset" type="number" min="-25" max="25" value="0"></label><label>Rain multiplier<input id="rainfall" type="number" min="0.1" max="3" step="0.1" value="1"></label></div>
+          <div class="row3">
+            <label>Width <input id="width" type="number" min="16" max="256" value="160"></label>
+            <label>Height <input id="height" type="number" min="16" max="256" value="100"></label>
+            <label>Cell px <input id="cellSize" type="number" min="1" max="40" value="6"></label>
+          </div>
+          <label class="field shape-field">Shape
+            <select id="shape">
+              <option value="flat">Flat</option>
+              <option value="sphere">Sphere (edges wrap around; a globe in 3D)</option>
+            </select>
+          </label>
+        </section>
+
+        <section class="group">
+          <div class="group-head">
+            <h2>Continental layer</h2>
+            <label class="switch" title="Random water, land, desert… points that steer each area"><input id="continents" type="checkbox" aria-label="Continental layer" checked><span></span></label>
+          </div>
+          <label class="field slider-label" for="contPoints">Points</label>
+          <div class="speed">
+            <input id="contPoints" type="range" min="1" max="40" step="1" value="12">
+            <output id="contPointsOut"></output>
+          </div>
+          <label class="field slider-label" for="contStrength">Strength: how hard cells lean toward the nearest points' kind</label>
+          <div class="speed">
+            <input id="contStrength" type="range" min="0" max="20" step="0.5" value="5">
+            <output id="contStrengthOut"></output>
+          </div>
+          <details class="sub-editor">
+            <summary>Kinds and spawn odds</summary>
+            <div class="group-head sub-head">
+              <span class="hint-inline">Each point picks a kind by these odds.</span>
+              <button id="addKind" class="small" type="button">+ Add kind</button>
+            </div>
+            <ul class="kinds" id="kinds"></ul>
+            <p class="hint">The two most likely kinds always get at least one point. Assign terrain types to a kind in the Terrain tab.</p>
+          </details>
+        </section>
+
+        <section class="group">
+          <div class="group-head">
+            <h2>Legacy climate bands</h2><p class="hint">Band weights apply only when Physical environment is off. In physical mode, only the latitude layout below is used.</p>
+            <label class="switch" title="Latitude bands from the equator to the poles"><input id="climate" type="checkbox" aria-label="Climate zones" checked><span></span></label>
+          </div>
+          <label class="field">Equator
+            <select id="climLayout">
+              <option value="both">Across the middle (poles at top and bottom)</option>
+              <option value="north">Along the bottom (pole at the top)</option>
+            </select>
+          </label>
+          <label class="field slider-label" for="climStrength">Strength: 1 = multipliers as set, 2 = squared, 0 = off</label>
+          <div class="speed">
+            <input id="climStrength" type="range" min="0" max="5" step="0.1" value="2">
+            <output id="climStrengthOut"></output>
+          </div>
+          <details class="sub-editor">
+            <summary>Zones, from the equator to the poles</summary>
+            <ul class="types zones" id="zones"></ul>
+            <p class="hint">Click a zone to edit it. Each zone multiplies continental kinds' spawn odds and terrain types' weights: ×1 = no change, ×0 = never.</p>
+          </details>
+        </section>
+      </section>
+
+      <!-- Terrain: the cell types and their rules -->
+      <section class="tab-panel" id="panel-terrain" role="tabpanel" aria-labelledby="tab-terrain" hidden>
+        <section class="group">
+          <div class="group-head">
+            <h2>Terrain types</h2>
+            <button id="addType" class="small" type="button">+ Add type</button>
+          </div>
+          <ul class="types" id="types"></ul>
+          <p class="hint">Click a type to edit its colour, weight, neighbours, texture and 3D height. Changes apply right away and are saved in this browser.</p>
+          <div class="actions small-actions">
+            <button id="exportJson" type="button" title="Download the current types as tiles.json">Export</button>
+            <label class="button">Import<input id="importJson" type="file" accept=".json,application/json" hidden></label>
+            <button id="resetTypes" type="button" title="Throw away your edits and load tiles.json">Reset to defaults</button>
+          </div>
+        </section>
+      </section>
+
+      <!-- Generator: how the map gets filled in -->
+      <section class="tab-panel" id="panel-generator" role="tabpanel" aria-labelledby="tab-generator" hidden>
+        <section class="group">
+          <h2>Algorithm</h2>
+          <label class="field">Next cell to collapse
+            <select id="selection">
+              <option value="random">Random cell in superposition</option>
+              <option value="entropy">Fewest options first (classic WFC)</option>
+            </select>
+          </label>
+          <label class="field slider-label" for="radius">Neighbour radius: which cells the rules apply to</label>
+          <div class="speed">
+            <input id="radius" type="range" min="0" max="1" step="1" value="1">
+            <output id="radiusOut"></output>
+          </div>
+        </section>
+
+        <section class="group">
+          <div class="group-head">
+            <h2>Stability</h2>
+            <label class="switch" title="Cells lean toward what their neighbours already are"><input id="stability" type="checkbox" aria-label="Stability" checked><span></span></label>
+          </div>
+          <div class="speed">
+            <input id="stabilityStrength" type="range" min="0" max="300" step="1" value="30" aria-label="Stability strength">
+            <output id="stabilityOut"></output>
+          </div>
+        </section>
+
+        <section class="group">
+          <h2>Cleanup</h2>
+          <label class="field">Passes after generating
+            <input id="cleanupPasses" type="number" min="0" max="50" value="2"
+                   title="Each pass turns lone cells into the type that surrounds them, where the rules allow it">
+          </label>
+        </section>
+
+        <section class="group">
+          <h2>Speed</h2>
+          <div class="speed">
+            <input id="speed" type="range" min="0" max="100" value="45" aria-label="Cells per frame">
+            <output id="speedOut"></output>
+          </div>
+          <label class="check"><input id="instant" type="checkbox"> Instant (skip the animation)</label>
+        </section>
+      </section>
+
+      <!-- View: how the map is drawn and saved -->
+      <section class="tab-panel" id="panel-view" role="tabpanel" aria-labelledby="tab-view" hidden><section class="group"><h2>Environmental overlay</h2><select id="environmentOverlay"><option value="terrain">Terrain</option><option value="temperature">temperature</option><option value="summer">summer</option><option value="winter">winter</option><option value="precipitation">precipitation</option><option value="elevation">elevation</option><option value="windX">windX</option><option value="windStrength">windStrength</option><option value="moisture">moisture</option><option value="aridity">aridity</option><option value="plate">plate</option><option value="boundary">boundary</option><option value="bathymetry">bathymetry</option><option value="flow">flow</option><option value="accumulation">accumulation</option><option value="groundwater">groundwater</option><option value="snow">snow</option><option value="glacier">glacier</option><option value="dune">dune</option><option value="reef">reef</option><option value="volcano">volcano</option><option value="sediment">sediment</option><option value="fertility">fertility</option><option value="mesa">mesa</option><option value="oasis">oasis</option><option value="wetland">wetland</option><option value="farmland">farmland</option><option value="settlement">settlement</option><option value="lava">lava</option><option value="ash">ash</option><option value="lake">lake</option><option value="salinity">salinity</option><option value="clarity">clarity</option></select></section>
+        <section class="group">
+          <div class="group-head">
+            <h2>Voronoi cells</h2>
+            <label class="switch" title="Organic cell shapes instead of squares"><input id="voronoi" type="checkbox" aria-label="Voronoi cells" checked><span></span></label>
+          </div>
+          <label class="field slider-label" for="jitter">Point offset: how far each cell's point moves from its centre</label>
+          <div class="speed">
+            <input id="jitter" type="range" min="0" max="1" step="0.01" value="0.35">
+            <output id="jitterOut"></output>
+          </div>
+        </section>
+
+        <section class="group">
+          <div class="group-head">
+            <h2>Textures</h2>
+            <label class="switch" title="Repeating icons per terrain type"><input id="textures" type="checkbox" aria-label="Textures" checked><span></span></label>
+          </div>
+          <label class="field slider-label" for="iconSize">Icon size</label>
+          <div class="speed">
+            <input id="iconSize" type="range" min="8" max="40" step="1" value="16">
+            <output id="iconSizeOut"></output>
+          </div>
+          <label class="check"><input id="contShow" type="checkbox"> Show the continental points</label>
+        </section>
+
+        <section class="group">
+          <div class="group-head">
+            <h2>3D view</h2>
+            <label class="switch" title="Show the map as a landscape (or a globe for sphere worlds)"><input id="view3d" type="checkbox" aria-label="3D view"><span></span></label>
+          </div>
+          <label class="field slider-label" for="height3d">Height exaggeration</label>
+          <div class="speed">
+            <input id="height3d" type="range" min="0" max="3" step="0.1" value="1">
+            <output id="height3dOut"></output>
+          </div>
+          <button id="resetCamera" class="small" type="button" title="Back to the starting angle">Reset camera</button>
+        </section>
+
+        <section class="group">
+          <h2>Save</h2>
+          <div class="save-row">
+            <button id="savePng" type="button">PNG image</button>
+            <button id="saveSvg" type="button" title="Vector map: Voronoi shapes, flat colours (no textures)">SVG vector</button>
+          </div>
+        </section>
+      </section>
+      </div>
+    </aside>
+  </main>
+
+  <script src="wfc.js"></script>
+  <script src="environment.js"></script>
+  <script src="patterns.js"></script>
+  <script src="presets.js"></script>
+  <script src="editor.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
