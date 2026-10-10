@@ -5,7 +5,7 @@ COPY package.json package-lock.json ./
 RUN npm ci
 COPY index.html vite.config.js ./
 COPY src ./src
-COPY tests/detail-camera.test.mjs tests/water-surface.test.mjs tests/autosave.test.mjs ./tests/
+COPY tests/detail-camera.test.mjs tests/water-surface.test.mjs tests/autosave.test.mjs tests/world-project.test.mjs ./tests/
 RUN node --test tests/*.test.mjs && npm run build
 
 FROM --platform=$BUILDPLATFORM golang:1.27-alpine AS backend

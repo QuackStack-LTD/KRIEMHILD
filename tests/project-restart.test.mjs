@@ -27,15 +27,17 @@ test('World ZIP survives deletion of the original session and a Go server proces
     const cell=state.dom.findIndex(mask=>mask!==0),type=31-Math.clz32(state.dom[cell]);
     const painted=await json(`sessions/${initial.id}/paint`,{cells:[cell],type});assert.equal(painted.painted,true);
     state=painted.state;while(state.status==='running')state=(await json(`sessions/${initial.id}/step`,{count:10000})).state;
-    // Nothing has been exported: server autosaves alone must survive a real restart.
-    await json(`sessions/${initial.id}/autosave`,{ui:{seedUsed:123,camera2d:{center:{x:12,y:10},scale:200}}});
+    // Draft work must not enter the database; explicit Save survives a real restart.
+    await json(`sessions/${initial.id}/view`,{ui:{seedUsed:123,camera2d:{center:{x:12,y:10},scale:200}}});
+    assert.equal((await fetch(origin+'/api/projects').then(r=>r.json())).projects.length,0);
+    await json(`sessions/${initial.id}/save`,{});
     const worlds=await fetch(origin+'/api/projects').then(r=>r.json());
     await stop();await launch();
-    const autosaved=await json(`projects/${worlds.projects[0].id}/open`,{});
-    assert.deepEqual(autosaved.environment,initial.environment);assert.deepEqual(autosaved.dom,state.dom);assert.deepEqual(autosaved.pinned,state.pinned);
-    assert.equal(autosaved.projectUI.camera2d.scale,200);
-    assert.equal(await fetch(origin+`/api/sessions/${autosaved.id}`+tilePath).then(r=>r.text()),tile);
-    initial.id=autosaved.id;
+    const stored=await json(`projects/${worlds.projects[0].id}/open`,{});
+    assert.deepEqual(stored.environment,initial.environment);assert.deepEqual(stored.dom,state.dom);assert.deepEqual(stored.pinned,state.pinned);
+    assert.equal(stored.projectUI.camera2d.scale,200);
+    assert.equal(await fetch(origin+`/api/sessions/${stored.id}`+tilePath).then(r=>r.text()),tile);
+    initial.id=stored.id;
     const saved=await fetch(origin+`/api/sessions/${initial.id}/project`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ui:{seedUsed:123,camera2d:{center:{x:12,y:10},scale:200}}})});
     assert.equal(saved.status,200);const archive=Buffer.from(await saved.arrayBuffer());
     assert.ok(archive.includes(Buffer.from('detail/tiles/5/12/10.json')),'ZIP omitted the explored tile');
@@ -46,6 +48,7 @@ test('World ZIP survives deletion of the original session and a Go server proces
     assert.equal(restored.projectUI.camera2d.scale,200);assert.ok(restored.storedDetailCount>=6);
     const restoredTile=await fetch(origin+`/api/sessions/${restored.id}`+tilePath).then(r=>r.text());assert.equal(restoredTile,tile);
     const missing=await fetch(origin+`/api/sessions/${restored.id}/detail/4/2/2`);assert.equal(missing.status,200);
+    assert.equal((await fetch(origin+'/api/projects').then(r=>r.json())).projects.length,0,'Import/exploration must stay draft-only');
     await fetch(origin+`/api/sessions/${restored.id}`,{method:'DELETE'});
   }finally{await stop();fs.rmSync(databaseDir,{recursive:true,force:true});}
 });

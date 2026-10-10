@@ -87,6 +87,8 @@ func (m *DetailModel) landformPotential(x, y float64) float64 {
 }
 
 type riverSample struct {
+	regime                                              string
+	depth                                               float64
 	valid                                               bool
 	distance, width, valley, level, discharge, grade, t float64
 }
@@ -115,29 +117,13 @@ func (m *DetailModel) riverAt(x, y float64) riverSample {
 	score := math.Inf(1)
 	for _, index := range m.channels[m.cell(x, y)] {
 		f := m.Features[index]
-		if f.Discharge < 2 {
+		if f.Discharge < 2 && f.Kind != "canal" {
 			continue
 		} // Small surface streams do not carve major valleys.
-		for k := 1; k < len(f.Path); k++ {
-			a, b := f.Path[k-1], f.Path[k]
-			dx, dy := b[0]-a[0], b[1]-a[1]
-			length := dx*dx + dy*dy
-			if length == 0 {
-				continue
-			}
-			t := clamp(((x-a[0])*dx+(y-a[1])*dy)/length, 0, 1)
-			distance := math.Hypot(x-a[0]-t*dx, y-a[1]-t*dy)
-			width := f.Width
-			if len(f.Widths) == len(f.Path) {
-				width = f.Widths[k-1]*(1-t) + f.Widths[k]*t
-			}
-			valley := width*(2.5+3/(1+f.Grade/100)) + .04
-			// The nearest valley in units of its width wins, so a tiny tributary cannot
-			// suppress the receiving river's broad floodplain at a confluence.
-			if s := distance / valley; s < score {
-				score = s
-				best = riverSample{true, distance, width, valley, a[2]*(1-t) + b[2]*t, f.Discharge, f.Grade, (float64(k-1) + t) / float64(len(f.Path)-1)}
-			}
+		r := SampleChannel(f, x, y)
+		if r.Valid && r.Distance/r.Valley < score {
+			score = r.Distance / r.Valley
+			best = riverSample{valid: true, distance: r.Distance, width: r.Width, valley: r.Valley, level: r.Level, discharge: r.Discharge, grade: r.Grade, t: r.T, regime: f.Regime, depth: f.Depth}
 		}
 	}
 	return best
@@ -169,13 +155,12 @@ func (m *DetailModel) residual(x, y float64) float64 {
 		// Existing source and confluence anchors survive subdivision as well.
 		relief *= smooth(math.Hypot(r.distance, math.Min(r.t, 1-r.t)) / .025)
 	}
-	if r.valid && r.discharge >= 2 && p.WaterBody == 0 {
-		valley := math.Exp(-math.Pow(r.distance/r.valley, 2) * 2)
+	if r.valid && (r.discharge >= 2 || r.depth > 0) && p.WaterBody == 0 {
+		target, valley := ChannelBed(ChannelSample{Valid: true, Distance: r.distance, Width: r.width, Valley: r.valley, Level: r.level, Discharge: r.discharge, Grade: r.grade, Depth: r.depth})
 		// Preserve root samples while incising the intervening reach. The water
 		// profile remains the inherited downhill hydraulic grade, not the local bed.
 		anchorFade := smooth(math.Hypot(math.Min(a, 1-a), math.Min(b, 1-b)) / .16)
-		incision := math.Min(110, 7+6*math.Sqrt(r.discharge)) * (1 + math.Min(1, r.grade/350))
-		target := r.level + 18*math.Pow(r.distance/r.valley, 2) - incision*math.Exp(-math.Pow(r.distance/(r.width*.6+.012), 2))
+
 		// Erosion lowers the channel; alluvial deposition levels adjacent local
 		// hollows into its floodplain, avoiding perched water beside a lower bank.
 		relief += (target - p.Elevation - relief) * valley * anchorFade

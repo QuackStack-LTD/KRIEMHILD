@@ -26,7 +26,7 @@ func RestoreDetailModel(e *Environment, s DetailState) (*DetailModel, error) {
 	}
 	ids := map[string]bool{}
 	for _, f := range s.Features {
-		if f.ID == "" || ids[f.ID] || f.ParentID == "" || f.Kind != "river" || len(f.Path) < 2 || len(f.Path) > 4096 || (len(f.Widths) != 0 && len(f.Widths) != len(f.Path)) {
+		if f.ID == "" || ids[f.ID] || f.ParentID == "" || (f.Kind != "river" && f.Kind != "canal") || len(f.Path) < 2 || len(f.Path) > 4096 || (len(f.Widths) != 0 && len(f.Widths) != len(f.Path)) {
 			return nil, fmt.Errorf("invalid detail feature")
 		}
 		ids[f.ID] = true
@@ -155,6 +155,11 @@ func RestoreProjectSolver(s *Solver, c Config, e *Environment, edit Snapshot) er
 		for _, reef := range e.Reefs {
 			if !cellsValid(reef.Cells) {
 				return fmt.Errorf("invalid reef region")
+			}
+		}
+		if e.Hydrology != nil {
+			if diagnostics := e.ValidateHydrology(); len(diagnostics) > 0 {
+				return fmt.Errorf("invalid hydrology %s: %s", diagnostics[0].Object, diagnostics[0].Reason)
 			}
 		}
 		if e.Options.Realism && e.Entities == nil {

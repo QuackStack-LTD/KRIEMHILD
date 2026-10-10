@@ -1,13 +1,15 @@
+import {riverStyle} from './feature-style.js';
 import * as THREE from 'three';
 import {DetailTiles,tileKey} from './detail-tiles.js';
 import {makeDetailPalette,featureTexture} from './detail-render.js';
 import {detailAtScale,detailName,smooth} from './map-camera.js';
 import {clipWetTriangle} from './detail-water.js';
+import {meshSurface} from './mesh-surface.js';
 
 // A covering quadtree: parent quadrants disappear only after the corresponding
 // child is available. Border vertices stitch to the actual parent edge.
 export function createDetailScene(scene,camera,renderer,solver){
-  let dirty=true,lastSignature='',lastLayer='',palette=null,disposed=false,revision=0;
+  let dirty=true,lastSignature='',lastLayer='',palette=null,disposed=false,revision=0,surfaceVersion=0,viewport=null;
   const store=new DetailTiles(solver,()=>{dirty=true;}),group=new THREE.Group(),meshes=new Map();scene.add(group);
   const W=solver.W,H=solver.H,sphere=solver.wrapX,radius=W/(2*Math.PI),ray=new THREE.Raycaster(),plane=new THREE.Plane(new THREE.Vector3(0,1,0),0),ball=new THREE.Sphere(new THREE.Vector3(),radius);
   function position(x,y,z){
@@ -35,9 +37,10 @@ export function createDetailScene(scene,camera,renderer,solver){
       else if(bounds.x<0)regions=[{...bounds,x:0,width:bounds.x+bounds.width},{...bounds,x:W-1+bounds.x,width:-bounds.x}];
       else if(bounds.x+bounds.width>W-1)regions=[{...bounds,width:W-1-bounds.x},{...bounds,x:0,width:bounds.x+bounds.width-(W-1)}];
     }
+    viewport={bounds,regions,detail,pixels};
     const signature=[Math.round(bounds.x*16),Math.round(bounds.y*16),Math.round(bounds.width*16),Math.round(bounds.height*16),Math.round(detail*64),scale,layer].join('/');
     if(signature!==lastSignature){store.request(regions,pixels);dirty=true;lastSignature=signature;}
-    if(!dirty)return;dirty=false;
+    if(!dirty)return;dirty=false;surfaceVersion++;
     store.request(regions,pixels);
     if(layer!==lastLayer||!palette){palette=makeDetailPalette(solver,layer);lastLayer=layer;}
     const active=new Map();
@@ -104,11 +107,16 @@ export function createDetailScene(scene,camera,renderer,solver){
       }
       const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geo.setIndex(indices);geo.computeVertexNormals();
       const texture=new THREE.CanvasTexture(featureTexture(tile,solver,palette,layer,blend,detail));texture.colorSpace=THREE.SRGBColorSpace;
-      const mesh=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({map:texture,roughness:.95,side:THREE.DoubleSide}));mesh.userData.stamp=stamp;group.add(mesh);meshes.set(key,mesh);
-      if(water.length){const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(water,3));geometry.computeVertexNormals();mesh.add(new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color:0x2a6fc9,transparent:true,opacity:.22,roughness:.3,side:THREE.DoubleSide,depthWrite:false})));}
+      const mesh=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({map:texture,roughness:.95,side:THREE.DoubleSide}));mesh.userData.stamp=stamp;mesh.userData.tile=tile;group.add(mesh);meshes.set(key,mesh);
+      if(water.length){const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(water,3));geometry.computeVertexNormals();mesh.add(new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color:riverStyle.surface,transparent:true,opacity:.22,roughness:.3,side:THREE.DoubleSide,depthWrite:false})));}
     }
     const status=document.getElementById('detailStatus');if(status)status.textContent=`${detailName(detail)} · 3D${store.pending.size?' · refining…':''}${store.error?' · '+store.error:''}`;
     renderer.domElement.dataset.detail=String(detail);renderer.domElement.dataset.tiles=String(active.size);
   }
-  return {update,refresh(){revision++;dirty=true;palette=null;lastSignature='';},meshes:()=>[...meshes.values()].flatMap(m=>[m,...m.children]),dispose(){disposed=true;store.dispose();for(const m of meshes.values())disposeMesh(m);meshes.clear();scene.remove(group);}};
+  function surfaceAt(x,y){
+    x=Math.max(0,Math.min(W-1-1e-9,x));y=Math.max(0,Math.min(H-1-1e-9,y));
+    for(let level=8;level>=0;level--){const step=2**-level,tx=Math.floor(x/(32*step)),ty=Math.floor(y/(32*step)),mesh=meshes.get(tileKey(level,tx,ty));if(mesh)return meshSurface(mesh.geometry.attributes.position.array,33,33,x/step-tx*32,y/step-ty*32);}
+    return null;
+  }
+  return {update,surfaceAt,coordinates,viewport:()=>viewport,surfaceVersion:()=>surfaceVersion,surfaceStep:()=>Math.min(1,...[...meshes.values()].map(m=>m.userData.tile.step)),invalidate(bounds){store.invalidate(bounds);dirty=true;lastSignature='';},refresh(){revision++;dirty=true;palette=null;lastSignature='';},meshes:()=>[...meshes.values()].flatMap(m=>[m,...m.children]),terrainMeshes:()=>[...meshes.values()],dispose(){disposed=true;store.dispose();for(const m of meshes.values())disposeMesh(m);meshes.clear();scene.remove(group);}};
 }

@@ -1,8 +1,14 @@
 # KRIEMHILD
 
-React frontend and native Go backend reproducing the local **TerrainGenOnSteroids** application. This project is self-contained; the neighboring source directory is not needed to build or run it.
+React frontend and native Go backend for a shared worldbuilding project, preserving the **TerrainGenOnSteroids** generation engine. This project is self-contained; the neighboring source directory is not needed to build or run it.
+
+The opening page is a **Project Hub** with named recent worlds and ZIP/folder import. **World Generation** contains the existing natural-world engine. **World Builder** edits the same world with settlements, roads, buildings, countries, parent/child entities, layers, undo/redo and local non-destructive landscape tools. Switching editors never regenerates the map. See [application architecture and Builder controls](docs/APPLICATION_ARCHITECTURE.md).
 
 ## Run
+
+Physical worlds use terrain- and climate-driven drainage, lake water budgets,
+groundwater springs and narrow, blended shore materials. See the
+[hydrology model, validation and compatibility notes](docs/HYDROLOGY.md).
 
 Install Node.js 22.12+ and Go 1.26+, then run from this folder:
 
@@ -43,7 +49,7 @@ On Windows, use `bin/kriemhild.exe`. Ship the binary with `dist/`; Node.js is on
 - Voronoi/square rendering, terrain textures, landscape/globe 3D, PNG and SVG export.
 - Shortcuts: **G** generate, **Space** pause/resume, **S** step, **C** cleanup, **B** brush, **Ctrl/Cmd+Z** undo.
 
-The app starts with the original terrain-rule engine. Presets compose with both Physical environment and Real-world geology & climate: selecting a preset keeps the switches enabled, and enabling physics keeps the preset selected. Each preset supplies land coverage, latitude, temperature, rainfall, plate activity and relief appropriate to its theme. Terrain weights, neighbor boosts, radius, stability and point count remain effective within environmental constraints. Turning physics off restores the named preset's original palette. Physical mode uses environmental masks instead of legacy adjacency/climate-band weights. Its Points control distributes land/ocean regions; higher counts generally produce smaller landmasses. High land coverage may still join them into a supercontinent.
+New worlds initially use the original terrain-rule engine. Presets compose with both Physical environment and Real-world geology & climate: selecting a preset keeps the switches enabled, and enabling physics keeps the preset selected. Each preset supplies land coverage, latitude, temperature, rainfall, plate activity and relief appropriate to its theme. Terrain weights, neighbor boosts, radius, stability and point count remain effective within environmental constraints. Turning physics off restores the named preset's original palette. Physical mode uses environmental masks instead of legacy adjacency/climate-band weights. Its Points control distributes land/ocean regions; higher counts generally produce smaller landmasses. High land coverage may still join them into a supercontinent.
 
 Physical elevation builds broad continental shelves, coastal lowlands, highlands and mountain systems before adding valleys, ridges and individual peaks. Mountain belts vary in width and height, with foothills and supporting terrain around their summits. Active margins and volcanic edifices explicitly permit steeper slopes. Reef development is restricted to coherent suitable regions rather than covering every warm coastline; the same seed reproduces these structures. Extreme elevations use a gradual height limit to avoid identical flat summits. The map shades elevation slopes; 3D uses the numerical elevations directly without the smoothing applied to discrete WFC tiles. **Relief %** adjusts mountain prominence.
 
@@ -55,9 +61,9 @@ Physical worlds have a 24,576-cell limit; rules-only worlds allow dimensions up 
 
 Enable **World → Map → Real-world geology & climate** for derived climate zones, explicit rivers, sediment-driven dunes, tectonic volcanoes, and water/fertility-dependent farms and villages. View exposes every underlying field, including wind arrows and climate categories. The switch is saved; switching it off keeps the earlier physical model available. See [the guide audit and implementation](docs/GEOSPATIAL_REALISM.md) for the causal rules, calibration tests and model limits.
 
-`src/App.jsx` renders the interface in React. `src/terrain/controller.js` mounts and disposes the original canvas/editor interactions using a React effect. Rendering stays in the browser; generation, stepping, cleanup, painting, and undo execute in Go through `src/terrain/api.js`. Client solver helpers only compile palette/display data and calculate hover probabilities; there is no browser generation fallback.
+`src/App.jsx` supplies routing and shared world context. `src/views/` contains the Project Hub, World Generation and World Builder. `src/terrain/controller.js` mounts and disposes the original generator interactions; `src/builder/` renders the authored world. Rendering stays in the browser; generation and world mutations execute in Go. Client solver helpers only compile palette/display data and calculate hover probabilities; there is no browser generation fallback.
 
-`internal/terrain/` contains the native Go algorithms and embedded default palette. `internal/httpapi/` owns isolated, serialized map sessions and validates API inputs. `internal/storage/` stores complete world projects using embedded SQLite or PostgreSQL. `cmd/kriemhild/` serves the API and built frontend. The backend uses pure-Go database drivers and needs no JavaScript runtime.
+`internal/terrain/` contains the native Go algorithms and embedded default palette. `internal/world/` owns authored entities, spatial indexes, layers, local terrain operations and persistent history. `internal/httpapi/` owns isolated, serialized map sessions and validates API inputs. `internal/storage/` stores complete world projects using embedded SQLite or PostgreSQL. `cmd/kriemhild/` serves the API and built frontend. The backend uses pure-Go database drivers and needs no JavaScript runtime.
 
 ## Docker and project database
 
@@ -67,11 +73,11 @@ Copy `.env.example` to `.env` and set a strong URL-safe PostgreSQL password. The
 docker compose up -d
 ```
 
-Open http://127.0.0.1:8124. The container serves both React and the Go API. Worlds, generation progress, edits and explored detail are saved automatically; camera and display changes save after a brief batching interval. **View → Save → Saved worlds** reopens earlier worlds after a restart, including unfinished generation. The autosave indicator reports pending writes or failures. ZIP export remains available for portable backups.
+Open http://127.0.0.1:8124. The container serves React and the Go API. Click **Save** in the top bar to store the world, generation progress, edits and explored detail. Generation, imports and exploration never save to the database automatically. **Projects / Recent Worlds** reopens saved projects. **Delete world** is available on project cards and in both editors. ZIP export remains a separate portable backup.
 
-Running the binary or image without `DATABASE_URL` still uses embedded SQLite. With PostgreSQL configured, it requires that database to be available. See [container setup and releases](docs/CONTAINERS.md) and [autosave storage design](docs/AUTOSAVE.md).
+Running the binary or image without `DATABASE_URL` still uses embedded SQLite. With PostgreSQL configured, it requires that database to be available. See [container setup and releases](docs/CONTAINERS.md) and [world saving and deletion](docs/AUTOSAVE.md).
 
-Use **View → Save → Save world ZIP** for a portable backup of a completed world, explored detail and edits. **Open world ZIP** or **Open world folder** restores it without regenerating geography or depending on old server caches. See [Portable world projects](docs/WORLD_PROJECTS.md) for the manifest and validation. Active sessions expire after 30 minutes of inactivity, but their autosaved worlds remain in the database. The visible undo history resets when reopening. This is a local application; it starts on the loopback interface.
+Use **View → Save → Export world ZIP** for a portable backup of a completed world, explored detail and edits. **Open world ZIP** or **Open world folder** restores it without regenerating geography or depending on old server caches. See [Portable world projects](docs/WORLD_PROJECTS.md) for the manifest and validation. Active sessions expire after 30 minutes of inactivity, and only explicitly saved versions remain in the database. The original Generation brush toolbar resets its visible undo stack when reopening; Builder undo/redo persists. This is a local application; it starts on the loopback interface.
 
 ## Validation
 

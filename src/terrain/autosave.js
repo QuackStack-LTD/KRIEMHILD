@@ -1,5 +1,5 @@
-// Serialize view writes, coalesce continuous gestures, and retain failed saves.
-// Engine mutations and explored tiles are committed independently by the server.
+// Serialize session-only view updates and coalesce continuous gestures.
+// This queue never commits to the database; the explicit Save button does that.
 export class AutosaveQueue {
   constructor(send, report=()=>{}, delay=300) {
     this.send=send;this.report=report;this.delay=delay;this.pending=null;this.running=null;this.timer=0;this.closed=false;

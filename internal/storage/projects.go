@@ -18,6 +18,7 @@ import (
 
 type Project struct {
 	ID          string `json:"id"`
+	Name        string `json:"name"`
 	Seed        string `json:"seed"`
 	Width       int    `json:"width"`
 	Height      int    `json:"height"`
@@ -116,7 +117,7 @@ func (s *Store) migrate(ctx context.Context) error {
 	if err = tx.QueryRowContext(ctx, "SELECT COALESCE(MAX(version),0) FROM kriemhild_schema").Scan(&version); err != nil {
 		return err
 	}
-	if version > 2 {
+	if version > 3 {
 		return errors.New("database schema is newer than this server")
 	}
 	if _, err = tx.ExecContext(ctx, statements[1]); err != nil {
@@ -125,7 +126,12 @@ func (s *Store) migrate(ctx context.Context) error {
 	if _, err = tx.ExecContext(ctx, "CREATE TABLE IF NOT EXISTS kriemhild_world_parts (world_id TEXT NOT NULL REFERENCES kriemhild_projects(id) ON DELETE CASCADE, path TEXT NOT NULL, data BYTEA NOT NULL, PRIMARY KEY(world_id,path))"); err != nil {
 		return err
 	}
-	if _, err = tx.ExecContext(ctx, "INSERT INTO kriemhild_schema(version) VALUES(2) ON CONFLICT(version) DO NOTHING"); err != nil {
+	if version < 3 {
+		if _, err = tx.ExecContext(ctx, "ALTER TABLE kriemhild_projects ADD COLUMN name TEXT NOT NULL DEFAULT 'Unnamed World'"); err != nil {
+			return err
+		}
+	}
+	if _, err = tx.ExecContext(ctx, "INSERT INTO kriemhild_schema(version) VALUES(3) ON CONFLICT(version) DO NOTHING"); err != nil {
 		return err
 	}
 	return tx.Commit()
@@ -145,6 +151,11 @@ func (s *Store) Save(ctx context.Context, p Project, archive []byte) error {
 	if err != nil {
 		return err
 	}
+	if p.Name != "" {
+		if _, err = tx.ExecContext(ctx, "UPDATE kriemhild_projects SET name=$2 WHERE id=$1", p.ID, p.Name); err != nil {
+			return err
+		}
+	}
 	if _, err = tx.ExecContext(ctx, "DELETE FROM kriemhild_world_parts WHERE world_id=$1", p.ID); err != nil {
 		return err
 	}
@@ -153,7 +164,7 @@ func (s *Store) Save(ctx context.Context, p Project, archive []byte) error {
 
 // SaveParts atomically commits only the changed checkpoint, view or detail tiles.
 // Complete ZIP archives remain a backward-compatible import/export format.
-func (s *Store) SaveParts(ctx context.Context, p Project, parts map[string][]byte) error {
+func (s *Store) SaveParts(ctx context.Context, p Project, parts map[string][]byte, replace ...bool) error {
 	if p.ID == "" || len(parts) == 0 {
 		return errors.New("world identity and parts required")
 	}
@@ -167,8 +178,18 @@ func (s *Store) SaveParts(ctx context.Context, p Project, parts map[string][]byt
 	if err != nil {
 		return err
 	}
+	if len(replace) > 0 && replace[0] {
+		if _, err = tx.ExecContext(ctx, "DELETE FROM kriemhild_world_parts WHERE world_id=$1", p.ID); err != nil {
+			return err
+		}
+	}
 	for path, data := range parts {
 		if _, err = tx.ExecContext(ctx, `INSERT INTO kriemhild_world_parts(world_id,path,data) VALUES($1,$2,$3) ON CONFLICT(world_id,path) DO UPDATE SET data=excluded.data`, p.ID, path, data); err != nil {
+			return err
+		}
+	}
+	if p.Name != "" {
+		if _, err = tx.ExecContext(ctx, "UPDATE kriemhild_projects SET name=$2 WHERE id=$1", p.ID, p.Name); err != nil {
 			return err
 		}
 	}
@@ -196,7 +217,7 @@ func (s *Store) LoadParts(ctx context.Context, id string) (map[string][]byte, er
 	return parts, rows.Err()
 }
 func (s *Store) List(ctx context.Context) ([]Project, error) {
-	rows, err := s.db.QueryContext(ctx, "SELECT id,seed,width,height,detail_tiles,bytes,updated_at FROM kriemhild_projects ORDER BY updated_at DESC,id LIMIT 1000")
+	rows, err := s.db.QueryContext(ctx, "SELECT id,seed,width,height,detail_tiles,bytes,updated_at,name FROM kriemhild_projects ORDER BY updated_at DESC,id LIMIT 1000")
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +225,7 @@ func (s *Store) List(ctx context.Context) ([]Project, error) {
 	result := []Project{}
 	for rows.Next() {
 		var p Project
-		if err = rows.Scan(&p.ID, &p.Seed, &p.Width, &p.Height, &p.DetailTiles, &p.Bytes, &p.UpdatedAt); err != nil {
+		if err = rows.Scan(&p.ID, &p.Seed, &p.Width, &p.Height, &p.DetailTiles, &p.Bytes, &p.UpdatedAt, &p.Name); err != nil {
 			return nil, err
 		}
 		result = append(result, p)
@@ -215,4 +236,10 @@ func (s *Store) Load(ctx context.Context, id string) ([]byte, error) {
 	var archive []byte
 	err := s.db.QueryRowContext(ctx, "SELECT archive FROM kriemhild_projects WHERE id=$1", id).Scan(&archive)
 	return archive, err
+}
+
+// Foreign-key cascade removes all world data and explored tiles with the manifest.
+func (s *Store) Delete(ctx context.Context, id string) error {
+	_, err := s.db.ExecContext(ctx, "DELETE FROM kriemhild_projects WHERE id=$1", id)
+	return err
 }

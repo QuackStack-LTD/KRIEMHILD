@@ -87,6 +87,7 @@ func TestWorldProjectColdRestartRestoresStoredWorldAndDetail(t *testing.T) {
 		fieldCopy[name] = append([]float64{}, f...)
 	}
 	expected := v.solver.Snapshot()
+	expectedHydrology, _ := json.Marshal(v.solver.Environment.Hydrology)
 	worldID := v.worldID
 	count := len(v.tiles)
 	oldDir := v.dir
@@ -116,6 +117,10 @@ func TestWorldProjectColdRestartRestoresStoredWorldAndDetail(t *testing.T) {
 	}
 	if !reflect.DeepEqual(fieldCopy, loaded.solver.Environment.Fields) || !reflect.DeepEqual(expected, loaded.solver.Snapshot()) {
 		t.Fatal("stored world or edits changed on cold import")
+	}
+	loadedHydrology, _ := json.Marshal(loaded.solver.Environment.Hydrology)
+	if !bytes.Equal(expectedHydrology, loadedHydrology) || loaded.solver.Environment.Hydrology == nil {
+		t.Fatal("hydrological identities, budgets or network connections changed on cold import")
 	}
 	if loaded.base.Pinned[100] != 0 || loaded.solver.Pinned[100] != 1 {
 		t.Fatal("generated base and edit layer were conflated")
@@ -243,6 +248,27 @@ func TestStoredDetailEndpointReturnsArchiveBytes(t *testing.T) {
 	result, _ := io.ReadAll(w.Result().Body)
 	if w.Code != 200 || !bytes.Equal(result, original) {
 		t.Fatal("detail endpoint did not use durable tile store", w.Code)
+	}
+}
+
+func TestWorldProjectRejectsBrokenHydrologicalConnections(t *testing.T) {
+	v := projectFixture(t)
+	h := v.solver.Environment.Hydrology
+	if h == nil || len(h.Reaches) == 0 {
+		t.Fatal("fixture requires a connected river network")
+	}
+	h.Reaches[0].Downstream = "missing-receiver"
+	// Encoding recalculates archive checksums: the semantic validator must
+	// reject the broken graph even though all files are intact.
+	archive, err := encodeProject(v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if loaded, err := decodeProject(unzipProject(t, archive)); err == nil {
+		if loaded.dir != "" {
+			os.RemoveAll(loaded.dir)
+		}
+		t.Fatal("import accepted a river with no destination")
 	}
 }
 

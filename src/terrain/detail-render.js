@@ -1,13 +1,19 @@
-import {fieldColor} from './environment-view.js';
+import {biomeColor,coarseMaterial} from './biome-material.js';
+import {riverStyle} from './feature-style.js';
+import {fieldColor,riverSystemColor} from './environment-view.js';
 import {smooth} from './map-camera.js';
 
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 export function makeDetailPalette(solver,layer='terrain'){
   const ctx=document.createElement('canvas').getContext('2d',{willReadFrequently:true}),cache=new Map();
-  return Array.from({length:solver.N},(_,i)=>{
+  const materials={};
+  for(const type of solver.config.types){const key=type.environmentType||type.id;if(!['grass','forest','desert','mountain','tundra','snow','sand','swamp'].includes(key))continue;ctx.fillStyle=type.color;ctx.fillRect(0,0,1,1);materials[key]=[...ctx.getImageData(0,0,1,1).data].slice(0,3);}
+  const palette=Array.from({length:solver.N},(_,i)=>{
+    if(layer==='terrain'&&!solver.pinned?.[i]&&solver.environment?.fields.waterBody[i]===0)return biomeColor(coarseMaterial(solver.environment,i),materials);
     const type=solver.config.types[solver.typeAt(i)];const css=layer==='terrain'?(type?.color||'#7c9864'):(fieldColor(solver.environment,layer,i)||'#637b83');
     if(cache.has(css))return cache.get(css);ctx.fillStyle=css;ctx.fillRect(0,0,1,1);const rgb=[...ctx.getImageData(0,0,1,1).data].slice(0,3);cache.set(css,rgb);return rgb;
   });
+  palette.materials=materials;return palette;
 }
 
 function baseColor(solver,palette,x,y,wet){
@@ -31,15 +37,14 @@ export function tileImage(tile,solver,palette,layer,blend=1){
     if(layer==='terrain'){
       if(p.waterBody>0){const deep=clamp(Math.log1p(p.waterDepth)/9,0,1);rgb=[45-25*deep,140-96*deep,175-91*deep];}
       else {
-        // Material follows the sampled physical surface, not random colour spots.
-        const mix=(color,amount)=>{rgb=rgb.map((c,k)=>c+(color[k]-c)*clamp(amount,0,1));};
-        const parentMaterial=smooth((tile.level-2)/3),local=parentMaterial+(smooth((tile.level-1)/3)-parentMaterial)*blend;
-        const vegetation=p.vegetation??0;
-        if(p.temperature>0)mix([132-68*vegetation,122-18*vegetation,83-34*vegetation],local*.5);
-        mix([190,169,120],(p.sand||0)*local*.8);
-        mix([110,107,95],(p.rock||0)*local*.65);
-        mix([80,108,67],(p.floodplain||0)*local*.45);
-        if(p.riverDepth>0)mix([53,115,139],local);
+        const physical=biomeColor(p,palette.materials);
+        // The same material function is used at every scale. Parent blending
+        // controls geometry; there is no hard biome-dependent height reset.
+        rgb=physical;
+        // Explicit terrain painting stays an override, feathered against the
+        // surrounding physical materials instead of becoming a polygon edge.
+        if(solver.pinned){const x0=Math.floor(x),y0=Math.floor(y),a=x-x0,b=y-y0;let weight=0,paint=[0,0,0];for(const [dx,dy,t]of [[0,0,(1-a)*(1-b)],[1,0,a*(1-b)],[0,1,(1-a)*b],[1,1,a*b]]){const cell=Math.max(0,Math.min(solver.H-1,y0+dy))*solver.W+Math.max(0,Math.min(solver.W-1,x0+dx));if(!solver.pinned[cell])continue;weight+=t;for(let k=0;k<3;k++)paint[k]+=palette[cell][k]*t;}if(weight>0)rgb=rgb.map((c,k)=>c*(1-weight)+paint[k]);}
+        if(p.riverDepth>0)rgb=[57,127,158];
       }
       let dx=(height(j*n+Math.min(n-1,i+1))-height(j*n+Math.max(0,i-1)))/(tile.step*2);
       let dy=(height(Math.min(n-1,j+1)*n+i)-height(Math.max(0,j-1)*n+i))/(tile.step*2);
@@ -49,6 +54,11 @@ export function tileImage(tile,solver,palette,layer,blend=1){
       const normal=Math.sqrt(1+(dx*dx+dy*dy)/1600000);
       const shade=clamp(.55+(.65+(dx-dy)/2400)/normal,.42,1.24);
       rgb=rgb.map(c=>c*shade);
+    }else if(layer==='riverClass'||layer==='riverSystem'){
+      // Draw diagnostic channels as connected geometry over a quiet terrain
+      // silhouette, not as enlarged colored raster cells.
+      const high=clamp(p.elevation/4000,0,1)*20;
+      rgb=p.waterBody>0?[19,43,58]:[34+high,49+high,43+high];
     }else if(layer==='elevation'||layer==='bathymetry'||layer==='waterDepth'){
       const value=layer==='elevation'?(height(at)+12000)/20000:p.waterDepth/12000,t=clamp(value,0,1);
       rgb=[40+200*t,80+100*(1-Math.abs(t-.5)*2),200-160*t];
@@ -59,12 +69,13 @@ export function tileImage(tile,solver,palette,layer,blend=1){
 }
 
 export function drawDetailFeatures(ctx,tiles,camera,detail,layer){
-  if(!['terrain','river','accumulation'].includes(layer))return;
+  if(!['terrain','river','accumulation','watershed','riverClass','riverSystem'].includes(layer))return;
+  const debug=['riverClass','riverSystem'].includes(layer);
   const seen=new Set();ctx.save();
   for(const {tile,arrival} of tiles)for(const f of tile.features){
     if(seen.has(f.id))continue;seen.add(f.id);
-    const alpha=smooth(detail-f.level+1)*arrival;if(alpha<=0)continue;
-    if(f.kind!=='river'||f.path.length<2)continue;
+    const alpha=(debug?1:smooth(detail-f.level+1))*arrival;if(alpha<=0)continue;
+    if(!['river','canal'].includes(f.kind)||f.path.length<2)continue;
     ctx.globalAlpha=alpha;const path=f.path.map(p=>[camera.x+p[0]*camera.scale,camera.y+p[1]*camera.scale]);
     // Variable-width ribbons meet at shared hydraulic junction widths. Banks
     // become readable at regional scale; tiny streams remain surface lines.
@@ -78,9 +89,17 @@ export function drawDetailFeatures(ctx,tiles,camera,detail,layer){
       }
       ctx.fillStyle=color;ctx.beginPath();[...left,...right.reverse()].forEach((p,i)=>i?ctx.lineTo(...p):ctx.moveTo(...p));ctx.closePath();ctx.fill();
     };
-    if(detail>2&&f.discharge>=2){ctx.globalAlpha=alpha*smooth(detail-2)*.28;ribbon(1.35,'#a1a183',0);}
-    ctx.globalAlpha=alpha;ribbon(1,'#397f9e',Math.min(1.6,.8+Math.sqrt(f.discharge||0)*.03));
-    if(detail>4){ctx.globalAlpha=alpha*.2;ribbon(.55,'#72b6c5',0);}
+    if(debug){
+      let color=f.class==='major'?'#ffcd78':f.class==='regional'?'#64d4ad':'#609bc1';
+      if(layer==='riverSystem')color=riverSystemColor(f.riverId||f.id);
+      ribbon(1,color,f.class==='major'?2.4:1.2);
+      const a=path[0],b=path[path.length-1],length=Math.hypot(b[0]-a[0],b[1]-a[1]);
+      if(length>14){const k=Math.floor(path.length*.65),p=path[k],q=path[Math.max(0,k-2)],angle=Math.atan2(p[1]-q[1],p[0]-q[0]);ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(...p);ctx.lineTo(p[0]-Math.cos(angle-.5)*5,p[1]-Math.sin(angle-.5)*5);ctx.lineTo(p[0]-Math.cos(angle+.5)*5,p[1]-Math.sin(angle+.5)*5);ctx.closePath();ctx.fill();}
+      continue;
+    }
+    if(detail>2&&f.discharge>=2){ctx.globalAlpha=alpha*smooth(detail-2)*.28;ribbon(1.35,riverStyle.bank,0);}
+    ctx.globalAlpha=alpha*(f.regime==='seasonal'?.75:1);ribbon(1,f.regime==='ephemeral'?'#978569':riverStyle.water,Math.min(1.6,.8+Math.sqrt(f.discharge||0)*.03));
+    if(detail>4){ctx.globalAlpha=alpha*.2;ribbon(.55,riverStyle.highlight,0);}
   }
   ctx.restore();
 }

@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"kriemhild/internal/terrain"
+	"kriemhild/internal/world"
 	"math"
 	"net/http"
 	"os"
@@ -20,7 +21,7 @@ import (
 	"time"
 )
 
-const projectSchema = 1
+const projectSchema = 2
 const projectFieldEncoding = "float64 little-endian, field-major then row-major; edge chunks clipped to dimensions"
 const maxProjectBytes = 256 << 20
 const maxExpandedBytes = 1 << 30
@@ -204,16 +205,20 @@ func (s *Server) saveProject(w http.ResponseWriter, r *http.Request) {
 		fail(w, 409, "Finish generating the world before saving its project.")
 		return
 	}
+	if v.retired {
+		fail(w, 409, "World was deleted or replaced")
+		return
+	}
+	if !sameJSON(v.projectUI, req.UI) {
+		v.unsaved = true
+	}
 	v.projectUI = req.UI
 	data, err := encodeProject(v)
 	if err != nil {
 		fail(w, 500, err.Error())
 		return
 	}
-	if err := s.persistProject(r.Context(), v, data); err != nil {
-		fail(w, 503, "Could not save the world to the project database. Please retry.")
-		return
-	}
+
 	w.Header().Set("Content-Type", "application/zip")
 	w.Header().Set("Content-Disposition", `attachment; filename="KRIEMHILD.world.zip"`)
 	w.Write(data)
@@ -264,6 +269,9 @@ func encodeProject(v *session) ([]byte, error) {
 		return nil, err
 	}
 	if err := addJSON("edits/world.json", projectEdits{s.Snapshot(), v.edits}); err != nil {
+		return nil, err
+	}
+	if err := addJSON("world/project.json", v.authored()); err != nil {
 		return nil, err
 	}
 	if len(v.projectUI) == 0 {
@@ -447,7 +455,7 @@ func decodeProject(files map[string][]byte, cacheRoot ...string) (*session, erro
 	if err := json.Unmarshal(files[manifest], &m); err != nil {
 		return nil, err
 	}
-	if m.Format != "KRIEMHILD World Project" || m.Schema != projectSchema || m.Engine != terrain.DetailEngineVersion || m.ChunkSize != 32 || m.FieldEncoding != projectFieldEncoding || m.ID == "" {
+	if m.Format != "KRIEMHILD World Project" || (m.Schema != 1 && m.Schema != projectSchema) || m.Engine != terrain.DetailEngineVersion || m.ChunkSize != 32 || m.FieldEncoding != projectFieldEncoding || m.ID == "" {
 		return nil, fmt.Errorf("unsupported project schema or detail engine version")
 	}
 	prefix := strings.TrimSuffix(manifest, "manifest.json")
@@ -477,6 +485,9 @@ func decodeProject(files map[string][]byte, cacheRoot ...string) (*session, erro
 		return json.Unmarshal(b, v)
 	}
 	var solver terrain.Solver
+	if m.Schema >= 2 && data["world/project.json"] == nil {
+		return nil, fmt.Errorf("authored world data missing")
+	}
 	var config terrain.Config
 	var edits projectEdits
 	if err := decode("base/solver.json", &solver); err != nil {
@@ -532,6 +543,15 @@ func decodeProject(files map[string][]byte, cacheRoot ...string) (*session, erro
 		return nil, err
 	}
 	v := &session{solver: &solver, base: &base, edits: edits.Operations, generation: m.Generation, projectUI: data["view/builder.json"], worldID: m.ID, last: time.Now(), undo: map[string]terrain.Snapshot{}}
+	if b := data["world/project.json"]; b != nil {
+		v.world = &world.State{}
+		if err := json.Unmarshal(b, v.world); err != nil {
+			return nil, err
+		}
+		if err := v.world.Validate(solver.W, solver.H); err != nil {
+			return nil, err
+		}
+	}
 	if len(cacheRoot) > 0 {
 		v.cacheRoot = cacheRoot[0]
 	}
@@ -665,19 +685,9 @@ func (s *Server) importProject(w http.ResponseWriter, r *http.Request) {
 		fail(w, 400, err.Error())
 		return
 	}
-	if s.projects != nil {
-		archive, err := encodeProject(v)
-		if err == nil {
-			err = s.replaceWorld(v.worldID, func() error { return s.persistProject(r.Context(), v, archive) })
-		}
-		if err != nil {
-			if v.dir != "" {
-				os.RemoveAll(v.dir)
-			}
-			fail(w, 503, "Could not store the imported world in the project database. Please retry.")
-			return
-		}
-	}
+	v.unsaved, v.dirty = true, true
+	_ = s.replaceWorld(v.worldID, func() error { return nil })
+
 	s.mu.Lock()
 	if len(s.sessions) >= 32 {
 		s.mu.Unlock()
@@ -690,7 +700,7 @@ func (s *Server) importProject(w http.ResponseWriter, r *http.Request) {
 	id := token()
 	s.sessions[id] = v
 	s.mu.Unlock()
-	state := view(v.solver, true)
+	state := sessionState(v)
 	state["id"] = id
 	state["projectUI"] = v.projectUI
 	state["storedDetailCount"] = len(v.tiles)

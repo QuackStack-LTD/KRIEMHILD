@@ -18,11 +18,23 @@ export class RemoteSolver extends globalThis.TerrainWFC.SolverView {
   static async create(payload) { return new RemoteSolver(await request('sessions', payload)); }
   static async savedProjects(){return request('projects',undefined,'GET');}
   static async openSavedProject(id){return new RemoteSolver(await request(`projects/${encodeURIComponent(id)}/open`,{}));}
-  async autosave(payload) {
+  refreshWorld(){return request(`sessions/${this.id}/world/state`,undefined,'GET');}
+  static deleteProject(id){return request(`projects/${encodeURIComponent(id)}`,undefined,'DELETE');}
+  setSaveState(state){
+    if(typeof state.unsaved!=='boolean')return;
+    this.unsaved=state.unsaved;
+    window.dispatchEvent(new CustomEvent('world-save-state',{detail:{solver:this}}));
+  }
+  async save(){
     await this.pending;
-    const result=await request(`sessions/${this.id}/autosave`,payload);
-    if(!result.saved)throw new Error('Server persistence is disabled.');
-    this.worldId=result.worldId;this.autosaveError=null;return result;
+    await Promise.all([...this.detailStores||[]].map(store=>store.whenIdle()));
+    const result=await request(`sessions/${this.id}/save`,{});
+    this.setSaveState(result);return result;
+  }
+  async stageView(payload) {
+    await this.pending;
+    const result=await request(`sessions/${this.id}/view`,payload);
+    this.worldId=result.worldId;this.setSaveState(result);return result;
   }
   static async importProject(files,folder=false) {
     let body=files[0],headers={'Content-Type':'application/zip'};
@@ -56,13 +68,13 @@ export class RemoteSolver extends globalThis.TerrainWFC.SolverView {
     if ('contShare' in state) this.contShare = state.contShare ? Float32Array.from(state.contShare) : null;
     if ('climShare' in state) this.climShare = state.climShare ? Float32Array.from(state.climShare) : null;
     this.dom = Uint32Array.from(state.dom);
+    this.setSaveState(state);
     for (let c = 0; c < this.N; c++) if (!previous || previous[c] !== this.dom[c]) this.dirtyCells.add(c);
   }
   action(action, body) {
     const run = this.pending.then(async () => {
       const result = await request(`sessions/${this.id}/${action}`, body);
       if (result.state) this.apply(result.state);
-      if(result.autosaveError){this.autosaveError=result.autosaveError;throw new Error(result.autosaveError);}
       return result;
     });
     this.pending = run.catch(() => {});

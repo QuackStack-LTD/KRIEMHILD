@@ -86,6 +86,9 @@ type Plate struct {
 	Continental bool    `json:"continental"`
 }
 type Environment struct {
+	Geology *GeologicalState `json:"geology,omitempty"`
+	Resources *ResourceState `json:"resources,omitempty"`
+	Hydrology    *HydrologyState      `json:"hydrology,omitempty"`
 	WaterBodies  []WaterBody          `json:"waterBodies"`
 	Reefs        []ReefRegion         `json:"reefs"`
 	Entities     *WorldEntities       `json:"entities,omitempty"`
@@ -350,13 +353,22 @@ func BuildEnvironment(o EnvironmentOptions) *Environment {
 			set("moisture", i, clamp(f("precipitation", i)/potential, 0, 1))
 		}
 	}
+	e.prepareHydrology()
+	if e.carveStorageBasins() {
+		e.prepareHydrology()
+	}
 	e.hydrology()
 	e.entities(sample)
 	if o.Realism {
 		e.realisticEntities(sample)
 	}
+	e.finishHydrology()
 	e.buildReefs(sample)
 	e.classifyLandforms()
+	e.Hydrology.Diagnostics = e.ValidateHydrology()
+	// Terrain and hydrology -> geological history -> natural resources.
+	e.BuildGeologicalHistory()
+	e.BuildNaturalResources()
 	return e
 }
 func (e *Environment) precipitation() {
@@ -419,93 +431,7 @@ func (e *Environment) precipitation() {
 		set("moisture", i, clamp(f("precipitation", i)/potential, 0, 1))
 	}
 }
-func (e *Environment) hydrology() {
-	w, h := e.Options.Columns, e.Options.Rows
-	n := w * h
-	f, set := e.get, e.set
-	seen := make([]bool, n)
-	filled := make([]float64, n)
-	order := []int{}
-	type entry struct {
-		i int
-		z float64
-	}
-	heap := []entry{}
-	push := func(i int, z float64) {
-		k := len(heap)
-		heap = append(heap, entry{i, z})
-		for k > 0 {
-			p := (k - 1) >> 1
-			if heap[p].z <= z {
-				break
-			}
-			heap[k] = heap[p]
-			k = p
-		}
-		heap[k] = entry{i, z}
-	}
-	pop := func() entry {
-		top, last := heap[0], heap[len(heap)-1]
-		heap = heap[:len(heap)-1]
-		if len(heap) > 0 {
-			k := 0
-			for k*2+1 < len(heap) {
-				c := k*2 + 1
-				if c+1 < len(heap) && heap[c+1].z < heap[c].z {
-					c++
-				}
-				if heap[c].z >= last.z {
-					break
-				}
-				heap[k] = heap[c]
-				k = c
-			}
-			heap[k] = last
-		}
-		return top
-	}
-	for i := 0; i < n; i++ {
-		if e.Mask[i] == 0 {
-			seen[i] = true
-			filled[i] = f("waterLevel", i)
-			push(i, filled[i])
-		}
-	}
-	for len(heap) > 0 {
-		item := pop()
-		i, z := item.i, item.z
-		order = append(order, i)
-		for _, j := range nb(i, w, h) {
-			if !seen[j] {
-				seen[j] = true
-				filled[j] = f32(math.Max(f("elevation", j), z+.01))
-				set("flow", j, float64(i))
-				push(j, filled[j])
-			}
-		}
-	}
-	for i := 0; i < n; i++ {
-		set("drainageElevation", i, filled[i])
-		if e.Mask[i] != 0 {
-			set("accumulation", i, math.Max(.02, f("precipitation", i)/1000))
-		}
-	}
-	for k := len(order) - 1; k >= 0; k-- {
-		i := order[k]
-		j := int(f("flow", i))
-		if j >= 0 {
-			set("accumulation", j, f("accumulation", j)+f("accumulation", i))
-		}
-	}
-	e.fillBasins(filled)
-	for i := 0; i < n; i++ {
-		v := 1.
-		if e.Mask[i] != 0 {
-			v = clamp(f("moisture", i)*.45+math.Log1p(f("accumulation", i))*.11+f("lake", i)*.7-f("slope", i)*.3, 0, 1)
-		}
-		set("groundwater", i, v)
-	}
-}
+func (e *Environment) hydrology() { e.simulateHydrology() }
 func (e *Environment) entities(sample func(float64, float64) float64) {
 	w, h := e.Options.Columns, e.Options.Rows
 	n := w * h
@@ -642,8 +568,8 @@ func (e *Environment) Candidates(i int) []string {
 			return v.types
 		}
 	}
-	if f("oceanDistance", i) <= 1 && h < 160 && f("slope", i) < .2 && f("sediment", i) > .1 {
-		return []string{"sand"}
+	if e.Fields["beach"] != nil && f("beach", i) > .8 {
+		return []string{"sand", "grass"}
 	}
 	if f("wetland", i) > .55 && temp > -8 {
 		return []string{"swamp"}
@@ -682,6 +608,9 @@ func (e *Environment) Candidates(i int) []string {
 }
 func PrepareEnvironment(o EnvironmentOptions, c Config) (*Solver, error) {
 	e := BuildEnvironment(o)
+	if d := e.Hydrology.Diagnostics; len(d) > 0 {
+		return nil, fmt.Errorf("hydrology validation: %s: %s", d[0].Object, d[0].Reason)
+	}
 	adapted := c
 	adapted.Types = append([]Type{}, c.Types...)
 	adapted.Climates = []Zone{}

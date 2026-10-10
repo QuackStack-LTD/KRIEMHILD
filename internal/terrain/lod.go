@@ -12,33 +12,46 @@ const DetailTileSize = 32
 // Each octave is a nodal residual: new coefficients are zero on EVERY coarser
 // node. Tile boundaries use global indices, so request order cannot form seams.
 type DetailPoint struct {
-	Gradient    [4]float64 `json:"gradient"`
-	Elevation   float64    `json:"elevation"`
-	Parent      float64    `json:"parent"`
-	WaterLevel  float64    `json:"waterLevel"`
-	WaterDepth  float64    `json:"waterDepth"`
-	WaterBody   int        `json:"waterBody"`
-	Cell        int        `json:"cell"`
-	Temperature float64    `json:"temperature"`
-	Moisture    float64    `json:"moisture"`
-	Vegetation  float64    `json:"vegetation"`
-	Rock        float64    `json:"rock"`
-	Sand        float64    `json:"sand"`
-	Floodplain  float64    `json:"floodplain"`
-	RiverLevel  float64    `json:"riverLevel"`
-	RiverDepth  float64    `json:"riverDepth"`
+	Shore         float64    `json:"shore,omitempty"`
+	ShoreSediment float64    `json:"shoreSediment,omitempty"`
+	ShoreSlope    float64    `json:"shoreSlope,omitempty"`
+	Marine        float64    `json:"marine,omitempty"`
+	Snow          float64    `json:"snow,omitempty"`
+	Wetland       float64    `json:"wetland,omitempty"`
+	Authored      bool       `json:"authored,omitempty"`
+	Gradient      [4]float64 `json:"gradient"`
+	Elevation     float64    `json:"elevation"`
+	Parent        float64    `json:"parent"`
+	WaterLevel    float64    `json:"waterLevel"`
+	WaterDepth    float64    `json:"waterDepth"`
+	WaterBody     int        `json:"waterBody"`
+	Cell          int        `json:"cell"`
+	Temperature   float64    `json:"temperature"`
+	Moisture      float64    `json:"moisture"`
+	Vegetation    float64    `json:"vegetation"`
+	Rock          float64    `json:"rock"`
+	Sand          float64    `json:"sand"`
+	Floodplain    float64    `json:"floodplain"`
+	RiverLevel    float64    `json:"riverLevel"`
+	RiverDepth    float64    `json:"riverDepth"`
 }
 
 type DetailFeature struct {
-	ID        string       `json:"id"`
-	ParentID  string       `json:"parentId"`
-	Kind      string       `json:"kind"`
-	Level     float64      `json:"level"`
-	Width     float64      `json:"width"`
-	Widths    []float64    `json:"widths,omitempty"`
-	Discharge float64      `json:"discharge"`
-	Grade     float64      `json:"grade"`
-	Path      [][3]float64 `json:"path"`
+	RiverID    string       `json:"riverId,omitempty"`
+	Class      string       `json:"class,omitempty"`
+	NetworkID  string       `json:"networkId,omitempty"`
+	Regime     string       `json:"regime,omitempty"`
+	Morphology string       `json:"morphology,omitempty"`
+	Depth      float64      `json:"depth,omitempty"`
+	ID         string       `json:"id"`
+	ParentID   string       `json:"parentId"`
+	Kind       string       `json:"kind"`
+	Level      float64      `json:"level"`
+	Width      float64      `json:"width"`
+	Widths     []float64    `json:"widths,omitempty"`
+	Discharge  float64      `json:"discharge"`
+	Grade      float64      `json:"grade"`
+	Path       [][3]float64 `json:"path"`
 }
 
 type DetailTile struct {
@@ -63,6 +76,7 @@ func NewDetailModel(e *Environment) *DetailModel {
 	m := &DetailModel{World: e, Seed: Seed(e.Options.Seed) ^ 0x91ab6731}
 	m.buildFoothills()
 	m.buildDrainage()
+	m.refineHydroFeatures()
 	m.indexDrainage()
 	return m
 }
@@ -142,7 +156,10 @@ func (m *DetailModel) base(x, y float64) DetailPoint {
 			p.Elevation = p.WaterLevel + math.Pow(1-2*wet, shorePower)*(dryGround/(1-wet)-p.WaterLevel)
 		}
 	}
-	p.Vegetation = clamp(p.Moisture*(1-m.field("snow", x, y)), 0, 1)
+	p.Shore = wet
+	p.Snow = m.field("snow", x, y)
+	p.Wetland = m.field("wetland", x, y)
+	p.Vegetation = clamp(p.Moisture*(1-p.Snow), 0, 1)
 	return p
 }
 
@@ -171,15 +188,32 @@ func (m *DetailModel) Sample(x, y float64, level int) DetailPoint {
 	if r.valid && p.WaterBody == 0 {
 		p.Floodplain = math.Exp(-math.Pow(r.distance/r.valley, 2)) * smooth(r.discharge/8)
 		p.RiverLevel = r.level
-		if r.distance < r.width*.5 && level > 0 {
+		if r.distance < r.width*.5 && level > 0 && r.regime != "ephemeral" {
 			p.RiverDepth = math.Max(0, r.level-p.Elevation)
 		}
 	}
-	p.Sand = clamp(m.field("dune", x, y)+m.field("sandSupply", x, y)*.4, 0, 1)
-	if m.field("waterDepth", x, y) > 0 && p.WaterBody == 0 {
-		p.Sand = math.Max(p.Sand, math.Exp(-math.Abs(p.Elevation-p.WaterLevel)/22)*(1-m.field("slope", x, y)))
+	p.Rock = clamp(m.field("slope", x, y)*1.2+m.field("mountainCore", x, y)*.4, 0, 1)
+	p.Sand = clamp(m.field("dune", x, y)+m.field("sandSupply", x, y)*.15*m.field("aridity", x, y), 0, 1) * (1 - p.Rock)
+	p.ShoreSediment = clamp(m.field("sediment", x, y)+m.field("coastalSediment", x, y), 0, 1)
+	p.ShoreSlope = m.field("slope", x, y)
+	p.Marine = m.field("ocean", x, y)
+	if p.Shore > 0 && p.WaterBody == 0 {
+		// A narrow sub-cell shore band, measured from the continuous water
+		// footprint. Steep mountain lakes retain rock down to the waterline.
+		sediment := p.ShoreSediment
+		gentle := 1 - smooth(p.ShoreSlope/.16)
+		marine := p.Marine > 0
+		width, height := .05, 2.
+		if marine {
+			width, height = .12, 8.
+		}
+		shore := smooth((p.Shore-(.5-width))/width) * math.Exp(-math.Abs(p.Elevation-p.WaterLevel)/height)
+		p.Sand = math.Max(p.Sand, shore*sediment*gentle)
+		// Low sediment supply creates a stony shore, not vegetation extending
+		// to the water. Steep margins retain exposed rock instead of sand.
+		p.Rock = math.Max(p.Rock, shore*(1-sediment*gentle)*.9)
+		p.Vegetation *= 1 - shore*.85
 	}
-	p.Rock = clamp(m.field("slope", x, y)*1.2+m.field("mountainCore", x, y)*.4, 0, 1) * (1 - p.Sand)
 	p.Vegetation = clamp(p.Vegetation+p.Floodplain*.18-p.Rock*.3-p.Sand*.35, 0, 1)
 	return p
 }
@@ -261,6 +295,34 @@ func (m *DetailModel) buildDrainage() {
 			path[k][0] += nx * wave
 			path[k][1] += ny * wave
 			widths[k] = (widthAt(i)*(1-t) + widthAt(j)*t) * (1 + .07*math.Sin(6*math.Pi*t)*math.Sin(math.Pi*t))
+		}
+
+		if e.Hydrology != nil && e.Hydrology.NetworkVersion >= 2 && e.get("waterBody", j) == 0 {
+			// Preserve both confluence endpoints while bringing coastal meanders back
+			// onto the inherited land corridor. Never clip an interior reach in half.
+			original := append([][3]float64(nil), path...)
+			for attempt := 0; attempt < 12; attempt++ {
+				dry := true
+				for _, p := range path {
+					if m.base(p[0], p[1]).WaterBody > 0 {
+						dry = false
+						break
+					}
+				}
+				if dry {
+					break
+				}
+				factor := math.Pow(.5, float64(attempt+1))
+				if attempt == 11 {
+					factor = 0
+				}
+				for k := range path {
+					t := float64(k) / float64(len(path)-1)
+					x, y := ax+(bx-ax)*t, ay+(by-ay)*t
+					path[k][0] = x + (original[k][0]-x)*factor
+					path[k][1] = y + (original[k][1]-y)*factor
+				}
+			}
 		}
 		// End at the continuously refined shore, not at a submerged grid-cell
 		// centre. The receiving lake/ocean takes over the water surface there.
@@ -347,7 +409,9 @@ func (m *DetailModel) Tile(level, tx, ty int) (DetailTile, error) {
 		}
 	}
 	for _, f := range m.Features {
-		if f.Level > float64(level)+1 {
+		// Keep the saved network available to diagnostic overlays at all scales.
+		// Normal rendering still applies each feature's visual level threshold.
+		if f.Level > float64(level)+1 && f.RiverID == "" {
 			continue
 		}
 		minX, minY, maxX, maxY := math.Inf(1), math.Inf(1), math.Inf(-1), math.Inf(-1)

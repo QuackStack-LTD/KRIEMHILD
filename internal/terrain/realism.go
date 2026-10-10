@@ -450,8 +450,8 @@ func (e *Environment) realisticCandidates(i int) []string {
 			return []string{x.id}
 		}
 	}
-	if f("oceanDistance", i) <= 1 && f("elevation", i) < 160 && f("slope", i) < .2 && f("sediment", i) > .1 {
-		return []string{"sand"}
+	if e.Fields["beach"] != nil && f("beach", i) > .8 {
+		return []string{"sand", "grass"}
 	}
 	if f("wetland", i) > .55 {
 		return []string{"swamp"}

@@ -29,6 +29,7 @@ func TestDatabaseProjectReopensWithoutSessionOrTileCache(t *testing.T) {
 	if res.Code != 200 {
 		t.Fatal(res.Code, res.Body.String())
 	}
+	autoRequest(t, first, "POST", "/api/sessions/original/save", `{}`)
 	worldID := v.worldID
 	first.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("DELETE", "/api/sessions/original", nil))
 	if _, err = os.Stat(v.dir); !os.IsNotExist(err) {
@@ -81,7 +82,7 @@ func TestDatabaseOutageFailsReadinessAndSave(t *testing.T) {
 	check("/api/health", 200)
 	check("/api/projects", 503)
 	res := httptest.NewRecorder()
-	s.ServeHTTP(res, httptest.NewRequest("POST", "/api/sessions/world/project", bytes.NewBufferString(`{"ui":{}}`)))
+	s.ServeHTTP(res, httptest.NewRequest("POST", "/api/sessions/world/save", bytes.NewBufferString(`{"ui":{}}`)))
 	if res.Code != 503 {
 		t.Fatalf("save reported success despite unavailable storage: %d", res.Code)
 	}

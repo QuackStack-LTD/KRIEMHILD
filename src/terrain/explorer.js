@@ -10,7 +10,7 @@ export function createExplorer(container,source,brushOn,onCameraChange=()=>{}){
   function listen(el,event,fn,opts={}){el.addEventListener(event,fn,{...opts,signal:abort.signal});}
   function queue(force=false){if(force&&frame){cancelAnimationFrame(frame);frame=0;}if(!frame&&!disposed)frame=requestAnimationFrame(render);}
   function fit(){if(!solver)return;camera.fit(width,height,solver.W-1,solver.H-1);queue(true);onCameraChange();}
-  function resize(){const oldW=width,oldH=height;const center=camera.point(oldW/2,oldH/2);width=container.clientWidth;height=container.clientHeight;const dpr=Math.min(2,devicePixelRatio||1);canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);if(solver){camera.minimum=Math.min(width/(solver.W-1),height/(solver.H-1));if(!oldW||camera.scale<=camera.minimum)fit();else{camera.x=width/2-center.x*camera.scale;camera.y=height/2-center.y*camera.scale;}}queue(true);}
+  function resize(){if(!container.clientWidth||!container.clientHeight)return;const oldW=width,oldH=height;const center=camera.point(oldW/2,oldH/2);width=container.clientWidth;height=container.clientHeight;const dpr=Math.min(2,devicePixelRatio||1);canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);if(solver){camera.minimum=Math.min(width/(solver.W-1),height/(solver.H-1));if(!oldW||camera.scale<=camera.minimum)fit();else{camera.x=width/2-center.x*camera.scale;camera.y=height/2-center.y*camera.scale;}}queue(true);}
   const observer=new ResizeObserver(resize);observer.observe(container);resize();
   function local(e){const r=canvas.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top};}
   function zoom(x,y,factor){camera.zoomAt(x,y,factor);queue(true);onCameraChange();}

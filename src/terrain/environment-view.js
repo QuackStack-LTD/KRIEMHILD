@@ -1,6 +1,9 @@
+import {updateHydrologyReport} from './hydrology-report.js';
 // Environmental data comes from Go. These functions only visualize it.
 const climateColors = ['#245e94','#136d38','#32904b','#a7b858','#d9b06a','#b9a58b','#c6b769','#64b9a3','#77a16a','#406d62','#acbbb3','#e6f4fa','#a8adc5'];
+export function riverSystemColor(id){let hash=0;for(const ch of id)hash=(Math.imul(hash,31)+ch.charCodeAt(0))>>>0;return `hsl(${hash%360} 70% 68%)`;}
 const ranges = {
+ runoff:[0,3],recharge:[0,2],baseflow:[0,1],waterTableDepth:[0,15],streamOrder:[1,8],geothermal:[25,250],snowmelt:[0,2],glacierMelt:[0,1],dryDischarge:[0,30],spring:[0,3],lithology:[0,5],coastType:[0,6],
   temperature:[-40,40],summer:[-40,40],winter:[-40,40],elevation:[-12000,8000],
   drainageElevation:[-12000,8000],bathymetry:[0,12000],precipitation:[0,3000],
   summerRain:[0,1800],winterRain:[0,1800],snowBalance:[-2400,2400],
@@ -9,26 +12,31 @@ const ranges = {
   salinity:[0,35],waterLevel:[-1000,5000],waterDepth:[0,12000],catchmentArea:[0,1000],geology:[0,6],landform:[0,8],reefType:[0,4],
 };
 export function installEnvironmentOverlays(select) {
-  const fields = ['climate','wind','latitude','current','windY','slope','oceanDistance','tectonicStress','summerRain','winterRain','growingSeason','drainageElevation','river','freshwaterDistance','rockType','layering','caprock','erosion','sandSupply','sandTransport','deposition','vegetation','substrate','snowBalance','duneField','duneOrientation','hotspot','vent','cultivated','village','ocean','waterLevel','waterDepth','waterBody','basin','catchmentArea','shelf','seamount','reefType','light','landform','highland','mountainCore','geology'];
+	for(const [value,label] of [['riverClass','Major river routes'],['riverSystem','River systems and tributary connections']]){const option=document.createElement('option');option.value=value;option.textContent=label;select.append(option);}
+  const fields = ['runoff','recharge','baseflow','waterTableDepth','streamOrder','watershed','permeability','lithology','snowmelt','glacierMelt','dryDischarge','spring','geothermal','beach','coastType','climate','wind','latitude','current','windY','slope','oceanDistance','tectonicStress','summerRain','winterRain','growingSeason','drainageElevation','river','freshwaterDistance','rockType','layering','caprock','erosion','sandSupply','sandTransport','deposition','vegetation','substrate','snowBalance','duneField','duneOrientation','hotspot','vent','cultivated','village','ocean','waterLevel','waterDepth','waterBody','basin','catchmentArea','shelf','seamount','reefType','light','landform','highland','mountainCore','geology'];
   for(const name of fields) if(![...select.options].some(o=>o.value===name)) {
     const option=document.createElement('option'); option.value=name;
     option.textContent=name==='climate'?'Derived climate zones':name==='wind'?'Wind direction (arrows)':name.replace(/([A-Z])/g,' $1').replace(/^./,c=>c.toUpperCase());
     select.append(option);
   }
   const legend=document.createElement('p');legend.id='environmentLegend';legend.className='hint';select.after(legend);
+  const report=document.createElement('details');report.id='hydrologyReport';report.className='hydrology-report';legend.after(report);
 }
 export function fieldColor(environment,name,c) {
   const f=environment?.fields;
   if(name==='wind') name='windStrength';
   if(!f?.[name]) return null;
   const v=f[name][c];
+  if(name==='riverSystem')return v>0?riverSystemColor(environment.hydrology?.rivers?.[v-1]?.id||String(v)):'#192a31';
+  if(name==='riverClass')return ['#192a31','#609bc1','#64d4ad','#ffcd78'][v]||'#192a31';
+  if(name==='watershed'&&f.ocean?.[c])return '#173e59';
   if(name==='climate') return climateColors[v] || '#777777';
   if(name==='rockType') return ['#97919d','#c4ac7a','#695765'][v];
   if(name==='boundary') return ['#18344d','#e77355','#69cbbb','#deb968'][v];
   if(name==='geology')return ['#18344d','#95ba7e','#d78968','#aa9691','#828755','#c4aa78','#c45c45'][v];
   if(name==='reefType')return ['#18344d','#51d8a2','#55b8df','#db97cf','#f1cf63'][v];
   if(name==='landform')return ['#245e94','#a6c76b','#769a58','#6c8053','#bda274','#8a8580','#e1e9ec','#997c60','#c8a583'][v];
-  if(['plate','duneField','vent','waterBody','basin'].includes(name)) return `hsl(${v*137.508%360} 48% ${v===0&&name!=='plate'?18:56}%)`;
+  if(['plate','duneField','vent','waterBody','basin','watershed','riverSystem'].includes(name)) return `hsl(${v*137.508%360} 48% ${v===0&&!['plate','watershed'].includes(name)?18:56}%)`;
   let t;
   if(name==='flow'||name==='accumulation') t=Math.log1p(Math.max(0,v))/8;
   else { const [lo,hi]=ranges[name]||[0,1];t=(v-lo)/(hi-lo); }
@@ -36,6 +44,11 @@ export function fieldColor(environment,name,c) {
   return `rgb(${Math.round(40+200*t)},${Math.round(80+100*(1-Math.abs(t-.5)*2))},${Math.round(200-160*t)})`;
 }
 export function overlayLegend(e,name) {
+  if(typeof document!=='undefined')updateHydrologyReport(document.getElementById('hydrologyReport'),e);
+  if(name==='riverClass')return 'Gold: major trunks; green: regional rivers; blue: local streams. Arrowheads show downstream flow.';
+  if(name==='riverSystem')return 'Distinct colors identify whole rivers. Tributaries join their receiving river; arrowheads show flow direction.';
+  if(name==='watershed')return 'Distinct colors identify connected catchments, including drainage through lake outlets.';
+  if(name==='terrain'&&e?.hydrology)return `${(e.hydrology.reaches||[]).length} connected river reaches ? ${(e.hydrology.springs||[]).length} springs ? ${(e.hydrology.wetlands||[]).length} wetlands ? ${(e.hydrology.canals||[]).length} engineered canals. ${(e.hydrology.diagnostics||[]).length?e.hydrology.diagnostics.map(d=>d.object+': '+d.reason).join(' / '):'Hydrology validation passed.'}`;
   if(name==='terrain') return e?.options.realism?'Rivers in blue · dune ridges follow wind · volcanic vents in red.':'';
   if(name==='wind') return 'Arrows show prevailing wind direction; color shows strength (blue → red).';
   if(!e?.fields[name]) return 'This layer requires Real-world geology & climate.';

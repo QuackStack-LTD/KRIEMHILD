@@ -35,13 +35,18 @@ func TestVisibleDrainageIsSelectiveAndConnected(t *testing.T) {
 		if total == 0 || total*2 >= old {
 			t.Fatalf("insufficient river reduction %s: %d / %d", seed, total, old)
 		}
-		if mountainOld > 10 && mountainNew*2 >= mountainOld {
+		// Complete mountain headwaters add upstream reaches formerly hidden by
+		// per-cell thresholds; still reject a blanket of slope runoff.
+		if mountainOld > 10 && mountainNew*4 >= mountainOld*3 {
 			t.Fatal("mountain slopes still over-covered", seed, mountainNew, mountainOld)
+		}
+		if mountainOld > 100 && mountainNew*50 < mountainOld {
+			t.Fatal("mountain tributaries were suppressed too heavily", seed, mountainNew, mountainOld)
 		}
 		model := NewDetailModel(e)
 		for _, f := range model.Features {
-			if f.Discharge < 2 {
-				t.Fatal("synthetic runoff tributary survived")
+			if f.Kind == "river" && (f.Discharge <= 0 || f.NetworkID == "") {
+				t.Fatal("river geometry has no supplied hydrological identity")
 			}
 		}
 		t.Logf("%s: visible reaches %d -> %d; mountain reaches %d -> %d", seed, old, total, mountainOld, mountainNew)

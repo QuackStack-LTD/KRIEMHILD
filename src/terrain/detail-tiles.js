@@ -1,4 +1,5 @@
 import {detailAtScale,smooth} from './map-camera.js';
+import {coarseMaterial} from './biome-material.js';
 
 export const tileKey=(level,x,y)=>`${level}/${x}/${y}`;
 export function visibleTiles(bounds,level,width,height){
@@ -22,7 +23,7 @@ export class DetailTiles {
       const points=[];for(let y=0;y<=32;y++)for(let x=0;x<=32;x++){
         const cell=Math.min(solver.H-1,t.y*32+y)*solver.W+Math.min(solver.W-1,t.x*32+x);
         const gx=cell%solver.W,gy=Math.floor(cell/solver.W),dx=(f.elevation[gy*solver.W+Math.min(solver.W-1,gx+1)]-f.elevation[gy*solver.W+Math.max(0,gx-1)])/2,dy=(f.elevation[Math.min(solver.H-1,gy+1)*solver.W+gx]-f.elevation[Math.max(0,gy-1)*solver.W+gx])/2;
-        points.push({gradient:[dx,dy,dx,dy],cell,elevation:f.elevation[cell],parent:f.elevation[cell],waterBody:f.waterBody[cell],waterDepth:f.waterDepth[cell],waterLevel:f.waterLevel[cell],temperature:f.temperature[cell]});
+        points.push({...coarseMaterial(solver.environment,cell),gradient:[dx,dy,dx,dy],cell,elevation:f.elevation[cell],parent:f.elevation[cell],waterBody:f.waterBody[cell],waterDepth:f.waterDepth[cell],waterLevel:f.waterLevel[cell],temperature:f.temperature[cell]});
       }
       this.cache.set(t.key,{...t,size:33,step:1,points,features:[],loaded:performance.now()-1000,provisional:true});
     }
@@ -49,7 +50,7 @@ export class DetailTiles {
   pump(){
     while(this.pending.size<3&&this.queue.length){
       const task=this.queue.shift(),controller=new AbortController(),epoch=this.epoch;this.pending.set(task.key,controller);
-      fetch(`/api/sessions/${this.solver.id}/detail/${task.key}`,{signal:controller.signal}).then(async r=>{const data=await r.json();if(!r.ok){const error=new Error(data.error||`Detail request failed (${r.status})`);error.status=r.status;throw error;}return data;}).then(tile=>{
+      fetch(`/api/sessions/${this.solver.id}/detail/${task.key}`,{signal:controller.signal}).then(async r=>{const data=await r.json();if(!r.ok){const error=new Error(data.error||`Detail request failed (${r.status})`);error.status=r.status;throw error;}if(r.headers.get('X-World-Unsaved')==='true')this.solver.setSaveState?.({unsaved:true});return data;}).then(tile=>{
         if(epoch!==this.epoch||controller.signal.aborted)return;
         tile.loaded=performance.now();this.cache.set(task.key,tile);this.error='';
         for(const key of this.cache.keys()){if(this.cache.size<=192)break;if(!this.wanted.has(key)&&this.cache.get(key).level>0)this.cache.delete(key);}
@@ -59,7 +60,14 @@ export class DetailTiles {
       });
     }
   }
-  pause(){this.epoch++;for(const c of this.pending.values())c.abort();this.pending.clear();this.queue=[];clearTimeout(this.retry);}
+  pause(){this.epoch++;for(const c of this.pending.values())c.abort();this.pending.clear();this.queue=[];this.error='';this.failures.clear();clearTimeout(this.retry);}
+  invalidate(bounds){
+    // A dirty rectangle includes the normal/parent halo supplied by the server.
+    const intersects=t=>!bounds||t.x*32/2**t.level<=bounds.x+bounds.width&&(t.x+1)*32/2**t.level>=bounds.x&&t.y*32/2**t.level<=bounds.y+bounds.height&&(t.y+1)*32/2**t.level>=bounds.y;
+    for(const [key,tile]of this.cache)if(intersects(tile)){this.cache.delete(key);this.failures.delete(key);}
+    for(const [key,c]of this.pending){const [level,x,y]=key.split('/').map(Number);if(intersects({level,x,y})){c.abort();this.pending.delete(key);}}
+    this.onChange();
+  }
   async whenIdle(){const end=Date.now()+60000;while(this.pending.size||this.queue.length){if(Date.now()>end)throw new Error('Detail is still loading. Wait for refinement to finish and save again.');await new Promise(resolve=>setTimeout(resolve,50));}if(this.error)throw new Error('Some visible detail did not load: '+this.error);}
   dispose(){this.pause();this.cache.clear();this.solver.detailStores?.delete(this);}
 }

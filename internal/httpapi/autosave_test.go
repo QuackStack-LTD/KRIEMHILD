@@ -28,7 +28,7 @@ func autoRequest(t *testing.T, s *Server, method, path, body string) map[string]
 	return result
 }
 
-func TestAutosaveResumesExactUnfinishedSolverAfterRestart(t *testing.T) {
+func TestExplicitSaveResumesExactUnfinishedSolverAfterRestart(t *testing.T) {
 	dir := t.TempDir()
 	db, err := storage.Open(context.Background(), dir, "")
 	if err != nil {
@@ -45,6 +45,7 @@ func TestAutosaveResumesExactUnfinishedSolverAfterRestart(t *testing.T) {
 	autoRequest(t, s, "POST", "/api/sessions/"+id+"/autosave", `{"ui":{"camera2d":{"scale":90},"paused":true},"client":"test","sequence":2}`)
 	// A delayed page request must not overwrite the last camera state.
 	autoRequest(t, s, "POST", "/api/sessions/"+id+"/autosave", `{"ui":{"camera2d":{"scale":1}},"client":"test","sequence":1}`)
+	autoRequest(t, s, "POST", "/api/sessions/"+id+"/save", `{}`)
 	before, _ := json.Marshal(v.solver)
 	world := v.worldID
 	autoRequest(t, s, "DELETE", "/api/sessions/"+id, "")
@@ -73,7 +74,7 @@ func TestAutosaveResumesExactUnfinishedSolverAfterRestart(t *testing.T) {
 	}
 }
 
-func TestAutosaveExplorationAndEditsWithoutExport(t *testing.T) {
+func TestExplicitSaveExplorationAndEditsWithoutExport(t *testing.T) {
 	db, err := storage.Open(context.Background(), t.TempDir(), "")
 	if err != nil {
 		t.Fatal(err)
@@ -94,12 +95,14 @@ func TestAutosaveExplorationAndEditsWithoutExport(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	autoRequest(t, s, "POST", "/api/sessions/map/save", `{}`)
 	partsBefore, err := db.LoadParts(context.Background(), v.worldID)
 	if err != nil {
 		t.Fatal(err)
 	}
 	autoRequest(t, s, "POST", "/api/sessions/map/autosave", `{"ui":{"camera2d":{"scale":140},"offsets":[1,2]}}`)
 	autoRequest(t, s, "POST", "/api/sessions/map/autosave", `{"ui":{"camera2d":{"scale":160}},"merge":true}`)
+	autoRequest(t, s, "POST", "/api/sessions/map/save", `{}`)
 	partsAfter, _ := db.LoadParts(context.Background(), v.worldID)
 	for _, key := range []string{"checkpoint", "environment", "tile/3/2/1"} {
 		if !bytes.Equal(partsBefore[key], partsAfter[key]) {
@@ -147,12 +150,12 @@ func TestAutosaveExplorationAndEditsWithoutExport(t *testing.T) {
 	if !restored.retired {
 		t.Fatal("import left competing world session active")
 	}
-	if err = fresh.autosave(restored, true); err == nil {
+	if err = fresh.saveWorld(restored, true); err == nil {
 		t.Fatal("stale session overwrote imported world")
 	}
 }
 
-func TestAutosaveFailureRetainsDirtyCheckpointForRetry(t *testing.T) {
+func TestExplicitSaveFailureRetainsDirtyCheckpointForRetry(t *testing.T) {
 	dir := t.TempDir()
 	db, err := storage.Open(context.Background(), dir, "")
 	if err != nil {
@@ -162,10 +165,16 @@ func TestAutosaveFailureRetainsDirtyCheckpointForRetry(t *testing.T) {
 	created := autoRequest(t, s, "POST", "/api/sessions", `{"options":{"width":24,"height":24,"radius2":2,"seed":12}}`)
 	id := created["id"].(string)
 	v := s.sessions[id]
+	autoRequest(t, s, "POST", "/api/sessions/"+id+"/save", `{}`)
 	before, _ := db.LoadParts(context.Background(), v.worldID)
 	db.Close()
 	result := autoRequest(t, s, "POST", "/api/sessions/"+id+"/step", `{"count":3}`)
-	if result["autosaveError"] == nil || !v.dirty {
+	failed := httptest.NewRecorder()
+	s.ServeHTTP(failed, httptest.NewRequest("POST", "/api/sessions/"+id+"/save", bytes.NewBufferString(`{}`)))
+	if failed.Code != 503 {
+		t.Fatal("explicit save must report storage failure")
+	}
+	if result["autosaveError"] != nil || !v.dirty || !v.unsaved {
 		t.Fatal("failed save was silently accepted")
 	}
 	db, err = storage.Open(context.Background(), dir, "")
@@ -178,7 +187,8 @@ func TestAutosaveFailureRetainsDirtyCheckpointForRetry(t *testing.T) {
 	if !bytes.Equal(before["checkpoint"], after["checkpoint"]) {
 		t.Fatal("failed save corrupted committed checkpoint")
 	}
-	autoRequest(t, s, "POST", "/api/sessions/"+id+"/autosave", `{"ui":{}}`)
+	autoRequest(t, s, "POST", "/api/sessions/"+id+"/view", `{"ui":{}}`)
+	autoRequest(t, s, "POST", "/api/sessions/"+id+"/save", `{}`)
 	if v.dirty {
 		t.Fatal("dirty state not cleared after commit")
 	}

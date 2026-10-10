@@ -2,7 +2,6 @@ package terrain
 
 import (
 	"math"
-	"sort"
 )
 
 var SurfaceFields = []string{"ocean", "waterLevel", "waterDepth", "waterBody", "basin", "catchmentArea", "drainageElevation", "shelf", "seamount", "reefType", "light", "landform", "highland", "mountainCore", "geology"}
@@ -27,6 +26,13 @@ func (e *Environment) carveDepressions(sample func(float64, float64) float64) {
 	d := distance(e.Mask, w, h, 0)
 	used := make([]bool, w*h)
 	for i := range e.Mask {
+		// Subsidence and calderas require geological support. Noise only
+		// varies their shape; it cannot punch arbitrary decorative lake holes.
+		rift := (e.get("boundary", i) == 2 || e.get("boundary", i) == 3) && e.get("tectonicStress", i) > .3
+		caldera := e.get("volcano", i) > .65
+		if !rift && !caldera {
+			continue
+		}
 		if used[i] || d[i] < 3 || e.get("elevation", i) > 1400 || sample(float64(i%w)*1.73+411, float64(i/w)*1.31) < .985 {
 			continue
 		}
@@ -86,164 +92,6 @@ func (e *Environment) connectOcean() {
 	}
 	e.WaterBodies = []WaterBody{body}
 	e.Fields["oceanDistance"] = distance(e.Mask, w, h, 0)
-}
-
-// Basins share a spill elevation. Runoff relative to evaporation determines
-// their local water level; dry endorheic basins remain land below sea level.
-func (e *Environment) fillBasins(filled []float64) {
-	w, h := e.Options.Columns, e.Options.Rows
-	f, set := e.get, e.set
-	basinID := 0
-	type basin struct {
-		id           int
-		cells        []int
-		spill, floor float64
-	}
-	basins := []basin{}
-	for i := range e.Mask {
-		if e.Mask[i] == 0 || f("basin", i) > 0 || filled[i]-f("elevation", i) < 4 {
-			continue
-		}
-		basinID++
-		q := []int{i}
-		set("basin", i, float64(basinID))
-		spill := filled[i]
-		floor := f("elevation", i)
-		for head := 0; head < len(q); head++ {
-			for _, j := range nb(q[head], w, h) {
-				if e.Mask[j] != 0 && f("basin", j) == 0 && filled[j]-f("elevation", j) > 4 && math.Abs(filled[j]-filled[i]) < 1 {
-					set("basin", j, float64(basinID))
-					q = append(q, j)
-					spill = math.Min(spill, filled[j])
-					floor = math.Min(floor, f("elevation", j))
-				}
-			}
-		}
-		basins = append(basins, basin{basinID, q, spill, floor})
-	}
-	// Resolve upstream basins first. Closed basins must not supply phantom
-	// runoff to a downstream lake through the provisional filled drainage tree.
-	sort.SliceStable(basins, func(i, j int) bool { return basins[i].spill > basins[j].spill })
-	for _, b := range basins {
-		basinID, q, spill, floor := b.id, b.cells, b.spill, b.floor
-		runoff, evap := 0., 0.
-		for _, j := range q {
-			runoff += math.Max(.02, f("precipitation", j)/1000)
-			for _, k := range nb(j, w, h) {
-				if int(f("flow", k)) == j && f("basin", k) != float64(basinID) {
-					runoff += f("accumulation", k)
-				}
-			}
-			evap += math.Max(120, (f("temperature", j)+25)*28)
-		}
-		balance := runoff * 350 / math.Max(1, evap)
-		fraction := clamp((balance-.18)/.82, 0, 1)
-		level := floor + (spill-floor)*fraction
-		if len(q) < 2 || spill-floor < 12 || fraction < .08 {
-			fraction = 0
-			level = floor
-		}
-		body := WaterBody{ID: len(e.WaterBodies) + 1, Kind: "lake", Level: f32(level)}
-		for _, j := range q {
-			if fraction > 0 && f("elevation", j) < level-2 {
-				e.Mask[j] = 0
-				set("lake", j, 1)
-				set("waterLevel", j, level)
-				set("waterDepth", j, level-f("elevation", j))
-				set("bathymetry", j, level-f("elevation", j))
-				set("waterBody", j, float64(body.ID))
-				body.Cells = append(body.Cells, j)
-				body.MaxDepth = math.Max(body.MaxDepth, f("waterDepth", j))
-			}
-		}
-		if len(body.Cells) > 0 {
-			e.WaterBodies = append(e.WaterBodies, body)
-		}
-		if fraction < 1 {
-			for _, j := range q {
-				next := int(f("flow", j))
-				if next < 0 || f("basin", next) == float64(basinID) {
-					continue
-				}
-				lost := f("accumulation", j)
-				for at := next; at >= 0; at = int(f("flow", at)) {
-					set("accumulation", at, math.Max(0, f("accumulation", at)-lost))
-				}
-			}
-			for _, j := range q {
-				set("flow", j, -1)
-				set("drainageElevation", j, math.Max(f("elevation", j), f("waterLevel", j)))
-				if e.Mask[j] == 0 {
-					set("drainageElevation", j, level)
-					continue
-				}
-				// No artificial uphill drainage through a dry or partially filled basin.
-				set("drainageElevation", j, f("elevation", j))
-				z := f("elevation", j)
-				for _, k := range nb(j, w, h) {
-					if f("basin", k) != float64(basinID) {
-						continue
-					}
-					surface := f("elevation", k)
-					if e.Mask[k] == 0 {
-						surface = level
-					}
-					if surface < z {
-						z = surface
-						set("flow", j, float64(k))
-					}
-				}
-			}
-		}
-	}
-	for i := range e.Mask {
-		if f("lake", i) == 0 {
-			continue
-		}
-		old := f("temperature", i)
-		temperature := old - f("waterDepth", i)*.0065
-		set("summer", i, temperature+(f("summer", i)-old)*.45)
-		set("winter", i, temperature+(f("winter", i)-old)*.45)
-		set("temperature", i, temperature)
-		set("moisture", i, 1)
-		set("aridity", i, 0)
-	}
-	e.accumulateDrainage()
-}
-
-func (e *Environment) accumulateDrainage() {
-	n := len(e.Mask)
-	f, set := e.get, e.set
-	degree := make([]int, n)
-	q := []int{}
-	for i := 0; i < n; i++ {
-		set("accumulation", i, 0)
-		set("catchmentArea", i, 1)
-		if e.Mask[i] != 0 {
-			set("accumulation", i, math.Max(.02, f("precipitation", i)/1000))
-		}
-		j := int(f("flow", i))
-		if j >= 0 {
-			degree[j]++
-		}
-	}
-	for i, d := range degree {
-		if d == 0 {
-			q = append(q, i)
-		}
-	}
-	for head := 0; head < len(q); head++ {
-		i := q[head]
-		j := int(f("flow", i))
-		if j >= 0 {
-			set("accumulation", j, f("accumulation", j)+f("accumulation", i))
-			set("catchmentArea", j, f("catchmentArea", j)+f("catchmentArea", i))
-			degree[j]--
-			if degree[j] == 0 {
-				q = append(q, j)
-			}
-		}
-	}
 }
 
 // Four reef forms follow coastal/shelf or volcanic-ring geometry. Suitability

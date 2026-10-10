@@ -89,7 +89,7 @@ func TestContinuousSurfaceAndHydrology(t *testing.T) {
 				if d != 0 || f("waterBody", i) != 0 {
 					t.Fatal("dry cell has water")
 				}
-				runoff += math.Max(.02, f("precipitation", i)/1000)
+				runoff += f("runoff", i)
 			} else {
 				if math.Abs(d-(f("waterLevel", i)-z)) > .01 {
 					t.Fatal("inconsistent water depth")
@@ -104,6 +104,12 @@ func TestContinuousSurfaceAndHydrology(t *testing.T) {
 				if d > 3000 {
 					deep++
 				}
+			}
+			if e.Mask[i] == 0 {
+				runoff += f("runoff", i)
+			}
+			if f("flow", i) >= 0 {
+				sinks += math.Min(f("hydroLoss", i), f("accumulation", i))
 			}
 			if f("flow", i) < 0 {
 				sinks += f("accumulation", i)

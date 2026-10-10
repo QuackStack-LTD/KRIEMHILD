@@ -46,3 +46,30 @@ test('Detail features draw widening river ribbons and never placeholder dots',as
   assert.equal(polygons.length,3);
   const water=polygons[1];assert.ok(Math.abs(water[2][1])>Math.abs(water[0][1])*5);
 });
+
+
+test('Authored and generated river identities render identical water and banks at every scale',async()=>{
+ const {drawDetailFeatures}=await import('../src/terrain/detail-render.js');
+ const render=(id,detail)=>{const calls=[];let points=[];const ctx={save(){},restore(){},beginPath(){points=[];},moveTo(...p){points.push(p);},lineTo(...p){points.push(p);},closePath(){},fill(){calls.push({color:this.fillStyle,alpha:this.globalAlpha,points});}};
+ const feature={id,kind:'river',level:1,width:.1,widths:[.1,.12,.17],discharge:35,path:[[0,0,300],[1,.2,200],[2,0,100]]};
+ drawDetailFeatures(ctx,[{tile:{features:[feature]},arrival:1}],{x:12,y:10,scale:6*2**detail},detail,'terrain');return calls;};
+ for(const detail of [0,1,2.5,4,6,8])assert.deepEqual(render('generated/drainage/7',detail),render('authored/river-a',detail));
+ const {entityColor,entityStyle}=await import('../src/terrain/feature-style.js');
+ assert.equal(entityColor({}),'#000000');assert.equal(entityColor({color:'#ab1234'}),'#ab1234');assert.equal(entityColor({},true),entityStyle.selected);
+});
+
+
+test('Terrain materials use physical fields identically for generated and edited samples',async()=>{
+ const {tileImage}=await import('../src/terrain/detail-render.js');const previous=globalThis.document;
+ globalThis.document={createElement(){const canvas={};canvas.getContext=()=>({createImageData:(w,h)=>({data:new Uint8ClampedArray(w*h*4)}),putImageData:image=>{canvas.pixels=[...image.data];}});return canvas;}};
+ try{
+  const solver={W:2,H:2,environment:{fields:{waterBody:[0,0,0,0]}}},palette=Array.from({length:4},()=>[90,140,80]);
+  for(const level of [0,3,7])for(const material of [{vegetation:.9},{rock:.9},{sand:.9},{floodplain:1,riverDepth:3},{waterBody:1,waterDepth:40}]){
+   const point={elevation:120,parent:110,temperature:15,waterBody:0,vegetation:0,gradient:[2,3,2,3],...material};
+   const tile={level,x:0,y:0,step:1,size:2,points:Array.from({length:4},()=>point)};
+   const natural=tileImage(tile,solver,palette,'terrain',.5).pixels;
+   const authored=tileImage({...tile,points:tile.points.map(p=>({...p,authored:true}))},solver,palette,'terrain',.5).pixels;
+   assert.deepEqual(authored,natural);
+  }
+ }finally{if(previous===undefined)delete globalThis.document;else globalThis.document=previous;}
+});

@@ -3,7 +3,9 @@ package storage
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -61,6 +63,37 @@ func exercise(t *testing.T, dir, dsn string) {
 	}
 }
 func TestEmbeddedProjectDatabasePersists(t *testing.T) { exercise(t, t.TempDir(), "") }
+func TestExistingCatalogMigrationPreservesWorlds(t *testing.T) {
+	dir := t.TempDir()
+	db, err := sql.Open("sqlite", filepath.Join(dir, "kriemhild.sqlite"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, query := range []string{
+		"CREATE TABLE kriemhild_schema (version INTEGER PRIMARY KEY)",
+		"INSERT INTO kriemhild_schema VALUES (2)",
+		"CREATE TABLE kriemhild_projects (id TEXT PRIMARY KEY, seed TEXT NOT NULL, width INTEGER NOT NULL, height INTEGER NOT NULL, detail_tiles INTEGER NOT NULL, bytes BIGINT NOT NULL, updated_at BIGINT NOT NULL, archive BLOB NOT NULL)",
+		"INSERT INTO kriemhild_projects VALUES ('legacy','seed',32,32,5,3,1,X'010203')",
+	} {
+		if _, err := db.Exec(query); err != nil {
+			t.Fatal(err)
+		}
+	}
+	db.Close()
+	store, err := Open(context.Background(), dir, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	projects, err := store.List(context.Background())
+	if err != nil || len(projects) != 1 || projects[0].Name != "Unnamed World" {
+		t.Fatal("catalog migration failed", err, projects)
+	}
+	data, err := store.Load(context.Background(), "legacy")
+	if err != nil || !bytes.Equal(data, []byte{1, 2, 3}) {
+		t.Fatal("migration changed saved project", err)
+	}
+}
 func TestPostgresProjectDatabasePersists(t *testing.T) {
 	dsn := os.Getenv("KRIEMHILD_TEST_DATABASE_URL")
 	if dsn == "" {

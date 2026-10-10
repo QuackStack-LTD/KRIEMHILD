@@ -9,6 +9,7 @@ import (
 	"io"
 	"kriemhild/internal/storage"
 	"kriemhild/internal/terrain"
+	"kriemhild/internal/world"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -62,12 +63,12 @@ func expandJSON(data []byte, value any) error {
 
 // Caller holds the session lock. A completed response means this transaction
 // committed; client disconnects do not cancel a mutation that already ran.
-func (s *Server) autosave(v *session, changed bool) error {
+func (s *Server) saveWorld(v *session, changed bool) error {
 	if v.retired {
-		return fmt.Errorf("world was replaced by an imported project")
+		return fmt.Errorf("world was deleted or replaced")
 	}
 	if s.projects == nil {
-		return nil
+		return fmt.Errorf("project database is not configured")
 	}
 	v.dirty = v.dirty || changed
 	if v.worldID == "" {
@@ -80,6 +81,11 @@ func (s *Server) autosave(v *session, changed bool) error {
 			parts[name] = b
 		}
 		return err
+	}
+	for name, value := range v.authored().Parts(!v.persisted) {
+		if err := add(name, value); err != nil {
+			return err
+		}
 	}
 	if !v.persisted || v.dirty {
 		solver := *v.solver
@@ -127,10 +133,12 @@ func (s *Server) autosave(v *session, changed bool) error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	if err := s.projects.SaveParts(ctx, storage.Project{ID: v.worldID, Seed: seed, Width: v.solver.W, Height: v.solver.H, DetailTiles: len(v.tiles)}, parts); err != nil {
+	if err := s.projects.SaveParts(ctx, storage.Project{ID: v.worldID, Name: v.authored().Header.Name, Seed: seed, Width: v.solver.W, Height: v.solver.H, DetailTiles: len(v.tiles)}, parts, !v.persisted); err != nil {
 		return err
 	}
 	v.persisted = true
+	v.unsaved = false
+	v.world.Saved()
 	v.dirty = false
 	v.detailPersisted = v.detail != nil
 	v.savedTiles = make(map[string]bool, len(v.tiles))
@@ -146,7 +154,7 @@ func restoreCheckpoint(id string, parts map[string][]byte, cacheRoot string) (v 
 		return nil, err
 	}
 	if c.Version != 1 || c.Engine != terrain.DetailEngineVersion {
-		return nil, fmt.Errorf("unsupported autosave version")
+		return nil, fmt.Errorf("unsupported saved world version")
 	}
 	solver := &c.Solver
 	if solver.W < 16 || solver.W > 256 || solver.H < 16 || solver.H > 256 || solver.N != solver.W*solver.H || len(solver.Dom) != solver.N || len(solver.Pinned) != solver.N || len(solver.Locked) != solver.N || len(solver.InQueue) != solver.N || len(solver.Pos) != solver.N || len(solver.Buckets) != solver.T+1 || (solver.Status != "done" && solver.Status != "running" && solver.Status != "failed") {
@@ -165,6 +173,36 @@ func restoreCheckpoint(id string, parts map[string][]byte, cacheRoot string) (v 
 	v = &session{solver: solver, generation: c.Generation, base: c.Base, edits: c.Edits, undo: c.Undo, order: c.Order, worldID: id, cacheRoot: cacheRoot, last: time.Now(), persisted: true, savedTiles: map[string]bool{}}
 	if v.undo == nil {
 		v.undo = map[string]terrain.Snapshot{}
+	}
+	v.world = world.New(solver.W, solver.H)
+	if b := parts["builder/header"]; b != nil {
+		if err = expandJSON(b, &v.world.Header); err != nil {
+			return nil, err
+		}
+		for key, data := range parts {
+			if strings.HasPrefix(key, "builder/entity/") {
+				var entity world.Entity
+				if err = expandJSON(data, &entity); err != nil {
+					return nil, err
+				}
+				if key != "builder/entity/"+entity.ID {
+					return nil, fmt.Errorf("entity identity mismatch")
+				}
+				v.world.Entities[entity.ID] = entity
+			} else if strings.HasPrefix(key, "builder/operation/") {
+				var op world.Operation
+				if err = expandJSON(data, &op); err != nil {
+					return nil, err
+				}
+				if key != "builder/operation/"+op.ID {
+					return nil, fmt.Errorf("operation identity mismatch")
+				}
+				v.world.Operations[op.ID] = op
+			}
+		}
+		if err = v.world.Validate(solver.W, solver.H); err != nil {
+			return nil, err
+		}
 	}
 	restored := v
 	defer func() {
@@ -240,9 +278,13 @@ func (s *Server) saveView(w http.ResponseWriter, r *http.Request) {
 	}
 	v.mu.Lock()
 	defer v.mu.Unlock()
+	if v.retired {
+		fail(w, 409, "World was deleted or replaced")
+		return
+	}
 	v.last = time.Now()
 	if req.Client != "" && req.Client == v.viewClient && req.Sequence <= v.viewSequence {
-		respond(w, 200, map[string]any{"worldId": v.worldID, "saved": s.projects != nil})
+		respond(w, 200, map[string]any{"worldId": v.worldID, "unsaved": v.unsaved})
 		return
 	}
 	var fields map[string]json.RawMessage
@@ -258,12 +300,34 @@ func (s *Server) saveView(w http.ResponseWriter, r *http.Request) {
 		}
 		req.UI, _ = json.Marshal(merged)
 	}
-	v.projectUI = req.UI
-	if err := s.autosave(v, false); err != nil {
-		fail(w, 503, "Autosave failed. Changes are still in this session; retry before closing.")
-		return
+	if !sameJSON(v.projectUI, req.UI) {
+		v.unsaved = true
 	}
+	v.projectUI = req.UI
 	v.viewClient = req.Client
 	v.viewSequence = req.Sequence
-	respond(w, 200, map[string]any{"worldId": v.worldID, "saved": s.projects != nil})
+	respond(w, 200, map[string]any{"worldId": v.worldID, "unsaved": v.unsaved})
+}
+
+// View staging never writes to the database. Only explicit Save commits a world.
+func sameJSON(a, b json.RawMessage) bool {
+	var x, y any
+	if json.Unmarshal(a, &x) != nil || json.Unmarshal(b, &y) != nil {
+		return false
+	}
+	ax, _ := json.Marshal(x)
+	by, _ := json.Marshal(y)
+	return bytes.Equal(ax, by)
+}
+func (s *Server) commitWorld(w http.ResponseWriter, r *http.Request) {
+	v := s.worldSession(w, r)
+	if v == nil {
+		return
+	}
+	defer v.mu.Unlock()
+	if err := s.saveWorld(v, false); err != nil {
+		fail(w, 503, "Could not save world. Changes remain in this session; click Save to retry.")
+		return
+	}
+	respond(w, 200, map[string]any{"worldId": v.worldID, "unsaved": false, "saved": true})
 }

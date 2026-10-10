@@ -5,10 +5,11 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { waterSurfacePositions } from './water-surface.js';
 import { createDetailScene } from './detail-scene.js';
+import {meshSurface} from './mesh-surface.js';
 
 const MAX_VERTICES = 250000; // bigger maps sample every n-th cell
 
-export function createView(container,onCameraChange=()=>{}) {
+export function createView(container,onCameraChange=()=>{},onFrame=()=>{}) {
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.domElement.className = 'view3d';
@@ -179,8 +180,10 @@ export function createView(container,onCameraChange=()=>{}) {
   let raf = 0;
   const loop = () => {
     raf = requestAnimationFrame(loop);
+    if(!container.clientWidth||!container.clientHeight)return;
     controls.update();
     detailScene?.update(waterScale??1,detailLayer);
+    onFrame();
     renderer.render(scene, camera);
   };
   loop();
@@ -225,7 +228,12 @@ export function createView(container,onCameraChange=()=>{}) {
     renderer.domElement.dataset.anchorError=String(Math.hypot(projected.x-targetX,projected.y-targetY));
   };
   renderer.domElement.addEventListener('wheel',zoomAtTerrain,{capture:true,passive:false});
-  return { setMap, setHeights, textureChanged, resetCamera, dispose, setDetailLayer(layer){detailLayer=layer;},
+  return { setMap, setHeights, textureChanged, resetCamera, dispose, scene,camera,renderer,controls,
+    surfaceAt(x,y){if(detailScene)return detailScene.surfaceAt(x,y);if(!land)return null;return meshSurface(land.geometry.attributes.position.array,sphere?gw+1:gw,sphere?gh+1:gh,x/(W-1)*(sphere?gw:gw-1),y/(H-1)*(sphere?gh:gh-1));},
+    surfaceStep:()=>detailScene?.surfaceStep()??1,surfaceVersion:()=>detailScene?.surfaceVersion()??0,
+    viewport:()=>detailScene?.viewport()??{bounds:{x:0,y:0,width:W-1,height:H-1},detail:0,pixels:6},
+    pick(event){const rect=renderer.domElement.getBoundingClientRect();raycaster.setFromCamera(new THREE.Vector2((event.clientX-rect.left)/rect.width*2-1,1-(event.clientY-rect.top)/rect.height*2),camera);const hit=raycaster.intersectObjects(detailScene?.terrainMeshes()||(land?[land]:[]),false)[0];if(!hit)return null;const p=detailScene?detailScene.coordinates(hit.point):{x:(hit.point.x/W+.5)*(W-1),y:(hit.point.z/H+.5)*(H-1)};return {...p,point:hit.point};},
+    invalidate(bounds){detailScene?.invalidate(bounds);},setDetailLayer(layer){detailLayer=layer;},
     cameraState(){return {position:camera.position.toArray(),target:controls.target.toArray(),near:camera.near};},
     restoreCamera(state){if(!state||!Array.isArray(state.position)||!Array.isArray(state.target)||state.position.length!==3||state.target.length!==3||![...state.position,...state.target].every(Number.isFinite))return;camera.position.fromArray(state.position);controls.target.fromArray(state.target);if(Number.isFinite(state.near)&&state.near>0)camera.near=state.near;camera.updateProjectionMatrix();controls.update();}
   };

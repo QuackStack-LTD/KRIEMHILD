@@ -64,7 +64,8 @@ exercise() {
   done
   [[ "$status" == done ]]
   curl -fsS "$base/api/sessions/$id/detail/2/0/0" > "$work/tile.json"
-  curl -fsS "$base/api/sessions/$id/autosave" -H 'Content-Type: application/json' --data '{"ui":{"seedUsed":42,"camera2d":{"scale":120}}}' > "$work/autosaved.json"
+  curl -fsS "$base/api/sessions/$id/view" -H 'Content-Type: application/json' --data '{"ui":{"seedUsed":42,"camera2d":{"scale":120}}}' > "$work/staged.json"
+  curl -fsS "$base/api/sessions/$id/save" -H 'Content-Type: application/json' --data '{}' > "$work/saved.json"
   world=$(curl -fsS "$base/api/projects" | python3 -c 'import json,sys;print(json.load(sys.stdin)["projects"][0]["id"])')
   curl -fsS -X DELETE "$base/api/sessions/$id" >/dev/null
   stop_app
@@ -82,7 +83,7 @@ assert restored['projectUI']['camera2d']['scale'] == 120, 'camera state missing'
 PY
   curl -fsS "$base/api/sessions/$id/project" -H 'Content-Type: application/json' --data '{"ui":{"seedUsed":42}}' -o "$work/world.zip"
   stop_app
-  echo "$driver: frontend, non-root runtime, autosave, restart, stored detail, ZIP export and graceful shutdown passed"
+  echo "$driver: frontend, non-root runtime, explicit save, restart, stored detail, ZIP export and graceful shutdown passed"
 }
 exercise sqlite "$prefix-sqlite"
 docker run -d --name "$postgres" --network "$network" \

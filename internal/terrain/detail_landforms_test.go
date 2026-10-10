@@ -14,6 +14,9 @@ func plainDetail(t *testing.T, river bool, grade float64) *DetailModel {
 		t.Fatal(err)
 	}
 	e := BuildEnvironment(o)
+	// This fixture replaces the entire physical raster with a hand-built
+	// channel. Discard the unrelated saved network as well as the old fields.
+	e.Hydrology = nil
 	for _, f := range e.Fields {
 		for i := range f {
 			f[i] = 0

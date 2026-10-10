@@ -2,7 +2,6 @@ package httpapi
 
 import (
 	"bytes"
-	"context"
 	"database/sql"
 	"errors"
 	"kriemhild/internal/storage"
@@ -10,24 +9,6 @@ import (
 	"os"
 	"time"
 )
-
-func (s *Server) persistProject(ctx context.Context, v *session, archive []byte) error {
-	if v.retired {
-		return errors.New("world was replaced by an imported project")
-	}
-	if s.projects == nil {
-		return nil
-	}
-	seed := ""
-	if v.solver.Environment != nil {
-		seed = v.solver.Environment.Options.Seed
-	}
-	err := s.projects.Save(ctx, storage.Project{ID: v.worldID, Seed: seed, Width: v.solver.W, Height: v.solver.H, DetailTiles: len(v.tiles)}, archive)
-	if err == nil {
-		v.persisted = false
-	}
-	return err
-}
 
 // Import replaces a world atomically, then retires old in-flight writers. The
 // caller holds openMu so no concurrent open can install a second live copy.
@@ -91,7 +72,7 @@ func (s *Server) openStoredProject(w http.ResponseWriter, r *http.Request) {
 			s.mu.Unlock()
 			defer v.mu.Unlock()
 			v.last = time.Now()
-			state := view(v.solver, true)
+			state := sessionState(v)
 			state["id"] = id
 			state["worldId"] = v.worldID
 			state["projectUI"] = v.projectUI
@@ -118,7 +99,7 @@ func (s *Server) openStoredProject(w http.ResponseWriter, r *http.Request) {
 	if len(parts) > 0 {
 		v, err = restoreCheckpoint(r.PathValue("id"), parts, s.cacheRoot)
 		if err != nil {
-			fail(w, 422, "Stored autosave failed validation")
+			fail(w, 422, "Stored world failed validation")
 			return
 		}
 	} else {
@@ -160,10 +141,28 @@ func (s *Server) openStoredProject(w http.ResponseWriter, r *http.Request) {
 	v.last = time.Now()
 	s.sessions[id] = v
 	s.mu.Unlock()
-	state := view(v.solver, true)
+	state := sessionState(v)
 	state["id"] = id
 	state["worldId"] = v.worldID
 	state["projectUI"] = v.projectUI
 	state["storedDetailCount"] = len(v.tiles)
 	respond(w, 201, state)
+}
+
+// Retire live writers under the same locks used for import/open. A delayed Save
+// must never resurrect a deleted world. Database failure leaves the session intact.
+func (s *Server) deleteProject(w http.ResponseWriter, r *http.Request) {
+	s.openMu.Lock()
+	defer s.openMu.Unlock()
+	err := s.replaceWorld(r.PathValue("id"), func() error {
+		if s.projects == nil {
+			return nil
+		}
+		return s.projects.Delete(r.Context(), r.PathValue("id"))
+	})
+	if err != nil {
+		fail(w, 503, "Could not delete world; the database is unavailable.")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }

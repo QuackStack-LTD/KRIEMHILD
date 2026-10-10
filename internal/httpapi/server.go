@@ -9,6 +9,7 @@ import (
 	"io"
 	"kriemhild/internal/storage"
 	"kriemhild/internal/terrain"
+	"kriemhild/internal/world"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -34,12 +35,15 @@ type session struct {
 	base            *terrain.Snapshot
 	edits           []json.RawMessage
 	persisted       bool
+	unsaved         bool
 	dirty           bool
 	detailPersisted bool
 	savedTiles      map[string]bool
 	viewClient      string
 	viewSequence    uint64
 	retired         bool
+	world           *world.State
+	composed        map[string][]byte
 }
 type Server struct {
 	mu          sync.Mutex
@@ -90,7 +94,14 @@ func NewWithOptions(dist string, options Options) *Server {
 	s.mux.HandleFunc("POST /api/sessions/{id}/{action}", s.action)
 	s.mux.HandleFunc("GET /api/sessions/{id}/detail/{level}/{x}/{y}", s.detailTile)
 	s.mux.HandleFunc("POST /api/sessions/{id}/project", s.saveProject)
-	s.mux.HandleFunc("POST /api/sessions/{id}/autosave", s.saveView)
+	s.mux.HandleFunc("POST /api/sessions/{id}/autosave", s.saveView) // Legacy endpoint stages view only.
+	s.mux.HandleFunc("POST /api/sessions/{id}/view", s.saveView)
+	s.mux.HandleFunc("POST /api/sessions/{id}/save", s.commitWorld)
+	s.mux.HandleFunc("DELETE /api/projects/{id}", s.deleteProject)
+	s.mux.HandleFunc("GET /api/sessions/{id}/world", s.worldInfo)
+	s.mux.HandleFunc("GET /api/sessions/{id}/world/state", s.worldState)
+	s.mux.HandleFunc("GET /api/sessions/{id}/world/entities", s.worldEntities)
+	s.mux.HandleFunc("POST /api/sessions/{id}/world", s.worldCommand)
 	s.mux.HandleFunc("POST /api/projects/import", s.importProject)
 	s.mux.HandleFunc("GET /api/projects", s.listProjects)
 	s.mux.HandleFunc("POST /api/projects/{id}/open", s.openStoredProject)
@@ -105,7 +116,7 @@ func NewWithOptions(dist string, options Options) *Server {
 			http.ServeFile(w, r, file)
 			return
 		}
-		if r.URL.Path != "/" {
+		if r.URL.Path != "/" && r.URL.Path != "/world/new" && !validWorldRoute(r.URL.Path) {
 			http.NotFound(w, r)
 			return
 		}
@@ -251,15 +262,12 @@ func (s *Server) create(w http.ResponseWriter, r *http.Request) {
 	v.mu.Lock()
 	s.mu.Unlock()
 	defer v.mu.Unlock()
-	if err := s.autosave(v, true); err != nil {
-		// Retain the session identity so the caller can retry persistence.
-		state := view(solver, true)
-		state["id"] = id
-		state["autosaveError"] = "Autosave failed; retry before closing."
-		respond(w, 201, state)
+	if v.retired {
+		fail(w, 409, "World was deleted or replaced; reopen it from Projects.")
 		return
 	}
-	state := view(solver, true)
+	v.dirty, v.unsaved = true, true
+	state := sessionState(v)
 	state["id"] = id
 	state["worldId"] = v.worldID
 	respond(w, 201, state)
@@ -271,6 +279,7 @@ func (s *Server) remove(w http.ResponseWriter, r *http.Request) {
 	s.mu.Unlock()
 	if v != nil {
 		v.mu.Lock()
+		v.retired = true
 		if v.dir != "" {
 			_ = os.RemoveAll(v.dir)
 		}
@@ -305,22 +314,28 @@ func (s *Server) detailTile(w http.ResponseWriter, r *http.Request) {
 	}
 	v.mu.Lock()
 	defer v.mu.Unlock()
+	if v.retired {
+		fail(w, 409, "World was deleted or replaced; reopen it from Projects.")
+		return
+	}
 	if v.solver.Environment == nil {
 		fail(w, 400, "Continuous detail requires Physical environment")
 		return
 	}
 	v.last = time.Now()
-	data, err := v.storedDetail(args[0], args[1], args[2])
+	// Abandoned view requests must not create extra detail after an explicit Save.
+	if r.Context().Err() != nil {
+		return
+	}
+	data, err := v.composedDetail(args[0], args[1], args[2])
 	if err != nil {
 		fail(w, 400, err.Error())
 		return
 	}
 	if !v.savedTiles[detailKey(args[0], args[1], args[2])] {
-		if err := s.autosave(v, false); err != nil {
-			fail(w, 503, "Could not autosave explored terrain; retry.")
-			return
-		}
+		v.unsaved = true
 	}
+	w.Header().Set("X-World-Unsaved", strconv.FormatBool(v.unsaved))
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
 }
@@ -344,6 +359,10 @@ func (s *Server) action(w http.ResponseWriter, r *http.Request) {
 	}
 	v.mu.Lock()
 	defer v.mu.Unlock()
+	if v.retired {
+		fail(w, 409, "World was deleted or replaced; reopen it from Projects.")
+		return
+	}
 	v.last = time.Now()
 	solver := v.solver
 	out := map[string]any{}
@@ -382,10 +401,7 @@ func (s *Server) action(w http.ResponseWriter, r *http.Request) {
 			delete(v.undo, v.order[0])
 			v.order = v.order[1:]
 		}
-		if err := s.autosave(v, true); err != nil {
-			fail(w, 503, "Could not autosave undo state; retry.")
-			return
-		}
+		v.dirty, v.unsaved = true, true
 		respond(w, 200, map[string]string{"token": id})
 		return
 	case "restore":
@@ -426,10 +442,10 @@ func (s *Server) action(w http.ResponseWriter, r *http.Request) {
 		fail(w, 404, "Unknown map action.")
 		return
 	}
-	out["state"] = view(solver, false)
-	if err := s.autosave(v, true); err != nil {
-		out["autosaveError"] = "Autosave failed. Changes remain in this session; retry before closing."
-	}
+	v.dirty, v.unsaved = true, true
+	state := view(solver, false)
+	state["unsaved"] = v.unsaved
+	out["state"] = state
 	out["solveMs"] = float64(time.Since(start).Microseconds()) / 1000
 	respond(w, 200, out)
 }
