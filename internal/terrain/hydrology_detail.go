@@ -38,10 +38,25 @@ func (m *DetailModel) refineHydroFeatures() {
 			break
 		}
 	}
+	if e.Geography != nil {
+		minimum := e.riverThresholds().VisibleOrder
+		for _, river := range e.Hydrology.Rivers {
+			order := 0
+			for _, id := range river.Reaches {
+				order = max(order, byID[id].Order)
+			}
+			if river.Class == "stream" && order < minimum {
+				levels[river.ID] = math.Max(levels[river.ID], 5)
+			}
+		}
+	}
 	base := m.Features
 	m.Features = nil
 	for _, f := range base {
 		r, ok := byID[f.ID]
+		if !ok && f.NetworkID != "" {
+			r, ok = byID[f.NetworkID]
+		}
 		if !ok {
 			m.Features = append(m.Features, f)
 			continue

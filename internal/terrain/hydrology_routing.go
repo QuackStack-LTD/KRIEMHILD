@@ -24,7 +24,7 @@ func (q *floodQueue) Push(v any)   { *q = append(*q, v.(floodCell)) }
 func (q *floodQueue) Pop() any     { a := *q; v := a[len(a)-1]; *q = a[:len(a)-1]; return v }
 
 func (e *Environment) simulateHydrology() {
-	n, w, h := len(e.Mask), e.Options.Columns, e.Options.Rows
+	n, w := len(e.Mask), e.Options.Columns
 	f, set := e.get, e.set
 	filled := make([]float64, n)
 	seen := make([]bool, n)
@@ -32,18 +32,29 @@ func (e *Environment) simulateHydrology() {
 	queue := &floodQueue{}
 	for i := 0; i < n; i++ {
 		set("flow", i, -1)
-		if f("ocean", i) > 0 || i%w == 0 || i%w == w-1 || i < w || i >= n-w {
+		if f("ocean", i) > 0 || e.edgeOutlet(i) || e.Geography == nil && (i%w == 0 || i%w == w-1 || i < w || i >= n-w) {
 			seen[i] = true
 			filled[i] = math.Max(f("elevation", i), f("waterLevel", i))
 			heap.Push(queue, floodCell{i, filled[i]})
 		}
+	}
+	if queue.Len() == 0 {
+		lowest := 0
+		for i := range e.Mask {
+			if f("elevation", i) < f("elevation", lowest) {
+				lowest = i
+			}
+		}
+		seen[lowest] = true
+		filled[lowest] = f("elevation", lowest)
+		heap.Push(queue, floodCell{lowest, filled[lowest]})
 	}
 	sequence := 0
 	for queue.Len() > 0 {
 		v := heap.Pop(queue).(floodCell)
 		rank[v.cell] = sequence
 		sequence++
-		for _, j := range nb(v.cell, w, h) {
+		for _, j := range e.neighbors(v.cell) {
 			if seen[j] {
 				continue
 			}
@@ -63,6 +74,9 @@ func (e *Environment) simulateHydrology() {
 		}
 	}
 	e.accumulateWater()
+	if e.Geography != nil {
+		e.breachNumericalPits(filled)
+	}
 	// Group real depressions at a common spill surface. The routing surface is
 	// provisional only; it never raises the actual land or floods every sink.
 	used := make([]bool, n)
@@ -81,7 +95,7 @@ func (e *Environment) simulateHydrology() {
 			if f("elevation", at) < f("elevation", lowest) {
 				lowest = at
 			}
-			for _, j := range nb(at, w, h) {
+			for _, j := range e.neighbors(at) {
 				if !used[j] && f("ocean", j) == 0 && filled[j]-f("elevation", j) > 4 && math.Abs(filled[j]-filled[i]) < 1 {
 					used[j] = true
 					cells = append(cells, j)
@@ -141,10 +155,10 @@ func (e *Environment) simulateHydrology() {
 		costs := func(level float64) (loss, rain, evap, seep float64) {
 			for _, i := range basin.Cells {
 				coverage := smooth(clamp((level-f("elevation", i))/4, 0, 1))
-				r := f("precipitation", i) / 1000 * coverage
+				r := f("precipitation", i) / 1000 * coverage * e.areaWeight(i)
 				lakeTemperature := f("temperature", i) - math.Max(0, level-f("elevation", i))*.0065
-				v := math.Max(.12, (lakeTemperature+25)*.028) * coverage
-				s := f("permeability", i) * .18 * coverage
+				v := math.Max(.12, (lakeTemperature+25)*.028) * coverage * e.areaWeight(i)
+				s := f("permeability", i) * .18 * coverage * e.areaWeight(i)
 				rain += r
 				evap += v
 				seep += s
@@ -221,7 +235,7 @@ func (e *Environment) simulateHydrology() {
 				delete(remaining, start)
 				cells := []int{start}
 				for head := 0; head < len(cells); head++ {
-					for _, j := range nb(cells[head], w, h) {
+					for _, j := range e.neighbors(cells[head]) {
 						if remaining[j] {
 							delete(remaining, j)
 							cells = append(cells, j)
@@ -245,8 +259,8 @@ func (e *Environment) simulateHydrology() {
 		// both the previous land yield and that rain in downstream discharge.
 		for _, i := range basin.Cells {
 			coverage := smooth(clamp((level-f("elevation", i))/4, 0, 1))
-			set("runoff", i, f("runoff", i)*(1-coverage)+f("precipitation", i)/1000*coverage)
-			set("dryRunoff", i, math.Min(f("runoff", i), f("dryRunoff", i)*(1-coverage)+f("precipitation", i)/1000*coverage*.35))
+			set("runoff", i, f("runoff", i)*(1-coverage)+f("precipitation", i)/1000*coverage*e.areaWeight(i))
+			set("dryRunoff", i, math.Min(f("runoff", i), f("dryRunoff", i)*(1-coverage)+f("precipitation", i)/1000*coverage*e.areaWeight(i)*.35))
 		}
 		set("hydroLoss", root, basin.Budget.Evaporation+basin.Budget.Infiltration)
 		if closed {
@@ -296,7 +310,7 @@ func (e *Environment) simulateHydrology() {
 					root = i
 				}
 				if wantsOutlet {
-					for _, j := range nb(i, w, h) {
+					for _, j := range e.neighbors(i) {
 						if int(f("waterBody", j)) == body.ID {
 							continue
 						}
@@ -320,7 +334,7 @@ func (e *Environment) simulateHydrology() {
 			visited := map[int]bool{root: true}
 			q := []int{root}
 			for head := 0; head < len(q); head++ {
-				for _, j := range nb(q[head], w, h) {
+				for _, j := range e.neighbors(q[head]) {
 					if !visited[j] && int(f("waterBody", j)) == body.ID {
 						visited[j] = true
 						q = append(q, j)
@@ -376,5 +390,49 @@ func (e *Environment) simulateHydrology() {
 			z = math.Max(z, f("drainageElevation", j)+.0001)
 		}
 		set("drainageElevation", i, z)
+	}
+}
+
+// Breach only sub-resolution pits in supplied catchments. Genuine geological
+// depressions deeper than three metres keep their basin and water balance.
+func (e *Environment) breachNumericalPits(filled []float64) {
+	if e.Fields["drainageBreach"] == nil {
+		e.Fields["drainageBreach"] = make([]float64, len(e.Mask))
+	}
+	for i := range e.Mask {
+		if e.get("waterBody", i) > 0 || filled[i]-e.get("elevation", i) > 3 || e.get("accumulation", i) < .5 {
+			continue
+		}
+		at := int(e.get("flow", i))
+		target := e.get("elevation", i) - .001
+		cells := []int{}
+		levels := []float64{}
+		outlet := false
+		for steps := 0; at >= 0 && steps < 16; steps++ {
+			surface := e.get("elevation", at)
+			if e.get("waterBody", at) > 0 {
+				surface = e.get("waterLevel", at)
+			}
+			if surface <= target {
+				outlet = true
+				break
+			}
+			if e.get("waterBody", at) > 0 || surface-target > 3 {
+				break
+			}
+			cells = append(cells, at)
+			levels = append(levels, target)
+			target -= .001
+			at = int(e.get("flow", at))
+		}
+		if !outlet {
+			continue
+		}
+		for k, cell := range cells {
+			cut := math.Max(0, e.get("elevation", cell)-levels[k])
+			e.set("elevation", cell, e.get("elevation", cell)-cut)
+			e.set("drainageBreach", cell, e.get("drainageBreach", cell)+cut)
+			e.Heights[cell] = int(round(e.get("elevation", cell) / 4))
+		}
 	}
 }

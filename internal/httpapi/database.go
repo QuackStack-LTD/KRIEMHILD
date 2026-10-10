@@ -72,6 +72,10 @@ func (s *Server) openStoredProject(w http.ResponseWriter, r *http.Request) {
 			s.mu.Unlock()
 			defer v.mu.Unlock()
 			v.last = time.Now()
+			if err := s.applyHistoricalMap(r.Context(), v); err != nil {
+				fail(w, 422, err.Error())
+				return
+			}
 			state := sessionState(v)
 			state["id"] = id
 			state["worldId"] = v.worldID
@@ -94,6 +98,19 @@ func (s *Server) openStoredProject(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fail(w, 503, "Project database is unavailable")
 		return
+	}
+	if len(parts) == 0 {
+		_, m, lookupErr := s.projects.MapContext(r.Context(), r.PathValue("id"))
+		if lookupErr == nil {
+			parts, err = s.projects.SnapshotParts(r.Context(), m.Snapshot)
+			if err != nil {
+				fail(w, 422, err.Error())
+				return
+			}
+		} else if !errors.Is(lookupErr, sql.ErrNoRows) {
+			fail(w, 503, lookupErr.Error())
+			return
+		}
 	}
 	var v *session
 	if len(parts) > 0 {
@@ -127,6 +144,10 @@ func (s *Server) openStoredProject(w http.ResponseWriter, r *http.Request) {
 			fail(w, 422, "Stored world failed validation")
 			return
 		}
+	}
+	if err = s.applyHistoricalMap(r.Context(), v); err != nil {
+		fail(w, 422, err.Error())
+		return
 	}
 	s.mu.Lock()
 	if len(s.sessions) >= 32 {

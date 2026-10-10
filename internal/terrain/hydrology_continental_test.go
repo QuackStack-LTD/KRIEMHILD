@@ -7,6 +7,7 @@ import (
 )
 
 func TestContinentalDrainageProfile(t *testing.T) {
+	coverage := 0.
 	for _, seed := range []string{"KRIEMHILD", "mountain-drainage", "dry-world", "island-arc", "polar-mountain", "river-basin"} {
 		o := realismOptions(t, `{"columns":160,"rows":100}`)
 		o.Seed = seed
@@ -47,12 +48,20 @@ func TestContinentalDrainageProfile(t *testing.T) {
 		t.Logf("%s land=%d sinks=%d basinSinks=%d longest=%.1f area=%.0f reaches=%d lowland=%d lakes=%d", seed, land, sinks, basinSinks, longest, maxArea, len(e.Hydrology.Reaches), lowland, len(e.WaterBodies)-1)
 		t.Logf("systems: %+v lengths: %+v invalid=%d coverage=%.1f%%", e.Hydrology.Statistics.Classes, e.Hydrology.Statistics.Lengths, e.Hydrology.Statistics.InvalidDestinations, e.Hydrology.Statistics.CoveragePercent)
 		stats := e.Hydrology.Statistics
-		if stats.Classes[0].Count == 0 || lowland < len(e.Hydrology.Reaches)/2 || stats.InvalidDestinations != 0 || stats.CoveragePercent < 5 || stats.CoveragePercent > 25 {
+		// Default worlds should retain enough supported tributaries to cover
+		// roughly a tenth of the land, without painting every slope blue.
+		// Coastline changes alter individual catchment sizes; enforce the
+		// ten-percent baseline across this sample, with one point of tolerance.
+		if stats.Classes[0].Count == 0 || lowland < len(e.Hydrology.Reaches)/2 || stats.InvalidDestinations != 0 || stats.CoveragePercent < 9 || stats.CoveragePercent > 25 {
 			t.Fatalf("incomplete or excessive drainage hierarchy: %+v", stats)
 		}
+		coverage += stats.CoveragePercent
 		if d := e.ValidateHydrology(); len(d) > 0 {
 			t.Fatal(d[:min(5, len(d))])
 		}
+	}
+	if coverage/6 < 10 {
+		t.Fatalf("drainage coverage declined across climates: %.1f%%", coverage/6)
 	}
 }
 

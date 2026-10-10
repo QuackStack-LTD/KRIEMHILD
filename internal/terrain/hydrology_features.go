@@ -7,6 +7,9 @@ func (e *Environment) waterRef(i int) string {
 		return e.hydroID("water", id)
 	}
 	if e.get("flow", i) < 0 {
+		if e.edgeOutlet(i) {
+			return e.hydroID("external-drainage", i)
+		}
 		return e.hydroID("terminal-basin", i)
 	}
 	return e.riverID(i)
@@ -59,7 +62,7 @@ func (e *Environment) finishHydrology() {
 		// volcanic location alone is insufficient to create a hot spring.
 		contrast := 0.
 		maximum := true
-		for _, j := range nb(i, w, h) {
+		for _, j := range e.neighbors(i) {
 			contrast = math.Max(contrast, f("permeability", j)-f("permeability", i))
 			if f("groundFlow", j) > f("groundFlow", i) && f("elevation", j) >= f("elevation", i) {
 				maximum = false
@@ -104,7 +107,7 @@ func (e *Environment) finishHydrology() {
 		}
 		if len(r.Upstream) == 0 {
 			r.Source = "mountain-runoff"
-			if e.Hydrology.NetworkVersion < 2 {
+			if e.Hydrology.NetworkVersion < 2 || e.Hydrology.NetworkVersion >= 3 && f("mountainCore", i) < .09 {
 				r.Source = "headwater-catchment"
 			}
 			if f("snowmelt", i) > .05 {
@@ -113,11 +116,11 @@ func (e *Environment) finishHydrology() {
 			if f("glacier", i) > .1 {
 				r.Source = "glacier"
 			}
-			if e.Hydrology.NetworkVersion < 2 && f("spring", i) > 0 {
+			if (e.Hydrology.NetworkVersion < 2 || e.Hydrology.NetworkVersion >= 3) && f("spring", i) > 0 {
 				r.Source = "spring"
 			}
 			for _, k := range incoming[i] {
-				if f("lake", k) > 0 && (e.Hydrology.NetworkVersion < 2 || lakeFed[int(f("waterBody", k))]) {
+				if f("lake", k) > 0 && f("accumulation", k) > f("hydroLoss", k) && (e.Hydrology.NetworkVersion != 2 || lakeFed[int(f("waterBody", k))]) {
 					r.Source = "lake-outlet"
 				}
 			}
@@ -135,6 +138,11 @@ func (e *Environment) finishHydrology() {
 		}
 		grade := math.Max(0, f("drainageElevation", i)-f("drainageElevation", j))
 		r.Width = (.018 + math.Min(.32, math.Sqrt(r.Discharge)*.012)) * (.45 + .55/(1+grade/180))
+		if e.Geography != nil {
+			r.DischargeM3s = f("dischargeM3s", i)
+			r.WidthMetres = 4.8 * math.Sqrt(r.DischargeM3s) * (.45 + .55/(1+grade/180))
+			r.Width = clamp(r.WidthMetres/(math.Max(.01, e.stepKM(i, j))*1000), .006, .32)
+		}
 		if grade < 40 {
 			r.Morphology = "meandering"
 		}
@@ -145,7 +153,7 @@ func (e *Environment) finishHydrology() {
 			r.Morphology = "delta"
 		}
 		if r.Morphology == "delta" {
-			for _, mouth := range nb(i, w, h) {
+			for _, mouth := range e.neighbors(i) {
 				if mouth != j && f("ocean", mouth) > 0 && f("waterLevel", mouth) <= f("elevation", i) {
 					r.Branches = append(r.Branches, HydroBranch{ID: r.ID + "/distributary", To: mouth, Downstream: e.waterRef(mouth), Fraction: .3})
 					break
@@ -194,16 +202,28 @@ func (e *Environment) finishHydrology() {
 }
 
 func (e *Environment) buildHydroWetlands(visible []bool) {
-	w, h := e.Options.Columns, e.Options.Rows
 	f, set := e.get, e.set
 	kinds := make([]string, len(e.Mask))
 	sources := make([]string, len(e.Mask))
 	for i := range e.Mask {
 		set("wetland", i, 0)
-		if f("waterBody", i) > 0 || f("slope", i) > .1 || f("summer", i) < 0 {
+		if f("waterBody", i) > 0 || f("slope", i) > .065 || f("summer", i) < 0 {
 			continue
 		}
-		supply := math.Max(f("groundwater", i), math.Min(1, f("accumulation", i)/3)*(1-f("permeability", i)))
+		// A supplied aquifer is not automatically a swamp. Persistent surface
+		// saturation additionally needs poor drainage or a real emergence point.
+		retention := 1 - smooth((f("permeability", i)-.18)/.55)
+		confinement := clamp((f("drainageElevation", i)-f("elevation", i))/12, 0, 1)
+		retention = math.Max(retention, math.Max(confinement, clamp(f("spring", i)*3, 0, 1)))
+		supply := f("groundwater", i) * (.35 + .65*retention)
+		if f("waterTableDepth", i) > 1.2 {
+			supply *= .55
+		}
+		// Concentrated runoff can perch above clay-rich soil even while the
+		// deeper aquifer is unsaturated. Retain these selective seasonal pools.
+		ponding := math.Min(1, f("accumulation", i)/3) * (1 - f("permeability", i)) * retention
+		runoffPonding := ponding > supply
+		supply = math.Max(supply, ponding)
 		floodSource := ""
 		// Overbank water and a shallow river-connected water table sustain
 		// inland floodplains, even where the immediate cell has little runoff.
@@ -230,11 +250,14 @@ func (e *Environment) buildHydroWetlands(visible []bool) {
 				floodSource = e.riverID(j)
 			}
 		}
-		strength := supply * (1 - smooth(f("slope", i)/.16))
-		if strength < .6 {
+		strength := supply * (1 - smooth(f("slope", i)/.11))
+		if strength < .70 {
 			continue
 		}
 		kind, source := "marsh", e.hydroID("groundwater", int(f("watershed", i)))
+		if runoffPonding {
+			source = e.hydroID("watershed", int(f("watershed", i)))
+		}
 		if floodSource != "" {
 			kind = "floodplain-marsh"
 			source = floodSource
@@ -252,7 +275,7 @@ func (e *Environment) buildHydroWetlands(visible []bool) {
 		if f("dryDischarge", i) < f("accumulation", i)*.3 {
 			kind = "seasonal-wetland"
 		}
-		for _, j := range nb(i, w, h) {
+		for _, j := range e.neighbors(i) {
 			if visible[j] {
 				source = e.riverID(j)
 			}
@@ -271,7 +294,7 @@ func (e *Environment) buildHydroWetlands(visible []bool) {
 		cells := []int{i}
 		seen[i] = true
 		for head := 0; head < len(cells); head++ {
-			for _, j := range nb(cells[head], w, h) {
+			for _, j := range e.neighbors(cells[head]) {
 				if !seen[j] && kinds[j] == kind && sources[j] == sources[i] {
 					seen[j] = true
 					cells = append(cells, j)
@@ -284,14 +307,13 @@ func (e *Environment) buildHydroWetlands(visible []bool) {
 
 func (e *Environment) buildHydroCoasts(visible []bool) {
 	f, set := e.get, e.set
-	w, h := e.Options.Columns, e.Options.Rows
 	for i := range e.Mask {
 		if f("waterBody", i) > 0 {
 			continue
 		}
 		body, water := 0, -1
 		wetNeighbors := 0
-		for _, j := range nb(i, w, h) {
+		for _, j := range e.neighbors(i) {
 			if f("waterBody", j) > 0 {
 				body = int(f("waterBody", j))
 				water = j
@@ -318,7 +340,7 @@ func (e *Environment) buildHydroCoasts(visible []bool) {
 			}
 		}
 		landSides := 0
-		for _, k := range nb(water, w, h) {
+		for _, k := range e.neighbors(water) {
 			if f("waterBody", k) == 0 {
 				landSides++
 			}
@@ -340,7 +362,7 @@ func (e *Environment) buildHydroCanals(visible []bool) {
 	if e.Entities == nil {
 		return
 	}
-	w, h := e.Options.Columns, e.Options.Rows
+	w := e.Options.Columns
 	f := e.get
 	surface := func(i int) float64 {
 		if f("waterBody", i) > 0 {
@@ -365,7 +387,7 @@ func (e *Environment) buildHydroCanals(visible []bool) {
 					source = i
 					break
 				}
-				for _, j := range nb(i, w, h) {
+				for _, j := range e.neighbors(i) {
 					if _, ok := next[j]; ok {
 						continue
 					}

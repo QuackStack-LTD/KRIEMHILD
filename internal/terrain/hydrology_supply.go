@@ -8,10 +8,14 @@ func (e *Environment) prepareHydrology() {
 	for _, name := range HydrologyFields {
 		e.Fields[name] = make([]float64, n)
 	}
-	for _, name := range []string{"drainageDistance", "riverClass", "riverSystem"} {
+	for _, name := range []string{"drainageDistance", "riverClass", "riverSystem", "catchmentKM2", "dischargeM3s"} {
 		e.Fields[name] = make([]float64, n)
 	}
 	e.Hydrology = &HydrologyState{Version: 1, NetworkVersion: 2, Units: "1000 mm per base cell per year"}
+	if e.Geography != nil {
+		e.Hydrology.NetworkVersion = 3
+		e.Hydrology.Units = "1000 mm over mean cell area per year; SI discharge and catchment fields stored separately"
+	}
 	sample := noise(Seed(e.Options.Seed))
 	f, set := e.get, e.set
 	for i := range e.Mask {
@@ -34,6 +38,19 @@ func (e *Environment) prepareHydrology() {
 		}
 		perm := []float64{.18, .12, .72, .85, .65, .3}[rock]
 		perm = clamp(perm+f("tectonicStress", i)*.12, .05, .95)
+		if e.Geology != nil && len(e.Geology.Cells) == n {
+			c := e.Geology.Cells[i]
+			formation := c.Basement
+			if c.Cover >= 0 {
+				formation = c.Cover
+			}
+			if formation >= 0 {
+				strata := e.Geology.Formations[formation].Strata
+				if len(strata) > 0 {
+					perm = clamp(strata[0].Permeability+f("tectonicStress", i)*.12, .05, .95)
+				}
+			}
+		}
 		set("lithology", i, float64(rock))
 		set("permeability", i, perm)
 		rain := math.Max(0, f("precipitation", i))
@@ -57,12 +74,12 @@ func (e *Environment) prepareHydrology() {
 		runoff := liquid - recharge + baseflow
 		set("evapotranspiration", i, et/1000)
 		set("recharge", i, recharge/1000)
-		set("baseflow", i, baseflow/1000)
-		set("runoff", i, runoff/1000)
+		set("baseflow", i, baseflow/1000*e.areaWeight(i))
+		set("runoff", i, runoff/1000*e.areaWeight(i))
 		lat := math.Abs(f("latitude", i))
 		share := .5 + .24*math.Exp(-math.Pow((lat-13)/13, 2)) - .28*math.Exp(-math.Pow((lat-36)/8, 2))*math.Exp(-f("oceanDistance", i)/8)
 		seasonal := clamp(2*math.Min(share, 1-share)*(1-f("aridity", i)*.85), .02, 1)
-		set("dryRunoff", i, (baseflow+(runoff-baseflow)*seasonal*.45)/1000)
+		set("dryRunoff", i, (baseflow+(runoff-baseflow)*seasonal*.45)/1000*e.areaWeight(i))
 		set("geothermal", i, 25+90*f("tectonicStress", i)+140*f("volcano", i))
 		if f("ocean", i) > 0 {
 			set("runoff", i, 0)
@@ -87,6 +104,10 @@ func (e *Environment) accumulateWater() []int {
 		set("dryDischarge", i, f("dryRunoff", i))
 		set("groundFlow", i, f("baseflow", i))
 		set("catchmentArea", i, 1)
+		if e.Geography != nil {
+			set("catchmentKM2", i, e.cellArea(i))
+			set("dischargeM3s", i, f("runoff", i)/e.areaWeight(i)*e.cellArea(i)*1e6/(365.25*86400))
+		}
 		set("streamOrder", i, 1)
 		if j := int(f("flow", i)); j >= 0 {
 			degree[j]++
@@ -111,6 +132,10 @@ func (e *Environment) accumulateWater() []int {
 			set("dryDischarge", j, f("dryDischarge", j)+f("dryDischarge", i)*ratio)
 			set("groundFlow", j, f("groundFlow", j)+f("groundFlow", i)*ratio)
 			set("catchmentArea", j, f("catchmentArea", j)+f("catchmentArea", i))
+			if e.Geography != nil {
+				set("catchmentKM2", j, f("catchmentKM2", j)+f("catchmentKM2", i))
+				set("dischargeM3s", j, f("dischargeM3s", j)+f("dischargeM3s", i)*ratio)
+			}
 			if order > maxOrder[j] {
 				maxOrder[j] = order
 				ties[j] = 1
@@ -137,9 +162,12 @@ func (e *Environment) accumulateWater() []int {
 
 func (e *Environment) drainageNeighbors(i int) []int {
 	w, h := e.Options.Columns, e.Options.Rows
-	out := nb(i, w, h)
+	out := e.neighbors(i)
 	for _, d := range [][2]int{{-1, -1}, {1, -1}, {-1, 1}, {1, 1}} {
 		x, y := i%w+d[0], i/w+d[1]
+		if e.Geography != nil && e.Geography.WrapX {
+			x = (x + w) % w
+		}
 		if x < 0 || x >= w || y < 0 || y >= h {
 			continue
 		}
@@ -154,13 +182,31 @@ func (e *Environment) steepestDrain(i, parent int, rank []int, surface func(int)
 	w := e.Options.Columns
 	for _, j := range e.drainageNeighbors(i) {
 		dx, dy := j%w-i%w, j/w-i/w
+		if e.Geography != nil && e.Geography.WrapX {
+			if dx > w/2 {
+				dx -= w
+			}
+			if dx < -w/2 {
+				dx += w
+			}
+		}
 		length := math.Hypot(float64(dx), float64(dy))
+		if e.Geography != nil {
+			length = e.stepKM(i, j)
+		}
+		horizontal := i + dx
+		if i%w+dx < 0 {
+			horizontal = i + w - 1
+		}
+		if i%w+dx >= w {
+			horizontal = i - w + 1
+		}
 		v := surface(j)
-		if dx != 0 && dy != 0 && surface(i+dx) > z && surface(i+dy*w) > z {
+		if dx != 0 && dy != 0 && surface(horizontal) > z && surface(i+dy*w) > z {
 			continue
 		} // Do not cut across a ridge corner.
 		// A land channel cannot shortcut diagonally through a marine/lake corner.
-		if dx != 0 && dy != 0 && e.get("waterBody", i) == 0 && e.get("waterBody", j) == 0 && (e.get("waterBody", i+dx) > 0 || e.get("waterBody", i+dy*w) > 0) {
+		if dx != 0 && dy != 0 && e.get("waterBody", i) == 0 && e.get("waterBody", j) == 0 && (e.get("waterBody", horizontal) > 0 || e.get("waterBody", i+dy*w) > 0) {
 			continue
 		}
 		drop := (z - v) / length

@@ -1,3 +1,4 @@
+import {createInspectionPin} from './inspection-pin.js';
 // 3D view: drapes the 2D map image over a height field and lets you orbit around it.
 // main.js loads this module on demand the first time the 3D toggle is switched on; three.js comes
 // from the CDN listed in the import map in index.html.
@@ -15,6 +16,7 @@ export function createView(container,onCameraChange=()=>{},onFrame=()=>{}) {
   renderer.domElement.className = 'view3d';
   container.append(renderer.domElement);
 
+  const pin=createInspectionPin(container);let inspection=null;
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x111418);
   const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 10000);
@@ -185,6 +187,13 @@ export function createView(container,onCameraChange=()=>{},onFrame=()=>{}) {
     detailScene?.update(waterScale??1,detailLayer);
     onFrame();
     renderer.render(scene, camera);
+    if(inspection){
+      const surface=surfaceAt(inspection.x,inspection.y);
+      if(surface){const position=new THREE.Vector3(...surface),projected=position.clone().project(camera);
+        const visible=projected.z>=-1&&projected.z<=1&&Math.abs(projected.x)<=1&&Math.abs(projected.y)<=1&&(!sphere||position.dot(camera.position.clone().sub(position))>0);
+        if(visible)pin.show((projected.x+1)*container.clientWidth/2,(1-projected.y)*container.clientHeight/2);else pin.hide();
+      }else pin.hide();
+    }else pin.hide();
   };
   loop();
 
@@ -201,7 +210,7 @@ export function createView(container,onCameraChange=()=>{},onFrame=()=>{}) {
   }
 
   function dispose() {
-    cancelAnimationFrame(raf);
+    pin.dispose();cancelAnimationFrame(raf);
     observer.disconnect();
     controls.dispose();
     disposeMeshes();
@@ -228,8 +237,9 @@ export function createView(container,onCameraChange=()=>{},onFrame=()=>{}) {
     renderer.domElement.dataset.anchorError=String(Math.hypot(projected.x-targetX,projected.y-targetY));
   };
   renderer.domElement.addEventListener('wheel',zoomAtTerrain,{capture:true,passive:false});
-  return { setMap, setHeights, textureChanged, resetCamera, dispose, scene,camera,renderer,controls,
-    surfaceAt(x,y){if(detailScene)return detailScene.surfaceAt(x,y);if(!land)return null;return meshSurface(land.geometry.attributes.position.array,sphere?gw+1:gw,sphere?gh+1:gh,x/(W-1)*(sphere?gw:gw-1),y/(H-1)*(sphere?gh:gh-1));},
+  function surfaceAt(x,y){if(detailScene)return detailScene.surfaceAt(x,y);if(!land)return null;return meshSurface(land.geometry.attributes.position.array,sphere?gw+1:gw,sphere?gh+1:gh,x/(W-1)*(sphere?gw:gw-1),y/(H-1)*(sphere?gh:gh-1));}
+  return {setInspectionPin(point){inspection=point;if(!point)pin.hide();}, setMap, setHeights, textureChanged, resetCamera, dispose, scene,camera,renderer,controls,
+    surfaceAt,
     surfaceStep:()=>detailScene?.surfaceStep()??1,surfaceVersion:()=>detailScene?.surfaceVersion()??0,
     viewport:()=>detailScene?.viewport()??{bounds:{x:0,y:0,width:W-1,height:H-1},detail:0,pixels:6},
     pick(event){const rect=renderer.domElement.getBoundingClientRect();raycaster.setFromCamera(new THREE.Vector2((event.clientX-rect.left)/rect.width*2-1,1-(event.clientY-rect.top)/rect.height*2),camera);const hit=raycaster.intersectObjects(detailScene?.terrainMeshes()||(land?[land]:[]),false)[0];if(!hit)return null;const p=detailScene?detailScene.coordinates(hit.point):{x:(hit.point.x/W+.5)*(W-1),y:(hit.point.z/H+.5)*(H-1)};return {...p,point:hit.point};},

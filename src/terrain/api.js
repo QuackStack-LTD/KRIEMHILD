@@ -21,6 +21,7 @@ export class RemoteSolver extends globalThis.TerrainWFC.SolverView {
   refreshWorld(){return request(`sessions/${this.id}/world/state`,undefined,'GET');}
   static deleteProject(id){return request(`projects/${encodeURIComponent(id)}`,undefined,'DELETE');}
   setSaveState(state){
+    if(state.project)this.project=state.project;
     if(typeof state.unsaved!=='boolean')return;
     this.unsaved=state.unsaved;
     window.dispatchEvent(new CustomEvent('world-save-state',{detail:{solver:this}}));

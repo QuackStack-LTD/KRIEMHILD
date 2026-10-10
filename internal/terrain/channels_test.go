@@ -11,9 +11,12 @@ func TestVisibleDrainageIsSelectiveAndConnected(t *testing.T) {
 		opts, _ := DecodeEnvironment(raw)
 		e := BuildEnvironment(opts)
 		visible := e.VisibleChannels()
-		old, total, mountainOld, mountainNew := 0, 0, 0, 0
+		old, total, mountainOld, mountainNew, mountainCells := 0, 0, 0, 0, 0
 		for i := range e.Mask {
 			eligible := e.Mask[i] != 0 && e.get("waterBody", i) == 0 && e.get("flow", i) >= 0
+			if eligible && e.get("mountainCore", i) > .2 {
+				mountainCells++
+			}
 			if eligible && e.get("accumulation", i) >= .5 {
 				old++
 				if e.get("mountainCore", i) > .2 {
@@ -32,13 +35,15 @@ func TestVisibleDrainageIsSelectiveAndConnected(t *testing.T) {
 				t.Fatal("channel terminates before its receiving water", seed, i)
 			}
 		}
-		if total == 0 || total*2 >= old {
-			t.Fatalf("insufficient river reduction %s: %d / %d", seed, total, old)
+		// The denser network can retain more than half the legacy runoff
+		// paths, but must still exclude at least a third of that blanket.
+		if total == 0 || total*3 >= old*2 {
+			t.Fatalf("excessive river coverage %s: %d / %d", seed, total, old)
 		}
-		// Complete mountain headwaters add upstream reaches formerly hidden by
-		// per-cell thresholds; still reject a blanket of slope runoff.
-		if mountainOld > 10 && mountainNew*4 >= mountainOld*3 {
-			t.Fatal("mountain slopes still over-covered", seed, mountainNew, mountainOld)
+		// Most mountain slopes must remain free of visible channels. Measure
+		// actual mountain area, not an obsolete discharge-only selection.
+		if mountainCells > 10 && mountainNew*2 >= mountainCells {
+			t.Fatal("mountain slopes still over-covered", seed, mountainNew, mountainCells)
 		}
 		if mountainOld > 100 && mountainNew*50 < mountainOld {
 			t.Fatal("mountain tributaries were suppressed too heavily", seed, mountainNew, mountainOld)

@@ -24,6 +24,9 @@ func landmasses(e *Environment) []int {
 			for dy := -1; dy <= 1; dy++ {
 				for dx := -1; dx <= 1; dx++ {
 					x, y := i%w+dx, i/w+dy
+					if e.Geography != nil && e.Geography.WrapX {
+						x = (x + w) % w
+					}
 					if x < 0 || x >= w || y < 0 || y >= h {
 						continue
 					}
@@ -66,11 +69,23 @@ func TestPhysicalLandDistribution(t *testing.T) {
 		if abs(total-6720) > 480 {
 			t.Errorf("land coverage too far from target: got %d cells, target 42%% of 16000", total)
 		}
-		for i, z := range e.Heights {
-			if min(i%o.Columns, i/o.Columns, o.Columns-1-i%o.Columns, o.Rows-1-i/o.Columns) <= e.Margin && z >= 0 {
-				t.Fatalf("land on ocean frame at %d", i)
+		if e.Geography == nil || !e.Geography.WrapX {
+			t.Fatal("default planet lost longitude continuity")
+		}
+		for y := 0; y < o.Rows; y++ {
+			left := y * o.Columns
+			right := left + o.Columns - 1
+			connected := false
+			for _, j := range e.neighbors(left) {
+				if j == right {
+					connected = true
+				}
+			}
+			if !connected {
+				t.Fatal("longitude seam split the world")
 			}
 		}
+
 	}
 }
 

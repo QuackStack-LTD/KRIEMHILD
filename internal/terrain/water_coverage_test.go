@@ -16,9 +16,18 @@ func TestWaterCoverageAcrossLandmasses(t *testing.T) {
 			stats := e.Hydrology.Statistics
 			// Guard against the previous globally sparse lakes, groundwater and
 			// wetlands, while keeping most of the land free of visible channels.
-			if stats.Lakes < int(float64(stats.LandCells)*.002) || stats.Wetlands < int(float64(stats.LandCells)*.025) || stats.Springs < int(float64(stats.LandCells)*.01) || stats.CoveragePercent < 7 || stats.CoveragePercent > 25 {
+			// Wetlands now require persistent surface saturation, not aquifers alone.
+			if stats.Lakes < int(float64(stats.LandCells)*.002) || stats.Wetlands < int(float64(stats.LandCells)*.002) || stats.Springs < int(float64(stats.LandCells)*.01) || stats.CoveragePercent < 7 || stats.CoveragePercent > 25 {
 				t.Fatalf("incomplete water coverage: %+v", stats)
 			}
+			wetCells := 0
+			for _, wet := range e.Hydrology.Wetlands {
+				wetCells += len(wet.Cells)
+			}
+			if float64(wetCells) > float64(stats.LandCells)*.12 {
+				t.Fatalf("wetlands overrun ordinary land: %d of %d", wetCells, stats.LandCells)
+			}
+			t.Logf("wetland area=%.2f%%", 100*float64(wetCells)/float64(stats.LandCells))
 			for id, size := range sizes {
 				if id == 0 || size < 80 {
 					continue

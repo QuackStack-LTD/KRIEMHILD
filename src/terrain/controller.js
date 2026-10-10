@@ -1,3 +1,6 @@
+import {climateSettings,climateSettingIds,climateInputs,geographicSettings,riverSettings,erosionSettings} from './climate-ui.js';
+import {bindInspectionClick,createInspectionPin} from './inspection-pin.js';
+import { createNaturalHover } from './natural-hover.js';
 // UI, rendering and config handling. The algorithm lives in wfc.js, the type editor in editor.js.
 import './helpers.js';
 import './patterns.js';
@@ -12,6 +15,7 @@ import { installEnvironmentOverlays, fieldColor, overlayLegend, drawPhysicalEnti
 export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
   installEnvironmentOverlays(document.getElementById('environmentOverlay'));
   const lifecycle = new AbortController();
+  const naturalHover=createNaturalHover(document.getElementById("naturalHover"),point=>{explorer.setInspectionPin(point);view?.setInspectionPin(point);updateBasePin();});
   let disposed = false;
   let initializing=true,suspended=false,suspended3DCamera=null;
   let generation = 0;
@@ -437,7 +441,8 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
     let nextSolver;
     try {
       if ($('environment').checked) {
-        nextSolver = await RemoteSolver.create({ environment: {realism:$('realism').checked,columns:width,rows:height,seed:String(seedUsed),landPercent:Number($('landCoverage').value),temperatureOffset:Number($('temperatureOffset').value),rainfall:Number($('rainfall').value),plateCount:Number($('plateCount').value),continentCount:Math.max(2,Number(ui.contPoints.value)),selection:ui.selection.value,stability:Math.min(10,ui.stability.checked?stabilityStrength():0),latitudeNorth:Number($('latitudeNorth').value),latitudeSouth:Number($('latitudeSouth').value),ruggedness:Number($('ruggedness').value),volcanism:Number($('volcanism').value),radius2:RADIUS_STEPS[Number(ui.radius.value)].radius2}, config, wrapX: sphere });
+        const physicalValues=Object.fromEntries(climateSettingIds.map(id=>[id,$(id).value]));
+        nextSolver = await RemoteSolver.create({ environment: {geography:geographicSettings(physicalValues,width,height,readInt(ui.cellSize,1,40,6)),riverOptions:riverSettings(physicalValues),erosion:erosionSettings(physicalValues),seasonalClimate:climateSettings(Object.fromEntries(climateSettingIds.map(id=>[id,$(id).value])),width,height,readInt(ui.cellSize,1,40,6)),realism:$('realism').checked,columns:width,rows:height,seed:String(seedUsed),landPercent:Number($('landCoverage').value),temperatureOffset:Number($('temperatureOffset').value),rainfall:Number($('rainfall').value),plateCount:Number($('plateCount').value),continentCount:Math.max(2,Number(ui.contPoints.value)),selection:ui.selection.value,stability:Math.min(10,ui.stability.checked?stabilityStrength():0),latitudeNorth:Number($('latitudeNorth').value),latitudeSouth:Number($('latitudeSouth').value),ruggedness:Number($('ruggedness').value),volcanism:Number($('volcanism').value),islandFrequency:Number($('islandFrequency').value),islandCoastalShare:Number($('islandCoastalShare').value),radius2:RADIUS_STEPS[Number(ui.radius.value)].radius2}, config, wrapX: sphere });
       } else {
     nextSolver = await RemoteSolver.create({ config, options: {
       width,
@@ -686,7 +691,7 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
     $('environmentLegend').textContent=overlayLegend(solver.environment,layer);
   }
   listen($('environmentOverlay'), 'change',()=>{if(solver){solver.markAllDirty();draw();}});
-  for(const id of ['landCoverage','temperatureOffset','rainfall','plateCount','latitudeNorth','latitudeSouth','ruggedness','volcanism']) listen($(id), 'change',()=>generate());
+  for(const id of ['landCoverage','temperatureOffset','rainfall','plateCount','latitudeNorth','latitudeSouth','ruggedness','volcanism','islandFrequency','islandCoastalShare']) listen($(id), 'change',()=>generate());
   async function updateGenerationMode(){
     const request=++presetRequest;
     updateModeControls();
@@ -707,6 +712,18 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
     if ($('realism').checked) $('environment').checked = true;
     return updateGenerationMode();
   });
+  const basePin=createInspectionPin(ui.canvasWrap);
+  function updateBasePin(){const p=naturalHover.pinned();if(!p||view||solver?.environment){basePin.hide();return;}
+    const r=ui.canvas.getBoundingClientRect(),host=ui.canvasWrap.getBoundingClientRect();
+    basePin.show(r.left-host.left+(p.x+.5)/solver.W*r.width,r.top-host.top+(p.y+.5)/solver.H*r.height);
+  }
+  const pinResize=new ResizeObserver(updateBasePin);pinResize.observe(ui.canvasWrap);
+  bindInspectionClick(ui.canvasWrap,()=>!ui.brushOn.checked||!!view,e=>{
+    if(!solver||!e.target.matches('canvas'))return null;
+    if(view)return view.pick(e);
+    const p=explorer.point(e),cell=cellAt(e);if(cell<0)return null;
+    return p||{x:cell%solver.W,y:Math.floor(cell/solver.W)};
+  },p=>naturalHover.pin(solver,p),lifecycle.signal);
   function draw() {
     if (!solver) return;
     if (vor) {
@@ -743,6 +760,7 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
     updateHover();
     update3d();
     explorer.setWorld(solver,$('environmentOverlay').value,!view);
+    updateBasePin();
   }
 
   // ---- 3D view ------------------------------------------------------------------
@@ -825,6 +843,9 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
       }
       if (disposed || !ui.view3d.checked || view) return; // switched off again while loading
       view = viewModule.createView(ui.canvasWrap,queueAutosave);
+      view.setInspectionPin(naturalHover.pinned());
+      let lastNaturalPick=0;
+      listen(view.renderer.domElement,'pointermove',event=>{if(performance.now()-lastNaturalPick<120)return;lastNaturalPick=performance.now();const p=view?.pick(event);if(p)naturalHover.update(solver,p);});
       ui.canvasWrap.classList.add('is-3d');
       if (solver) {
         view.setMap(solver.W, solver.H, ui.canvas, { sphere: solver.wrapX,waterFields:solver.environment?.fields,solver });
@@ -836,6 +857,7 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
       ui.canvasWrap.classList.remove('is-3d');
     }
     explorer.setWorld(solver,$('environmentOverlay').value,!view);
+    updateBasePin();
     ui.resetCamera.disabled = !view;
     ui.height3d.disabled = !view;
     updateBrushControls(); // the brush only works on the 2D map
@@ -922,6 +944,7 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
 
   function updateHover() {
     const el = ui.hover;
+    naturalHover.update(solver,solver&&hoverCell>=0?{x:hoverDetail?.x??hoverCell%solver.W,y:hoverDetail?.y??Math.floor(hoverCell/solver.W)}:null);
     if (view) {
       el.textContent = '3D view: drag to rotate, right-drag to pan, scroll to zoom.';
       return;
@@ -1562,10 +1585,11 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
   // ---- start ------------------------------------------------------------------
 
   const SETTINGS_KEY = 'kriemhild.settings.v1';
-  const settingIds = ['environment','realism','landCoverage','plateCount','temperatureOffset','rainfall','latitudeNorth','latitudeSouth','ruggedness','volcanism',
+  const settingIds = [...climateSettingIds,'environment','realism','landCoverage','plateCount','temperatureOffset','rainfall','latitudeNorth','latitudeSouth','ruggedness','volcanism','islandFrequency','islandCoastalShare',
     'width','height','cellSize','shape','seed','continents','contPoints','contStrength','climate',
     'climLayout','climStrength','selection','radius','stability','stabilityStrength','cleanupPasses',
     'speed','instant','voronoi','jitter','textures','iconSize','contShow','height3d','environmentOverlay'];
+  listen($('seasonMode'),'change',()=>{$('seasonCount').disabled=$('seasonMode').value!=='custom';});
   let projectBusy=false;
   const viewClient=crypto.randomUUID();let viewSequence=0;
   function captureProjectUI(compact=false){
@@ -1621,10 +1645,17 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
       for(const id of settingIds){const el=$(id),value=saved.settings?.[id];if(value===undefined)continue;
         if(el.type==='checkbox')el.checked=value===true;
         else if(el.tagName==='SELECT'){if([...el.options].some(o=>o.value===String(value)))el.value=String(value);}
-        else if(el.type==='number'||el.type==='range'){const n=Number(value);if(Number.isFinite(n)&&n>=Number(el.min)&&n<=Number(el.max))el.value=String(n);}
+        else if(el.type==='number'||el.type==='range'){if(value===''&&climateSettingIds.includes(id)){el.value='';continue;}const n=Number(value);if(Number.isFinite(n)&&n>=Number(el.min)&&n<=Number(el.max))el.value=String(n);}
         else el.value=String(value);
       }
       $('environment').checked=!!solver.environment;$('realism').checked=!!solver.environment?.options.realism;
+      for(const id of ['islandFrequency','islandCoastalShare'])if(saved.settings?.[id]===undefined&&solver.environment?.options[id]!==undefined)$(id).value=solver.environment.options[id];
+      const climate=solver.environment?.options.seasonalClimate;
+      if(climate){for(const [control,key] of Object.entries(climateInputs))if(saved.settings?.[control]===undefined)$(control).value=climate[key]??'';if(saved.settings?.seasonMode===undefined)$('seasonMode').value=climate.mode||'automatic';if(saved.settings?.seasonCount===undefined)$('seasonCount').value=climate.count||4;if(saved.settings?.seasonNames===undefined)$('seasonNames').value=(climate.names||[]).join(', ');if(saved.settings?.climateCoverage===undefined)$('climateCoverage').value=climate.coverage||'';}
+      const geography=solver.environment?.options.geography,riverOptions=solver.environment?.options.riverOptions,erosion=solver.environment?.options.erosion;
+      for(const [id,key] of Object.entries({worldScale:'world_scale',planetRadius:'planetary_radius',longitudeWest:'longitude_west',longitudeEast:'longitude_east',climateCoverage:'map_coverage'}))if(saved.settings?.[id]===undefined&&geography?.[key]!==undefined)$(id).value=geography[key];
+      for(const [id,key] of Object.entries({riverMinArea:'minimum_area_km2',riverMinDischarge:'minimum_discharge_m3s',riverVisibleOrder:'visible_stream_order',riverMajorArea:'major_area_km2',riverRegionalArea:'regional_area_km2',ephemeralDensity:'ephemeral_density'}))if(saved.settings?.[id]===undefined&&riverOptions?.[key]!==undefined)$(id).value=riverOptions[key];
+      for(const [id,key] of Object.entries({erosionIterations:'iterations',erosionDuration:'duration_ma',erosionStrength:'strength'}))if(saved.settings?.[id]===undefined&&erosion?.[key]!==undefined)$(id).value=erosion[key];
       ui.width.value=solver.W;ui.height.value=solver.H;ui.shape.value=solver.wrapX?'sphere':'flat';
       seedUsed=Number(saved.seedUsed??solver.environment?.options.seed??0)>>>0;
       const rng=makeRng(seedUsed^0x9e3779b9),restoreArray=(value,n)=>Array.isArray(value)&&value.length===n&&value.every(Number.isFinite)?Float32Array.from(value):Float32Array.from({length:n},()=>rng()*2-1);
@@ -1660,6 +1691,7 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
         else if (el.tagName === 'SELECT') {
           if ([...el.options].some(option => option.value === String(saved[id]))) el.value = saved[id];
         } else if (el.type === 'number' || el.type === 'range') {
+          if(saved[id]===''&&climateSettingIds.includes(id)){el.value='';continue;}
           const value = Number(saved[id]);
           if (Number.isFinite(value) && value >= Number(el.min) && value <= Number(el.max)) el.value = value;
         } else el.value = String(saved[id]);
@@ -1673,13 +1705,14 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
     } catch (_) { return false; }
   }
   function updateModeControls() {
+    $('seasonCount').disabled=$('seasonMode').value!=='custom';
     if ($('realism').checked) $('environment').checked = true;
     const physical = $('environment').checked;
     if (physical !== previousPhysicalMode) {
       previousPhysicalMode = physical;
       if (config) editor.render();
     }
-    for (const id of ['landCoverage','plateCount','temperatureOffset','rainfall','environmentOverlay','latitudeNorth','latitudeSouth','ruggedness','volcanism']) $(id).disabled = !physical;
+    for (const id of ['landCoverage','plateCount','temperatureOffset','rainfall','environmentOverlay','latitudeNorth','latitudeSouth','ruggedness','volcanism','islandFrequency','islandCoastalShare']) $(id).disabled = !physical;
     $('modeHint').textContent = physical
       ? 'Physical environment layers onto the preset: its land coverage, climate, relief, points and terrain preferences shape the result. Environmental constraints replace legacy adjacency and climate-band weights.'
       : 'Terrain rules: continental kinds, climate weights, neighbor radius and terrain adjacency all apply. Physical settings and overlays are unavailable.';
@@ -1791,6 +1824,7 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
     });
   })();
   return () => {
+    naturalHover.dispose();basePin.dispose();pinResize.disconnect();
     autosaver.dispose();
     disposed = true;
     generation++;

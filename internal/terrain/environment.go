@@ -10,31 +10,37 @@ import (
 var FieldNames = []string{"elevation", "bathymetry", "slope", "oceanDistance", "latitude", "temperature", "summer", "winter", "current", "windX", "windY", "windStrength", "precipitation", "moisture", "aridity", "plate", "boundary", "tectonicStress", "volcano", "flow", "accumulation", "groundwater", "sediment", "fertility", "snow", "glacier", "dune", "duneOrientation", "reef", "salinity", "clarity", "mesa", "wetland", "oasis", "farmland", "settlement", "lava", "ash", "lake"}
 
 type EnvironmentOptions struct {
-	Radius2            int       `json:"radius2"`
-	Volcanism          float64   `json:"volcanism"`
-	Realism            bool      `json:"realism"`
-	Columns            int       `json:"columns"`
-	Rows               int       `json:"rows"`
-	Seed               string    `json:"seed"`
-	LandPercent        float64   `json:"landPercent"`
-	Ruggedness         float64   `json:"ruggedness"`
-	PlateCount         int       `json:"plateCount"`
-	ContinentCount     int       `json:"continentCount"`
-	TemperatureOffset  float64   `json:"temperatureOffset"`
-	Rainfall           float64   `json:"rainfall"`
-	LatitudeNorth      float64   `json:"latitudeNorth"`
-	LatitudeSouth      float64   `json:"latitudeSouth"`
-	WindDirection      float64   `json:"windDirection"`
-	Stability          float64   `json:"stability"`
-	Selection          string    `json:"selection"`
-	Cleanup            int       `json:"cleanup"`
-	Heights            []float64 `json:"heights,omitempty"`
-	Sea                float64   `json:"sea,omitempty"`
-	ClimateAdjustments []float64 `json:"climateAdjustments,omitempty"`
+	Geography          *GeographicOptions      `json:"geography,omitempty"`
+	RiverOptions       *RiverOptions           `json:"riverOptions,omitempty"`
+	Erosion            *ErosionOptions         `json:"erosion,omitempty"`
+	SeasonalClimate    *SeasonalClimateOptions `json:"seasonalClimate,omitempty"`
+	IslandFrequency    float64                 `json:"islandFrequency"`
+	IslandCoastalShare float64                 `json:"islandCoastalShare"`
+	Radius2            int                     `json:"radius2"`
+	Volcanism          float64                 `json:"volcanism"`
+	Realism            bool                    `json:"realism"`
+	Columns            int                     `json:"columns"`
+	Rows               int                     `json:"rows"`
+	Seed               string                  `json:"seed"`
+	LandPercent        float64                 `json:"landPercent"`
+	Ruggedness         float64                 `json:"ruggedness"`
+	PlateCount         int                     `json:"plateCount"`
+	ContinentCount     int                     `json:"continentCount"`
+	TemperatureOffset  float64                 `json:"temperatureOffset"`
+	Rainfall           float64                 `json:"rainfall"`
+	LatitudeNorth      float64                 `json:"latitudeNorth"`
+	LatitudeSouth      float64                 `json:"latitudeSouth"`
+	WindDirection      float64                 `json:"windDirection"`
+	Stability          float64                 `json:"stability"`
+	Selection          string                  `json:"selection"`
+	Cleanup            int                     `json:"cleanup"`
+	Heights            []float64               `json:"heights,omitempty"`
+	Sea                float64                 `json:"sea,omitempty"`
+	ClimateAdjustments []float64               `json:"climateAdjustments,omitempty"`
 }
 
 func DecodeEnvironment(data []byte) (EnvironmentOptions, error) {
-	o := EnvironmentOptions{Radius2: 1, Volcanism: 1, Columns: 96, Rows: 64, Seed: "Kriemhild", LandPercent: 42, Ruggedness: 100, PlateCount: 12, ContinentCount: 12, Rainfall: 1, LatitudeNorth: 90, LatitudeSouth: -90, Stability: 3, Selection: "entropy", Cleanup: 2}
+	o := EnvironmentOptions{Geography: &GeographicOptions{}, IslandFrequency: 1, IslandCoastalShare: .6, Radius2: 1, Volcanism: 1, Columns: 96, Rows: 64, Seed: "Kriemhild", LandPercent: 42, Ruggedness: 100, PlateCount: 12, ContinentCount: 12, Rainfall: 1, LatitudeNorth: 90, LatitudeSouth: -90, Stability: 3, Selection: "entropy", Cleanup: 2}
 	err := json.Unmarshal(data, &o)
 	if err != nil {
 		return o, err
@@ -48,7 +54,7 @@ func DecodeEnvironment(data []byte) (EnvironmentOptions, error) {
 	for _, v := range []struct {
 		name      string
 		v, lo, hi float64
-	}{{"columns", float64(o.Columns), 16, 256}, {"rows", float64(o.Rows), 16, 256}, {"landPercent", o.LandPercent, 1, 85}, {"ruggedness", o.Ruggedness, 1, 200}, {"plateCount", float64(o.PlateCount), 3, 32}, {"continentCount", float64(o.ContinentCount), 2, 40}, {"temperatureOffset", o.TemperatureOffset, -25, 25}, {"rainfall", o.Rainfall, .1, 3}, {"latitudeNorth", o.LatitudeNorth, -90, 90}, {"latitudeSouth", o.LatitudeSouth, -90, 90}, {"windDirection", o.WindDirection, -1, 1}, {"stability", o.Stability, 0, 10}, {"cleanup", float64(o.Cleanup), 0, 10}} {
+	}{{"islandFrequency", o.IslandFrequency, 0, 3}, {"islandCoastalShare", o.IslandCoastalShare, 0, 1}, {"columns", float64(o.Columns), 16, 256}, {"rows", float64(o.Rows), 16, 256}, {"landPercent", o.LandPercent, 1, 85}, {"ruggedness", o.Ruggedness, 1, 200}, {"plateCount", float64(o.PlateCount), 3, 32}, {"continentCount", float64(o.ContinentCount), 2, 40}, {"temperatureOffset", o.TemperatureOffset, -25, 25}, {"rainfall", o.Rainfall, .1, 3}, {"latitudeNorth", o.LatitudeNorth, -90, 90}, {"latitudeSouth", o.LatitudeSouth, -90, 90}, {"windDirection", o.WindDirection, -1, 1}, {"stability", o.Stability, 0, 10}, {"cleanup", float64(o.Cleanup), 0, 10}} {
 		if !finite(v.v) || v.v < v.lo || v.v > v.hi {
 			return o, fmt.Errorf("invalid environmental setting: %s", v.name)
 		}
@@ -75,7 +81,13 @@ func DecodeEnvironment(data []byte) (EnvironmentOptions, error) {
 			}
 		}
 	}
-	return o, nil
+	if _, err := o.geographicScale(); err != nil {
+		return o, err
+	}
+	if err := o.validateRiverOptions(); err != nil {
+		return o, err
+	}
+	return o, o.validateClimateOptions()
 }
 
 type Plate struct {
@@ -86,21 +98,26 @@ type Plate struct {
 	Continental bool    `json:"continental"`
 }
 type Environment struct {
-	Geology *GeologicalState `json:"geology,omitempty"`
-	Resources *ResourceState `json:"resources,omitempty"`
-	Hydrology    *HydrologyState      `json:"hydrology,omitempty"`
-	WaterBodies  []WaterBody          `json:"waterBodies"`
-	Reefs        []ReefRegion         `json:"reefs"`
-	Entities     *WorldEntities       `json:"entities,omitempty"`
-	ClimateZones []string             `json:"climateZones,omitempty"`
-	Version      string               `json:"version"`
-	Options      EnvironmentOptions   `json:"options"`
-	Fields       map[string][]float64 `json:"fields"`
-	Heights      []int                `json:"heights"`
-	Mask         []int                `json:"mask"`
-	Margin       int                  `json:"margin"`
-	Plates       []Plate              `json:"plates"`
-	Points       []Point              `json:"points"`
+	Geography     *GeographicScale     `json:"geography,omitempty"`
+	Geomorphology *Geomorphology       `json:"geomorphology,omitempty"`
+	SeasonalZones []string             `json:"seasonalZones,omitempty"`
+	Climate       *ClimateState        `json:"climateLayer,omitempty"`
+	Archipelagos  []Archipelago        `json:"archipelagos,omitempty"`
+	Geology       *GeologicalState     `json:"geology,omitempty"`
+	Resources     *ResourceState       `json:"resources,omitempty"`
+	Hydrology     *HydrologyState      `json:"hydrology,omitempty"`
+	WaterBodies   []WaterBody          `json:"waterBodies"`
+	Reefs         []ReefRegion         `json:"reefs"`
+	Entities      *WorldEntities       `json:"entities,omitempty"`
+	ClimateZones  []string             `json:"climateZones,omitempty"`
+	Version       string               `json:"version"`
+	Options       EnvironmentOptions   `json:"options"`
+	Fields        map[string][]float64 `json:"fields"`
+	Heights       []int                `json:"heights"`
+	Mask          []int                `json:"mask"`
+	Margin        int                  `json:"margin"`
+	Plates        []Plate              `json:"plates"`
+	Points        []Point              `json:"points"`
 }
 
 func f32(v float64) float64                              { return float64(float32(v)) }
@@ -163,6 +180,7 @@ func BuildEnvironment(o EnvironmentOptions) *Environment {
 	rng := RNG(seed ^ 0x738ac52)
 	sample := noise(seed)
 	e := &Environment{Version: "kriemhild-environment-v3", Options: o, Fields: map[string][]float64{}, Heights: make([]int, n), Mask: make([]int, n), Margin: max(2, int(math.Ceil(float64(min(w, h))*.045)))}
+	e.Geography, _ = o.geographicScale()
 	for _, k := range FieldNames {
 		e.Fields[k] = make([]float64, n)
 	}
@@ -185,14 +203,20 @@ func BuildEnvironment(o EnvironmentOptions) *Environment {
 	macro := &Solver{Rules: &Rules{Config: Config{Continents: []Kind{{ID: "water", Name: "Water", Color: "#3a7bd5", Odds: .5}, {ID: "land", Name: "Land", Color: "#7cb342", Odds: .5}}}}, W: w, H: h, N: n, K: 2}
 	macro.buildContinents(&ContinentOptions{o.ContinentCount, 5}, seed)
 	e.Points = macro.ContPoints
+	nuclei := continentalNuclei(macro.ContPoints, w, h, sample)
 	scores := make([]float64, n)
+	clearance := make([]float64, n)
 	sorted := []float64{}
 	for i := 0; i < n; i++ {
 		x, y := float64(i%w), float64(i/w)
-		edge := min(i%w, i/w, w-1-i%w, h-1-i/w)
-		// Fade only near the ocean frame. The old global radial envelope
-		// overpowered continental influence and made every seed a central island.
-		envelope := smooth(float64(edge-e.Margin) / (float64(min(w, h)) * .08))
+		// The offshore envelope has its own broad bays and smaller inlets.
+		// A constant distance to the viewport edge stamps rectangular coastlines
+		// into high-coverage continents, even when the interior field is warped.
+		clearance[i] = continentalClearance(x, y, w, h, e.Margin, clamp((100-o.LandPercent)/50, .2, 1), sample)
+		if e.Geography != nil {
+			clearance[i] = float64(min(w, h))
+		}
+		envelope := smooth(clearance[i] / (float64(min(w, h)) * .07))
 		// Warped continental boundaries form ocean basins between neighboring
 		// regions. More points create more, smaller regions, rather than merely
 		// changing the texture of the same landmass. High land coverage can still
@@ -209,8 +233,9 @@ func BuildEnvironment(o EnvironmentOptions) *Environment {
 			}
 		}
 		basin := math.Exp(-math.Pow((second-nearest)/(float64(min(w, h))*.035), 2))
-		scores[i] = f32(float64(macro.ContShare[i*2+1])*.65 + sample(x/float64(w)*7, y/float64(h)*7)*.25 + sample(x/float64(w)*20, y/float64(h)*20)*.1 - (1-envelope)*.6 - basin*.45)
-		if edge > e.Margin {
+		mass := continentalMass(px, py, nuclei)
+		scores[i] = f32((float64(macro.ContShare[i*2+1])-.5)*.15 + mass*.85 + (sample(x/float64(w)*7, y/float64(h)*7)-.5)*.16 + (sample(x/float64(w)*20, y/float64(h)*20)-.5)*.06 - (1-envelope)*.4 - basin*.8)
+		if clearance[i] > 0 {
 			sorted = append(sorted, scores[i])
 		}
 	}
@@ -218,8 +243,7 @@ func BuildEnvironment(o EnvironmentOptions) *Environment {
 	landCount := min(len(sorted)-1, int(round(float64(n)*o.LandPercent/100)))
 	cutoff := sorted[max(0, len(sorted)-landCount-1)]
 	for i := 0; i < n; i++ {
-		edge := min(i%w, i/w, w-1-i%w, h-1-i/w)
-		if scores[i] > cutoff && edge > e.Margin {
+		if scores[i] > cutoff && clearance[i] > 0 {
 			mask[i] = 1
 		}
 	}
@@ -294,8 +318,10 @@ func BuildEnvironment(o EnvironmentOptions) *Environment {
 		set("mountainCore", i, strength*math.Exp(-math.Pow(gap/(width*.48), 2)))
 	}
 	e.buildGeologicalSurface(sample, hotspots)
+	e.buildArchipelagos(hotspots)
 
 	e.carveDepressions(sample)
+	e.reconcilePlanetSeam()
 	e.limitSurfaceGradients()
 	e.connectOcean()
 	for i := 0; i < n; i++ {
@@ -305,7 +331,7 @@ func BuildEnvironment(o EnvironmentOptions) *Environment {
 		}
 		set("slope", i, clamp(slope, 0, 1))
 		x, y := float64(i%w), float64(i/w)
-		lat := o.LatitudeNorth + (o.LatitudeSouth-o.LatitudeNorth)*y/float64(h-1)
+		lat := e.cellLatitude(i)
 		ab, r := math.Abs(lat), lat*math.Pi/180
 		set("latitude", i, lat)
 		set("current", i, math.Sin(x/float64(w)*math.Pi*4)*math.Sin(r*2)*3*math.Exp(-f("oceanDistance", i)/3))
@@ -358,6 +384,7 @@ func BuildEnvironment(o EnvironmentOptions) *Environment {
 		e.prepareHydrology()
 	}
 	e.hydrology()
+	e.evolveRiverLandscape()
 	e.entities(sample)
 	if o.Realism {
 		e.realisticEntities(sample)
@@ -369,6 +396,7 @@ func BuildEnvironment(o EnvironmentOptions) *Environment {
 	// Terrain and hydrology -> geological history -> natural resources.
 	e.BuildGeologicalHistory()
 	e.BuildNaturalResources()
+	e.BuildClimate()
 	return e
 }
 func (e *Environment) precipitation() {
@@ -387,6 +415,9 @@ func (e *Environment) precipitation() {
 				}
 				i := y*w + x
 				ux := max(0, min(w-1, x-direction))
+				if e.Geography != nil && e.Geography.WrapX {
+					ux = (x - direction + w) % w
+				}
 				up := y*w + ux
 				uy := max(0, min(h-1, int(round(float64(y)-f("windY", i)))))
 				cross := uy*w + ux
@@ -453,7 +484,11 @@ func (e *Environment) entities(sample func(float64, float64) float64) {
 			}
 			carried = (carried*.88 + supply*.3) * f("windStrength", i)
 			deposition := clamp(.25+f("slope", i)+f("moisture", i)*.2, 0, 1)
-			set("sediment", i, clamp(supply*.5+carried*deposition, 0, 1))
+			fluvial := 0.
+			if deposits := e.Fields["fluvialDeposition"]; len(deposits) == n {
+				fluvial = clamp(deposits[i]*.15, 0, .7)
+			}
+			set("sediment", i, clamp(supply*.5+carried*deposition+fluvial, 0, 1))
 			if mask[i] != 0 && f("aridity", i) > .5 && f("slope", i) < .25 {
 				set("dune", i, clamp(f("aridity", i)*f("sediment", i)*f("windStrength", i)*(1-f("moisture", i))*2, 0, 1))
 			}
@@ -646,7 +681,7 @@ func PrepareEnvironment(o EnvironmentOptions, c Config) (*Solver, error) {
 			return nil, fmt.Errorf("terrain configuration is missing environmental type: %v", choices)
 		}
 	}
-	s := NewSolver(r, Options{Width: o.Columns, Height: o.Rows, Seed: Seed(o.Seed), Radius2: o.Radius2, Stability: o.Stability, Selection: o.Selection}, masks)
+	s := NewSolver(r, Options{Width: o.Columns, Height: o.Rows, WrapX: e.Geography != nil && e.Geography.WrapX, Seed: Seed(o.Seed), Radius2: o.Radius2, Stability: o.Stability, Selection: o.Selection}, masks)
 	s.Environment = e
 	s.ContPoints = e.Points
 	return s, nil

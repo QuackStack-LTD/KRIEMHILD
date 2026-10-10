@@ -9,7 +9,7 @@ func (e *Environment) buildGeologicalSurface(sample func(float64, float64) float
 	w, h := e.Options.Columns, e.Options.Rows
 	f, set := e.get, e.set
 	scale := math.Max(.6, float64(min(w, h))/100)
-	landDist, seaDist := distance(e.Mask, w, h, 1), distance(e.Mask, w, h, 0)
+	landDist, seaDist := e.gridDistance(e.Mask, 1), e.gridDistance(e.Mask, 0)
 	crestNoise := noise(Seed(e.Options.Seed) ^ 0xb47c329d)
 	for i := range e.Mask {
 		x, y := float64(i%w)/float64(w), float64(i/w)/float64(h)
@@ -124,14 +124,16 @@ func (e *Environment) limitSurfaceGradients() {
 					i = len(e.Mask) - 1 - at
 				}
 				z := e.get("elevation", i)
-				for _, j := range nb(i, w, h) {
+				for _, j := range e.neighbors(i) {
 					limit := 650.
 					gi, gj := e.get("geology", i), e.get("geology", j)
 					if (gi == 2 || gi == 6) && (gj == 2 || gj == 6) {
 						limit = 1100
 					}
 					other := e.get("elevation", j)
-					if e.Mask[i] != 0 {
+					// New foundations and flooded saddles can change surface sign.
+					// Relax the actual bed, not the original continental mask.
+					if z > 0 {
 						z = math.Min(z, other+limit)
 					} else {
 						z = math.Min(-4, math.Max(z, other-limit))

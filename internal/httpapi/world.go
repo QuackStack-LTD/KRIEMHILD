@@ -33,8 +33,16 @@ func (v *session) authored() *world.State {
 }
 func sessionState(v *session) map[string]any {
 	out := view(v.solver, true)
-	out["environment"] = v.authored().Environment(v.solver.Environment)
+	e := v.authored().Environment(v.solver.Environment)
+	if e != nil {
+		composed := *e
+		composed.Climate = v.climateLayer()
+		e = &composed
+	}
+	out["environment"] = renderEnvironment(e)
 	out["worldId"] = v.worldID
+	out["historicalMap"] = v.historical
+	out["historyWorldId"] = v.historyWorld
 	out["unsaved"] = v.unsaved
 	out["project"] = v.authored().Header
 	return out

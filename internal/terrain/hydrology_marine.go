@@ -27,7 +27,7 @@ func (e *Environment) buildMarineRegions() {
 			if at%w == 0 || at%w == w-1 || at < w || at >= n-w {
 				edge = true
 			}
-			for _, j := range nb(at, w, h) {
+			for _, j := range e.neighbors(at) {
 				if land[j] == 0 && clearance[j] >= 2 && labels[j] == 0 {
 					labels[j] = id
 					cells = append(cells, j)
@@ -46,7 +46,7 @@ func (e *Environment) buildMarineRegions() {
 	}
 	for head := 0; head < len(q); head++ {
 		i := q[head]
-		for _, j := range nb(i, w, h) {
+		for _, j := range e.neighbors(i) {
 			if land[j] == 0 && labels[j] == 0 {
 				labels[j] = labels[i]
 				q = append(q, j)
@@ -60,7 +60,7 @@ func (e *Environment) buildMarineRegions() {
 		}
 		region := &e.Hydrology.MarineRegions[id-1]
 		region.Cells = append(region.Cells, i)
-		for _, j := range nb(i, w, h) {
+		for _, j := range e.neighbors(i) {
 			other := labels[j]
 			if other > 0 && other != id && !linked[[2]int{id, other}] {
 				linked[[2]int{id, other}] = true

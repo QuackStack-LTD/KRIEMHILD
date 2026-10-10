@@ -26,11 +26,12 @@ export default function GeneratorView({onReady,onWorld}) {
       </div>
       <div id="brushCursor" hidden></div>
       <div className="hover" id="hover">Hover over a cell to see what it can still become.</div>
+      <div id="naturalHover" />
     </section>
 
     <aside className="panel">
       <header className="panel-head">
-        <h1>World Generation</h1>
+        <h1>Terrain Generation</h1>
         <label className="preset">
           <span>Preset</span>
           <select id="preset" aria-describedby="presetDesc"></select>
@@ -69,13 +70,14 @@ export default function GeneratorView({onReady,onWorld}) {
       <section className="tab-panel" id="panel-world" role="tabpanel" aria-labelledby="tab-world">
         <section className="group">
           <h2>Map</h2>
-          <label className="check"><input id="environment" type="checkbox" /> Physical environment</label>
+          <label className="check"><input id="environment" type="checkbox" defaultChecked /> Physical environment</label>
           <label className="check"><input id="realism" type="checkbox" /> Real-world geology &amp; climate</label>
           <p className="hint">Enables physical mode with derived climate zones, rivers, wind-shaped dunes, volcanic activity and water-dependent farms and villages. Turn off to use the earlier physical model.</p>
           <p className="hint">Choose a preset, then layer physical environment and real-world rules onto it. Presets set the land coverage, climate and geology; physical conditions constrain where their terrain can appear.</p>
           <p id="modeHint" className="hint"></p>
           <div className="row3"><label>Land %<input id="landCoverage" type="number" min="1" max="75" defaultValue="42" /></label><label>Plates<input id="plateCount" type="number" min="3" max="32" defaultValue="12" /></label></div>
           <div className="row3"><label>North latitude<input id="latitudeNorth" type="number" min="-90" max="90" defaultValue="90" /></label><label>South latitude<input id="latitudeSouth" type="number" min="-90" max="90" defaultValue="-90" /></label></div>
+          <div className="row3"><label>Island groups<input id="islandFrequency" type="number" min="0" max="3" step="0.1" defaultValue="1" title="Geological island-group frequency: 0 disables added groups, 1 normal, 3 abundant" /></label><label>Coastal share<input id="islandCoastalShare" type="number" min="0" max="1" step="0.05" defaultValue="0.6" title="Share of new groups near continental margins and marginal seas; the rest favor open-ocean tectonics and hotspots" /></label></div>
           <div className="row3"><label>Relief %<input id="ruggedness" type="number" min="1" max="200" defaultValue="100" /></label><label>Volcanic activity<input id="volcanism" type="number" min="0.1" max="3" step="0.1" defaultValue="1" /></label></div>
           <div className="row3"><label>Temperature offset °C<input id="temperatureOffset" type="number" min="-25" max="25" defaultValue="0" /></label><label>Rain multiplier<input id="rainfall" type="number" min="0.1" max="3" step="0.1" defaultValue="1" /></label></div>
           <div className="row3">
@@ -83,6 +85,27 @@ export default function GeneratorView({onReady,onWorld}) {
             <label>Height <input id="height" type="number" min="16" max="256" defaultValue="100" /></label>
             <label>Cell px <input id="cellSize" type="number" min="1" max="40" defaultValue="6" /></label>
           </div>
+          <details className="climate-settings">
+            <summary>Climate, seasons &amp; planetary scale</summary>
+            <p className="hint">Available with Physical environment. Blank planetary values vary with the generation seed. Default coverage is a full Earth-sized planet in an equirectangular projection. Width and height above are cells; pixel dimensions are cells multiplied by Cell px.</p>
+            <div className="row3"><label>Seasons<select id="seasonMode" defaultValue="automatic"><option value="automatic">Automatic climate phases</option><option value="custom">Custom count</option></select></label><label>Season count<input id="seasonCount" type="number" min="1" max="6" defaultValue="4" disabled /></label></div>
+            <label className="field">Optional custom season names<input id="seasonNames" type="text" maxLength="485" placeholder="Ember, Rain, Frost (in annual order)" /></label>
+            <label className="field">Geographic coverage<select id="climateCoverage" defaultValue="planet"><option value="planet">Whole planet (default)</option><option value="hemisphere">Hemisphere</option><option value="continent">Continent</option><option value="island">Island</option><option value="local">Local region</option></select></label>
+            <div className="row3"><label>Axial tilt (degrees)<input id="planetTilt" type="number" min="0" max="90" step="0.1" placeholder="Seeded" /></label><label>Year (days)<input id="planetYearDays" type="number" min="30" max="3000" placeholder="Seeded" /></label></div>
+            <div className="row3"><label>Orbital eccentricity<input id="planetEccentricity" type="number" min="0" max="0.6" step="0.01" placeholder="Seeded" /></label><label>Perihelion (year fraction)<input id="planetPerihelion" type="number" min="0" max="1" step="0.01" placeholder="Seeded" /></label></div>
+            <div className="row3"><label>Circulation strength<input id="planetCirculation" type="number" min="0" max="2" step="0.1" placeholder="Seeded" /></label><label>Planet radius (km)<input id="planetRadius" type="number" min="500" max="50000" placeholder="6371" /></label></div>
+            <div className="row3"><label>West longitude<input id="longitudeWest" type="number" min="-180" max="180" step="0.01" placeholder="-180" /></label><label>East longitude<input id="longitudeEast" type="number" min="-180" max="180" step="0.01" placeholder="180" /></label></div>
+            <label className="field">North?south km per cell (optional)<input id="worldScale" type="number" min="0.001" max="10000" step="0.001" placeholder="Derived from planet size and latitude bounds" /></label>
+            <p className="hint">Distances and cell areas account for spherical geometry. Full planets wrap east?west. For regional coverage, km per cell can set the extent around the latitude midpoint; leave it blank to use geographic bounds.</p>
+<p className="hint">Latitude bounds above and longitude bounds here set the actual coverage. Season counts come from climate curves, never pixel dimensions. Custom counts subdivide the modeled year without inventing weather changes.</p>
+          </details>
+          <details className="climate-settings"><summary>River networks &amp; geological erosion</summary>
+            <div className="row3"><label>Minimum catchment (km?)<input id="riverMinArea" type="number" min="1" max="10000000" placeholder="80" /></label><label>Minimum flow (m?/s)<input id="riverMinDischarge" type="number" min="0.01" max="1000000" step="0.01" placeholder="0.5" /></label></div>
+            <div className="row3"><label>Visible stream order<input id="riverVisibleOrder" type="number" min="1" max="12" placeholder="2" /></label><label>Ephemeral density<input id="ephemeralDensity" type="number" min="0" max="1" step="0.05" placeholder="0.35" /></label></div>
+            <div className="row3"><label>Major catchment (km?)<input id="riverMajorArea" type="number" min="1" max="100000000" placeholder="20000" /></label><label>Regional catchment (km?)<input id="riverRegionalArea" type="number" min="1" max="100000000" placeholder="1500" /></label></div>
+            <div className="row3"><label>Erosion passes<input id="erosionIterations" type="number" min="0" max="6" defaultValue="2" /></label><label>Duration (million years)<input id="erosionDuration" type="number" min="0" max="50" step="0.1" defaultValue="2" /></label><label>Erosion strength<input id="erosionStrength" type="number" min="0" max="3" step="0.1" defaultValue="1" /></label></div>
+            <p className="hint">Channels require concentrated upstream water. Small streams are revealed at closer zooms. Erosion modifies actual elevation, then recalculates drainage; zero passes disables it.</p>
+          </details>
           <label className="field shape-field">Shape
             <select id="shape">
               <option value="flat">Flat</option>
@@ -247,9 +270,9 @@ export default function GeneratorView({onReady,onWorld}) {
         <section className="group">
           <h2>Save</h2>
           <div className="save-row">
-            <button id="saveProject" type="button">Export world ZIP</button>
-            <label className="button">Open world ZIP<input id="openProject" type="file" accept=".zip,application/zip" hidden /></label>
-            <label className="button">Open world folder<input id="openProjectFolder" type="file" webkitdirectory="" multiple hidden /></label>
+            <button id="saveProject" type="button">Export terrain ZIP</button>
+            <label className="button">Open terrain ZIP<input id="openProject" type="file" accept=".zip,application/zip" hidden /></label>
+            <label className="button">Open terrain folder<input id="openProjectFolder" type="file" webkitdirectory="" multiple hidden /></label>
           </div>
           <p className="hint" id="autosaveStatus" role="status">Click Save in the top bar to store the world and explored detail.</p>
           <p className="hint" id="projectStatus" role="status">Reopen previous worlds below. ZIP files provide portable backups.</p>

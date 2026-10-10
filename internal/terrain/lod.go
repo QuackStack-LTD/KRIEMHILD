@@ -281,7 +281,51 @@ func (m *DetailModel) buildDrainage() {
 			if to := int(e.get("flow", c)); to >= 0 {
 				slope = math.Max(0, e.get("drainageElevation", c)-e.get("drainageElevation", to))
 			}
+			if e.Geography != nil {
+				to := int(e.get("flow", c))
+				km := e.Geography.WorldScale
+				if to >= 0 {
+					km = e.stepKM(c, to)
+				}
+				return clamp(4.8*math.Sqrt(e.get("dischargeM3s", c))*(.45+.55/(1+slope/180))/(math.Max(.01, km)*1000), .006, .32)
+			}
 			return (.018 + math.Min(.32, math.Sqrt(e.get("accumulation", c))*.012)) * (.45 + .55/(1+slope/180))
+		}
+
+		if e.Geography != nil && e.Geography.WrapX && math.Abs(bx-ax) > float64(w)/2 {
+			// Split the projection seam; both pieces represent the same reach.
+			// Never draw a continent-spanning line across the flat map.
+			midY, midZ := (ay+by)/2, (z0+z1)/2
+			parent := fmt.Sprintf("%x/drainage/%d", m.Seed, j)
+			for part := 0; part < 2; part++ {
+				featureID := id
+				path := [][3]float64{{bx, midY, midZ}, {bx, by, z1}}
+				if e.get("waterBody", j) > 0 {
+					if part == 1 {
+						continue
+					}
+					path = [][3]float64{{ax, ay, z0}, {ax, midY, midZ}}
+				} else if part == 1 {
+					featureID += "/seam"
+					path = [][3]float64{{ax, ay, z0}, {ax, midY, midZ}}
+				} else if m.base(path[0][0], path[0][1]).WaterBody > 0 {
+					// The incoming projection-edge piece starts on the dry
+					// side of its refined shoreline, not inside the ocean.
+					a, b := path[0], path[1]
+					lo, hi := 0., 1.
+					for n := 0; n < 26; n++ {
+						t := (lo + hi) / 2
+						if m.base(a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t).WaterBody > 0 {
+							lo = t
+						} else {
+							hi = t
+						}
+					}
+					path[0] = [3]float64{a[0] + (b[0]-a[0])*hi, a[1] + (b[1]-a[1])*hi, a[2] + (b[2]-a[2])*hi}
+				}
+				m.Features = append(m.Features, DetailFeature{ID: featureID, NetworkID: id, ParentID: parent, Kind: "river", Level: level, Width: widthAt(i), Widths: []float64{widthAt(i), widthAt(j)}, Discharge: q, Grade: grade, Path: path})
+			}
+			continue
 		}
 		path := make([][3]float64, 25)
 		widths := make([]float64, len(path))
@@ -294,6 +338,8 @@ func (m *DetailModel) buildDrainage() {
 			wave := bend * math.Pow(math.Sin(math.Pi*t), 2) * math.Sin(2*math.Pi*t)
 			path[k][0] += nx * wave
 			path[k][1] += ny * wave
+			path[k][0] = clamp(path[k][0], 0, float64(w-1))
+			path[k][1] = clamp(path[k][1], 0, float64(e.Options.Rows-1))
 			widths[k] = (widthAt(i)*(1-t) + widthAt(j)*t) * (1 + .07*math.Sin(6*math.Pi*t)*math.Sin(math.Pi*t))
 		}
 

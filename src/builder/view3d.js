@@ -1,3 +1,4 @@
+import {bindInspectionClick} from '../terrain/inspection-pin.js';
 import {entityStyle,entityColor} from '../terrain/feature-style.js';
 import {LineSegments2} from 'three/addons/lines/LineSegments2.js';
 import {LineSegmentsGeometry} from 'three/addons/lines/LineSegmentsGeometry.js';
@@ -46,6 +47,10 @@ export function createBuilder3D(host,solver,callbacks,texture){
  view.setHeights(heights,1);
  const canvas=view.renderer.domElement;canvas.tabIndex=0;canvas.setAttribute('aria-label','World Builder 3D terrain');
  function listen(name,fn){canvas.addEventListener(name,fn,{signal:abort.signal});}
+ bindInspectionClick(canvas,()=>['select','pan'].includes(options.tool),e=>view.pick(e),p=>callbacks.inspect?.(p),abort.signal);
+ let lastHover=0;
+ listen('pointermove',e=>{if(performance.now()-lastHover<120)return;lastHover=performance.now();const p=view.pick(e);callbacks.hover(p?{x:p.x,y:p.y,elevation:(solver.wrapX?p.point.length()-solver.W/(2*Math.PI):p.point.y)*2000}:null);});
+ listen('pointerleave',()=>callbacks.hover(null));
  listen('pointerdown',e=>{canvas.focus();down={x:e.clientX,y:e.clientY,button:e.button};});
  listen('pointerup',e=>{
   const start=down;down=null;if(!start||start.button!==0||Math.hypot(e.clientX-start.x,e.clientY-start.y)>5)return;
@@ -62,6 +67,7 @@ export function createBuilder3D(host,solver,callbacks,texture){
  function finish(){if(draft.length<(options.tool==='polygon'?3:2))return;const points=draft;draft=[];callbacks.draft(0);revision++;if(options.tool==='river')callbacks.modify('river',{x:points[0][0],y:points[0][1]},points,null);else callbacks.place(points,options.tool);}
  listen('dblclick',finish);listen('keydown',e=>{if(e.key==='Enter'){e.preventDefault();finish();}if(e.key==='Escape'){draft=[];callbacks.draft(0);revision++;}});
  return {
+  setInspectionPin:p=>view.setInspectionPin(p),
   setOptions(next){if(next.tool!==options.tool){draft=[];callbacks.draft(0);}options={...options,...next};view.controls.enableRotate=['select','pan'].includes(options.tool);view.controls.mouseButtons.LEFT=options.tool==='pan'?THREE.MOUSE.PAN:THREE.MOUSE.ROTATE;view.setDetailLayer(options.layer);revision++;},
   setEntities(next){entities=next;revision++;},select(id){selected=id;revision++;},finish,
   invalidate(bounds){view.invalidate(bounds);revision++;},state:()=>view.cameraState(),restore:s=>view.restoreCamera(s),fit:()=>view.resetCamera(),

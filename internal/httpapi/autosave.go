@@ -82,6 +82,11 @@ func (s *Server) saveWorld(v *session, changed bool) error {
 		}
 		return err
 	}
+	if v.climateLayer() != nil && v.climate.State != nil {
+		if err := add("authored-climate", v.climate); err != nil {
+			return err
+		}
+	}
 	for name, value := range v.authored().Parts(!v.persisted) {
 		if err := add(name, value); err != nil {
 			return err
@@ -133,9 +138,19 @@ func (s *Server) saveWorld(v *session, changed bool) error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	if err := s.projects.SaveParts(ctx, storage.Project{ID: v.worldID, Name: v.authored().Header.Name, Seed: seed, Width: v.solver.W, Height: v.solver.H, DetailTiles: len(v.tiles)}, parts, !v.persisted); err != nil {
+	historical, err := s.projects.CommitHistoricalMap(ctx, v.worldID, parts, v.authored())
+	if err != nil {
 		return err
 	}
+	if !historical && v.historical != nil {
+		return fmt.Errorf("map or World was deleted; cannot save this session")
+	}
+	if !historical {
+		if err := s.projects.SaveParts(ctx, storage.Project{ID: v.worldID, Name: v.authored().Header.Name, Seed: seed, Width: v.solver.W, Height: v.solver.H, DetailTiles: len(v.tiles)}, parts, !v.persisted); err != nil {
+			return err
+		}
+	}
+
 	v.persisted = true
 	v.unsaved = false
 	v.world.Saved()
@@ -201,6 +216,22 @@ func restoreCheckpoint(id string, parts map[string][]byte, cacheRoot string) (v 
 			}
 		}
 		if err = v.world.Validate(solver.W, solver.H); err != nil {
+			return nil, err
+		}
+	}
+	if solver.Environment != nil {
+		if err = solver.Environment.Climate.Validate(solver.W, solver.H); err != nil {
+			return nil, err
+		}
+	}
+	if b := parts["authored-climate"]; b != nil {
+		if err = expandJSON(b, &v.climate); err != nil {
+			return nil, err
+		}
+		if v.climate.State == nil || solver.Environment == nil || solver.Environment.Climate == nil || v.climate.Signature != v.climateKey() {
+			return nil, fmt.Errorf("invalid saved authored climate")
+		}
+		if err = v.climate.State.Validate(solver.W, solver.H); err != nil {
 			return nil, err
 		}
 	}

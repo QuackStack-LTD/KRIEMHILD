@@ -21,7 +21,7 @@ import (
 	"time"
 )
 
-const projectSchema = 2
+const projectSchema = 4
 const projectFieldEncoding = "float64 little-endian, field-major then row-major; edge chunks clipped to dimensions"
 const maxProjectBytes = 256 << 20
 const maxExpandedBytes = 1 << 30
@@ -41,21 +41,25 @@ type projectRegion struct {
 	File   string `json:"file"`
 }
 type projectManifest struct {
-	Format         string          `json:"format"`
-	Schema         int             `json:"schema"`
-	Engine         string          `json:"detailEngine"`
-	ID             string          `json:"worldId"`
-	Width          int             `json:"width"`
-	Height         int             `json:"height"`
-	WrapX          bool            `json:"wrapX"`
-	Coordinates    string          `json:"coordinates"`
-	ElevationUnits string          `json:"elevationUnits"`
-	FieldEncoding  string          `json:"fieldEncoding"`
-	Generation     json.RawMessage `json:"generation"`
-	Fields         []string        `json:"fields"`
-	ChunkSize      int             `json:"chunkSize"`
-	Files          []projectFile   `json:"files"`
-	Regions        []projectRegion `json:"regions"`
+	Climate         *climateArchive `json:"climate,omitempty"`
+	AuthoredClimate *climateArchive `json:"authoredClimate,omitempty"`
+	GeologyFile     string          `json:"geologyFile,omitempty"`
+	ResourcesFile   string          `json:"resourcesFile,omitempty"`
+	Format          string          `json:"format"`
+	Schema          int             `json:"schema"`
+	Engine          string          `json:"detailEngine"`
+	ID              string          `json:"worldId"`
+	Width           int             `json:"width"`
+	Height          int             `json:"height"`
+	WrapX           bool            `json:"wrapX"`
+	Coordinates     string          `json:"coordinates"`
+	ElevationUnits  string          `json:"elevationUnits"`
+	FieldEncoding   string          `json:"fieldEncoding"`
+	Generation      json.RawMessage `json:"generation"`
+	Fields          []string        `json:"fields"`
+	ChunkSize       int             `json:"chunkSize"`
+	Files           []projectFile   `json:"files"`
+	Regions         []projectRegion `json:"regions"`
 }
 type projectEdits struct {
 	Current    terrain.Snapshot  `json:"current"`
@@ -283,6 +287,35 @@ func encodeProject(v *session) ([]byte, error) {
 	if s.Environment != nil {
 		e := *s.Environment
 		e.Fields = nil
+		var climateErr error
+		m.Climate, climateErr = writeClimateArchive(e.Climate, "climate/base", addJSON)
+		if climateErr != nil {
+			return nil, climateErr
+		}
+		if v.climateLayer() != nil && v.climate.State != nil {
+			m.AuthoredClimate, climateErr = writeClimateArchive(v.climate.State, "climate/authored", addJSON)
+			if climateErr != nil {
+				return nil, climateErr
+			}
+			m.AuthoredClimate.Signature = v.climate.Signature
+		}
+		e.Climate = nil
+		if err := s.Environment.ValidateArchipelagos(); err != nil {
+			return nil, err
+		}
+		if err := s.Environment.ValidateNaturalData(); err != nil {
+			return nil, err
+		}
+		if e.Geology != nil {
+			m.GeologyFile, m.ResourcesFile = "natural/geology.json", "natural/resources.json"
+			if err := addJSON(m.GeologyFile, e.Geology); err != nil {
+				return nil, err
+			}
+			if err := addJSON(m.ResourcesFile, e.Resources); err != nil {
+				return nil, err
+			}
+			e.Geology, e.Resources = nil, nil
+		}
 		if err := addJSON("base/environment.json", e); err != nil {
 			return nil, err
 		}
@@ -455,7 +488,7 @@ func decodeProject(files map[string][]byte, cacheRoot ...string) (*session, erro
 	if err := json.Unmarshal(files[manifest], &m); err != nil {
 		return nil, err
 	}
-	if m.Format != "KRIEMHILD World Project" || (m.Schema != 1 && m.Schema != projectSchema) || m.Engine != terrain.DetailEngineVersion || m.ChunkSize != 32 || m.FieldEncoding != projectFieldEncoding || m.ID == "" {
+	if m.Format != "KRIEMHILD World Project" || (m.Schema < 1 || m.Schema > projectSchema) || m.Engine != terrain.DetailEngineVersion || m.ChunkSize != 32 || m.FieldEncoding != projectFieldEncoding || m.ID == "" {
 		return nil, fmt.Errorf("unsupported project schema or detail engine version")
 	}
 	prefix := strings.TrimSuffix(manifest, "manifest.json")
@@ -504,10 +537,31 @@ func decodeProject(files map[string][]byte, cacheRoot ...string) (*session, erro
 	}
 	base := solver.Snapshot()
 	var env *terrain.Environment
+	if data["base/environment.json"] == nil && (m.GeologyFile != "" || m.ResourcesFile != "" || data["natural/geology.json"] != nil || data["natural/resources.json"] != nil) {
+		return nil, fmt.Errorf("natural layers have no base terrain")
+	}
 	if data["base/environment.json"] != nil {
 		env = &terrain.Environment{}
 		if err := decode("base/environment.json", env); err != nil {
 			return nil, err
+		}
+		if env.Climate != nil {
+			return nil, fmt.Errorf("climate must use manifest-referenced chunks")
+		}
+		if m.GeologyFile != "" || m.ResourcesFile != "" {
+			if m.Schema < 3 || m.GeologyFile != "natural/geology.json" || m.ResourcesFile != "natural/resources.json" || env.Geology != nil || env.Resources != nil {
+				return nil, fmt.Errorf("invalid natural layer manifest references")
+			}
+			env.Geology = &terrain.GeologicalState{}
+			env.Resources = &terrain.ResourceState{}
+			if err := decode(m.GeologyFile, env.Geology); err != nil {
+				return nil, err
+			}
+			if err := decode(m.ResourcesFile, env.Resources); err != nil {
+				return nil, err
+			}
+		} else if data["natural/geology.json"] != nil || data["natural/resources.json"] != nil {
+			return nil, fmt.Errorf("unreferenced natural layers")
 		}
 		env.Fields = map[string][]float64{}
 		if len(m.Fields) < 1 || len(m.Fields) > 256 {
@@ -539,6 +593,17 @@ func decodeProject(files map[string][]byte, cacheRoot ...string) (*session, erro
 			}
 		}
 	}
+	climateFiles := map[string]bool{}
+	if m.Climate != nil || m.AuthoredClimate != nil {
+		if m.Schema < 4 || env == nil || env.Climate != nil || m.Climate == nil {
+			return nil, fmt.Errorf("invalid climate layer references")
+		}
+		var err error
+		env.Climate, err = readClimateArchive(m.Climate, "climate/base", m.Width, m.Height, data, climateFiles)
+		if err != nil {
+			return nil, err
+		}
+	}
 	if err := terrain.RestoreProjectSolver(&solver, config, env, edits.Current); err != nil {
 		return nil, err
 	}
@@ -550,6 +615,21 @@ func decodeProject(files map[string][]byte, cacheRoot ...string) (*session, erro
 		}
 		if err := v.world.Validate(solver.W, solver.H); err != nil {
 			return nil, err
+		}
+	}
+	if m.AuthoredClimate != nil {
+		state, err := readClimateArchive(m.AuthoredClimate, "climate/authored", m.Width, m.Height, data, climateFiles)
+		if err != nil {
+			return nil, err
+		}
+		if len(v.authored().Operations) == 0 || m.AuthoredClimate.Signature != v.climateKey() {
+			return nil, fmt.Errorf("authored climate does not match saved terrain edits")
+		}
+		v.climate = authoredClimate{m.AuthoredClimate.Signature, state}
+	}
+	for file := range data {
+		if strings.HasPrefix(file, "climate/") && !climateFiles[file] {
+			return nil, fmt.Errorf("unreferenced climate data")
 		}
 	}
 	if len(cacheRoot) > 0 {

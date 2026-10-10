@@ -13,10 +13,10 @@ const ranges = {
 };
 export function installEnvironmentOverlays(select) {
 	for(const [value,label] of [['riverClass','Major river routes'],['riverSystem','River systems and tributary connections']]){const option=document.createElement('option');option.value=value;option.textContent=label;select.append(option);}
-  const fields = ['runoff','recharge','baseflow','waterTableDepth','streamOrder','watershed','permeability','lithology','snowmelt','glacierMelt','dryDischarge','spring','geothermal','beach','coastType','climate','wind','latitude','current','windY','slope','oceanDistance','tectonicStress','summerRain','winterRain','growingSeason','drainageElevation','river','freshwaterDistance','rockType','layering','caprock','erosion','sandSupply','sandTransport','deposition','vegetation','substrate','snowBalance','duneField','duneOrientation','hotspot','vent','cultivated','village','ocean','waterLevel','waterDepth','waterBody','basin','catchmentArea','shelf','seamount','reefType','light','landform','highland','mountainCore','geology'];
+  const fields = ['seasonalClimate','seasonCount','runoff','recharge','baseflow','waterTableDepth','streamOrder','watershed','permeability','lithology','snowmelt','glacierMelt','dryDischarge','spring','geothermal','beach','coastType','climate','wind','latitude','current','windY','slope','oceanDistance','tectonicStress','summerRain','winterRain','growingSeason','drainageElevation','river','freshwaterDistance','rockType','layering','caprock','erosion','sandSupply','sandTransport','deposition','vegetation','substrate','snowBalance','duneField','duneOrientation','hotspot','vent','cultivated','village','ocean','waterLevel','waterDepth','waterBody','basin','catchmentArea','shelf','seamount','reefType','light','landform','highland','mountainCore','geology'];
   for(const name of fields) if(![...select.options].some(o=>o.value===name)) {
     const option=document.createElement('option'); option.value=name;
-    option.textContent=name==='climate'?'Derived climate zones':name==='wind'?'Wind direction (arrows)':name.replace(/([A-Z])/g,' $1').replace(/^./,c=>c.toUpperCase());
+    option.textContent=name==='seasonalClimate'?'Seasonal climate zones':name==='seasonCount'?'Local season count':name==='climate'?'Derived climate zones':name==='wind'?'Wind direction (arrows)':name.replace(/([A-Z])/g,' $1').replace(/^./,c=>c.toUpperCase());
     select.append(option);
   }
   const legend=document.createElement('p');legend.id='environmentLegend';legend.className='hint';select.after(legend);
@@ -30,6 +30,8 @@ export function fieldColor(environment,name,c) {
   if(name==='riverSystem')return v>0?riverSystemColor(environment.hydrology?.rivers?.[v-1]?.id||String(v)):'#192a31';
   if(name==='riverClass')return ['#192a31','#609bc1','#64d4ad','#ffcd78'][v]||'#192a31';
   if(name==='watershed'&&f.ocean?.[c])return '#173e59';
+  if(name==='seasonalClimate')return `hsl(${v*137.508%360} 45% 55%)`;
+  if(name==='seasonCount')return ['#777','#69859d','#65a397','#9eae67','#c1a15d','#b9776b','#976eaf'][Math.round(v)]||'#777';
   if(name==='climate') return climateColors[v] || '#777777';
   if(name==='rockType') return ['#97919d','#c4ac7a','#695765'][v];
   if(name==='boundary') return ['#18344d','#e77355','#69cbbb','#deb968'][v];
@@ -52,6 +54,8 @@ export function overlayLegend(e,name) {
   if(name==='terrain') return e?.options.realism?'Rivers in blue · dune ridges follow wind · volcanic vents in red.':'';
   if(name==='wind') return 'Arrows show prevailing wind direction; color shows strength (blue → red).';
   if(!e?.fields[name]) return 'This layer requires Real-world geology & climate.';
+  if(name==='seasonalClimate')return (e.seasonalZones||[]).map((name,i)=>`${i}: ${name}`).join(' / ');
+  if(name==='seasonCount')return '1-6 local phases derived from the annual climate curve, or the chosen custom count. Pin a point to inspect its seasons.';
   if(name==='climate') return e.climateZones.map((v,i)=>`${i}: ${v}`).join(' · ');
   if(name==='rockType') return '0: crystalline · 1: sedimentary · 2: volcanic';
   if(name==='boundary') return '0: interior · 1: convergent · 2: divergent · 3: transform';

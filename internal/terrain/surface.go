@@ -7,11 +7,12 @@ import (
 var SurfaceFields = []string{"ocean", "waterLevel", "waterDepth", "waterBody", "basin", "catchmentArea", "drainageElevation", "shelf", "seamount", "reefType", "light", "landform", "highland", "mountainCore", "geology"}
 
 type WaterBody struct {
-	ID       int     `json:"id"`
-	Kind     string  `json:"kind"`
-	Level    float64 `json:"level"`
-	MaxDepth float64 `json:"maxDepth"`
-	Cells    []int   `json:"cells"`
+	BoundaryContinuations []int   `json:"boundaryContinuations,omitempty"`
+	ID                    int     `json:"id"`
+	Kind                  string  `json:"kind"`
+	Level                 float64 `json:"level"`
+	MaxDepth              float64 `json:"maxDepth"`
+	Cells                 []int   `json:"cells"`
 }
 type ReefRegion struct {
 	Kind  string `json:"kind"`
@@ -23,7 +24,7 @@ func (e *Environment) carveDepressions(sample func(float64, float64) float64) {
 		return
 	}
 	w, h := e.Options.Columns, e.Options.Rows
-	d := distance(e.Mask, w, h, 0)
+	d := e.gridDistance(e.Mask, 0)
 	used := make([]bool, w*h)
 	for i := range e.Mask {
 		// Subsidence and calderas require geological support. Noise only
@@ -65,16 +66,33 @@ func (e *Environment) carveDepressions(sample func(float64, float64) float64) {
 func (e *Environment) connectOcean() {
 	w, h := e.Options.Columns, e.Options.Rows
 	q := []int{}
+	for _, name := range []string{"ocean", "waterLevel", "waterDepth", "waterBody", "lake", "basin", "bathymetry"} {
+		e.Fields[name] = make([]float64, len(e.Mask))
+	}
+	// A global ocean is seeded at its deepest connected marine basin, not a rectangular border.
+	externalMarine := false
+	for i := range e.Mask {
+		if e.edgeOutlet(i) && e.get("elevation", i) < -200 {
+			externalMarine = true
+			break
+		}
+	}
+	deepest := 0
+	for i := range e.Mask {
+		if e.get("elevation", i) < e.get("elevation", deepest) {
+			deepest = i
+		}
+	}
 	for i := range e.Mask {
 		e.Mask[i] = 1
-		if (i%w == 0 || i%w == w-1 || i < w || i >= w*(h-1)) && e.get("elevation", i) <= 0 {
+		if ((e.Geography == nil && (i%w == 0 || i%w == w-1 || i < w || i >= w*(h-1))) || (e.Geography != nil && (!externalMarine && i == deepest || e.edgeOutlet(i) && e.get("elevation", i) < -200))) && e.get("elevation", i) <= 0 {
 			e.Mask[i] = 0
 			e.set("ocean", i, 1)
 			q = append(q, i)
 		}
 	}
 	for head := 0; head < len(q); head++ {
-		for _, j := range nb(q[head], w, h) {
+		for _, j := range e.neighbors(q[head]) {
 			if e.Mask[j] != 0 && e.get("elevation", j) <= 0 {
 				e.Mask[j] = 0
 				e.set("ocean", j, 1)
@@ -84,6 +102,11 @@ func (e *Environment) connectOcean() {
 	}
 	body := WaterBody{ID: 1, Kind: "ocean", Cells: q}
 	for _, i := range q {
+		if e.edgeOutlet(i) {
+			body.BoundaryContinuations = append(body.BoundaryContinuations, i)
+		}
+	}
+	for _, i := range q {
 		depth := math.Max(0, -e.get("elevation", i))
 		e.set("waterDepth", i, depth)
 		e.set("bathymetry", i, depth)
@@ -91,7 +114,7 @@ func (e *Environment) connectOcean() {
 		body.MaxDepth = math.Max(body.MaxDepth, depth)
 	}
 	e.WaterBodies = []WaterBody{body}
-	e.Fields["oceanDistance"] = distance(e.Mask, w, h, 0)
+	e.Fields["oceanDistance"] = e.gridDistance(e.Mask, 0)
 }
 
 // Four reef forms follow coastal/shelf or volcanic-ring geometry. Suitability
@@ -101,6 +124,7 @@ func (e *Environment) buildReefs(sample func(float64, float64) float64) {
 	e.Reefs = nil
 	f, set := e.get, e.set
 	landDist := distance(e.Mask, w, h, 1)
+	atollRims := e.archipelagoAtollRims()
 	for i := range e.Mask {
 		set("reef", i, 0)
 		set("reefType", i, 0)
@@ -128,11 +152,11 @@ func (e *Environment) buildReefs(sample func(float64, float64) float64) {
 		// a second scale leaves gaps rather than painting entire coastlines pink.
 		x, y := float64(i%w)/float64(w), float64(i/w)/float64(h)
 		province := sample(x*9+813, y*9+927)
-		if province < .69 || sample(x*32+619, y*32+731) < .48 {
+		if !atollRims[i] && (province < .69 || sample(x*32+619, y*32+731) < .48) {
 			continue
 		}
 		kind := 3.
-		if f("seamount", i) > .55 && landDist[i] > 2 {
+		if atollRims[i] || f("seamount", i) > .55 && landDist[i] > 2 {
 			kind = 4
 		} else if landDist[i] <= 1 {
 			kind = 1
@@ -158,7 +182,7 @@ func (e *Environment) buildReefs(sample func(float64, float64) float64) {
 		q := []int{i}
 		seen[i] = true
 		for head := 0; head < len(q); head++ {
-			for _, j := range nb(q[head], w, h) {
+			for _, j := range e.neighbors(q[head]) {
 				if !seen[j] && int(f("reefType", j)) == kind {
 					seen[j] = true
 					q = append(q, j)

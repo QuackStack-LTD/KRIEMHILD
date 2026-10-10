@@ -147,6 +147,11 @@ func TestWorldRoutesAndViewportValidation(t *testing.T) {
 
 func TestSchemaOneWorldOpensWithEmptyBuilder(t *testing.T) {
 	v := projectFixture(t)
+	// Schema 1 predates stored geological history and resource layers.
+	v.solver.Environment.Climate = nil
+	v.solver.Environment.Geology = nil
+	v.solver.Environment.Geomorphology = nil
+	v.solver.Environment.Resources = nil
 	archive, err := encodeProject(v)
 	if err != nil {
 		t.Fatal(err)

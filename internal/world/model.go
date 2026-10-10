@@ -20,6 +20,8 @@ type Layer struct {
 	Order   int    `json:"order"`
 }
 type Entity struct {
+	Cells     []int        `json:"cells,omitempty"`
+	SourceID  string       `json:"sourceId,omitempty"`
 	ID        string       `json:"id"`
 	Name      string       `json:"name"`
 	Kind      string       `json:"kind"`
@@ -56,6 +58,7 @@ type Change struct {
 	Bounds *Bounds         `json:"bounds,omitempty"`
 }
 type Header struct {
+	MapID        string          `json:"mapId,omitempty"`
 	Version      int             `json:"version"`
 	Name         string          `json:"name"`
 	Description  string          `json:"description"`
@@ -170,6 +173,14 @@ func (s *State) ValidateEntity(e Entity) error {
 	}
 	if _, ok := s.Layer(e.Layer); !ok {
 		return fmt.Errorf("unknown layer")
+	}
+	if len(e.Cells) > int((s.W+1)*(s.H+1)) {
+		return fmt.Errorf("geographical cell set too large")
+	}
+	for _, cell := range e.Cells {
+		if cell < 0 || cell >= int((s.W+1)*(s.H+1)) {
+			return fmt.Errorf("geographical cell outside terrain")
+		}
 	}
 	n := len(e.Points)
 	if n > 2048 || !(e.Geometry == "point" && n == 1 || e.Geometry == "line" && n >= 2 || e.Geometry == "polygon" && n >= 3) {
@@ -295,6 +306,9 @@ func (s *State) PutEntity(e Entity) (*Bounds, error) {
 		return nil, err
 	}
 	old, exists := s.Entities[e.ID]
+	if exists && !bytes.Equal(raw(old.Points), raw(e.Points)) {
+		e.Cells = nil
+	}
 	if exists {
 		if err := s.editable(old.Layer); err != nil {
 			return nil, err
@@ -583,4 +597,19 @@ func AllowedGeometry(layer, kind, geometry string) bool {
 		return geometry == "point" || geometry == "polygon"
 	}
 	return geometry == "point" || geometry == "line" || geometry == "polygon"
+}
+
+// Refresh shared footprints from historical state without losing this editor's
+// pending commands or marking unrelated inherited entities as local edits.
+func (s *State) RefreshRepresentations(shapes map[string]Entity) {
+	dirty := s.dirty
+	for key := range dirty {
+		if strings.HasPrefix(key, "entity/") {
+			id := strings.TrimPrefix(key, "entity/")
+			shapes[id] = s.Entities[id]
+		}
+	}
+	s.Entities = shapes
+	s.Reindex(int(s.W)+1, int(s.H)+1)
+	s.dirty = dirty
 }

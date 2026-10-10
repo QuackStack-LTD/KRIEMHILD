@@ -9,6 +9,7 @@ The opening page is a **Project Hub** with named recent worlds and ZIP/folder im
 Physical worlds use terrain- and climate-driven drainage, lake water budgets,
 groundwater springs and narrow, blended shore materials. See the
 [hydrology model, validation and compatibility notes](docs/HYDROLOGY.md).
+New physical worlds also infer layered lithology and geological history, then generate causal natural resources. Hover over terrain in either editor to inspect geological context and local or nearby goods. These invisible layers persist in database saves and world ZIPs. See [natural resources and hover queries](docs/NATURAL_RESOURCES.md).
 
 Install Node.js 22.12+ and Go 1.26+, then run from this folder:
 
@@ -51,6 +52,8 @@ On Windows, use `bin/kriemhild.exe`. Ship the binary with `dist/`; Node.js is on
 
 New worlds initially use the original terrain-rule engine. Presets compose with both Physical environment and Real-world geology & climate: selecting a preset keeps the switches enabled, and enabling physics keeps the preset selected. Each preset supplies land coverage, latitude, temperature, rainfall, plate activity and relief appropriate to its theme. Terrain weights, neighbor boosts, radius, stability and point count remain effective within environmental constraints. Turning physics off restores the named preset's original palette. Physical mode uses environmental masks instead of legacy adjacency/climate-band weights. Its Points control distributes land/ocean regions; higher counts generally produce smaller landmasses. High land coverage may still join them into a supercontinent.
 
+Physical worlds also generate volcanic arcs, spreading chains, hotspot trails, flooded continental fragments and shelf island clusters. **World / Map / Island groups** controls frequency; **Coastal share** balances coastal and open-ocean groups. The Islands preset produces more archipelagos. See [geological islands and controls](docs/ARCHIPELAGOS.md).
+
 Physical elevation builds broad continental shelves, coastal lowlands, highlands and mountain systems before adding valleys, ridges and individual peaks. Mountain belts vary in width and height, with foothills and supporting terrain around their summits. Active margins and volcanic edifices explicitly permit steeper slopes. Reef development is restricted to coherent suitable regions rather than covering every warm coastline; the same seed reproduces these structures. Extreme elevations use a gradual height limit to avoid identical flat summits. The map shades elevation slopes; 3D uses the numerical elevations directly without the smoothing applied to discrete WFC tiles. **Relief %** adjusts mountain prominence.
 
 Physical lowlands, plateaus and valleys also have continuous elevation. Water is a separate layer: ocean connectivity and basin water balance determine coverage, allowing enclosed dry land below sea level. Lakes have local surface levels and varied bed depths; oceans have shelves, slopes, trenches and submerged peaks. Reef habitat produces fringing, barrier, patch and atoll patterns. The 3D water mesh covers only wet cells. See [continuous terrain and water](docs/CONTINUOUS_TERRAIN.md) for fields, generation and validation.
@@ -92,3 +95,7 @@ npm run build
 
 
 Physical maps now support hierarchical exploration in 2D and 3D: scroll toward the cursor to reveal deterministic detail, drag to navigate, and use World view to return. Eight refinement bands preserve parent elevations, water bodies and drainage, with World through Maximum detail labels. See [Hierarchical terrain exploration](docs/HIERARCHICAL_DETAIL.md) for the model, controls, API and current limits.
+
+See [Historical Worlds](docs/HISTORICAL_WORLDS.md) for the World/Age hierarchy, timelines, map inheritance, Settlement Builder, and portable historical archives.
+
+Physical terrains also store a seasonal climate layer. Open **World > Map > Climate, seasons & planetary scale** for automatic or custom seasons, optional names and planetary parameters. Pin a map point for its annual summary and seasonal conditions. Climate zones and local season counts are available as overlays. Saved climate profiles survive database restarts, historical Age inheritance and ZIP import without regeneration; see [portable climate data](docs/WORLD_PROJECTS.md#seasonal-climate-model).

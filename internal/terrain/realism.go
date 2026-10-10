@@ -18,12 +18,13 @@ type River struct {
 	Discharge float64 `json:"discharge"`
 }
 type Volcano struct {
-	ID     int    `json:"id"`
-	Cell   int    `json:"cell"`
-	Origin string `json:"origin"`
-	Active bool   `json:"active"`
-	Lava   []int  `json:"lava"`
-	Ash    []int  `json:"ash"`
+	Archipelago string `json:"archipelagoId,omitempty"`
+	ID          int    `json:"id"`
+	Cell        int    `json:"cell"`
+	Origin      string `json:"origin"`
+	Active      bool   `json:"active"`
+	Lava        []int  `json:"lava"`
+	Ash         []int  `json:"ash"`
 }
 type Region struct {
 	ID          int     `json:"id"`
@@ -296,6 +297,7 @@ func (e *Environment) transportSand() {
 }
 
 func (e *Environment) buildVolcanoes() {
+	islandSources := e.islandVolcanoSources()
 	w, h := e.Options.Columns, e.Options.Rows
 	f, set := e.get, e.set
 	activity := noise(Seed(e.Options.Seed) ^ 0x45e217)
@@ -327,7 +329,14 @@ func (e *Environment) buildVolcanoes() {
 		} else if f("boundary", i) == 2 {
 			origin = "rift"
 		}
-		v := Volcano{ID: len(e.Entities.Volcanoes) + 1, Cell: i, Origin: origin, Active: activity(float64(i%w)*1.71, float64(i/w)*1.37) > clamp(.68-(e.Options.Volcanism-1)*.2, .2, .85)}
+		source := islandSources[i]
+		if source.Group != "" {
+			origin = source.Origin
+		}
+		v := Volcano{Archipelago: source.Group, ID: len(e.Entities.Volcanoes) + 1, Cell: i, Origin: origin, Active: activity(float64(i%w)*1.71, float64(i/w)*1.37) > clamp(.68-(e.Options.Volcanism-1)*.2, .2, .85)}
+		if source.Group != "" && source.Age > 12 {
+			v.Active = false
+		}
 		set("vent", i, float64(v.ID))
 		// Submarine vents are recorded, but cannot paint land lava or ash.
 		if v.Active && e.Mask[i] != 0 && f("lake", i) == 0 {

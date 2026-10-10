@@ -54,7 +54,7 @@ func TestGeneratedSurfaceHasSupportedGradients(t *testing.T) {
 					limit = 1104
 				}
 				if math.Abs(z-e.get("elevation", j)) > limit {
-					t.Fatalf("%s unsupported step at %d -> %d", seed, i, j)
+					t.Fatalf("%s unsupported step at %d -> %d: z=%g/%g geology=%g/%g lake=%g/%g", seed, i, j, z, e.get("elevation", j), gi, gj, e.get("lake", i), e.get("lake", j))
 				}
 				if e.Mask[i] != 0 && e.get("ocean", j) == 1 && gi != 2 && gi != 6 {
 					coasts++

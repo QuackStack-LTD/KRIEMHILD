@@ -183,8 +183,9 @@ func (s *State) Environment(base *terrain.Environment) *terrain.Environment {
 	for name, f := range base.Fields {
 		e.Fields[name] = f
 	}
-	for _, name := range []string{"elevation", "waterBody", "waterLevel", "waterDepth"} {
-		e.Fields[name] = append([]float64(nil), base.Fields[name]...)
+	for _, name := range []string{"elevation", "waterBody", "waterLevel", "waterDepth", "vegetation", "river"} {
+		e.Fields[name] = make([]float64, len(base.Mask))
+		copy(e.Fields[name], base.Fields[name])
 	}
 	w := base.Options.Columns
 	for i := range e.Fields["elevation"] {
@@ -193,11 +194,15 @@ func (s *State) Environment(base *terrain.Environment) *terrain.Environment {
 		if len(ops) == 0 {
 			continue
 		}
-		p := Apply(terrain.DetailPoint{Elevation: base.Fields["elevation"][i], WaterBody: int(base.Fields["waterBody"][i]), WaterLevel: base.Fields["waterLevel"][i], WaterDepth: base.Fields["waterDepth"][i]}, x, y, ops)
+		p := Apply(terrain.DetailPoint{Elevation: base.Fields["elevation"][i], WaterBody: int(base.Fields["waterBody"][i]), WaterLevel: base.Fields["waterLevel"][i], WaterDepth: base.Fields["waterDepth"][i], Vegetation: e.Fields["vegetation"][i]}, x, y, ops)
 		e.Fields["elevation"][i] = p.Elevation
 		e.Fields["waterBody"][i] = float64(p.WaterBody)
 		e.Fields["waterLevel"][i] = p.WaterLevel
 		e.Fields["waterDepth"][i] = p.WaterDepth
+		e.Fields["vegetation"][i] = p.Vegetation
+		if p.RiverDepth > 0 {
+			e.Fields["river"][i] = 1
+		}
 	}
 	return &e
 }

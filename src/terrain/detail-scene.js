@@ -9,7 +9,7 @@ import {meshSurface} from './mesh-surface.js';
 // A covering quadtree: parent quadrants disappear only after the corresponding
 // child is available. Border vertices stitch to the actual parent edge.
 export function createDetailScene(scene,camera,renderer,solver){
-  let dirty=true,lastSignature='',lastLayer='',palette=null,disposed=false,revision=0,surfaceVersion=0,viewport=null;
+  let dirty=true,lastSignature='',lastClimateRevision=null,lastLayer='',palette=null,disposed=false,revision=0,surfaceVersion=0,viewport=null;
   const store=new DetailTiles(solver,()=>{dirty=true;}),group=new THREE.Group(),meshes=new Map();scene.add(group);
   const W=solver.W,H=solver.H,sphere=solver.wrapX,radius=W/(2*Math.PI),ray=new THREE.Raycaster(),plane=new THREE.Plane(new THREE.Vector3(0,1,0),0),ball=new THREE.Sphere(new THREE.Vector3(),radius);
   function position(x,y,z){
@@ -23,6 +23,7 @@ export function createDetailScene(scene,camera,renderer,solver){
   }
   function disposeMesh(m){group.remove(m);m.traverse(child=>{child.geometry?.dispose();child.material?.map?.dispose();child.material?.dispose();});}
   function update(scale,layer='terrain'){
+    if(lastClimateRevision!==solver.climateRevision){lastClimateRevision=solver.climateRevision;palette=null;dirty=true;lastSignature='';revision++;}
     if(disposed)return;
     ray.setFromCamera(new THREE.Vector2(0,0),camera);
     const hit=sphere?ray.ray.intersectSphere(ball,new THREE.Vector3()):ray.ray.intersectPlane(plane,new THREE.Vector3());
@@ -106,7 +107,7 @@ export function createDetailScene(scene,camera,renderer,solver){
         }
       }
       const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geo.setIndex(indices);geo.computeVertexNormals();
-      const texture=new THREE.CanvasTexture(featureTexture(tile,solver,palette,layer,blend,detail));texture.colorSpace=THREE.SRGBColorSpace;
+      const texture=new THREE.CanvasTexture(featureTexture(tile,solver,palette,layer,blend,detail));texture.colorSpace=THREE.SRGBColorSpace;if(layer==='terrain'){texture.minFilter=THREE.NearestFilter;texture.magFilter=THREE.NearestFilter;texture.generateMipmaps=false;}
       const mesh=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({map:texture,roughness:.95,side:THREE.DoubleSide}));mesh.userData.stamp=stamp;mesh.userData.tile=tile;group.add(mesh);meshes.set(key,mesh);
       if(water.length){const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(water,3));geometry.computeVertexNormals();mesh.add(new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color:riverStyle.surface,transparent:true,opacity:.22,roughness:.3,side:THREE.DoubleSide,depthWrite:false})));}
     }

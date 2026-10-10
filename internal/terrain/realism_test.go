@@ -62,7 +62,11 @@ func TestRealismDeterminismAndConstraints(t *testing.T) {
 			if f("volcano", v.Cell) < .48 {
 				t.Fatal("vent without tectonic/hotspot source")
 			}
-			if v.Origin == "hotspot" && f("hotspot", v.Cell) <= .48 || v.Origin == "subduction" && f("boundary", v.Cell) != 1 || v.Origin == "rift" && f("boundary", v.Cell) != 2 {
+			if v.Archipelago != "" {
+				if err := e.ValidateArchipelagos(); err != nil {
+					t.Fatal(err)
+				}
+			} else if v.Origin == "hotspot" && f("hotspot", v.Cell) <= .48 || v.Origin == "subduction" && f("boundary", v.Cell) != 1 || v.Origin == "rift" && f("boundary", v.Cell) != 2 {
 				t.Fatal("volcanic origin disagrees with tectonics", v)
 			}
 			if !v.Active && (len(v.Lava) > 0 || len(v.Ash) > 0) {

@@ -36,6 +36,8 @@ type HydroBasin struct {
 	Downstream  string      `json:"downstream"`
 }
 type HydroReach struct {
+	DischargeM3s float64       `json:"dischargeM3s,omitempty"`
+	WidthMetres  float64       `json:"widthMetres,omitempty"`
 	RiverID      string        `json:"riverId,omitempty"`
 	Class        string        `json:"class,omitempty"`
 	Branches     []HydroBranch `json:"branches,omitempty"`

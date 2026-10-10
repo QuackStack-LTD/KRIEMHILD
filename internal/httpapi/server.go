@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"kriemhild/internal/history"
 	"kriemhild/internal/storage"
 	"kriemhild/internal/terrain"
 	"kriemhild/internal/world"
@@ -20,6 +21,8 @@ import (
 )
 
 type session struct {
+	climate         authoredClimate
+	natural         *terrain.NaturalIndex
 	mu              sync.Mutex
 	solver          *terrain.Solver
 	last            time.Time
@@ -42,6 +45,8 @@ type session struct {
 	viewClient      string
 	viewSequence    uint64
 	retired         bool
+	historical      *history.Map
+	historyWorld    string
 	world           *world.State
 	composed        map[string][]byte
 }
@@ -101,10 +106,13 @@ func NewWithOptions(dist string, options Options) *Server {
 	s.mux.HandleFunc("GET /api/sessions/{id}/world", s.worldInfo)
 	s.mux.HandleFunc("GET /api/sessions/{id}/world/state", s.worldState)
 	s.mux.HandleFunc("GET /api/sessions/{id}/world/entities", s.worldEntities)
+	s.mux.HandleFunc("GET /api/sessions/{id}/world/natural", s.worldNatural)
+	s.mux.HandleFunc("GET /api/sessions/{id}/world/climate", s.worldClimateOverlay)
 	s.mux.HandleFunc("POST /api/sessions/{id}/world", s.worldCommand)
 	s.mux.HandleFunc("POST /api/projects/import", s.importProject)
 	s.mux.HandleFunc("GET /api/projects", s.listProjects)
 	s.mux.HandleFunc("POST /api/projects/{id}/open", s.openStoredProject)
+	s.historyRoutes()
 	s.mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { fail(w, 404, "API route not found") })
 	s.mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" && r.Method != "HEAD" {
@@ -116,7 +124,7 @@ func NewWithOptions(dist string, options Options) *Server {
 			http.ServeFile(w, r, file)
 			return
 		}
-		if r.URL.Path != "/" && r.URL.Path != "/world/new" && !validWorldRoute(r.URL.Path) {
+		if r.URL.Path != "/" && r.URL.Path != "/world/new" && !validWorldRoute(r.URL.Path) && !validHistoryRoute(r.URL.Path) {
 			http.NotFound(w, r)
 			return
 		}
@@ -216,7 +224,7 @@ func (s *Server) create(w http.ResponseWriter, r *http.Request) {
 			fail(w, 400, err.Error())
 			return
 		}
-		solver.WrapX = req.WrapX
+		solver.WrapX = req.WrapX || solver.Environment != nil && solver.Environment.Geography != nil && solver.Environment.Geography.WrapX
 	} else {
 		o := req.Options
 		if o.Width < 16 || o.Width > 256 || o.Height < 16 || o.Height > 256 {
@@ -466,7 +474,7 @@ func view(s *terrain.Solver, initial bool) map[string]any {
 		out["contNeutral"] = s.ContNeutral
 		out["climStrength"] = s.ClimStrength
 		out["contPoints"] = s.ContPoints
-		out["environment"] = s.Environment
+		out["environment"] = renderEnvironment(s.Environment)
 		out["config"] = s.Rules.Config
 		dx, dy := []int{}, []int{}
 		for _, d := range s.Offsets {

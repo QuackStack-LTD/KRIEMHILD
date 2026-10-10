@@ -61,7 +61,7 @@ func (e *Environment) ValidateHydrology() []HydroDiagnostic {
 		delete(members, root)
 		cells := []int{root}
 		for head := 0; head < len(cells); head++ {
-			for _, j := range nb(cells[head], e.Options.Columns, e.Options.Rows) {
+			for _, j := range e.neighbors(cells[head]) {
 				if members[j] {
 					delete(members, j)
 					cells = append(cells, j)
@@ -69,7 +69,43 @@ func (e *Environment) ValidateHydrology() []HydroDiagnostic {
 			}
 		}
 		if len(members) > 0 {
-			add(e.hydroID("water", body.ID), "disconnected water body")
+			// Regional ocean pieces can connect outside the represented extent.
+			// Every disconnected component must have a stored, valid open edge.
+			external := map[int]bool{}
+			for _, i := range body.BoundaryContinuations {
+				if i >= 0 && i < n && e.edgeOutlet(i) && f("ocean", i) > 0 {
+					external[i] = true
+				}
+			}
+			connected := false
+			for _, i := range cells {
+				connected = connected || external[i]
+			}
+			for len(members) > 0 && connected {
+				root := -1
+				for _, i := range body.Cells {
+					if members[i] {
+						root = i
+						break
+					}
+				}
+				part := []int{root}
+				delete(members, root)
+				outlet := false
+				for head := 0; head < len(part); head++ {
+					outlet = outlet || external[part[head]]
+					for _, j := range e.neighbors(part[head]) {
+						if members[j] {
+							delete(members, j)
+							part = append(part, j)
+						}
+					}
+				}
+				connected = outlet
+			}
+			if !connected || len(members) > 0 {
+				add(e.hydroID("water", body.ID), "disconnected water body")
+			}
 		}
 	}
 	for i := 0; i < n; i++ {
@@ -137,7 +173,7 @@ func (e *Environment) ValidateHydrology() []HydroDiagnostic {
 	}
 	for i := 0; i < n; i++ {
 		if f("terminalBasin", i) > 0 {
-			ids[e.hydroID("terminal-basin", i)] = true
+			ids[e.waterRef(i)] = true
 		}
 	}
 	reaches := map[string]HydroReach{}
@@ -176,7 +212,7 @@ func (e *Environment) ValidateHydrology() []HydroDiagnostic {
 			if r.Source == "lake-outlet" {
 				supplied := false
 				for _, i := range e.drainageNeighbors(r.From) {
-					if int(f("flow", i)) == r.From && f("lake", i) > 0 && lakeFed[int(f("waterBody", i))] && f("accumulation", i) > f("hydroLoss", i) {
+					if int(f("flow", i)) == r.From && f("lake", i) > 0 && (e.Hydrology.NetworkVersion >= 3 || lakeFed[int(f("waterBody", i))]) && f("accumulation", i) > f("hydroLoss", i) {
 						supplied = true
 					}
 				}
@@ -184,7 +220,7 @@ func (e *Environment) ValidateHydrology() []HydroDiagnostic {
 					add(r.ID, "lake outlet lacks a connected inlet and positive outflow")
 				}
 			} else if !e.supportedRiverHeadwater(r.From) {
-				add(r.ID, "river has no supported mountain or glacier headwater")
+				add(r.ID, "river has no supported upstream catchment and water supply")
 			}
 		}
 		if !ids[r.Downstream] {
@@ -346,7 +382,7 @@ func (e *Environment) ValidateHydrology() []HydroDiagnostic {
 
 func (e *Environment) validateRiverSystems(add func(string, string)) {
 	h := e.Hydrology
-	if (h.NetworkVersion < 1 || h.NetworkVersion > 2) || h.Statistics == nil {
+	if (h.NetworkVersion < 1 || h.NetworkVersion > 3) || h.Statistics == nil {
 		add("hydrology", "missing or unsupported river-system summary")
 		return
 	}
@@ -369,7 +405,7 @@ func (e *Environment) validateRiverSystems(add func(string, string)) {
 	}
 	for i := range e.Mask {
 		if e.get("terminalBasin", i) > 0 {
-			valid[e.hydroID("terminal-basin", i)] = true
+			valid[e.waterRef(i)] = true
 		}
 	}
 	for _, r := range h.Rivers {

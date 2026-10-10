@@ -8,6 +8,9 @@ import (
 // Lengths and areas are measured in base-grid cells, not assumed kilometres.
 // Every reach belongs to one river; tributaries end at their receiving river.
 type RiverSystem struct {
+	LengthKM      float64  `json:"lengthKm,omitempty"`
+	CatchmentKM2  float64  `json:"catchmentKm2,omitempty"`
+	DischargeM3s  float64  `json:"dischargeM3s,omitempty"`
 	ID            string   `json:"id"`
 	Class         string   `json:"class"`
 	Reaches       []string `json:"reaches"`
@@ -21,12 +24,14 @@ type RiverSystem struct {
 	Discharge     float64  `json:"discharge"`
 }
 type DrainageBasin struct {
-	ID          string  `json:"id"`
-	Outlet      int     `json:"outlet"`
-	Destination string  `json:"destination"`
-	Area        int     `json:"area"`
-	LongestPath float64 `json:"longestPath"`
-	Discharge   float64 `json:"discharge"`
+	AreaKM2       float64 `json:"areaKm2,omitempty"`
+	LongestPathKM float64 `json:"longestPathKm,omitempty"`
+	ID            string  `json:"id"`
+	Outlet        int     `json:"outlet"`
+	Destination   string  `json:"destination"`
+	Area          int     `json:"area"`
+	LongestPath   float64 `json:"longestPath"`
+	Discharge     float64 `json:"discharge"`
 }
 type DrainageTarget struct {
 	Landmass           int `json:"landmass"`
@@ -81,7 +86,7 @@ func (e *Environment) hydroLandmasses() ([]int, []int) {
 		q := []int{i}
 		labels[i] = id
 		for head := 0; head < len(q); head++ {
-			for _, j := range nb(q[head], e.Options.Columns, e.Options.Rows) {
+			for _, j := range e.neighbors(q[head]) {
 				if labels[j] == 0 && e.get("ocean", j) == 0 {
 					labels[j] = id
 					q = append(q, j)
@@ -95,7 +100,11 @@ func (e *Environment) hydroLandmasses() ([]int, []int) {
 
 func (e *Environment) hydroStep(i, j int) float64 {
 	w := e.Options.Columns
-	return math.Hypot(float64(i%w-j%w), float64(i/w-j/w))
+	dx := math.Abs(float64(i%w - j%w))
+	if e.Geography != nil && e.Geography.WrapX {
+		dx = math.Min(dx, float64(w)-dx)
+	}
+	return math.Hypot(dx, float64(i/w-j/w))
 }
 
 // Selection ranks whole catchments, anchored to supported upstream sources.
@@ -110,15 +119,22 @@ func (e *Environment) selectBasinChannels() []bool {
 	land := make([]int, len(sizes))
 	// Reverse drainage order gives route length, including lake transit.
 	order := e.accumulateWater()
+	distancesKM := make([]float64, n)
 	for k := len(order) - 1; k >= 0; k-- {
 		i := order[k]
 		d := 0.
 		if j := int(f("flow", i)); j >= 0 {
 			d = e.hydroStep(i, j) + f("drainageDistance", j)
+			if e.Geography != nil {
+				distancesKM[i] = e.stepKM(i, j) + distancesKM[j]
+			}
 		}
 		e.set("drainageDistance", i, d)
 	}
 
+	if e.Geography != nil {
+		e.Fields["drainageDistanceKM"] = distancesKM
+	}
 	// Propagate a real headwater through the DAG. Downstream accumulated flow
 	// selects a whole river, never an isolated lowland/coastal fragment.
 	origin := make([]int, n)
@@ -170,7 +186,9 @@ func (e *Environment) selectBasinChannels() []bool {
 		wet := humidity[id] / math.Max(1, float64(land[id]))
 		// Dense maps need fewer channel cells per unit area at the same physical
 		// scale. Humid land supports a richer hierarchy than dry land.
-		target := int(math.Ceil(float64(land[id]) * (.055 + .18*wet) / math.Sqrt(resolution)))
+		// Retain more supported tributaries and secondary basins, rather than
+		// stopping after the handful of highest-discharge trunk routes.
+		target := int(math.Ceil(float64(land[id]) * (.065 + .17*wet) / math.Sqrt(resolution)))
 		list := candidates[id]
 		sort.SliceStable(list, func(a, b int) bool {
 			score := func(i int) float64 {
@@ -283,6 +301,11 @@ func (e *Environment) summarizeRiverSystems() {
 			river.Mouth = r.To
 			river.Downstream = r.Downstream
 			river.Length += e.hydroStep(r.From, r.To)
+			if e.Geography != nil {
+				river.LengthKM += e.stepKM(r.From, r.To)
+				river.CatchmentKM2 = math.Max(river.CatchmentKM2, f("catchmentKM2", r.From))
+				river.DischargeM3s = f("dischargeM3s", r.From)
+			}
 			river.CatchmentArea = math.Max(river.CatchmentArea, f("catchmentArea", r.From))
 			river.Discharge = r.Discharge
 			at = next[at]
@@ -292,6 +315,15 @@ func (e *Environment) summarizeRiverSystems() {
 			river.Class = "major"
 		} else if river.CatchmentArea >= math.Max(8, area*.006) && river.Length >= 3 && river.Discharge >= .8 {
 			river.Class = "regional"
+		}
+		if e.Geography != nil {
+			limits := e.riverThresholds()
+			river.Class = "stream"
+			if river.CatchmentKM2 >= limits.MajorAreaKM2 && river.Length >= 6 && river.DischargeM3s >= 20 {
+				river.Class = "major"
+			} else if river.CatchmentKM2 >= limits.RegionalAreaKM2 && river.Length >= 3 && river.DischargeM3s >= 2 {
+				river.Class = "regional"
+			}
 		}
 		h.Rivers = append(h.Rivers, river)
 	}
@@ -330,6 +362,10 @@ func (e *Environment) summarizeRiverSystems() {
 			basins[root] = b
 		}
 		b.Area++
+		if e.Geography != nil {
+			b.AreaKM2 += e.cellArea(i)
+			b.LongestPathKM = math.Max(b.LongestPathKM, f("drainageDistanceKM", i))
+		}
 		b.LongestPath = math.Max(b.LongestPath, f("drainageDistance", i))
 	}
 	roots := []int{}
@@ -352,14 +388,18 @@ func (e *Environment) summarizeRiverSystems() {
 	}
 	for i := range e.Mask {
 		if f("terminalBasin", i) > 0 {
-			valid[e.hydroID("terminal-basin", i)] = true
+			valid[e.waterRef(i)] = true
 		}
 	}
 	for _, r := range h.Rivers {
 		for k := range stats.Classes {
 			if stats.Classes[k].Class == r.Class {
 				stats.Classes[k].Count++
-				stats.Classes[k].Length += r.Length
+				length := r.Length
+				if e.Geography != nil {
+					length = r.LengthKM
+				}
+				stats.Classes[k].Length += length
 			}
 		}
 		if !valid[r.Downstream] {
@@ -368,11 +408,20 @@ func (e *Environment) summarizeRiverSystems() {
 		if f("mountainCore", r.Source) < .2 {
 			stats.LowlandHeadwaters++
 		}
-		lengths = append(lengths, r.Length)
-		areas = append(areas, r.CatchmentArea)
+		if e.Geography != nil {
+			lengths = append(lengths, r.LengthKM)
+			areas = append(areas, r.CatchmentKM2)
+		} else {
+			lengths = append(lengths, r.Length)
+			areas = append(areas, r.CatchmentArea)
+		}
 	}
 	for _, b := range h.Watersheds {
-		basinAreas = append(basinAreas, float64(b.Area))
+		area := float64(b.Area)
+		if e.Geography != nil {
+			area = b.AreaKM2
+		}
+		basinAreas = append(basinAreas, area)
 	}
 	for k := range h.Targets {
 		target := &h.Targets[k]
@@ -402,6 +451,10 @@ func (e *Environment) summarizeRiverSystems() {
 	if len(h.Rivers) > 0 && stats.Classes[0].Count == 0 {
 		stats.Notes = append(stats.Notes, "No watershed supports a continental trunk at this landmass size, drainage length and discharge.")
 	}
+	if e.Geography != nil {
+		stats.LengthUnits = "km"
+		stats.AreaUnits = "km?"
+	}
 	h.Statistics = stats
 }
 
@@ -409,6 +462,9 @@ func (e *Environment) summarizeRiverSystems() {
 // a steep cell. Lowland tributary runoff still feeds the accumulated discharge.
 func (e *Environment) supportedRiverHeadwater(i int) bool {
 	f := e.get
+	if e.Hydrology != nil && e.Hydrology.NetworkVersion >= 3 {
+		return e.physicalHeadwater(i)
+	}
 	return f("waterBody", i) == 0 && f("flow", i) >= 0 &&
 		f("catchmentArea", i) >= 2 && f("accumulation", i) >= .18*math.Max(1, float64(len(e.Mask))/16000) &&
 		(f("glacier", i) > .1 || f("mountainCore", i) > .09 || (f("elevation", i) > 250 && f("mountainCore", i) > .035))

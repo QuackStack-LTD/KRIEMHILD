@@ -80,6 +80,10 @@ func Open(ctx context.Context, dataDir, databaseURL string) (*Store, error) {
 		db.Close()
 		return nil, fmt.Errorf("initialize %s project schema: %w", s.Driver(), err)
 	}
+	if err = s.migrateHistory(ctx); err != nil {
+		db.Close()
+		return nil, err
+	}
 	return s, nil
 }
 func (s *Store) Driver() string {

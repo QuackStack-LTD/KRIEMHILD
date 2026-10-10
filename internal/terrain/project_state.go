@@ -162,6 +162,18 @@ func RestoreProjectSolver(s *Solver, c Config, e *Environment, edit Snapshot) er
 				return fmt.Errorf("invalid hydrology %s: %s", diagnostics[0].Object, diagnostics[0].Reason)
 			}
 		}
+		if err := e.ValidateGeographicData(); err != nil {
+			return err
+		}
+		if err := e.ValidateArchipelagos(); err != nil {
+			return err
+		}
+		if err := e.Climate.Validate(s.W, s.H); err != nil {
+			return err
+		}
+		if err := e.ValidateNaturalData(); err != nil {
+			return err
+		}
 		if e.Options.Realism && e.Entities == nil {
 			return fmt.Errorf("missing geographic entities")
 		}

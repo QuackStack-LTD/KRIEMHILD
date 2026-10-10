@@ -7,3 +7,21 @@
 .application-nav{flex-wrap:wrap}.application-nav nav{flex-wrap:wrap}.save-state{font-size:12px;color:var(--muted,#aab5c5)}
 button.danger{color:#ffafa6;border-color:#814f4b}.working-world{margin:24px 0;padding:24px;border:1px solid #657758;border-radius:12px}.working-world button{margin-right:8px}
 .project-dialog-backdrop{position:fixed;inset:0;z-index:1000;background:#000a;display:grid;place-items:center;padding:24px}.project-dialog{max-width:480px;background:#20272d;color:#eef1ed;border:1px solid #63717a;border-radius:12px;padding:28px;box-shadow:0 20px 80px #0008}.project-dialog p{line-height:1.6}.project-dialog>div{display:flex;justify-content:flex-end;gap:12px;margin-top:24px}
+
+.natural-hover { margin-top:12px; padding:12px; border:1px solid #303d43; border-radius:6px; font-size:12px; line-height:1.5; }
+.natural-hover-content { max-height:300px; overflow:auto; }
+.natural-hover-content>strong,.natural-hover-content>small,.natural-hover li span,.natural-hover li small { display:block; }
+.natural-hover small { color:#98adb7; }
+.natural-hover ul { margin:6px 0; padding-left:18px; }
+.natural-hover li { margin-bottom:10px; }
+.natural-hover label { display:block; margin-top:8px; }
+.natural-hover input { width:60px; margin-left:6px; }
+.natural-hover details p { margin:6px 0; }
+
+/* The bottom center is the geographic anchor, in both camera projections. */
+.inspection-pin {position:absolute;z-index:12;width:24px;height:32px;transform:translate(-50%,-100%);pointer-events:none;filter:drop-shadow(0 2px 2px #0009);background:center/contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 32'%3E%3Cpath d='M12 31C9 25 1 18 1 12a11 11 0 0 1 22 0c0 6-8 13-11 19Z' fill='%23ee704a' stroke='white' stroke-width='2'/%3E%3Ccircle cx='12' cy='12' r='4' fill='white'/%3E%3C/svg%3E");}
+.inspection-pin[hidden] {display:none;}
+.natural-hover>small {display:block;margin-top:8px;color:#98adb7;}
+.natural-hover>button {margin-top:8px;}
+
+.climate-description{margin:12px 0;padding:10px;border:1px solid #48635b;border-radius:6px}.climate-description>summary{font-weight:600;cursor:pointer;margin-bottom:8px}.climate-description details{margin:9px 0;padding-top:7px;border-top:1px solid #344a43}.climate-description p{line-height:1.6}.climate-settings{margin:14px 0}.climate-settings>summary{cursor:pointer;padding:10px 0}

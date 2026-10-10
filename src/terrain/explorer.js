@@ -1,9 +1,11 @@
+import {createInspectionPin} from './inspection-pin.js';
 import {MapCamera,detailAtScale,detailName,smooth} from './map-camera.js';
 import {DetailTiles} from './detail-tiles.js';
 import {makeDetailPalette,tileImage,drawDetailFeatures,drawDetailOverlay} from './detail-render.js';
 
 export function createExplorer(container,source,brushOn,onCameraChange=()=>{}){
   const canvas=document.createElement('canvas');canvas.id='detailMap';canvas.className='detail-map';canvas.tabIndex=0;canvas.setAttribute('aria-label','Explore terrain: scroll to zoom at cursor, drag to pan, plus or minus to zoom, zero to fit');container.append(canvas);
+  const pin=createInspectionPin(container);let inspection=null;
   const ctx=canvas.getContext('2d'),camera=new MapCamera(),abort=new AbortController();
   let solver=null,tiles=null,palette=null,layer='terrain',active=false,frame=0,drag=null,width=0,height=0,disposed=false,images=new WeakMap();
   const status=document.getElementById('detailStatus');
@@ -24,29 +26,31 @@ export function createExplorer(container,source,brushOn,onCameraChange=()=>{}){
   function render(){
     frame=0;if(!active||!solver||!width||!height)return;
     const bounds=camera.bounds(width,height),detail=detailAtScale(camera.scale),visible=tiles.request(bounds,camera.scale);
-    ctx.setTransform(canvas.width/width,0,0,canvas.height/height,0,0);ctx.clearRect(0,0,width,height);ctx.fillStyle='#111418';ctx.fillRect(0,0,width,height);ctx.imageSmoothingEnabled=true;
+    ctx.setTransform(canvas.width/width,0,0,canvas.height/height,0,0);ctx.clearRect(0,0,width,height);ctx.fillStyle='#111418';ctx.fillRect(0,0,width,height);ctx.imageSmoothingEnabled=layer!=='terrain';
     // Clip once to the finite world; border tiles contain replicated edge nodes.
     ctx.save();ctx.beginPath();ctx.rect(camera.x,camera.y,(solver.W-1)*camera.scale,(solver.H-1)*camera.scale);ctx.clip();
     ctx.drawImage(source,camera.x,camera.y,(solver.W-1)*camera.scale,(solver.H-1)*camera.scale);
     let fading=false;
     for(const item of visible){const {tile,alpha,arrival}=item;let entry=images.get(tile);const morph=Math.round(alpha*64)/64;
       if(!entry||entry.morph!==morph){entry={morph,image:tileImage(tile,solver,palette,layer,morph)};images.set(tile,entry);}
-      const span=32*tile.step;ctx.globalAlpha=tile.level===0?1:alpha*arrival;
-      ctx.drawImage(entry.image,.5,.5,32,32,camera.x+tile.x*span*camera.scale,camera.y+tile.y*span*camera.scale,span*camera.scale,span*camera.scale);
+      const span=32*tile.step;ctx.globalAlpha=layer==='terrain'||tile.level===0?1:alpha*arrival;
+      ctx.drawImage(entry.image,.5,.5,entry.image.width-1,entry.image.height-1,camera.x+tile.x*span*camera.scale,camera.y+tile.y*span*camera.scale,span*camera.scale,span*camera.scale);
       if(arrival<1)fading=true;
     }
     ctx.globalAlpha=1;drawDetailFeatures(ctx,visible,camera,detail,layer);drawDetailOverlay(ctx,solver,camera,layer,width,height);ctx.restore();
     status.textContent=`${detailName(detail)} · ${(camera.scale/camera.minimum).toFixed(1)}×${tiles.pending.size?' · refining…':''}${tiles.error?' · '+tiles.error:''}`;
     canvas.dataset.detail=String(detail);canvas.dataset.scale=String(camera.scale);canvas.dataset.offsetX=String(camera.x);canvas.dataset.offsetY=String(camera.y);canvas.dataset.tiles=String(tiles.cache.size);
+    if(inspection)pin.show(camera.x+inspection.x*camera.scale,camera.y+inspection.y*camera.scale);else pin.hide();
     if(fading)queue();
   }
   return {
+    setInspectionPin(point){inspection=point;if(!point)pin.hide();queue();},
     setWorld(next,nextLayer='terrain',enabled=true){
       const changed=next?.id!==solver?.id;solver=next;
       if(width!==container.clientWidth||height!==container.clientHeight)resize();
       active=Boolean(enabled&&solver?.environment);canvas.hidden=!active;container.classList.toggle('exploring',active);
       if(changed){tiles?.dispose();tiles=solver?.environment?new DetailTiles(solver,queue):null;images=new WeakMap();fit();}
-      if(!active)tiles?.pause();
+      if(!active){tiles?.pause();pin.hide();}
       if(active){palette=makeDetailPalette(solver,nextLayer);images=new WeakMap();layer=nextLayer;queue(true);}
       document.getElementById('mapNavigation').hidden=!solver?.environment;
       for(const id of ['zoomIn','zoomOut','fitMap'])document.getElementById(id).hidden=!active;
@@ -73,6 +77,6 @@ export function createExplorer(container,source,brushOn,onCameraChange=()=>{}){
     cameraState(){const center=camera.point(width/2,height/2);return {center,scale:camera.scale};},
     restoreCamera(saved){if(!saved?.center||!Number.isFinite(saved.scale)||saved.scale<=0||![saved.center.x,saved.center.y].every(Number.isFinite))return;camera.scale=Math.max(camera.minimum,Math.min(3072,saved.scale));camera.x=width/2-saved.center.x*camera.scale;camera.y=height/2-saved.center.y*camera.scale;queue(true);},
     fit,refresh(){images=new WeakMap();queue();},
-    dispose(){disposed=true;abort.abort();observer.disconnect();tiles?.dispose();cancelAnimationFrame(frame);canvas.remove();},
+    dispose(){disposed=true;pin.dispose();abort.abort();observer.disconnect();tiles?.dispose();cancelAnimationFrame(frame);canvas.remove();},
   };
 }
