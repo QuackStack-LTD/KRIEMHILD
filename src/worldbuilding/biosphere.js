@@ -1,4 +1,4 @@
-﻿export const groups=['plant','animal','fungus','algae','bacterium','archaea','protist','virus','custom'];
+export const groups=['plant','animal','fungus','algae','bacterium','archaea','protist','virus','custom'];
 export const roles=['producer','decomposer','herbivore','predator','omnivore','scavenger','pollinator','seed-disperser','mutualist','parasite','pathogen','host-dependent'];
 export const interactions=['feeds-on','predator-of','pollinates','disperses-seeds-for','symbiotic-with','parasite-of','pathogen-of','infects','competes-with','decomposes','depends-on','evolves-from'];
 export const habitatKinds=['tropical-forest','temperate-forest','boreal-forest','grassland','floodplain','alpine','tundra','polar','desert','desert-dunes','oasis','wetland','river','lake','estuary','intertidal','shallow-marine','reef','open-ocean','geothermal'];

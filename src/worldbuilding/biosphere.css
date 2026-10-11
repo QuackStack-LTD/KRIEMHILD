@@ -1,3 +1,249 @@
-.biosphere-workspace .collection-toolbar{flex-wrap:wrap}.bio-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin:26px 0}.bio-metrics>div{border-top:2px solid #80b69a;padding:18px;background:#1c2925}.bio-metrics strong{display:block;font:2.3rem Georgia,serif;color:#bad8bb}.bio-metrics span{font-size:.85rem;text-transform:capitalize}.bio-habitat-bars{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:24px 0}.bio-habitat-bars button{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:center;text-align:left;padding:14px}.bio-habitat-bars meter{width:100%}.bio-warning,.bio-error{padding:16px;border-left:3px solid #d1b27f;background:#342f25;margin:15px 0}.bio-error{color:#ffc9b3}.bio-habitats{display:grid;grid-template-columns:280px 1fr;gap:28px;margin-top:24px}.bio-region-list{max-height:65vh;overflow:auto;display:grid;gap:5px}.bio-region-list button{text-align:left;padding:12px}.bio-region-list button[aria-current=true]{border-color:#a6c3a4}.bio-region-list small,.bio-community-row small,.bio-catalogue small{display:block;color:#a6b7ad;font-size:.78rem;margin-top:6px}.bio-community-row{padding:14px 0;border-bottom:1px solid #36483f}.bio-community-row span{margin-left:12px}.bio-catalogue{width:100%;border-collapse:collapse;margin:24px 0}.bio-catalogue th,.bio-catalogue td{padding:16px;text-align:left;border-bottom:1px solid #3a4942}.bio-catalogue td:first-child{width:38%}.bio-catalogue button{background:none;border:0;color:#d9dbc0;text-align:left;padding:0;font-size:1rem}.bio-wizard{width:min(1000px,95vw);max-height:90vh;overflow:auto}.bio-wizard label,.bio-rules label,.lifeform-profile label{display:grid;gap:7px;margin:12px 0}.bio-wizard label:has(input[type=checkbox]),.bio-rules label:has(input[type=checkbox]),.lifeform-profile label:has(input[type=checkbox]){display:flex;align-items:center}.bio-wizard input[type=checkbox],.bio-rules input[type=checkbox],.lifeform-profile input[type=checkbox]{width:auto}.bio-wizard textarea{min-height:90px}.bio-preview-group,.bio-rules>section,.bio-range{padding:20px;border:1px solid #405248;border-radius:7px;margin:20px 0}.bio-preview-entry{padding:16px 4px;border-top:1px solid #3b4c43}.bio-preview-entry small{display:block}.bio-preview-entry label input:not([type=checkbox]){width:100%}.bio-scope-list{max-height:240px;overflow:auto}.bio-choices{display:flex;flex-wrap:wrap;gap:10px 20px}.bio-choices label{font-size:.85rem}.bio-ranges{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.bio-ranges fieldset{display:flex;gap:8px;min-width:0;border:1px solid #3f5048}.bio-ranges input{width:100%;min-width:0}.bio-trait,.bio-dependency{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}.bio-trait input{flex:1;min-width:120px}.bio-dependency>*{min-width:110px;max-width:220px}.lifeform-profile{max-width:1150px}.lifeform-heading{display:flex;align-items:center;gap:24px;margin:24px 0}.lifeform-heading img,.lifeform-symbol{width:150px;height:160px;object-fit:cover;border-radius:8px}.lifeform-symbol{display:grid;place-items:center;background:#253a2e;color:#a8caa0;font-size:5rem}.bio-profile-form{max-width:720px}.bio-atlas-highlight img{width:100%;max-width:750px;image-rendering:pixelated}.bio-atlas-highlight{padding:20px;border:1px solid #668d73;margin-bottom:20px}@media(max-width:800px){.bio-habitats{grid-template-columns:1fr}.bio-region-list{max-height:240px}.bio-metrics,.bio-habitat-bars,.bio-ranges{grid-template-columns:repeat(2,1fr)}.bio-catalogue th,.bio-catalogue td{padding:8px}}
+.biosphere-workspace .collection-toolbar {
+  flex-wrap: wrap;
+}
+.bio-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin: 26px 0;
+}
+.bio-metrics > div {
+  border-top: 2px solid #80b69a;
+  padding: 18px;
+  background: #1c2925;
+}
+.bio-metrics strong {
+  display: block;
+  font:
+    2.3rem Georgia,
+    serif;
+  color: #bad8bb;
+}
+.bio-metrics span {
+  font-size: 0.85rem;
+  text-transform: capitalize;
+}
+.bio-habitat-bars {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin: 24px 0;
+}
+.bio-habitat-bars button {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 12px;
+  align-items: center;
+  text-align: left;
+  padding: 14px;
+}
+.bio-habitat-bars meter {
+  width: 100%;
+}
+.bio-warning,
+.bio-error {
+  padding: 16px;
+  border-left: 3px solid #d1b27f;
+  background: #342f25;
+  margin: 15px 0;
+}
+.bio-error {
+  color: #ffc9b3;
+}
+.bio-habitats {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 28px;
+  margin-top: 24px;
+}
+.bio-region-list {
+  max-height: 65vh;
+  overflow: auto;
+  display: grid;
+  gap: 5px;
+}
+.bio-region-list button {
+  text-align: left;
+  padding: 12px;
+}
+.bio-region-list button[aria-current="true"] {
+  border-color: #a6c3a4;
+}
+.bio-region-list small,
+.bio-community-row small,
+.bio-catalogue small {
+  display: block;
+  color: #a6b7ad;
+  font-size: 0.78rem;
+  margin-top: 6px;
+}
+.bio-community-row {
+  padding: 14px 0;
+  border-bottom: 1px solid #36483f;
+}
+.bio-community-row span {
+  margin-left: 12px;
+}
+.bio-catalogue {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 24px 0;
+}
+.bio-catalogue th,
+.bio-catalogue td {
+  padding: 16px;
+  text-align: left;
+  border-bottom: 1px solid #3a4942;
+}
+.bio-catalogue td:first-child {
+  width: 38%;
+}
+.bio-catalogue button {
+  background: none;
+  border: 0;
+  color: #d9dbc0;
+  text-align: left;
+  padding: 0;
+  font-size: 1rem;
+}
+.bio-wizard label,
+.bio-rules label,
+.lifeform-profile label {
+  display: grid;
+  gap: 7px;
+  margin: 12px 0;
+}
+.bio-wizard label:has(input[type="checkbox"]),
+.bio-rules label:has(input[type="checkbox"]),
+.lifeform-profile label:has(input[type="checkbox"]) {
+  display: flex;
+  align-items: center;
+}
+.bio-wizard input[type="checkbox"],
+.bio-rules input[type="checkbox"],
+.lifeform-profile input[type="checkbox"] {
+  width: auto;
+}
+.bio-wizard textarea {
+  min-height: 90px;
+}
+.bio-preview-group,
+.bio-rules > section,
+.bio-range {
+  padding: 20px;
+  border: 1px solid #405248;
+  border-radius: 7px;
+  margin: 20px 0;
+}
+.bio-preview-entry {
+  padding: 16px 4px;
+  border-top: 1px solid #3b4c43;
+}
+.bio-preview-entry small {
+  display: block;
+}
+.bio-preview-entry label input:not([type="checkbox"]) {
+  width: 100%;
+}
+.bio-scope-list {
+  max-height: 240px;
+  overflow: auto;
+}
+.bio-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+}
+.bio-choices label {
+  font-size: 0.85rem;
+}
+.bio-ranges {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.bio-ranges fieldset {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+  border: 1px solid #3f5048;
+}
+.bio-ranges input {
+  width: 100%;
+  min-width: 0;
+}
+.bio-trait,
+.bio-dependency {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+  flex-wrap: wrap;
+}
+.bio-trait input {
+  flex: 1;
+  min-width: 120px;
+}
+.bio-dependency > * {
+  min-width: 110px;
+  max-width: 220px;
+}
+.lifeform-profile {
+  max-width: 1150px;
+}
+.lifeform-heading {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin: 24px 0;
+}
+.lifeform-heading img,
+.lifeform-symbol {
+  width: 150px;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+.lifeform-symbol {
+  display: grid;
+  place-items: center;
+  background: #253a2e;
+  color: #a8caa0;
+  font-size: 5rem;
+}
+.bio-profile-form {
+  max-width: 720px;
+}
+.bio-atlas-highlight img {
+  width: 100%;
+  max-width: 750px;
+  image-rendering: pixelated;
+}
+.bio-atlas-highlight {
+  padding: 20px;
+  border: 1px solid #668d73;
+  margin-bottom: 20px;
+}
+@media (max-width: 800px) {
+  .bio-habitats {
+    grid-template-columns: 1fr;
+  }
+  .bio-region-list {
+    max-height: 240px;
+  }
+  .bio-metrics,
+  .bio-habitat-bars,
+  .bio-ranges {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .bio-catalogue th,
+  .bio-catalogue td {
+    padding: 8px;
+  }
+}
 
-.history-app .biosphere-workspace{max-width:none;margin-left:0;margin-right:0;width:auto}
+.history-app .biosphere-workspace {
+  max-width: none;
+  margin-left: 0;
+  margin-right: 0;
+  width: auto;
+}

@@ -1,1 +1,142 @@
-.year-navigation{display:flex;align-items:center;gap:12px;margin:24px 0 32px}.year-track{display:flex;overflow-x:auto;flex:1;min-width:0;padding:12px 0 22px;scrollbar-color:#8c9875 #1b2822}.year-node{flex:0 0 150px;position:relative;display:flex;flex-direction:column;align-items:center;gap:9px;background:none!important;border:0!important;border-radius:0!important;padding:16px 8px!important;color:#bdc9b7;z-index:0}.year-node:before{content:'';position:absolute;left:0;right:0;top:24px;height:1px;background:#657358;z-index:-1}.year-node:first-child:before{left:50%}.year-node:last-child:before{right:50%}.year-dot{width:17px;height:17px;border:2px solid #929d7a;border-radius:50%;background:#202e25}.year-node.selected .year-dot{background:#ddc58c;box-shadow:0 0 16px #ddc58c80}.year-node.selected{color:#f0dfb0}.year-node small{font-size:12px;color:#9fad9e}.year-events{border:1px solid #3b4a3e;border-radius:12px;padding:28px;background:#1d2a22;max-width:1000px;margin:auto}.year-events h2{font:32px Georgia,serif;margin:8px 0}.year-note{font-size:12px;color:#a7b5a9}.year-event-list{list-style:none;padding:0;display:grid;gap:20px}.year-event-list li{display:flex;gap:20px;border-top:1px solid #3a493c;padding:24px 0 4px}.year-event-list h3{margin:0 0 10px;font:23px Georgia,serif}.year-event-list p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7;max-width:70ch;color:#bfcbba}.year-event-kind{font-size:11px;text-transform:uppercase;color:#c8d6b3;flex:0 0 80px;padding-top:5px}.year-event-kind.end{color:#d4b49d}.year-successors{border-top:1px solid #3a493c;margin-top:24px;padding-top:12px}.year-successors button{margin:0 10px 10px 0}.profile-year-hint{color:#aebbab;font-size:13px;line-height:1.6}@media(max-width:700px){.year-events{padding:18px}.year-event-list li{gap:12px}.year-node{flex-basis:120px}.year-event-kind{flex-basis:60px}}
+.year-navigation {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0 32px;
+}
+.year-track {
+  display: flex;
+  overflow-x: auto;
+  flex: 1;
+  min-width: 0;
+  padding: 12px 0 22px;
+  scrollbar-color: #8c9875 #1b2822;
+}
+.year-node {
+  flex: 0 0 150px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  background: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 16px 8px !important;
+  color: #bdc9b7;
+  z-index: 0;
+}
+.year-node:before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 24px;
+  height: 1px;
+  background: #657358;
+  z-index: -1;
+}
+.year-node:first-child:before {
+  left: 50%;
+}
+.year-node:last-child:before {
+  right: 50%;
+}
+.year-dot {
+  width: 17px;
+  height: 17px;
+  border: 2px solid #929d7a;
+  border-radius: 50%;
+  background: #202e25;
+}
+.year-node.selected .year-dot {
+  background: #ddc58c;
+  box-shadow: 0 0 16px #ddc58c80;
+}
+.year-node.selected {
+  color: #f0dfb0;
+}
+.year-node small {
+  font-size: 12px;
+  color: #9fad9e;
+}
+.year-events {
+  border: 1px solid #3b4a3e;
+  border-radius: 12px;
+  padding: 28px;
+  background: #1d2a22;
+  max-width: 1000px;
+  margin: auto;
+}
+.year-events h2 {
+  font:
+    32px Georgia,
+    serif;
+  margin: 8px 0;
+}
+.year-note {
+  font-size: 12px;
+  color: #a7b5a9;
+}
+.year-event-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 20px;
+}
+.year-event-list li {
+  display: flex;
+  gap: 20px;
+  border-top: 1px solid #3a493c;
+  padding: 24px 0 4px;
+}
+.year-event-list h3 {
+  margin: 0 0 10px;
+  font:
+    23px Georgia,
+    serif;
+}
+.year-event-list p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+  max-width: 70ch;
+  color: #bfcbba;
+}
+.year-event-kind {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #c8d6b3;
+  flex: 0 0 80px;
+  padding-top: 5px;
+}
+.year-event-kind.end {
+  color: #d4b49d;
+}
+.year-successors {
+  border-top: 1px solid #3a493c;
+  margin-top: 24px;
+  padding-top: 12px;
+}
+.year-successors button {
+  margin: 0 10px 10px 0;
+}
+.profile-year-hint {
+  color: #aebbab;
+  font-size: 13px;
+  line-height: 1.6;
+}
+@media (max-width: 700px) {
+  .year-events {
+    padding: 18px;
+  }
+  .year-event-list li {
+    gap: 12px;
+  }
+  .year-node {
+    flex-basis: 120px;
+  }
+  .year-event-kind {
+    flex-basis: 60px;
+  }
+}

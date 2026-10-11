@@ -1,27 +1,493 @@
-import {useEffect,useState} from 'react';
-import {editorKind,extension,openDocx,writeDocx,writeWorkbook,editCell} from './library-files.js';
+import { requestText } from "./ui/feedback.js";
+import { useEffect, useState } from "react";
+import {
+  editorKind,
+  extension,
+  openDocx,
+  writeDocx,
+  writeWorkbook,
+  editCell,
+} from "./library-files.js";
 
-export default function LibraryEditor({bytes,name,onSave,onDirty,busy}){
- const kind=editorKind(name),[error,setError]=useState(''),[model,setModel]=useState(null),[text,setText]=useState(''),[paragraphs,setParagraphs]=useState([]),[sheet,setSheet]=useState(''),[row,setRow]=useState(0),[col,setCol]=useState(0),[revision,setRevision]=useState(0),[url,setURL]=useState(''),[pdfFields,setPDFFields]=useState([]),[overlay,setOverlay]=useState({page:1,x:48,y:740,size:12,text:''}),[overlays,setOverlays]=useState([]);
- useEffect(()=>{let live=true;const objectURL=URL.createObjectURL(new Blob([bytes],{type:kind==='pdf'?'application/pdf':'application/octet-stream'}));setURL(objectURL);(async()=>{try{
-  if(kind==='text'){setText(new TextDecoder('utf-8',{fatal:true}).decode(bytes));setModel(true)}
-  if(kind==='docx'){const doc=openDocx(bytes);if(live){setModel(doc);setParagraphs(doc.paragraphs)}}
-  if(kind==='sheet'){const x=await import('xlsx'),book=x.read(bytes,{type:'array',cellStyles:true,cellFormula:true});if(live){setModel({x,book});setSheet(book.SheetNames[0])}}
-  if(kind==='pdf'){const {PDFDocument}=await import('pdf-lib');const pdf=await PDFDocument.load(bytes);if(live){setModel(pdf);setPDFFields(pdf.getForm().getFields().map(f=>({name:f.getName(),type:typeof f.getText==='function'?'PDFTextField':typeof f.isChecked==='function'?'PDFCheckBox':typeof f.getOptions==='function'&&typeof f.select==='function'?'PDFDropdown':'unsupported',value:typeof f.getText==='function'?f.getText()||'':typeof f.isChecked==='function'?f.isChecked():typeof f.getSelected==='function'?f.getSelected()[0]||'':'',options:typeof f.getOptions==='function'?f.getOptions():[]})))}}
- }catch(e){if(live)setError(e.message)}})();return()=>{live=false;URL.revokeObjectURL(objectURL)}},[bytes,kind]);
- const changed=()=>onDirty(true);
- async function save(){setError('');try{let out;
-  if(kind==='text')out=new TextEncoder().encode(text);
-  if(kind==='docx')out=writeDocx(model,paragraphs);
-  if(kind==='sheet')out=writeWorkbook(model.x,model.book,['xls','ods','csv'].includes(extension(name))?'xlsx':extension(name));
-  if(kind==='pdf'){const {PDFDocument,StandardFonts}=await import('pdf-lib'),pdf=await PDFDocument.load(bytes),font=await pdf.embedFont(StandardFonts.Helvetica);for(const v of pdfFields){const f=pdf.getForm().getField(v.name);if(v.type==='PDFTextField')f.setText(v.value);if(v.type==='PDFCheckBox')v.value?f.check():f.uncheck();if(['PDFDropdown','PDFRadioGroup','PDFOptionList'].includes(v.type)&&v.value)f.select(v.value)}for(const o of overlays){const page=pdf.getPage(o.page-1);page.drawText(o.text,{x:+o.x,y:+o.y,size:+o.size,font,maxWidth:Math.max(10,page.getWidth()-o.x-24)})}out=await pdf.save()}
-  if(out)await onSave(out,kind==='sheet'&&['xls','ods','csv'].includes(extension(name))?name.replace(/\.[^.]+$/,'.xlsx'):name);
- }catch(e){setError(e.message)}}
- if(kind==='binary')return <p>This format is stored unchanged. Download it to edit externally, then use Replace file to save a new version.</p>;
- return <section className="library-editor"><div className="library-editor-tools"><strong>{kind==='sheet'?'Spreadsheet':kind==='docx'?'DOCX paragraphs':kind==='pdf'?'PDF forms & text':'Text editor'}</strong><button disabled={busy||!model} onClick={save}>{kind==='sheet'&&['xls','ods','csv'].includes(extension(name))?'Save edited workbook as XLSX':'Save file version'}</button></div>{error&&<p role="alert">{error}</p>}
- {kind==='text'&&<><small>UTF-8 text. Markdown is saved as Markdown; HTML and scripts are edited as text.</small><textarea className="library-text" aria-label="Document content" value={text} onChange={e=>{setText(e.target.value);changed()}} spellCheck/></>}
- {kind==='docx'&&model&&<><p className="editor-note">Edit paragraphs while retaining other document parts. Edited text uses the first run’s formatting; complex layouts are best edited externally. Previous file versions remain available.</p><div className="docx-paper">{paragraphs.map((p,i)=><textarea key={i} aria-label={`Paragraph ${i+1}`} value={p} onChange={e=>{setParagraphs(paragraphs.map((v,j)=>i===j?e.target.value:v));changed()}}/>)}<button onClick={()=>{setParagraphs([...paragraphs,'']);changed()}}>Add paragraph</button></div></>}
- {kind==='sheet'&&model&&<><p className="editor-note">Edit values and formulas (=…). Formulas are stored, not calculated here. XLS, ODS and CSV edits save as XLSX; the original stays in version history. Advanced formatting, macros and charts may not survive editing; original versions are retained.</p><div className="library-editor-tools"><label>Sheet<select value={sheet} onChange={e=>setSheet(e.target.value)}>{model.book.SheetNames.map(n=><option key={n}>{n}</option>)}</select></label><button onClick={()=>{const n=prompt('Sheet name');if(!n)return;try{model.x.utils.book_append_sheet(model.book,model.x.utils.aoa_to_sheet([['']]),n);setSheet(n);changed()}catch(e){setError(e.message)}}}>Add sheet</button><label>First row<input type="number" min="1" max="1048547" value={row+1} onChange={e=>setRow(Math.max(0,Math.min(1048546,+e.target.value-1)))}/></label><label>First column<input type="number" min="1" max="16372" value={col+1} onChange={e=>setCol(Math.max(0,Math.min(16371,+e.target.value-1)))}/></label></div><div className="spreadsheet-scroll"><table key={sheet+revision+row+'/'+col}><thead><tr><th></th>{Array.from({length:12},(_,i)=><th key={i}>{model.x.utils.encode_col(col+i)}</th>)}</tr></thead><tbody>{Array.from({length:30},(_,r)=><tr key={r}><th>{row+r+1}</th>{Array.from({length:12},(_,c)=>{const address=model.x.utils.encode_cell({r:row+r,c:col+c}),cell=model.book.Sheets[sheet]?.[address];return <td key={c}><input aria-label={address} defaultValue={cell?.f?'='+cell.f:cell?.v??''} onChange={e=>{const before=cell?.f?'='+cell.f:String(cell?.v??'');if(e.target.value!==before){editCell(model.x,model.book.Sheets[sheet],row+r,col+c,e.target.value);changed()}}}/></td>})}</tr>)}</tbody></table></div></>}
- {kind==='pdf'&&model&&<><p className="editor-note">Fill supported forms and add text overlays. Existing page text is retained. Coordinates are points from the lower-left corner; text uses Helvetica. Download for full layout editing.</p>{pdfFields.filter(f=>['PDFTextField','PDFCheckBox','PDFDropdown','PDFRadioGroup','PDFOptionList'].includes(f.type)).map((f,i)=><label key={f.name}>{f.name}{f.type==='PDFCheckBox'?<input type="checkbox" checked={!!f.value} onChange={e=>{setPDFFields(all=>all.map(v=>v.name===f.name?{...v,value:e.target.checked}:v));changed()}}/>:f.options.length?<select value={f.value} onChange={e=>{setPDFFields(all=>all.map(v=>v.name===f.name?{...v,value:e.target.value}:v));changed()}}><option value="">Select</option>{f.options.map(v=><option key={v}>{v}</option>)}</select>:<input value={f.value} onChange={e=>{setPDFFields(all=>all.map(v=>v.name===f.name?{...v,value:e.target.value}:v));changed()}}/>}</label>)}<div className="pdf-overlay">{['page','x','y','size'].map(k=><label key={k}>{k}<input type="number" min={k==='page'||k==='size'?1:0} max={k==='page'?model.getPageCount():undefined} value={overlay[k]} onChange={e=>setOverlay({...overlay,[k]:+e.target.value})}/></label>)}<label>Text<textarea value={overlay.text} onChange={e=>setOverlay({...overlay,text:e.target.value})}/></label><button disabled={!overlay.text.trim()} onClick={()=>{if(overlay.page<1||overlay.page>model.getPageCount()||overlay.size<=0){setError('Choose a valid page and font size');return}setOverlays([...overlays,{...overlay}]);setOverlay({...overlay,text:''});changed()}}>Add text overlay</button></div>{overlays.map((o,i)=><p key={i}>Page {o.page}: {o.text}<button onClick={()=>{setOverlays(overlays.filter((_,j)=>j!==i));changed()}}>Remove</button></p>)}<iframe title="PDF document preview (saved version)" src={url} className="library-pdf"/><small>Preview shows the saved file. Save to apply overlays and form edits.</small></>}
- </section>;
+export default function LibraryEditor({ bytes, name, onSave, onDirty, busy }) {
+  const kind = editorKind(name),
+    [error, setError] = useState(""),
+    [model, setModel] = useState(null),
+    [text, setText] = useState(""),
+    [paragraphs, setParagraphs] = useState([]),
+    [sheet, setSheet] = useState(""),
+    [row, setRow] = useState(0),
+    [col, setCol] = useState(0),
+    [revision, setRevision] = useState(0),
+    [url, setURL] = useState(""),
+    [pdfFields, setPDFFields] = useState([]),
+    [overlay, setOverlay] = useState({
+      page: 1,
+      x: 48,
+      y: 740,
+      size: 12,
+      text: "",
+    }),
+    [overlays, setOverlays] = useState([]);
+  useEffect(() => {
+    let live = true;
+    const objectURL = URL.createObjectURL(
+      new Blob([bytes], {
+        type: kind === "pdf" ? "application/pdf" : "application/octet-stream",
+      }),
+    );
+    setURL(objectURL);
+    (async () => {
+      try {
+        if (kind === "text") {
+          setText(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+          setModel(true);
+        }
+        if (kind === "docx") {
+          const doc = openDocx(bytes);
+          if (live) {
+            setModel(doc);
+            setParagraphs(doc.paragraphs);
+          }
+        }
+        if (kind === "sheet") {
+          const x = await import("xlsx"),
+            book = x.read(bytes, {
+              type: "array",
+              cellStyles: true,
+              cellFormula: true,
+            });
+          if (live) {
+            setModel({ x, book });
+            setSheet(book.SheetNames[0]);
+          }
+        }
+        if (kind === "pdf") {
+          const { PDFDocument } = await import("pdf-lib");
+          const pdf = await PDFDocument.load(bytes);
+          if (live) {
+            setModel(pdf);
+            setPDFFields(
+              pdf
+                .getForm()
+                .getFields()
+                .map((f) => ({
+                  name: f.getName(),
+                  type:
+                    typeof f.getText === "function"
+                      ? "PDFTextField"
+                      : typeof f.isChecked === "function"
+                        ? "PDFCheckBox"
+                        : typeof f.getOptions === "function" &&
+                            typeof f.select === "function"
+                          ? "PDFDropdown"
+                          : "unsupported",
+                  value:
+                    typeof f.getText === "function"
+                      ? f.getText() || ""
+                      : typeof f.isChecked === "function"
+                        ? f.isChecked()
+                        : typeof f.getSelected === "function"
+                          ? f.getSelected()[0] || ""
+                          : "",
+                  options:
+                    typeof f.getOptions === "function" ? f.getOptions() : [],
+                })),
+            );
+          }
+        }
+      } catch (e) {
+        if (live) setError(e.message);
+      }
+    })();
+    return () => {
+      live = false;
+      URL.revokeObjectURL(objectURL);
+    };
+  }, [bytes, kind]);
+  const changed = () => onDirty(true);
+  async function save() {
+    setError("");
+    try {
+      let out;
+      if (kind === "text") out = new TextEncoder().encode(text);
+      if (kind === "docx") out = writeDocx(model, paragraphs);
+      if (kind === "sheet")
+        out = writeWorkbook(
+          model.x,
+          model.book,
+          ["xls", "ods", "csv"].includes(extension(name))
+            ? "xlsx"
+            : extension(name),
+        );
+      if (kind === "pdf") {
+        const { PDFDocument, StandardFonts } = await import("pdf-lib"),
+          pdf = await PDFDocument.load(bytes),
+          font = await pdf.embedFont(StandardFonts.Helvetica);
+        for (const v of pdfFields) {
+          const f = pdf.getForm().getField(v.name);
+          if (v.type === "PDFTextField") f.setText(v.value);
+          if (v.type === "PDFCheckBox") v.value ? f.check() : f.uncheck();
+          if (
+            ["PDFDropdown", "PDFRadioGroup", "PDFOptionList"].includes(
+              v.type,
+            ) &&
+            v.value
+          )
+            f.select(v.value);
+        }
+        for (const o of overlays) {
+          const page = pdf.getPage(o.page - 1);
+          page.drawText(o.text, {
+            x: +o.x,
+            y: +o.y,
+            size: +o.size,
+            font,
+            maxWidth: Math.max(10, page.getWidth() - o.x - 24),
+          });
+        }
+        out = await pdf.save();
+      }
+      if (out)
+        await onSave(
+          out,
+          kind === "sheet" && ["xls", "ods", "csv"].includes(extension(name))
+            ? name.replace(/\.[^.]+$/, ".xlsx")
+            : name,
+        );
+    } catch (e) {
+      setError(e.message);
+    }
+  }
+  if (kind === "binary")
+    return (
+      <p>
+        This format is stored unchanged. Download it to edit externally, then
+        use Replace file to save a new version.
+      </p>
+    );
+  return (
+    <section className="library-editor">
+      <div className="library-editor-tools">
+        <strong>
+          {kind === "sheet"
+            ? "Spreadsheet"
+            : kind === "docx"
+              ? "DOCX paragraphs"
+              : kind === "pdf"
+                ? "PDF forms & text"
+                : "Text editor"}
+        </strong>
+        <button disabled={busy || !model} onClick={save}>
+          {kind === "sheet" && ["xls", "ods", "csv"].includes(extension(name))
+            ? "Save edited workbook as XLSX"
+            : "Save file version"}
+        </button>
+      </div>
+      {error && <p role="alert">{error}</p>}
+      {kind === "text" && (
+        <>
+          <small>
+            UTF-8 text. Markdown is saved as Markdown; HTML and scripts are
+            edited as text.
+          </small>
+          <textarea
+            className="library-text"
+            aria-label="Document content"
+            value={text}
+            onChange={(e) => {
+              setText(e.target.value);
+              changed();
+            }}
+            spellCheck
+          />
+        </>
+      )}
+      {kind === "docx" && model && (
+        <>
+          <p className="editor-note">
+            Edit paragraphs while retaining other document parts. Edited text
+            uses the first run’s formatting; complex layouts are best edited
+            externally. Previous file versions remain available.
+          </p>
+          <div className="docx-paper">
+            {paragraphs.map((p, i) => (
+              <textarea
+                key={i}
+                aria-label={`Paragraph ${i + 1}`}
+                value={p}
+                onChange={(e) => {
+                  setParagraphs(
+                    paragraphs.map((v, j) => (i === j ? e.target.value : v)),
+                  );
+                  changed();
+                }}
+              />
+            ))}
+            <button
+              onClick={() => {
+                setParagraphs([...paragraphs, ""]);
+                changed();
+              }}
+            >
+              Add paragraph
+            </button>
+          </div>
+        </>
+      )}
+      {kind === "sheet" && model && (
+        <>
+          <p className="editor-note">
+            Edit values and formulas (=…). Formulas are stored, not calculated
+            here. XLS, ODS and CSV edits save as XLSX; the original stays in
+            version history. Advanced formatting, macros and charts may not
+            survive editing; original versions are retained.
+          </p>
+          <div className="library-editor-tools">
+            <label>
+              Sheet
+              <select value={sheet} onChange={(e) => setSheet(e.target.value)}>
+                {model.book.SheetNames.map((n) => (
+                  <option key={n}>{n}</option>
+                ))}
+              </select>
+            </label>
+            <button
+              onClick={async () => {
+                const n = await requestText("Sheet name");
+                if (!n) return;
+                try {
+                  model.x.utils.book_append_sheet(
+                    model.book,
+                    model.x.utils.aoa_to_sheet([[""]]),
+                    n,
+                  );
+                  setSheet(n);
+                  changed();
+                } catch (e) {
+                  setError(e.message);
+                }
+              }}
+            >
+              Add sheet
+            </button>
+            <label>
+              First row
+              <input
+                type="number"
+                min="1"
+                max="1048547"
+                value={row + 1}
+                onChange={(e) =>
+                  setRow(Math.max(0, Math.min(1048546, +e.target.value - 1)))
+                }
+              />
+            </label>
+            <label>
+              First column
+              <input
+                type="number"
+                min="1"
+                max="16372"
+                value={col + 1}
+                onChange={(e) =>
+                  setCol(Math.max(0, Math.min(16371, +e.target.value - 1)))
+                }
+              />
+            </label>
+          </div>
+          <div className="spreadsheet-scroll">
+            <table key={sheet + revision + row + "/" + col}>
+              <thead>
+                <tr>
+                  <th></th>
+                  {Array.from({ length: 12 }, (_, i) => (
+                    <th key={i}>{model.x.utils.encode_col(col + i)}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 30 }, (_, r) => (
+                  <tr key={r}>
+                    <th>{row + r + 1}</th>
+                    {Array.from({ length: 12 }, (_, c) => {
+                      const address = model.x.utils.encode_cell({
+                          r: row + r,
+                          c: col + c,
+                        }),
+                        cell = model.book.Sheets[sheet]?.[address];
+                      return (
+                        <td key={c}>
+                          <input
+                            type="text"
+                            aria-label={address}
+                            defaultValue={
+                              cell?.f ? "=" + cell.f : (cell?.v ?? "")
+                            }
+                            onChange={(e) => {
+                              const before = cell?.f
+                                ? "=" + cell.f
+                                : String(cell?.v ?? "");
+                              if (e.target.value !== before) {
+                                editCell(
+                                  model.x,
+                                  model.book.Sheets[sheet],
+                                  row + r,
+                                  col + c,
+                                  e.target.value,
+                                );
+                                changed();
+                              }
+                            }}
+                          />
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+      {kind === "pdf" && model && (
+        <>
+          <p className="editor-note">
+            Fill supported forms and add text overlays. Existing page text is
+            retained. Coordinates are points from the lower-left corner; text
+            uses Helvetica. Download for full layout editing.
+          </p>
+          {pdfFields
+            .filter((f) =>
+              [
+                "PDFTextField",
+                "PDFCheckBox",
+                "PDFDropdown",
+                "PDFRadioGroup",
+                "PDFOptionList",
+              ].includes(f.type),
+            )
+            .map((f, i) => (
+              <label key={f.name}>
+                {f.name}
+                {f.type === "PDFCheckBox" ? (
+                  <input
+                    type="checkbox"
+                    checked={!!f.value}
+                    onChange={(e) => {
+                      setPDFFields((all) =>
+                        all.map((v) =>
+                          v.name === f.name
+                            ? { ...v, value: e.target.checked }
+                            : v,
+                        ),
+                      );
+                      changed();
+                    }}
+                  />
+                ) : f.options.length ? (
+                  <select
+                    value={f.value}
+                    onChange={(e) => {
+                      setPDFFields((all) =>
+                        all.map((v) =>
+                          v.name === f.name
+                            ? { ...v, value: e.target.value }
+                            : v,
+                        ),
+                      );
+                      changed();
+                    }}
+                  >
+                    <option value="">Select</option>
+                    {f.options.map((v) => (
+                      <option key={v}>{v}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    value={f.value}
+                    onChange={(e) => {
+                      setPDFFields((all) =>
+                        all.map((v) =>
+                          v.name === f.name
+                            ? { ...v, value: e.target.value }
+                            : v,
+                        ),
+                      );
+                      changed();
+                    }}
+                  />
+                )}
+              </label>
+            ))}
+          <div className="pdf-overlay">
+            {["page", "x", "y", "size"].map((k) => (
+              <label key={k}>
+                {k}
+                <input
+                  type="number"
+                  min={k === "page" || k === "size" ? 1 : 0}
+                  max={k === "page" ? model.getPageCount() : undefined}
+                  value={overlay[k]}
+                  onChange={(e) =>
+                    setOverlay({ ...overlay, [k]: +e.target.value })
+                  }
+                />
+              </label>
+            ))}
+            <label>
+              Text
+              <textarea
+                value={overlay.text}
+                onChange={(e) =>
+                  setOverlay({ ...overlay, text: e.target.value })
+                }
+              />
+            </label>
+            <button
+              disabled={!overlay.text.trim()}
+              onClick={() => {
+                if (
+                  overlay.page < 1 ||
+                  overlay.page > model.getPageCount() ||
+                  overlay.size <= 0
+                ) {
+                  setError("Choose a valid page and font size");
+                  return;
+                }
+                setOverlays([...overlays, { ...overlay }]);
+                setOverlay({ ...overlay, text: "" });
+                changed();
+              }}
+            >
+              Add text overlay
+            </button>
+          </div>
+          {overlays.map((o, i) => (
+            <p key={i}>
+              Page {o.page}: {o.text}
+              <button
+                onClick={() => {
+                  setOverlays(overlays.filter((_, j) => j !== i));
+                  changed();
+                }}
+              >
+                Remove
+              </button>
+            </p>
+          ))}
+          <iframe
+            title="PDF document preview (saved version)"
+            src={url}
+            className="library-pdf"
+          />
+          <small>
+            Preview shows the saved file. Save to apply overlays and form edits.
+          </small>
+        </>
+      )}
+    </section>
+  );
 }

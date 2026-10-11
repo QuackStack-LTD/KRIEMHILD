@@ -174,9 +174,12 @@ Terrains, maps and the separate Writing workspace do not create Year events.
 
 ## Navigation and connection editing
 
-Navigation order is Atlas, Flora & Fauna, Magic & Technology, Culture & Religion,
+Navigation order is Atlas, Biosphere, Magic & Technology, Culture & Religion,
 Characters, Organizations, Library; Writing and World export remain at the bottom.
-Flora & Fauna and Magic & Technology intentionally remain placeholder workspaces.
+Biosphere provides habitat-based generation, species profiles and ecological rules;
+`flora` remains a compatibility route. Magic & Technology is the System Designer
+workbench for rules, capabilities, dependencies and consistency analysis. Library
+provides in-world archives, versioned files and format-specific editors.
 
 Character graph nodes are 160 units wide. Drag an occupied connection dot to another dot
 to transfer that endpoint while preserving relationship ID and metadata. When several

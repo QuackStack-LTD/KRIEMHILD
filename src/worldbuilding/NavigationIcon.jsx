@@ -1,4 +1,29 @@
-export default function NavigationIcon({name}){
- const paths={biosphere:'M12 23V10M12 16C1 17 2 5 3 3c9 0 11 7 9 13M12 19C23 20 23 8 22 7c-6 0-9 5-10 12',magic:'M4 22L18 8M15 5l6 6M5 2v6M2 5h6M19 17v6M16 20h6',world:'M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3z M12 7v10M7 12h10',characters:'M8 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6 M2 21v-3a6 6 0 0 1 12 0v3 M17 4a3 3 0 0 1 0 6 M17 14a5 5 0 0 1 5 5v2',organizations:'M3 21V9l9-6 9 6v12M2 21h20M7 10v7M12 10v7M17 10v7',culture:'M12 2v20M3 12h18M5 5l14 14M5 19L19 5M12 6a6 6 0 1 0 0 12 6 6 0 0 0 0-12',library:'M2 21h20M3 4h4v15H3zM9 2h4v17H9zM15 5l4-1 3 14-4 1z',writing:'M4 16L16 4l4 4L8 20H4zM14 6l4 4M3 23h18'};
- return <svg className="sidebar-icon" viewBox="0 0 24 26" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[name]||paths.world}/></svg>
+export default function NavigationIcon({ name }) {
+  const paths = {
+    biosphere:
+      "M12 23V10M12 16C1 17 2 5 3 3c9 0 11 7 9 13M12 19C23 20 23 8 22 7c-6 0-9 5-10 12",
+    magic: "M4 22L18 8M15 5l6 6M5 2v6M2 5h6M19 17v6M16 20h6",
+    world: "M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3z M12 7v10M7 12h10",
+    characters:
+      "M8 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6 M2 21v-3a6 6 0 0 1 12 0v3 M17 4a3 3 0 0 1 0 6 M17 14a5 5 0 0 1 5 5v2",
+    organizations: "M3 21V9l9-6 9 6v12M2 21h20M7 10v7M12 10v7M17 10v7",
+    culture:
+      "M12 2v20M3 12h18M5 5l14 14M5 19L19 5M12 6a6 6 0 1 0 0 12 6 6 0 0 0 0-12",
+    library: "M2 21h20M3 4h4v15H3zM9 2h4v17H9zM15 5l4-1 3 14-4 1z",
+    writing: "M4 16L16 4l4 4L8 20H4zM14 6l4 4M3 23h18",
+  };
+  return (
+    <svg
+      className="sidebar-icon"
+      viewBox="0 0 24 26"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d={paths[name] || paths.world} />
+    </svg>
+  );
 }

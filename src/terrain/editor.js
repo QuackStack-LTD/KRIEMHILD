@@ -1,3 +1,4 @@
+import {confirmAction} from '../worldbuilding/ui/feedback.js';
 // Type editor: the list of terrain types in the sidebar. Click a type to edit its name, colour,
 // weight, what it can touch, and how its weight changes next to other types.
 //
@@ -116,9 +117,9 @@
       }
     }
 
-    function deleteType(t) {
+    async function deleteType(t) {
       if (types().length <= 1) return;
-      if (!confirm(`Delete "${t.name}"?`)) return;
+      if (!await confirmAction(`Delete "${t.name}"?`)) return;
       const cfg = getConfig();
       cfg.types = types().filter((o) => o !== t);
       for (const o of cfg.types) {
@@ -475,11 +476,11 @@
       }
     }
 
-    function deleteKind(k) {
+    async function deleteKind(k) {
       if (kinds().length <= 1) return;
       const used = getConfig().types.filter((t) => t.continent === k.id);
       const note = used.length ? `\n${used.length} type(s) assigned to it will be set to None.` : '';
-      if (!confirm(`Delete the "${k.name}" kind?${note}`)) return;
+      if (!await confirmAction(`Delete the "${k.name}" kind?${note}`)) return;
       getConfig().continents = kinds().filter((o) => o !== k);
       for (const t of used) t.continent = '';
       for (const z of getConfig().climates || []) delete z.kinds[k.id];

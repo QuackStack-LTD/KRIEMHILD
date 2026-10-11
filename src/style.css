@@ -1,37 +1,27 @@
-:root {
-  --bg: #111418;
-  --panel: #191d23;
-  --panel-2: #1d2229;
-  --line: #2a3038;
-  --text: #e4e7eb;
-  --muted: #8b949e;
-  --accent: #5aa9e6;
-  --accent-text: #0b1520;
-  --error: #ff7b72;
-  --ok: #7ee787;
-  --radius: 6px;
+.terrain-app {
+  --bg: var(--ui-bg);
+  --panel: var(--ui-surface);
+  --panel-2: var(--ui-raised);
+  --line: var(--ui-border);
+  --text: var(--ui-text);
+  --muted: var(--ui-muted);
+  --accent: var(--ui-accent);
+  --accent-text: var(--ui-accent-ink);
+  --error: var(--ui-danger);
+  --ok: var(--ui-success);
+  --radius: var(--ui-radius);
   color-scheme: dark;
-}
-
-* { box-sizing: border-box; }
-
-html, body {
-  margin: 0;
-  height: 100%;
-  background: var(--bg);
-  color: var(--text);
-  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 /* ---- layout: map on the left, settings panel on the right ------------------------------- */
 
-.app {
+:where(.terrain-app) .app {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
   height: 100vh;
 }
 
-.stage {
+:where(.terrain-app) .stage {
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -39,7 +29,7 @@ html, body {
   gap: 10px;
 }
 
-.canvas-wrap {
+:where(.terrain-app) .canvas-wrap {
   flex: 1;
   min-height: 0;
   display: flex;
@@ -48,7 +38,7 @@ html, body {
   overflow: hidden;
 }
 
-canvas {
+:where(.terrain-app) canvas {
   max-width: 100%;
   max-height: 100%;
   image-rendering: pixelated;
@@ -57,19 +47,35 @@ canvas {
   cursor: crosshair;
 }
 
-.canvas-wrap.is-3d #map { display: none; }
-.view3d { display: block; width: 100%; height: 100%; border-radius: 4px; cursor: grab; }
-.view3d:active { cursor: grabbing; }
+:where(.terrain-app) .canvas-wrap.is-3d #map {
+  display: none;
+}
+:where(.terrain-app) .view3d {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+  cursor: grab;
+}
+:where(.terrain-app) .view3d:active {
+  cursor: grabbing;
+}
 
-.hover {
+:where(.terrain-app) .hover {
   min-height: 1.45em;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
-.hover strong { color: var(--text); font-weight: 600; }
+:where(.terrain-app) .hover strong {
+  color: var(--text);
+  font-weight: 600;
+}
 
-kbd {
-  font: 11px ui-monospace, Consolas, monospace;
+:where(.terrain-app) kbd {
+  font:
+    11px ui-monospace,
+    Consolas,
+    monospace;
   color: var(--muted);
   border: 1px solid var(--line);
   border-radius: 3px;
@@ -77,7 +83,7 @@ kbd {
 }
 /* ---- settings panel: fixed header, action bar and tabs; only the tab body scrolls ----------- */
 
-.panel {
+:where(.terrain-app) .panel {
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -86,14 +92,37 @@ kbd {
   border-left: 1px solid var(--line);
 }
 
-.panel-head { padding: 14px 16px 12px; display: grid; gap: 8px; }
-h1 { font-size: 17px; margin: 0; letter-spacing: 0.01em; }
-.preset { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 10px; }
-.preset span { font-size: 12px; color: var(--muted); }
-.preset select { font-weight: 600; }
-.preset-desc { margin: 0; color: var(--muted); font-size: 12px; min-height: 2.9em; }
+:where(.terrain-app) .panel-head {
+  padding: 14px 16px 12px;
+  display: grid;
+  gap: 8px;
+}
+:where(.terrain-app) h1 {
+  font-size: 17px;
+  margin: 0;
+  letter-spacing: 0.01em;
+}
+:where(.terrain-app) .preset {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 10px;
+}
+:where(.terrain-app) .preset span {
+  font-size: 12px;
+  color: var(--muted);
+}
+:where(.terrain-app) .preset select {
+  font-weight: 600;
+}
+:where(.terrain-app) .preset-desc {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  min-height: 2.9em;
+}
 
-.action-bar {
+:where(.terrain-app) .action-bar {
   padding: 12px 16px;
   display: grid;
   gap: 8px;
@@ -101,19 +130,32 @@ h1 { font-size: 17px; margin: 0; letter-spacing: 0.01em; }
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
 }
-.action-bar .actions { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1.25fr; gap: 6px; }
-.action-bar .actions button { padding: 6px 4px; }
-.seed-row { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 10px; }
-.seed-row input { padding: 4px 7px; }
+:where(.terrain-app) .action-bar .actions {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1.25fr;
+  gap: 6px;
+}
+:where(.terrain-app) .action-bar .actions button {
+  padding: 6px 4px;
+}
+:where(.terrain-app) .seed-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 10px;
+}
+:where(.terrain-app) .seed-row input {
+  padding: 4px 7px;
+}
 
-.status summary {
+:where(.terrain-app) .status summary {
   cursor: pointer;
   font-size: 12px;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
   list-style-position: inside;
 }
-.status summary .dot {
+:where(.terrain-app) .status summary .dot {
   display: inline-block;
   width: 7px;
   height: 7px;
@@ -121,12 +163,21 @@ h1 { font-size: 17px; margin: 0; letter-spacing: 0.01em; }
   margin: 0 6px 1px 2px;
   background: var(--accent);
 }
-.status summary .dot.done { background: var(--ok); }
-.status summary .dot.failed { background: var(--error); }
-.status summary .dot.paused { background: var(--muted); }
-.status .stats { margin-top: 6px; font-size: 12px; }
+:where(.terrain-app) .status summary .dot.done {
+  background: var(--ok);
+}
+:where(.terrain-app) .status summary .dot.failed {
+  background: var(--error);
+}
+:where(.terrain-app) .status summary .dot.paused {
+  background: var(--muted);
+}
+:where(.terrain-app) .status .stats {
+  margin-top: 6px;
+  font-size: 12px;
+}
 
-.error {
+:where(.terrain-app) .error {
   margin: 10px 16px 0;
   color: var(--error);
   background: rgba(255, 123, 114, 0.08);
@@ -137,8 +188,13 @@ h1 { font-size: 17px; margin: 0; letter-spacing: 0.01em; }
   font-size: 13px;
 }
 
-.tabs { display: flex; gap: 2px; padding: 4px 10px 0; border-bottom: 1px solid var(--line); }
-.tabs button {
+:where(.terrain-app) .tabs {
+  display: flex;
+  gap: 2px;
+  padding: 4px 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+:where(.terrain-app) .tabs button {
   flex: 1;
   background: none;
   border: 0;
@@ -149,17 +205,42 @@ h1 { font-size: 17px; margin: 0; letter-spacing: 0.01em; }
   font-weight: 600;
   font-size: 13px;
 }
-.tabs button:hover { background: none; color: var(--text); }
-.tabs button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); }
+:where(.terrain-app) .tabs button:hover {
+  background: none;
+  color: var(--text);
+}
+:where(.terrain-app) .tabs button[aria-selected="true"] {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
 
-.tab-body { flex: 1; min-height: 0; overflow-y: auto; }
-.tab-panel { padding: 0 16px 24px; }
+:where(.terrain-app) .tab-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+:where(.terrain-app) .tab-panel {
+  padding: 0 16px 24px;
+}
 
-.group { border-top: 1px solid var(--line); padding: 14px 0; }
-.tab-panel > .group:first-child { border-top: 0; }
-.group-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
-.group-head h2 { margin: 0; }
-h2 {
+:where(.terrain-app) .group {
+  border-top: 1px solid var(--line);
+  padding: 14px 0;
+}
+:where(.terrain-app) .tab-panel > .group:first-child {
+  border-top: 0;
+}
+:where(.terrain-app) .group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+:where(.terrain-app) .group-head h2 {
+  margin: 0;
+}
+:where(.terrain-app) h2 {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -167,66 +248,198 @@ h2 {
   margin: 0 0 8px;
   font-weight: 600;
 }
-h3 { font-size: 12px; font-weight: 600; margin: 0; color: var(--text); }
+:where(.terrain-app) h3 {
+  font-size: 12px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text);
+}
 
 /* collapsible editors inside a group (continental kinds, climate zones) */
-.sub-editor { margin-top: 12px; border: 1px solid var(--line); border-radius: var(--radius); padding: 0 10px; background: var(--panel-2); }
-.sub-editor summary { cursor: pointer; padding: 8px 0; font-size: 13px; font-weight: 600; }
-.sub-editor[open] { padding-bottom: 10px; }
-.sub-head { margin: 0 0 6px; }
-.hint-inline { font-size: 12px; color: var(--muted); }
+:where(.terrain-app) .sub-editor {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0 10px;
+  background: var(--panel-2);
+}
+:where(.terrain-app) .sub-editor summary {
+  cursor: pointer;
+  padding: 8px 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+:where(.terrain-app) .sub-editor[open] {
+  padding-bottom: 10px;
+}
+:where(.terrain-app) .sub-head {
+  margin: 0 0 6px;
+}
+:where(.terrain-app) .hint-inline {
+  font-size: 12px;
+  color: var(--muted);
+}
 
 /* ---- controls ----------------------------------------------------------------------------- */
 
-button, .button {
+:where(.terrain-app) input[type="range"],
+:where(.terrain-app) input[type="checkbox"],
+:where(.terrain-app) input[type="radio"] {
+  accent-color: var(--ui-accent);
+}
+
+:where(.terrain-app) .builder-map-toolbar label:has(input[type="checkbox"]) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+:where(.terrain-app) button,
+:where(.terrain-app) .button {
   font: inherit;
   color: var(--text);
-  background: #232931;
+  background: var(--ui-raised);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 6px 12px;
+  min-height: 32px;
+  transition:
+    background var(--ui-motion) var(--ui-ease),
+    border-color var(--ui-motion) var(--ui-ease);
   cursor: pointer;
 }
-button:hover, .button:hover { background: #2b323b; }
-button:disabled { opacity: 0.45; cursor: default; }
-button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
-button.primary:hover { background: var(--accent); filter: brightness(1.1); }
-button.small, .small-actions button, .small-actions .button { padding: 4px 10px; font-size: 12px; }
-.actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.small-actions { margin-top: 10px; }
-.save-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+:where(.terrain-app) button:hover,
+:where(.terrain-app) .button:hover {
+  background: #2b4445;
+}
+:where(.terrain-app) button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+:where(.terrain-app) button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+:where(.terrain-app) button.primary:hover {
+  background: var(--accent);
+  filter: brightness(1.1);
+}
+:where(.terrain-app) button.small,
+:where(.terrain-app) .small-actions button,
+:where(.terrain-app) .small-actions .button {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+:where(.terrain-app) .actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+:where(.terrain-app) .small-actions {
+  margin-top: 10px;
+}
+:where(.terrain-app) .save-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
 
-input[type="number"], input[type="text"], select, textarea {
+:where(.terrain-app) input[type="number"],
+:where(.terrain-app) input[type="text"],
+:where(.terrain-app) select,
+:where(.terrain-app) textarea {
   font: inherit;
   color: var(--text);
-  background: #12161b;
+  background: var(--ui-input);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 5px 7px;
   width: 100%;
 }
-input:focus, select:focus, textarea:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-input[type="range"]:disabled, select:disabled, input:disabled { opacity: 0.45; }
+:where(.terrain-app) input:focus,
+:where(.terrain-app) select:focus,
+:where(.terrain-app) textarea:focus,
+:where(.terrain-app) button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+:where(.terrain-app) input[type="range"]:disabled,
+:where(.terrain-app) select:disabled,
+:where(.terrain-app) input:disabled {
+  opacity: 0.45;
+}
 
-label { display: block; color: var(--muted); font-size: 12px; }
-.field + .field { margin-top: 8px; }
-.field select, .field input { margin-top: 3px; }
-.row3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.row3 input { margin-top: 3px; }
-.shape-field { margin-top: 8px; }
-.slider-label { margin-top: 10px; }
-.slider-label:first-of-type { margin-top: 0; }
+:where(.terrain-app) label {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+:where(.terrain-app) .field + .field {
+  margin-top: 8px;
+}
+:where(.terrain-app) .field select,
+:where(.terrain-app) .field input {
+  margin-top: 3px;
+}
+:where(.terrain-app) .row3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+:where(.terrain-app) .row3 input {
+  margin-top: 3px;
+}
+:where(.terrain-app) .shape-field {
+  margin-top: 8px;
+}
+:where(.terrain-app) .slider-label {
+  margin-top: 10px;
+}
+:where(.terrain-app) .slider-label:first-of-type {
+  margin-top: 0;
+}
 
-.check { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 13px; color: var(--text); }
-.check input { accent-color: var(--accent); }
+:where(.terrain-app) .check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--text);
+}
+:where(.terrain-app) .check input {
+  accent-color: var(--accent);
+}
 
-.speed { display: flex; align-items: center; gap: 10px; }
-.speed input { flex: 1; min-width: 0; accent-color: var(--accent); }
-.speed output { min-width: 96px; text-align: right; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+:where(.terrain-app) .speed {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+:where(.terrain-app) .speed input {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--accent);
+}
+:where(.terrain-app) .speed output {
+  min-width: 96px;
+  text-align: right;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
 
 /* on/off switch in a group heading; the checkbox itself is styled as the switch */
-.switch { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
-.switch input {
+:where(.terrain-app) .switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+:where(.terrain-app) .switch input {
   appearance: none;
   width: 30px;
   height: 17px;
@@ -237,8 +450,8 @@ label { display: block; color: var(--muted); font-size: 12px; }
   cursor: pointer;
   transition: background 0.15s;
 }
-.switch input::after {
-  content: '';
+:where(.terrain-app) .switch input::after {
+  content: "";
   position: absolute;
   top: 2px;
   left: 2px;
@@ -248,29 +461,55 @@ label { display: block; color: var(--muted); font-size: 12px; }
   background: var(--text);
   transition: transform 0.15s;
 }
-.switch input:checked { background: var(--accent); }
-.switch input:checked::after { transform: translateX(13px); }
-.switch input:disabled { opacity: 0.45; }
-.switch span::before { content: 'Off'; font-size: 12px; color: var(--muted); }
-.switch input:checked + span::before { content: 'On'; color: var(--text); }
+:where(.terrain-app) .switch input:checked {
+  background: var(--accent);
+}
+:where(.terrain-app) .switch input:checked::after {
+  transform: translateX(13px);
+}
+:where(.terrain-app) .switch input:disabled {
+  opacity: 0.45;
+}
+:where(.terrain-app) .switch span::before {
+  content: "Off";
+  font-size: 12px;
+  color: var(--muted);
+}
+:where(.terrain-app) .switch input:checked + span::before {
+  content: "On";
+  color: var(--text);
+}
 
-.stats {
+:where(.terrain-app) .stats {
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 2px 12px;
   margin: 0;
   font-variant-numeric: tabular-nums;
 }
-.stats dt { color: var(--muted); }
-.stats dd { margin: 0; text-align: right; }
-.stats .status-done { color: var(--ok); }
-.stats .status-failed { color: var(--error); }
+:where(.terrain-app) .stats dt {
+  color: var(--muted);
+}
+:where(.terrain-app) .stats dd {
+  margin: 0;
+  text-align: right;
+}
+:where(.terrain-app) .stats .status-done {
+  color: var(--ok);
+}
+:where(.terrain-app) .stats .status-failed {
+  color: var(--error);
+}
 
-.hint { color: var(--muted); font-size: 12px; margin: 8px 0 0; }
+:where(.terrain-app) .hint {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 8px 0 0;
+}
 
 /* ---- editors (types, kinds, zones) ---------------------------------------------------------- */
 
-.swatch {
+:where(.terrain-app) .swatch {
   width: 14px;
   height: 14px;
   border-radius: 3px;
@@ -278,10 +517,21 @@ label { display: block; color: var(--muted); font-size: 12px; }
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
 }
 
-.types { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
-.type { border-radius: var(--radius); }
-.type.open { background: #1f242b; box-shadow: inset 0 0 0 1px var(--line); }
-.type-row {
+:where(.terrain-app) .types {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+:where(.terrain-app) .type {
+  border-radius: var(--radius);
+}
+:where(.terrain-app) .type.open {
+  background: #1f242b;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+:where(.terrain-app) .type-row {
   width: 100%;
   display: grid;
   grid-template-columns: 14px 1fr auto 48px 12px;
@@ -293,25 +543,72 @@ label { display: block; color: var(--muted); font-size: 12px; }
   text-align: left;
   font-variant-numeric: tabular-nums;
 }
-.type-row:hover { background: #222831; }
-.type-row .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.type-row .w { color: var(--muted); font-size: 12px; }
-.type-row .pct { text-align: right; }
-.type-row .chev { color: var(--muted); transition: transform 0.15s; }
-.type.open .chev { transform: rotate(90deg); }
+:where(.terrain-app) .type-row:hover {
+  background: #222831;
+}
+:where(.terrain-app) .type-row .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+:where(.terrain-app) .type-row .w {
+  color: var(--muted);
+  font-size: 12px;
+}
+:where(.terrain-app) .type-row .pct {
+  text-align: right;
+}
+:where(.terrain-app) .type-row .chev {
+  color: var(--muted);
+  transition: transform 0.15s;
+}
+:where(.terrain-app) .type.open .chev {
+  transform: rotate(90deg);
+}
 
-.type-edit { padding: 4px 8px 10px; display: grid; gap: 8px; }
-.type-fields { display: grid; grid-template-columns: 1fr 48px 72px; gap: 8px; align-items: end; }
-.type-fields input { margin-top: 3px; }
-.type-fields input[type="color"] { height: 30px; padding: 2px; cursor: pointer; }
-.f-continent select { margin-top: 3px; }
-.type-extra { grid-template-columns: 1fr 1fr 64px; }
-.type-extra input { margin-top: 3px; }
-.sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
-.sub-hint { opacity: 0.7; }
+:where(.terrain-app) .type-edit {
+  padding: 4px 8px 10px;
+  display: grid;
+  gap: 8px;
+}
+:where(.terrain-app) .type-fields {
+  display: grid;
+  grid-template-columns: 1fr 48px 72px;
+  gap: 8px;
+  align-items: end;
+}
+:where(.terrain-app) .type-fields input {
+  margin-top: 3px;
+}
+:where(.terrain-app) .type-fields input[type="color"] {
+  height: 30px;
+  padding: 2px;
+  cursor: pointer;
+}
+:where(.terrain-app) .f-continent select {
+  margin-top: 3px;
+}
+:where(.terrain-app) .type-extra {
+  grid-template-columns: 1fr 1fr 64px;
+}
+:where(.terrain-app) .type-extra input {
+  margin-top: 3px;
+}
+:where(.terrain-app) .sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+:where(.terrain-app) .sub-hint {
+  opacity: 0.7;
+}
 
-.chips { display: flex; flex-wrap: wrap; gap: 4px; }
-.chip {
+:where(.terrain-app) .chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+:where(.terrain-app) .chip {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -323,12 +620,25 @@ label { display: block; color: var(--muted); font-size: 12px; }
   cursor: pointer;
   user-select: none;
 }
-.chip:has(input:checked) { background: #263040; border-color: #3d5878; }
-.chip input { margin: 0; accent-color: var(--accent); }
-.chip .swatch { width: 10px; height: 10px; }
+:where(.terrain-app) .chip:has(input:checked) {
+  background: #263040;
+  border-color: #3d5878;
+}
+:where(.terrain-app) .chip input {
+  margin: 0;
+  accent-color: var(--accent);
+}
+:where(.terrain-app) .chip .swatch {
+  width: 10px;
+  height: 10px;
+}
 
-.boosts { display: grid; gap: 6px; justify-items: start; }
-.boost {
+:where(.terrain-app) .boosts {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+}
+:where(.terrain-app) .boost {
   display: grid;
   grid-template-columns: auto 1fr auto 64px auto;
   align-items: center;
@@ -337,53 +647,158 @@ label { display: block; color: var(--muted); font-size: 12px; }
   font-size: 12px;
   color: var(--muted);
 }
-.boost.mult { grid-template-columns: 1fr auto 64px auto; }
-.boost select, .boost input { padding: 3px 5px; }
-button.icon { padding: 2px 8px; line-height: 1.2; }
-button.link { background: none; border: 0; padding: 0; color: var(--accent); font-size: 12px; }
-button.link:hover { background: none; text-decoration: underline; }
-.warn { margin: 0; font-size: 12px; color: #e3b341; }
-.type-foot { display: flex; justify-content: flex-end; }
-button.danger { color: var(--error); font-size: 12px; padding: 4px 10px; }
-button.danger:hover { background: rgba(255, 123, 114, 0.1); }
+:where(.terrain-app) .boost.mult {
+  grid-template-columns: 1fr auto 64px auto;
+}
+:where(.terrain-app) .boost select,
+:where(.terrain-app) .boost input {
+  padding: 3px 5px;
+}
+:where(.terrain-app) button.icon {
+  padding: 2px 8px;
+  line-height: 1.2;
+}
+:where(.terrain-app) button.link {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--accent);
+  font-size: 12px;
+}
+:where(.terrain-app) button.link:hover {
+  background: none;
+  text-decoration: underline;
+}
+:where(.terrain-app) .warn {
+  margin: 0;
+  font-size: 12px;
+  color: #e3b341;
+}
+:where(.terrain-app) .type-foot {
+  display: flex;
+  justify-content: flex-end;
+}
+:where(.terrain-app) button.danger {
+  color: var(--error);
+  font-size: 12px;
+  padding: 4px 10px;
+}
+:where(.terrain-app) button.danger:hover {
+  background: rgba(255, 123, 114, 0.1);
+}
 
-.kinds { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
-.kind {
+:where(.terrain-app) .kinds {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+:where(.terrain-app) .kind {
   display: grid;
   grid-template-columns: 30px 1fr 64px 40px 28px;
   gap: 6px;
   align-items: center;
   font-variant-numeric: tabular-nums;
 }
-.kind input { padding: 3px 6px; }
-.kind input[type="color"] { width: 100%; height: 26px; padding: 2px; cursor: pointer; }
-.kind .pct { text-align: right; }
-.kind-head { font-size: 11px; color: var(--muted); }
-.kind-head span:nth-child(4) { text-align: right; }
+:where(.terrain-app) .kind input {
+  padding: 3px 6px;
+}
+:where(.terrain-app) .kind input[type="color"] {
+  width: 100%;
+  height: 26px;
+  padding: 2px;
+  cursor: pointer;
+}
+:where(.terrain-app) .kind .pct {
+  text-align: right;
+}
+:where(.terrain-app) .kind-head {
+  font-size: 11px;
+  color: var(--muted);
+}
+:where(.terrain-app) .kind-head span:nth-child(4) {
+  text-align: right;
+}
 
-.zone-row { grid-template-columns: 14px 14px 1fr auto 12px; }
-.zone-n { color: var(--muted); font-size: 11px; text-align: center; }
-.zone-fields { grid-template-columns: 1fr 48px; }
+:where(.terrain-app) .zone-row {
+  grid-template-columns: 14px 14px 1fr auto 12px;
+}
+:where(.terrain-app) .zone-n {
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
+}
+:where(.terrain-app) .zone-fields {
+  grid-template-columns: 1fr 48px;
+}
 
 /* ---- narrow screens: stack the panel under the map and let the page scroll ------------------ */
 
 @media (max-width: 800px) {
-  .app { grid-template-columns: 1fr; height: auto; }
-  .stage { padding: 16px 16px 0; }
-  .canvas-wrap { min-height: 50vh; }
-  .panel { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
-  .tab-body { overflow: visible; }
+  :where(.terrain-app) .app {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  :where(.terrain-app) .stage {
+    padding: 16px 16px 0;
+  }
+  :where(.terrain-app) .canvas-wrap {
+    min-height: 50vh;
+  }
+  :where(.terrain-app) .panel {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    overflow: visible;
+  }
+  :where(.terrain-app) .tab-body {
+    overflow: visible;
+  }
 }
 
-#root { height: 100%; }
+:where(.terrain-app) #root {
+  height: 100%;
+}
 
 /* Physical exploration uses a viewport-sized canvas and world-space tiles. */
-.canvas-wrap { position: relative; }
-.detail-map { position:absolute; inset:0; width:100%; height:100%; max-width:none; max-height:none; image-rendering:auto; touch-action:none; cursor:grab; }
-.detail-map.dragging { cursor:grabbing; }
-.detail-map[hidden] { display:none; }
-.canvas-wrap.exploring #map { visibility:hidden; }
-.map-navigation { display:flex; flex-wrap:wrap; align-items:center; gap:8px; font-size:12px; color:var(--muted); }
-.map-navigation[hidden] { display:none; }
-.map-navigation button { padding:4px 10px; }
-.map-navigation output { color:var(--text); min-width:130px; }
+:where(.terrain-app) .canvas-wrap {
+  position: relative;
+}
+:where(.terrain-app) .detail-map {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  image-rendering: auto;
+  touch-action: none;
+  cursor: grab;
+}
+:where(.terrain-app) .detail-map.dragging {
+  cursor: grabbing;
+}
+:where(.terrain-app) .detail-map[hidden] {
+  display: none;
+}
+:where(.terrain-app) .canvas-wrap.exploring #map {
+  visibility: hidden;
+}
+:where(.terrain-app) .map-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+:where(.terrain-app) .map-navigation[hidden] {
+  display: none;
+}
+:where(.terrain-app) .map-navigation button {
+  padding: 4px 10px;
+}
+:where(.terrain-app) .map-navigation output {
+  color: var(--text);
+  min-width: 130px;
+}

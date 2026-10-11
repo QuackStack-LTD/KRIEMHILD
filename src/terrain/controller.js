@@ -1,3 +1,4 @@
+import {confirmAction} from '../worldbuilding/ui/feedback.js';
 import {terrainInspection,formatMapLocation} from './terrain-inspection.js';
 import {subscribeRiverThickness} from './river-display.js';
 import {climateSettings,climateSettingIds,climateInputs,geographicSettings,riverSettings,erosionSettings} from './climate-ui.js';
@@ -412,7 +413,7 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
   async function generate() {
     if (disposed || projectBusy || suspended) return;
     await flushAutosave();
-    if(solver?.unsaved&&!window.confirm('This world has unsaved changes. Discard them and generate a new world?'))return;
+    if(solver?.unsaved&&!await confirmAction('This world has unsaved changes. Discard them and generate a new world?'))return;
     suspended3DCamera=null;
     updateModeControls();
     persistSettings();
@@ -1191,8 +1192,8 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
     }
   });
 
-  listen(ui.resetTypes, 'click', () => {
-    if (!confirm('Throw away your type edits and load the defaults from tiles.json?')) return;
+  listen(ui.resetTypes, 'click', async () => {
+    if (!await confirmAction('Throw away your type edits and load the defaults from tiles.json?')) return;
     try {
       localStorage.removeItem(STORAGE_KEY);
     } catch (_) {
@@ -1346,7 +1347,7 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
     const request = ++presetRequest;
     const p = PRESETS.find((o) => o.id === id);
     if (!p) return;
-    if (!presetId && config && !confirm(`Switch to "${p.name}"? It replaces your edited terrain types, continental kinds and climate zones.`)) {
+    if (!presetId && config && !await confirmAction(`Switch to "${p.name}"? It replaces your edited terrain types, continental kinds and climate zones.`)) {
       renderPresetSelect();
       return;
     }
@@ -1451,7 +1452,7 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
   async function openWorld(files,folder,storedID=null){
     if(projectBusy||(!files.length&&!storedID))return;
     await flushAutosave();
-    if(solver?.unsaved&&storedID!==solver.worldId&&!window.confirm('This world has unsaved changes. Discard them and open another world?'))return;
+    if(solver?.unsaved&&storedID!==solver.worldId&&!await confirmAction('This world has unsaved changes. Discard them and open another world?'))return;
     suspended3DCamera=null;
     projectControls(true);clearTimeout(regenTimer);stop();const ticket=++generation;
     $('projectStatus').textContent='Validating and loading stored world data…';let next;

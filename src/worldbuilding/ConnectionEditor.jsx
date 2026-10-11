@@ -1,15 +1,346 @@
-import {useState} from 'react';
-import {activeEntities,registry,label} from './model.js';
-import {matches,connectionKinds} from './connections.js';
+import Dialog from "./ui/Dialog.jsx";
+import { useState } from "react";
+import { activeEntities, registry, label } from "./model.js";
+import { matches, connectionKinds } from "./connections.js";
 
 // Used by graph connections and institutional lists. Both constrain endpoint
 // types using the shared registry; the graph further restricts personal links.
-export default function ConnectionEditor({doc,age,relation,command,onClose,kinds,graph=false,institutionId}){
- const [r,set]=useState(relation),[busy,setBusy]=useState(false),[error,setError]=useState('');
- const entities=activeEntities(doc,age),a=entities.find(e=>e.id===r.source),b=entities.find(e=>e.id===r.destination);
- const sources=(kinds||Object.keys(registry.relations));
- const allowed=sources.filter(k=>matches(a,registry.relations[k]?.sources)&&(!graph||connectionKinds(a,b).includes(k)));
- const field=(k,v)=>set(r=>({...r,[k]:v})),rule=registry.relations[r.kind];
- async function save(e){e.preventDefault();if(!allowed.includes(r.kind)){setError('Choose a relationship supported by these entities.');return}setBusy(true);try{if(await command({kind:'relation',ageId:age,relation:r}))onClose();else setError('Unable to save. Review the error above.')}finally{setBusy(false)}}
- return <div className="project-dialog-backdrop"><form className="project-dialog relation-dialog" onSubmit={save}><h2>Connection</h2><fieldset disabled={busy||r.automatic}><label>From<select required value={r.source||''} onChange={e=>field('source',e.target.value)}><option value="">Choose an entity</option>{entities.filter(e=>graph?(e.kind==='character'||e.id===r.source):sources.some(k=>matches(e,registry.relations[k]?.sources)&&(!institutionId||k==='member-of'||k==='appointed-to'||e.id===institutionId||e.id===relation.source||e.properties?.organizationId===institutionId))).map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select></label><label>Type<select value={r.kind} onChange={e=>set(r=>({...r,kind:e.target.value,destination:graph?r.destination:'',unitId:''}))}>{r.automatic&&!allowed.includes(r.kind)&&<option>{r.kind}</option>}{allowed.map(k=><option key={k} value={k}>{label(k)}</option>)}</select></label><label>To<select required value={r.destination||''} onChange={e=>set(r=>({...r,destination:e.target.value,unitId:r.kind==='appointed-to'?entities.find(x=>x.id===e.target.value)?.properties?.unitId||'':''}))}><option value="">Choose an entity</option>{entities.filter(e=>e.id!==r.source&&matches(e,rule?.destinations)&&(!institutionId||r.kind!=='member-of'||registry.types[e.kind]?.category==='organizations')&&(!graph||connectionKinds(a,e).includes(r.kind))).map(e=><option key={e.id} value={e.id}>{e.name} · {label(e.kind)}</option>)}</select></label>{['member-of','appointed-to'].includes(r.kind)&&<><label>Unit<select disabled={r.kind==='appointed-to'&&!!b?.properties?.unitId} value={r.unitId||''} onChange={e=>field('unitId',e.target.value)}><option value="">Whole organization</option>{entities.filter(e=>e.kind==='organization-unit'&&e.properties?.organizationId===(r.kind==='appointed-to'?b?.properties?.organizationId:r.destination)).map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select></label>{['status','role','rank','appointmentSource'].map(k=><label key={k}>{label(k)}<input list={k==='status'?'membership-statuses':undefined} value={r[k]||''} onChange={e=>field(k,e.target.value)}/></label>)}</>}{['member-of','appointed-to'].includes(r.kind)&&<datalist id="membership-statuses">{['active','former','honorary','suspended','expelled','temporary','acting'].map(s=><option key={s} value={s}/>)}</datalist>}{rule?.family==='cultural'&&<><p>Belief and authority describe these parties, independently of the claim?s world-truth status.</p>{['stance','authority','prevalence','interpretation','provenance'].map(k=><label key={k}>{label(k)}<input list={k==='stance'?'cultural-stances':undefined} value={r[k]||''} onChange={e=>field(k,e.target.value)}/></label>)}<datalist id="cultural-stances">{['affirmed','rejected','disputed','metaphorical','uncertain'].map(s=><option key={s}>{s}</option>)}</datalist></>}{['system-knowledge','system-access'].includes(r.kind)&&<label>{r.kind==='system-knowledge'?'Understanding':'Practical access'}<select value={r.status||''} onChange={e=>field('status',e.target.value)}><option value="">Not specified</option>{(r.kind==='system-knowledge'?['understood','incorrect-theory','disputed','secret','lost','unknown']:['available','restricted','unavailable','unknown']).map(v=><option key={v} value={v}>{label(v)}</option>)}</select></label>}<label>Description<textarea value={r.description||''} onChange={e=>field('description',e.target.value)}/></label><label>Notes<textarea value={r.notes||''} onChange={e=>field('notes',e.target.value)}/></label><label>Context<select value={r.contextId||''} onChange={e=>field('contextId',e.target.value)}><option value="">None</option>{entities.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select></label><div className="field-pair">{['validFrom','validTo'].map(k=><label key={k}>{k==='validFrom'?'Valid from':'Valid to'}<input list={k==='status'?'membership-statuses':undefined} value={r[k]||''} onChange={e=>field(k,e.target.value)}/></label>)}</div></fieldset>{r.automatic&&<p>Derived from source records. Edit those records to change this connection.</p>}{error&&<p role="alert">{error}</p>}<div className="history-actions"><button type="button" onClick={onClose}>Close</button>{!r.automatic&&<><button disabled={busy}>Save connection</button>{r.id&&<button type="button" disabled={busy} onClick={async()=>{if(await command({kind:'delete-relation',ageId:age,edgeId:r.id}))onClose()}}>Delete connection</button>}</>}</div></form></div>
+export default function ConnectionEditor({
+  doc,
+  age,
+  relation,
+  command,
+  onClose,
+  kinds,
+  graph = false,
+  institutionId,
+}) {
+  const [r, set] = useState(relation),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState("");
+  const entities = activeEntities(doc, age),
+    a = entities.find((e) => e.id === r.source),
+    b = entities.find((e) => e.id === r.destination);
+  const sources = kinds || Object.keys(registry.relations);
+  const allowed = sources.filter(
+    (k) =>
+      matches(a, registry.relations[k]?.sources) &&
+      (!graph || connectionKinds(a, b).includes(k)),
+  );
+  const field = (k, v) => set((r) => ({ ...r, [k]: v })),
+    rule = registry.relations[r.kind];
+  async function save(e) {
+    e.preventDefault();
+    if (!allowed.includes(r.kind)) {
+      setError("Choose a relationship supported by these entities.");
+      return;
+    }
+    setBusy(true);
+    try {
+      if (await command({ kind: "relation", ageId: age, relation: r }))
+        onClose();
+      else setError("Unable to save. Review the error above.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <Dialog
+      title={<>Connection</>}
+      size="form"
+      className="relation-dialog"
+      onClose={onClose}
+      busy={busy}
+      onSubmit={save}
+      actions={
+        <>
+          <button type="button" onClick={onClose} data-dialog-dismiss>
+            Close
+          </button>
+          {!r.automatic && (
+            <>
+              <button className="primary" disabled={busy}>
+                Save connection
+              </button>
+              {r.id && (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={async () => {
+                    if (
+                      await command({
+                        kind: "delete-relation",
+                        ageId: age,
+                        edgeId: r.id,
+                      })
+                    )
+                      onClose();
+                  }}
+                >
+                  Delete connection
+                </button>
+              )}
+            </>
+          )}
+        </>
+      }
+    >
+      <fieldset disabled={busy || r.automatic}>
+        <label>
+          From
+          <select
+            required
+            value={r.source || ""}
+            onChange={(e) => field("source", e.target.value)}
+          >
+            <option value="">Choose an entity</option>
+            {entities
+              .filter((e) =>
+                graph
+                  ? e.kind === "character" || e.id === r.source
+                  : sources.some(
+                      (k) =>
+                        matches(e, registry.relations[k]?.sources) &&
+                        (!institutionId ||
+                          k === "member-of" ||
+                          k === "appointed-to" ||
+                          e.id === institutionId ||
+                          e.id === relation.source ||
+                          e.properties?.organizationId === institutionId),
+                    ),
+              )
+              .map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.name}
+                </option>
+              ))}
+          </select>
+        </label>
+        <label>
+          Type
+          <select
+            value={r.kind}
+            onChange={(e) =>
+              set((r) => ({
+                ...r,
+                kind: e.target.value,
+                destination: graph ? r.destination : "",
+                unitId: "",
+              }))
+            }
+          >
+            {r.automatic && !allowed.includes(r.kind) && (
+              <option>{r.kind}</option>
+            )}
+            {allowed.map((k) => (
+              <option key={k} value={k}>
+                {label(k)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          To
+          <select
+            required
+            value={r.destination || ""}
+            onChange={(e) =>
+              set((r) => ({
+                ...r,
+                destination: e.target.value,
+                unitId:
+                  r.kind === "appointed-to"
+                    ? entities.find((x) => x.id === e.target.value)?.properties
+                        ?.unitId || ""
+                    : "",
+              }))
+            }
+          >
+            <option value="">Choose an entity</option>
+            {entities
+              .filter(
+                (e) =>
+                  e.id !== r.source &&
+                  matches(e, rule?.destinations) &&
+                  (!institutionId ||
+                    r.kind !== "member-of" ||
+                    registry.types[e.kind]?.category === "organizations") &&
+                  (!graph || connectionKinds(a, e).includes(r.kind)),
+              )
+              .map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.name} · {label(e.kind)}
+                </option>
+              ))}
+          </select>
+        </label>
+        {["member-of", "appointed-to"].includes(r.kind) && (
+          <>
+            <label>
+              Unit
+              <select
+                disabled={r.kind === "appointed-to" && !!b?.properties?.unitId}
+                value={r.unitId || ""}
+                onChange={(e) => field("unitId", e.target.value)}
+              >
+                <option value="">Whole organization</option>
+                {entities
+                  .filter(
+                    (e) =>
+                      e.kind === "organization-unit" &&
+                      e.properties?.organizationId ===
+                        (r.kind === "appointed-to"
+                          ? b?.properties?.organizationId
+                          : r.destination),
+                  )
+                  .map((e) => (
+                    <option key={e.id} value={e.id}>
+                      {e.name}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            {["status", "role", "rank", "appointmentSource"].map((k) => (
+              <label key={k}>
+                {label(k)}
+                <input
+                  type="text"
+                  list={k === "status" ? "membership-statuses" : undefined}
+                  value={r[k] || ""}
+                  onChange={(e) => field(k, e.target.value)}
+                />
+              </label>
+            ))}
+          </>
+        )}
+        {["member-of", "appointed-to"].includes(r.kind) && (
+          <datalist id="membership-statuses">
+            {[
+              "active",
+              "former",
+              "honorary",
+              "suspended",
+              "expelled",
+              "temporary",
+              "acting",
+            ].map((s) => (
+              <option key={s} value={s} />
+            ))}
+          </datalist>
+        )}
+        {rule?.family === "cultural" && (
+          <>
+            <p>
+              Belief and authority describe these parties, independently of the
+              claim’s world-truth status.
+            </p>
+            {[
+              "stance",
+              "authority",
+              "prevalence",
+              "interpretation",
+              "provenance",
+            ].map((k) => (
+              <label key={k}>
+                {label(k)}
+                <input
+                  type="text"
+                  list={k === "stance" ? "cultural-stances" : undefined}
+                  value={r[k] || ""}
+                  onChange={(e) => field(k, e.target.value)}
+                />
+              </label>
+            ))}
+            <datalist id="cultural-stances">
+              {[
+                "affirmed",
+                "rejected",
+                "disputed",
+                "metaphorical",
+                "uncertain",
+              ].map((s) => (
+                <option key={s}>{s}</option>
+              ))}
+            </datalist>
+          </>
+        )}
+        {["system-knowledge", "system-access"].includes(r.kind) && (
+          <label>
+            {r.kind === "system-knowledge"
+              ? "Understanding"
+              : "Practical access"}
+            <select
+              value={r.status || ""}
+              onChange={(e) => field("status", e.target.value)}
+            >
+              <option value="">Not specified</option>
+              {(r.kind === "system-knowledge"
+                ? [
+                    "understood",
+                    "incorrect-theory",
+                    "disputed",
+                    "secret",
+                    "lost",
+                    "unknown",
+                  ]
+                : ["available", "restricted", "unavailable", "unknown"]
+              ).map((v) => (
+                <option key={v} value={v}>
+                  {label(v)}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        <label>
+          Description
+          <textarea
+            value={r.description || ""}
+            onChange={(e) => field("description", e.target.value)}
+          />
+        </label>
+        <label>
+          Notes
+          <textarea
+            value={r.notes || ""}
+            onChange={(e) => field("notes", e.target.value)}
+          />
+        </label>
+        <label>
+          Context
+          <select
+            value={r.contextId || ""}
+            onChange={(e) => field("contextId", e.target.value)}
+          >
+            <option value="">None</option>
+            {entities.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="field-pair">
+          {["validFrom", "validTo"].map((k) => (
+            <label key={k}>
+              {k === "validFrom" ? "Valid from" : "Valid to"}
+              <input
+                type="text"
+                list={k === "status" ? "membership-statuses" : undefined}
+                value={r[k] || ""}
+                onChange={(e) => field(k, e.target.value)}
+              />
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      {r.automatic && (
+        <p>
+          Derived from source records. Edit those records to change this
+          connection.
+        </p>
+      )}
+      {error && <p role="alert">{error}</p>}
+    </Dialog>
+  );
 }

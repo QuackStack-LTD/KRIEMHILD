@@ -52,9 +52,9 @@ export function overlayLegend(e,name) {
   if(name==='riverClass')return 'Gold: major trunks; green: regional rivers; blue: local streams. Arrowheads show downstream flow.';
   if(name==='riverSystem')return 'Distinct colors identify whole rivers. Tributaries join their receiving river; arrowheads show flow direction.';
   if(name==='hillslopeRunoff')return 'Multiple-flow-direction hillslope runoff concentration before channel extraction; logarithmic scale.';
-  if(name==='hillslopeAreaKM2')return 'Fractional contributing hillslope area (km?), distributed among downhill facets before primary channels are extracted.';
+  if(name==='hillslopeAreaKM2')return 'Fractional contributing hillslope area (km²), distributed among downhill facets before primary channels are extracted.';
   if(name==='watershed')return 'Distinct colors identify connected catchments, including drainage through lake outlets.';
-  if(name==='terrain'&&e?.hydrology)return `${(e.hydrology.reaches||[]).length} connected river reaches ? ${(e.hydrology.springs||[]).length} springs ? ${(e.hydrology.wetlands||[]).length} wetlands ? ${(e.hydrology.canals||[]).length} engineered canals. ${(e.hydrology.diagnostics||[]).length?e.hydrology.diagnostics.map(d=>d.object+': '+d.reason).join(' / '):'Hydrology validation passed.'}`;
+  if(name==='terrain'&&e?.hydrology)return `${(e.hydrology.reaches||[]).length} connected river reaches · ${(e.hydrology.springs||[]).length} springs · ${(e.hydrology.wetlands||[]).length} wetlands · ${(e.hydrology.canals||[]).length} engineered canals. ${(e.hydrology.diagnostics||[]).length?e.hydrology.diagnostics.map(d=>d.object+': '+d.reason).join(' / '):'Hydrology validation passed.'}`;
   if(name==='terrain') return e?.options.realism?'Rivers in blue · dune ridges follow wind · volcanic vents in red.':'';
   if(name==='wind') return 'Arrows show prevailing wind direction; color shows strength (blue → red).';
   if(!e?.fields[name]) return 'This layer requires Real-world geology & climate.';

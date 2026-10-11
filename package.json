@@ -7,7 +7,10 @@
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",
     "test": "node --test tests/*.test.mjs",
-    "start": "node scripts/start.mjs"
+    "start": "node scripts/start.mjs",
+    "format:ui": "prettier --write \"src/**/*.css\" \"src/worldbuilding/**/*.jsx\" \"src/worldbuilding/ui/*.js\" src/App.jsx src/TerrainApp.jsx src/main.jsx src/builder/IllustratedMapDialog.jsx tests/ui.test.mjs scripts/check-ui.mjs playwright.config.mjs tests/ui.browser.spec.mjs",
+    "check:ui": "prettier --check \"src/**/*.css\" \"src/worldbuilding/**/*.jsx\" \"src/worldbuilding/ui/*.js\" src/App.jsx src/TerrainApp.jsx src/main.jsx src/builder/IllustratedMapDialog.jsx tests/ui.test.mjs scripts/check-ui.mjs playwright.config.mjs tests/ui.browser.spec.mjs && node scripts/check-ui.mjs",
+    "test:ui:browser": "playwright test"
   },
   "dependencies": {
     "delaunator": "5.0.1",
@@ -19,7 +22,10 @@
     "xlsx": "file:vendor-js/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
+    "@playwright/test": "1.56.1",
     "@vitejs/plugin-react": "^5.1.0",
+    "jsdom": "26.1.0",
+    "prettier": "3.6.2",
     "vite": "^7.3.0"
   }
 }

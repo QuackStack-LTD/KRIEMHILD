@@ -1,10 +1,181 @@
-import {useEffect,useState} from 'react';
-export default function Writing({onBack}){
- const [documents,setDocuments]=useState([]),[draft,setDraft]=useState(null),[error,setError]=useState(''),[status,setStatus]=useState(''),[dirty,setDirty]=useState(false);
- async function request(path='',body,method){const r=await fetch('/api/writing'+path,{method:method||(body?'POST':'GET'),headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined});const data=await r.json();if(!r.ok)throw Error(data.error);return data}
- useEffect(()=>{request().then(setDocuments).catch(e=>setError(e.message))},[]);
- useEffect(()=>{const warn=e=>{if(dirty){e.preventDefault();e.returnValue=''}};window.addEventListener('beforeunload',warn);return()=>window.removeEventListener('beforeunload',warn)},[dirty]);
- function choose(d){if(dirty&&!confirm('Discard unsaved writing changes?'))return;setDraft(d);setDirty(false);setStatus('')}
- async function save(){try{const d=await request('',draft);setDraft(d);setDocuments(await request());setDirty(false);setStatus('Document saved')}catch(e){setError(e.message)}}
- return <main className="world-page workspace"><div className="workspace-heading"><div><span className="eyebrow">Creator workspace</span><h1>Writing</h1><p>Drafts and notes for you. These documents are separate from fictional entities and World ZIPs.</p></div><button onClick={()=>{if(!dirty||confirm('Discard unsaved writing changes?'))onBack()}}>Return to Atlas</button></div>{error&&<p role="alert">{error}</p>}<div className="atlas-columns"><section><div className="collection-toolbar"><button onClick={()=>choose({id:crypto.randomUUID(),name:'Untitled draft',text:'',revision:0})}>New document</button><label className="button">Import text<input hidden type="file" accept=".txt,.md,text/plain" onChange={async e=>{const file=e.target.files[0];if(file)choose({id:crypto.randomUUID(),name:file.name,text:await file.text(),revision:0})}}/></label></div>{draft?<><label>Document title<input value={draft.name} onChange={e=>{setDraft({...draft,name:e.target.value});setDirty(true)}}/></label><label>Writing<textarea className="writing-editor" value={draft.text} onChange={e=>{setDraft({...draft,text:e.target.value});setDirty(true)}}/></label><div className="history-actions"><button className="primary" onClick={save}>Save document</button><button onClick={()=>{const url=URL.createObjectURL(new Blob([draft.text],{type:'text/plain'})),a=document.createElement('a');a.href=url;a.download=draft.name+'.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}}>Download text</button><output role="status">{dirty?'Unsaved changes':status}</output></div></>:<div className="workspace-empty">Start a draft or open one from your writing library.</div>}</section><aside><h2>Your documents</h2>{documents.map(d=><div className="history-map-row" key={d.id}><button onClick={()=>choose(d)}>{d.name}</button><button className="danger" onClick={async()=>{if(confirm(`Delete ${d.name}?`)){try{await request('/'+d.id,undefined,'DELETE');setDocuments(await request());if(draft?.id===d.id){setDraft(null);setDirty(false)}}catch(e){setError(e.message)}}}}>Delete</button></div>)}</aside></div></main>
+import useUnsavedChanges from "./ui/useUnsavedChanges.js";
+import { confirmAction } from "./ui/feedback.js";
+import { useEffect, useState } from "react";
+export default function Writing({ onBack }) {
+  const [documents, setDocuments] = useState([]),
+    [draft, setDraft] = useState(null),
+    [error, setError] = useState(""),
+    [status, setStatus] = useState(""),
+    [dirty, setDirty] = useState(false),
+    [busy, setBusy] = useState(false);
+  useUnsavedChanges(dirty, () => setDirty(false));
+  async function request(path = "", body, method) {
+    const r = await fetch("/api/writing" + path, {
+      method: method || (body ? "POST" : "GET"),
+      headers: body ? { "Content-Type": "application/json" } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const data = await r.json();
+    if (!r.ok) throw Error(data.error);
+    return data;
+  }
+  useEffect(() => {
+    request()
+      .then(setDocuments)
+      .catch((e) => setError(e.message));
+  }, []);
+  async function choose(d) {
+    if (dirty && !(await confirmAction("Discard unsaved writing changes?")))
+      return;
+    setDraft(d);
+    setDirty(false);
+    setStatus("");
+  }
+  async function save() {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const d = await request("", draft);
+      setDraft(d);
+      setDocuments(await request());
+      setDirty(false);
+      setStatus("Document saved");
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <main className="world-page workspace">
+      <div className="workspace-heading">
+        <div>
+          <span className="eyebrow">Creator workspace</span>
+          <h1>Writing</h1>
+          <p>
+            Drafts and notes for you. These documents are separate from
+            fictional entities and World ZIPs.
+          </p>
+        </div>
+        <button onClick={onBack}>Return to Atlas</button>
+      </div>
+      {error && <p role="alert">{error}</p>}
+      <div className="atlas-columns">
+        <section>
+          <div className="collection-toolbar">
+            <button
+              onClick={() =>
+                choose({
+                  id: crypto.randomUUID(),
+                  name: "Untitled draft",
+                  text: "",
+                  revision: 0,
+                })
+              }
+            >
+              New document
+            </button>
+            <label className="button">
+              Import text
+              <input
+                hidden
+                type="file"
+                accept=".txt,.md,text/plain"
+                onChange={async (e) => {
+                  const file = e.target.files[0];
+                  if (file)
+                    choose({
+                      id: crypto.randomUUID(),
+                      name: file.name,
+                      text: await file.text(),
+                      revision: 0,
+                    });
+                }}
+              />
+            </label>
+          </div>
+          {draft ? (
+            <>
+              <label>
+                Document title
+                <input
+                  type="text"
+                  value={draft.name}
+                  onChange={(e) => {
+                    setDraft({ ...draft, name: e.target.value });
+                    setDirty(true);
+                  }}
+                />
+              </label>
+              <label>
+                Writing
+                <textarea
+                  className="writing-editor"
+                  value={draft.text}
+                  onChange={(e) => {
+                    setDraft({ ...draft, text: e.target.value });
+                    setDirty(true);
+                  }}
+                />
+              </label>
+              <div className="history-actions">
+                <button className="primary" disabled={busy} onClick={save}>
+                  Save document
+                </button>
+                <button
+                  onClick={() => {
+                    const url = URL.createObjectURL(
+                        new Blob([draft.text], { type: "text/plain" }),
+                      ),
+                      a = document.createElement("a");
+                    a.href = url;
+                    a.download = draft.name + ".txt";
+                    a.click();
+                    setTimeout(() => URL.revokeObjectURL(url), 1000);
+                  }}
+                >
+                  Download text
+                </button>
+                <output role="status">
+                  {dirty ? "Unsaved changes" : status}
+                </output>
+              </div>
+            </>
+          ) : (
+            <div className="workspace-empty">
+              Start a draft or open one from your writing library.
+            </div>
+          )}
+        </section>
+        <aside>
+          <h2>Your documents</h2>
+          {documents.map((d) => (
+            <div className="history-map-row" key={d.id}>
+              <button onClick={() => choose(d)}>{d.name}</button>
+              <button
+                className="danger"
+                onClick={async () => {
+                  if (await confirmAction(`Delete ${d.name}?`)) {
+                    try {
+                      await request("/" + d.id, undefined, "DELETE");
+                      setDocuments(await request());
+                      if (draft?.id === d.id) {
+                        setDraft(null);
+                        setDirty(false);
+                      }
+                    } catch (e) {
+                      setError(e.message);
+                    }
+                  }
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          ))}
+        </aside>
+      </div>
+    </main>
+  );
 }

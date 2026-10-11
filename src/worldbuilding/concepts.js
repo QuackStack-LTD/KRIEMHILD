@@ -1,4 +1,4 @@
-﻿import {registry,activeEntities} from './model.js';
+import {registry,activeEntities} from './model.js';
 export const componentTypes={belief:'Belief or doctrine',narrative:'Narrative, myth or prophecy',practice:'Practice, custom or ritual',value:'Value, norm or taboo',symbol:'Symbol or material culture',festival:'Festival or sacred time',place:'Sacred site or associated place',variant:'School, branch or interpretation',history:'Historical note or origin',section:'Custom section'};
 export const componentKinds={belief:'doctrine',narrative:'sacred-narrative',practice:'practice',value:'concept',symbol:'cultural-symbol',festival:'festival',place:'concept',variant:'cultural-variant',history:'concept',section:'concept'};
 export const conceptTypes=['religion','tradition','culture','worldview','philosophy','ideology','belief','doctrine','religious-movement','cultural-movement','political-movement','practice','custom','ritual','sacred-narrative','cultural-variant','cultural-symbol','festival','concept'];
