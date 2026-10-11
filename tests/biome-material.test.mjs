@@ -1,7 +1,16 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {biomeColor,coarseMaterial,naturalMaterials} from '../src/terrain/biome-material.js';
+import {biomeColor,biomeName,coarseMaterial,naturalMaterials} from '../src/terrain/biome-material.js';
 import {DetailTiles} from '../src/terrain/detail-tiles.js';
+
+test('Deserts require climatic water deficit, independent of decorative noise',()=>{
+ for(let y=0;y<25;y++)for(let x=0;x<25;x++){
+  const position={x,y,seed:x*149+y};
+  assert.notEqual(biomeName({temperature:22,moisture:.28,vegetation:.1,desert:0},position),'desert');
+  assert.equal(biomeName({temperature:22,moisture:.4,vegetation:.1,desert:.9},position),'desert');
+  assert.notEqual(biomeName({temperature:22,moisture:.28,vegetation:.1},position),'desert');
+ }
+});
 
 test('Biome boundaries select a single material without mixed colors',()=>{
  const colors=Object.values(naturalMaterials).map(c=>JSON.stringify(c));

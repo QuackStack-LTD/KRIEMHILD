@@ -13,7 +13,7 @@ func (e *Environment) prepareHydrology() {
 	}
 	e.Hydrology = &HydrologyState{Version: 1, NetworkVersion: 2, Units: "1000 mm per base cell per year"}
 	if e.Geography != nil {
-		e.Hydrology.NetworkVersion = 3
+		e.Hydrology.NetworkVersion = 4
 		e.Hydrology.Units = "1000 mm over mean cell area per year; SI discharge and catchment fields stored separately"
 	}
 	sample := noise(Seed(e.Options.Seed))
@@ -174,45 +174,4 @@ func (e *Environment) drainageNeighbors(i int) []int {
 		out = append(out, y*w+x)
 	}
 	return out
-}
-func (e *Environment) steepestDrain(i, parent int, rank []int, surface func(int) float64) int {
-	z := surface(i)
-	best := -1
-	slope := 0.
-	w := e.Options.Columns
-	for _, j := range e.drainageNeighbors(i) {
-		dx, dy := j%w-i%w, j/w-i/w
-		if e.Geography != nil && e.Geography.WrapX {
-			if dx > w/2 {
-				dx -= w
-			}
-			if dx < -w/2 {
-				dx += w
-			}
-		}
-		length := math.Hypot(float64(dx), float64(dy))
-		if e.Geography != nil {
-			length = e.stepKM(i, j)
-		}
-		horizontal := i + dx
-		if i%w+dx < 0 {
-			horizontal = i + w - 1
-		}
-		if i%w+dx >= w {
-			horizontal = i - w + 1
-		}
-		v := surface(j)
-		if dx != 0 && dy != 0 && surface(horizontal) > z && surface(i+dy*w) > z {
-			continue
-		} // Do not cut across a ridge corner.
-		// A land channel cannot shortcut diagonally through a marine/lake corner.
-		if dx != 0 && dy != 0 && e.get("waterBody", i) == 0 && e.get("waterBody", j) == 0 && (e.get("waterBody", horizontal) > 0 || e.get("waterBody", i+dy*w) > 0) {
-			continue
-		}
-		drop := (z - v) / length
-		if drop > slope || drop == slope && drop >= 0 && rank[j] < rank[i] && (best < 0 || rank[j] < rank[best]) {
-			best, slope = j, drop
-		}
-	}
-	return best
 }

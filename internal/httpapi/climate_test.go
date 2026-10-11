@@ -16,6 +16,8 @@ func TestClimateArchiveDatabaseAndAuthoredRestoration(t *testing.T) {
 	// A deliberate persisted value proves imports load data rather than run
 	// today's generator again. Zones, curves and season definitions are all data.
 	v.solver.Environment.Climate.Cells[0].Months[0].Humidity = .4321
+	v.solver.Environment.Fields["desert"][0] = .12345
+	drylands, _ := json.Marshal(v.solver.Environment.Fields["desert"])
 	base, _ := json.Marshal(v.solver.Environment.Climate)
 	geography, _ := json.Marshal(v.solver.Environment.Geography)
 	erosion, _ := json.Marshal(v.solver.Environment.Geomorphology)
@@ -71,6 +73,10 @@ func TestClimateArchiveDatabaseAndAuthoredRestoration(t *testing.T) {
 	})
 	assert := func(v *session) {
 		t.Helper()
+		arid, _ := json.Marshal(v.solver.Environment.Fields["desert"])
+		if !bytes.Equal(arid, drylands) {
+			t.Fatal("stored desert suitability changed on restoration")
+		}
 		g, _ := json.Marshal(v.solver.Environment.Geography)
 		er, _ := json.Marshal(v.solver.Environment.Geomorphology)
 		h, _ := json.Marshal(v.solver.Environment.Hydrology)

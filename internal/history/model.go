@@ -6,8 +6,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"kriemhild/internal/biosphere"
 	"kriemhild/internal/world"
 	"math"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -22,20 +24,22 @@ func ID() string {
 }
 
 type World struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	CurrentAge  string `json:"currentAge"`
-	Revision    int    `json:"revision"`
-	UpdatedAt   int64  `json:"updatedAt"`
+	Networks    []NetworkView `json:"networks,omitempty"`
+	ID          string        `json:"id"`
+	Name        string        `json:"name"`
+	Description string        `json:"description"`
+	CurrentAge  string        `json:"currentAge"`
+	Revision    int           `json:"revision"`
+	UpdatedAt   int64         `json:"updatedAt"`
 }
 type Age struct {
-	ID            string `json:"id"`
-	Name          string `json:"name"`
-	TimelineID    string `json:"timelineId"`
-	InheritedFrom string `json:"inheritedFrom,omitempty"`
-	MergePolicy   string `json:"mergePolicy,omitempty"`
-	Notes         string `json:"notes,omitempty"`
+	StartedFromYear *YearOrigin `json:"startedFromYear,omitempty"`
+	ID              string      `json:"id"`
+	Name            string      `json:"name"`
+	TimelineID      string      `json:"timelineId"`
+	InheritedFrom   string      `json:"inheritedFrom,omitempty"`
+	MergePolicy     string      `json:"mergePolicy,omitempty"`
+	Notes           string      `json:"notes,omitempty"`
 }
 type Timeline struct {
 	ID    string   `json:"id"`
@@ -70,16 +74,23 @@ type Map struct {
 	Kind      string       `json:"kind"`
 }
 type Entity struct {
-	Deleted    bool            `json:"deleted,omitempty"`
-	ID         string          `json:"id"`
-	AgeID      string          `json:"ageId"`
-	TerrainID  string          `json:"terrainId"`
-	HomeMap    string          `json:"homeMap"`
-	Name       string          `json:"name"`
-	Kind       string          `json:"kind"`
-	Natural    bool            `json:"natural"`
-	SourceID   string          `json:"sourceId,omitempty"`
-	Properties json.RawMessage `json:"properties"`
+	System       *SystemRecord       `json:"system,omitempty"`
+	Biology      *biosphere.Lifeform `json:"biology,omitempty"`
+	Content      *ConceptContent     `json:"content,omitempty"`
+	CreatedAt    int64               `json:"createdAt,omitempty"`
+	UpdatedAt    int64               `json:"updatedAt,omitempty"`
+	ContinuityID string              `json:"continuityId,omitempty"`
+	Names        []EntityName        `json:"names,omitempty"`
+	Deleted      bool                `json:"deleted,omitempty"`
+	ID           string              `json:"id"`
+	AgeID        string              `json:"ageId"`
+	TerrainID    string              `json:"terrainId"`
+	HomeMap      string              `json:"homeMap"`
+	Name         string              `json:"name"`
+	Kind         string              `json:"kind"`
+	Natural      bool                `json:"natural"`
+	SourceID     string              `json:"sourceId,omitempty"`
+	Properties   json.RawMessage     `json:"properties"`
 }
 type Representation struct {
 	ID       string       `json:"id"`
@@ -89,35 +100,69 @@ type Representation struct {
 	Shape    world.Entity `json:"shape"`
 }
 type Relation struct {
-	ID          string `json:"id"`
-	AgeID       string `json:"ageId"`
-	Source      string `json:"source"`
-	Destination string `json:"destination"`
-	Kind        string `json:"kind"`
-	Automatic   bool   `json:"automatic"`
+	Stance            string `json:"stance,omitempty"`
+	Authority         string `json:"authority,omitempty"`
+	Prevalence        string `json:"prevalence,omitempty"`
+	Interpretation    string `json:"interpretation,omitempty"`
+	Provenance        string `json:"provenance,omitempty"`
+	Status            string `json:"status,omitempty"`
+	Role              string `json:"role,omitempty"`
+	Rank              string `json:"rank,omitempty"`
+	UnitID            string `json:"unitId,omitempty"`
+	AppointmentSource string `json:"appointmentSource,omitempty"`
+	SourcePort        string `json:"sourcePort,omitempty"`
+	DestinationPort   string `json:"destinationPort,omitempty"`
+	Description       string `json:"description,omitempty"`
+	Notes             string `json:"notes,omitempty"`
+	ContextID         string `json:"contextId,omitempty"`
+	ValidFrom         string `json:"validFrom,omitempty"`
+	ValidTo           string `json:"validTo,omitempty"`
+	ID                string `json:"id"`
+	AgeID             string `json:"ageId"`
+	Source            string `json:"source"`
+	Destination       string `json:"destination"`
+	Kind              string `json:"kind"`
+	Automatic         bool   `json:"automatic"`
 }
 type Document struct {
-	World           World            `json:"world"`
-	Ages            []Age            `json:"ages"`
-	Timelines       []Timeline       `json:"timelines"`
-	Edges           []Edge           `json:"edges"`
-	Terrains        []Terrain        `json:"terrains"`
-	Maps            []Map            `json:"maps"`
-	Entities        []Entity         `json:"entities"`
-	Representations []Representation `json:"representations"`
-	Relations       []Relation       `json:"relations"`
+	LibraryFiles    []LibraryFile     `json:"libraryFiles,omitempty"`
+	Biospheres      []biosphere.State `json:"biospheres,omitempty"`
+	Years           []Year            `json:"years,omitempty"`
+	World           World             `json:"world"`
+	Ages            []Age             `json:"ages"`
+	Timelines       []Timeline        `json:"timelines"`
+	Edges           []Edge            `json:"edges"`
+	Terrains        []Terrain         `json:"terrains"`
+	Maps            []Map             `json:"maps"`
+	Entities        []Entity          `json:"entities"`
+	Representations []Representation  `json:"representations"`
+	Relations       []Relation        `json:"relations"`
 }
 type Command struct {
-	Kind        string `json:"kind"`
-	AgeID       string `json:"ageId"`
-	OtherAge    string `json:"otherAge"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Mode        string `json:"mode"`
-	Policy      string `json:"policy"`
-	EdgeID      string `json:"edgeId"`
-	MapID       string `json:"mapId"`
-	Revision    int    `json:"revision"`
+	Biosphere         *biosphere.State  `json:"biosphere,omitempty"`
+	BiosphereEdit     *BiosphereEdit    `json:"biosphereEdit,omitempty"`
+	EntityID          string            `json:"entityId,omitempty"`
+	ComponentID       string            `json:"componentId,omitempty"`
+	Commands          []Command         `json:"commands,omitempty"`
+	SourceYearID      string            `json:"sourceYearId,omitempty"`
+	Relations         []Relation        `json:"relations,omitempty"`
+	RemoveRelationIDs []string          `json:"removeRelationIds,omitempty"`
+	EntityNames       map[string]string `json:"entityNames,omitempty"`
+	Entity            *Entity           `json:"entity,omitempty"`
+	Relation          *Relation         `json:"relation,omitempty"`
+	EntityIDs         []string          `json:"entityIds,omitempty"`
+	ExcludeIDs        []string          `json:"excludeIds,omitempty"`
+	Network           *NetworkView      `json:"network,omitempty"`
+	Kind              string            `json:"kind"`
+	AgeID             string            `json:"ageId"`
+	OtherAge          string            `json:"otherAge"`
+	Name              string            `json:"name"`
+	Description       string            `json:"description"`
+	Mode              string            `json:"mode"`
+	Policy            string            `json:"policy"`
+	EdgeID            string            `json:"edgeId"`
+	MapID             string            `json:"mapId"`
+	Revision          int               `json:"revision"`
 }
 
 func New(name string) *Document {
@@ -207,6 +252,46 @@ func (d *Document) ValidateGraph() error {
 	return nil
 }
 func (d *Document) inherit(from, to string, overwrite bool) {
+	d.inheritLibrary(from, to, overwrite)
+	for _, v := range append([]NetworkView(nil), d.World.Networks...) {
+		if v.AgeID == from {
+			v.AgeID = to
+			v.RelationTypes = append([]string(nil), v.RelationTypes...)
+			v.MemberIDs = append([]string(nil), v.MemberIDs...)
+			v.LegacyData = append(json.RawMessage(nil), v.LegacyData...)
+			found := -1
+			for i, x := range d.World.Networks {
+				if x.AgeID == to && x.ID == v.ID {
+					found = i
+					break
+				}
+			}
+			if found < 0 {
+				d.World.Networks = append(d.World.Networks, v)
+			} else if overwrite {
+				d.World.Networks[found] = v
+			}
+		}
+	}
+	for _, v := range append([]biosphere.State(nil), d.Biospheres...) {
+		if v.AgeID != from {
+			continue
+		}
+		v = biosphere.Clone(v)
+		v.AgeID = to
+		found := false
+		for i, old := range d.Biospheres {
+			if old.AgeID == to && old.ID == v.ID {
+				if overwrite {
+					d.Biospheres[i] = v
+				}
+				found = true
+			}
+		}
+		if !found {
+			d.Biospheres = append(d.Biospheres, v)
+		}
+	}
 	for _, v := range append([]Terrain(nil), d.Terrains...) {
 		if v.AgeID != from {
 			continue
@@ -239,6 +324,13 @@ func (d *Document) inherit(from, to string, overwrite bool) {
 	}
 	for _, v := range append([]Entity(nil), d.Entities...) {
 		v.Properties = append(json.RawMessage(nil), v.Properties...)
+		v.Content = cloneContent(v.Content)
+		v.System = cloneSystem(v.System)
+		v.Biology = biosphere.Clone(v.Biology)
+		v.Names = append([]EntityName(nil), v.Names...)
+		if v.ContinuityID == "" {
+			v.ContinuityID = v.ID
+		}
 		if v.AgeID != from {
 			continue
 		}
@@ -257,6 +349,10 @@ func (d *Document) inherit(from, to string, overwrite bool) {
 		}
 	}
 	for _, v := range append([]Representation(nil), d.Representations...) {
+		shapeData, _ := json.Marshal(v.Shape)
+		var clonedShape world.Entity
+		_ = json.Unmarshal(shapeData, &clonedShape)
+		v.Shape = clonedShape
 		v.Shape.Points = append([][2]float64(nil), v.Shape.Points...)
 		v.Shape.Cells = append([]int(nil), v.Shape.Cells...)
 		if v.AgeID != from {
@@ -280,8 +376,11 @@ func (d *Document) inherit(from, to string, overwrite bool) {
 		if v.AgeID == from {
 			v.AgeID = to
 			exists := false
-			for _, x := range d.Relations {
+			for i, x := range d.Relations {
 				if x.AgeID == to && x.ID == v.ID {
+					if overwrite {
+						d.Relations[i] = v
+					}
 					exists = true
 				}
 			}
@@ -291,9 +390,94 @@ func (d *Document) inherit(from, to string, overwrite bool) {
 		}
 	}
 }
-func (d *Document) Apply(c Command) error {
+func (d *Document) Apply(c Command) (err error) {
+	if c.Kind == "biosphere" {
+		return d.applyBiosphere(c)
+	}
+	if c.Kind == "promote-component" {
+		return d.promoteComponent(c)
+	}
+	if c.Kind == "batch" {
+		return d.applyBatch(c)
+	}
+	defer func() {
+		if err == nil {
+			d.SyncYears()
+		}
+	}()
 	a := d.Age(c.AgeID)
+	if handled, err := d.applyEntities(c); handled {
+		return err
+	}
 	switch c.Kind {
+	case "delete-age":
+		if a == nil {
+			return fmt.Errorf("Age not found")
+		}
+		if len(d.Ages) == 1 {
+			return fmt.Errorf("keep at least one Age in a World")
+		}
+		d.Biospheres = slices.DeleteFunc(d.Biospheres, func(b biosphere.State) bool { return b.AgeID == c.AgeID })
+		d.LibraryFiles = slices.DeleteFunc(d.LibraryFiles, func(f LibraryFile) bool { return f.AgeID == c.AgeID })
+		d.World.Networks = slices.DeleteFunc(d.World.Networks, func(v NetworkView) bool { return v.AgeID == c.AgeID })
+		previous, next := "", ""
+		for _, t := range d.Timelines {
+			if t.ID != a.TimelineID {
+				continue
+			}
+			for i, id := range t.Ages {
+				if id != a.ID {
+					continue
+				}
+				if i > 0 {
+					previous = t.Ages[i-1]
+				}
+				if i+1 < len(t.Ages) {
+					next = t.Ages[i+1]
+				}
+			}
+		}
+		joinBefore, joinAfter := false, false
+		for _, e := range d.Edges {
+			joinBefore = joinBefore || e.Kind == "linear" && e.Source == previous && e.Destination == a.ID
+			joinAfter = joinAfter || e.Kind == "linear" && e.Source == a.ID && e.Destination == next
+		}
+		id := a.ID
+		d.Edges = slices.DeleteFunc(d.Edges, func(e Edge) bool { return e.Source == id || e.Destination == id })
+		d.Ages = slices.DeleteFunc(d.Ages, func(v Age) bool { return v.ID == id })
+		for i := range d.Ages {
+			if d.Ages[i].InheritedFrom == id {
+				d.Ages[i].InheritedFrom = ""
+			}
+		}
+		for i := range d.Timelines {
+			d.Timelines[i].Ages = slices.DeleteFunc(d.Timelines[i].Ages, func(v string) bool { return v == id })
+		}
+		d.Timelines = slices.DeleteFunc(d.Timelines, func(v Timeline) bool { return len(v.Ages) == 0 })
+		d.Terrains = slices.DeleteFunc(d.Terrains, func(v Terrain) bool { return v.AgeID == id })
+		d.Maps = slices.DeleteFunc(d.Maps, func(v Map) bool { return v.AgeID == id })
+		d.Entities = slices.DeleteFunc(d.Entities, func(v Entity) bool { return v.AgeID == id })
+		d.Representations = slices.DeleteFunc(d.Representations, func(v Representation) bool { return v.AgeID == id })
+		d.Relations = slices.DeleteFunc(d.Relations, func(v Relation) bool { return v.AgeID == id })
+		if joinBefore && joinAfter {
+			exists := false
+			for _, e := range d.Edges {
+				exists = exists || e.Source == previous && e.Destination == next
+			}
+			if !exists {
+				d.Edges = append(d.Edges, Edge{ID: ID(), Source: previous, Destination: next, Kind: "linear"})
+			}
+		}
+		if d.World.CurrentAge == id {
+			d.World.CurrentAge = previous
+			if previous == "" {
+				d.World.CurrentAge = next
+			}
+			if d.World.CurrentAge == "" {
+				d.World.CurrentAge = d.Timelines[0].Ages[0]
+			}
+		}
+		return nil
 	case "delete-map":
 		m := d.Map(c.AgeID, c.MapID)
 		if m == nil {
@@ -316,19 +500,27 @@ func (d *Document) Apply(c Command) error {
 			}
 		}
 		d.Maps = maps
-		entities := d.Entities[:0]
-		removedEntities := map[string]bool{}
-		for _, e := range d.Entities {
-			if e.AgeID == c.AgeID && remove[e.HomeMap] {
-				removedEntities[e.ID] = true
-			} else {
-				entities = append(entities, e)
+		// A map is a representation, not the lifetime owner of its logical entities.
+		for i := range d.Entities {
+			e := &d.Entities[i]
+			if e.AgeID != c.AgeID || !remove[e.HomeMap] {
+				continue
+			}
+			e.HomeMap = ""
+			e.TerrainID = ""
+			for _, r := range d.Representations {
+				if r.AgeID == c.AgeID && r.EntityID == e.ID && !remove[r.MapID] {
+					if other := d.Map(c.AgeID, r.MapID); other != nil {
+						e.HomeMap = other.ID
+						e.TerrainID = other.TerrainID
+						break
+					}
+				}
 			}
 		}
-		d.Entities = entities
 		reps := d.Representations[:0]
 		for _, r := range d.Representations {
-			if r.AgeID != c.AgeID || (!remove[r.MapID] && !removedEntities[r.EntityID]) {
+			if r.AgeID != c.AgeID || !remove[r.MapID] {
 				reps = append(reps, r)
 			}
 		}
@@ -346,6 +538,15 @@ func (d *Document) Apply(c Command) error {
 			}
 		}
 		d.Terrains = terrains
+		d.pruneSystems(c.AgeID)
+		d.Biospheres = slices.DeleteFunc(d.Biospheres, func(b biosphere.State) bool {
+			for _, t := range d.Terrains {
+				if t.ID == b.TerrainID && t.AgeID == b.AgeID {
+					return false
+				}
+			}
+			return true
+		})
 		d.Resolve(c.AgeID)
 	case "select":
 		if a == nil {
@@ -387,6 +588,14 @@ func (d *Document) Apply(c Command) error {
 			return fmt.Errorf("choose a source Age and a name")
 		}
 		source := *a
+		var origin *YearOrigin
+		if c.SourceYearID != "" {
+			y := d.Year(source.ID, c.SourceYearID)
+			if y == nil || (c.Mode != "after" && c.Mode != "branch" && c.Mode != "parallel") {
+				return fmt.Errorf("choose a year in the source Age and a continuation or branch")
+			}
+			origin = &YearOrigin{AgeID: source.ID, YearID: y.ID, Number: y.Number}
+		}
 		if c.Mode == "merge" && (d.Age(c.OtherAge) == nil || c.OtherAge == source.ID || (c.Policy != "primary" && c.Policy != "secondary")) {
 			return fmt.Errorf("merge requires two Ages and an explicit conflict policy")
 		}
@@ -394,6 +603,7 @@ func (d *Document) Apply(c Command) error {
 			return fmt.Errorf("unknown Age operation")
 		}
 		age := Age{ID: ID(), Name: strings.TrimSpace(c.Name), TimelineID: source.TimelineID, InheritedFrom: source.ID, MergePolicy: c.Policy}
+		age.StartedFromYear = origin
 		if c.Mode == "branch" || c.Mode == "parallel" || c.Mode == "merge" {
 			age.TimelineID = ID()
 			d.Timelines = append(d.Timelines, Timeline{ID: age.TimelineID, Name: age.Name + " timeline", Ages: []string{age.ID}, Order: len(d.Timelines)})
@@ -451,7 +661,34 @@ func (d *Document) Apply(c Command) error {
 				return err
 			}
 		}
+		for id, name := range c.EntityNames {
+			if slices.Contains(c.ExcludeIDs, id) {
+				continue
+			}
+			e := d.Entity(age.ID, id)
+			if e == nil {
+				return fmt.Errorf("inherited entity not found")
+			}
+			name = strings.TrimSpace(name)
+			if name == "" || len(name) > 200 {
+				return fmt.Errorf("invalid inherited name")
+			}
+			e.Name = name
+			for i := range d.Representations {
+				r := &d.Representations[i]
+				if r.AgeID == age.ID && r.EntityID == id {
+					r.Shape.Name = name
+				}
+			}
+		}
 		d.World.CurrentAge = age.ID
+		for _, id := range c.ExcludeIDs {
+			if e := d.Entity(age.ID, id); e != nil {
+				e.Deleted = true
+			}
+		}
+		d.pruneBiosphere(age.ID)
+		d.pruneSystems(age.ID)
 		d.PruneDeleted(age.ID)
 		d.Resolve(age.ID)
 	default:
@@ -460,6 +697,15 @@ func (d *Document) Apply(c Command) error {
 	return d.ValidateGraph()
 }
 func (d *Document) Validate() error {
+	if err := d.validateLibrary(); err != nil {
+		return err
+	}
+	if err := d.validateBiospheres(); err != nil {
+		return err
+	}
+	if err := d.validateYears(); err != nil {
+		return err
+	}
 	if d.World.ID == "" || strings.TrimSpace(d.World.Name) == "" || len(d.World.Name) > 160 {
 		return fmt.Errorf("invalid World")
 	}
@@ -494,23 +740,36 @@ func (d *Document) Validate() error {
 		}
 	}
 	entities := map[string]bool{}
+	continuities := map[string]bool{}
 	deleted := map[string]bool{}
-	entityTerrain := map[string]string{}
+
 	for _, e := range d.Entities {
 		k := e.AgeID + "/" + e.ID
 		home := d.Map(e.AgeID, e.HomeMap)
-		if entities[k] || e.ID == "" || d.Age(e.AgeID) == nil || home == nil || home.TerrainID != e.TerrainID || terrains[e.AgeID+"/"+e.TerrainID].ID == "" || !json.Valid(e.Properties) {
+		if entities[k] || e.ID == "" || d.Age(e.AgeID) == nil || (e.HomeMap != "" && (home == nil || home.TerrainID != e.TerrainID)) || (e.TerrainID != "" && terrains[e.AgeID+"/"+e.TerrainID].ID == "") || !json.Valid(e.Properties) {
 			return fmt.Errorf("invalid logical entity")
 		}
+		if err := d.validateEntity(e); err != nil {
+			return err
+		}
+		continuity := e.ContinuityID
+		if continuity == "" {
+			continuity = e.ID
+		}
+		ck := e.AgeID + "/" + continuity
+		if continuities[ck] {
+			return fmt.Errorf("duplicate entity continuity in Age")
+		}
+		continuities[ck] = true
 		entities[k] = true
 		deleted[k] = e.Deleted
-		entityTerrain[k] = e.TerrainID
+
 	}
 	reps := map[string]bool{}
 	for _, r := range d.Representations {
 		m := d.Map(r.AgeID, r.MapID)
 		k := r.AgeID + "/" + r.ID
-		if m == nil || r.ID == "" || reps[k] || !entities[r.AgeID+"/"+r.EntityID] || deleted[r.AgeID+"/"+r.EntityID] || r.Shape.Deleted || r.Shape.ID != r.EntityID || entityTerrain[r.AgeID+"/"+r.EntityID] != m.TerrainID {
+		if m == nil || r.ID == "" || reps[k] || !entities[r.AgeID+"/"+r.EntityID] || deleted[r.AgeID+"/"+r.EntityID] || r.Shape.Deleted || (r.Shape.ID != r.EntityID && r.Shape.LogicalID != r.EntityID) {
 			return fmt.Errorf("invalid map representation")
 		}
 		t := terrains[m.AgeID+"/"+m.TerrainID]
@@ -525,10 +784,26 @@ func (d *Document) Validate() error {
 	relations := map[string]bool{}
 	for _, r := range d.Relations {
 		key := r.AgeID + "/" + r.ID
-		if r.ID == "" || relations[key] || !entities[r.AgeID+"/"+r.Source] || !entities[r.AgeID+"/"+r.Destination] || deleted[r.AgeID+"/"+r.Source] || deleted[r.AgeID+"/"+r.Destination] || r.Source == r.Destination || entityTerrain[r.AgeID+"/"+r.Source] != entityTerrain[r.AgeID+"/"+r.Destination] {
+		if r.ID == "" || relations[key] || !entities[r.AgeID+"/"+r.Source] || !entities[r.AgeID+"/"+r.Destination] || deleted[r.AgeID+"/"+r.Source] || deleted[r.AgeID+"/"+r.Destination] || r.Source == r.Destination {
 			return fmt.Errorf("invalid logical relationship")
 		}
+		if err := d.validateRelation(r); err != nil {
+			return err
+		}
 		relations[key] = true
+	}
+	networks := map[string]bool{}
+	for _, v := range d.World.Networks {
+		key := v.AgeID + "/" + v.ID
+		if v.ID == "" || d.Age(v.AgeID) == nil || networks[key] || strings.TrimSpace(v.Name) == "" {
+			return fmt.Errorf("invalid saved network")
+		}
+		networks[key] = true
+		for _, id := range append([]string{v.CenterID, v.FamilyID}, v.MemberIDs...) {
+			if id != "" && !entities[v.AgeID+"/"+id] {
+				return fmt.Errorf("saved network subject not found")
+			}
+		}
 	}
 	return nil
 }

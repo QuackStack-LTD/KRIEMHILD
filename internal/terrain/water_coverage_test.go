@@ -14,10 +14,18 @@ func TestWaterCoverageAcrossLandmasses(t *testing.T) {
 			e := BuildEnvironment(o)
 			labels, sizes := e.hydroLandmasses()
 			stats := e.Hydrology.Statistics
+			lakeCells := 0
+			for _, lake := range e.WaterBodies {
+				if lake.Kind == "lake" {
+					lakeCells += len(lake.Cells)
+				}
+			}
 			// Guard against the previous globally sparse lakes, groundwater and
 			// wetlands, while keeping most of the land free of visible channels.
 			// Wetlands now require persistent surface saturation, not aquifers alone.
-			if stats.Lakes < int(float64(stats.LandCells)*.002) || stats.Wetlands < int(float64(stats.LandCells)*.002) || stats.Springs < int(float64(stats.LandCells)*.01) || stats.CoveragePercent < 7 || stats.CoveragePercent > 25 {
+			// Keep distributed lakes without imposing a minimum flooded area:
+			// kilometre-scaled basins and evaporative losses now make them smaller.
+			if stats.Lakes < int(float64(stats.LandCells)*.0015) || lakeCells < stats.Lakes || lakeCells > stats.LandCells/20 || stats.Wetlands < int(float64(stats.LandCells)*.002) || stats.Springs < int(float64(stats.LandCells)*.01) || stats.CoveragePercent < 7 || stats.CoveragePercent > 25 {
 				t.Fatalf("incomplete water coverage: %+v", stats)
 			}
 			wetCells := 0

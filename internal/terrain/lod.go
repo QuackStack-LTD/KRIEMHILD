@@ -12,6 +12,7 @@ const DetailTileSize = 32
 // Each octave is a nodal residual: new coefficients are zero on EVERY coarser
 // node. Tile boundaries use global indices, so request order cannot form seams.
 type DetailPoint struct {
+	Desert        *float64   `json:"desert,omitempty"`
 	Shore         float64    `json:"shore,omitempty"`
 	ShoreSediment float64    `json:"shoreSediment,omitempty"`
 	ShoreSlope    float64    `json:"shoreSlope,omitempty"`
@@ -37,21 +38,27 @@ type DetailPoint struct {
 }
 
 type DetailFeature struct {
-	RiverID    string       `json:"riverId,omitempty"`
-	Class      string       `json:"class,omitempty"`
-	NetworkID  string       `json:"networkId,omitempty"`
-	Regime     string       `json:"regime,omitempty"`
-	Morphology string       `json:"morphology,omitempty"`
-	Depth      float64      `json:"depth,omitempty"`
-	ID         string       `json:"id"`
-	ParentID   string       `json:"parentId"`
-	Kind       string       `json:"kind"`
-	Level      float64      `json:"level"`
-	Width      float64      `json:"width"`
-	Widths     []float64    `json:"widths,omitempty"`
-	Discharge  float64      `json:"discharge"`
-	Grade      float64      `json:"grade"`
-	Path       [][3]float64 `json:"path"`
+	MorphologyLevel     float64      `json:"morphologyLevel,omitempty"`
+	DischargesM3s       []float64    `json:"dischargesM3s,omitempty"`
+	ValleyWidth         float64      `json:"valleyWidth,omitempty"`
+	PhysicalWidthMetres float64      `json:"physicalWidthMetres,omitempty"`
+	DischargeM3s        float64      `json:"dischargeM3s,omitempty"`
+	ValleyWidthMetres   float64      `json:"valleyWidthMetres,omitempty"`
+	RiverID             string       `json:"riverId,omitempty"`
+	Class               string       `json:"class,omitempty"`
+	NetworkID           string       `json:"networkId,omitempty"`
+	Regime              string       `json:"regime,omitempty"`
+	Morphology          string       `json:"morphology,omitempty"`
+	Depth               float64      `json:"depth,omitempty"`
+	ID                  string       `json:"id"`
+	ParentID            string       `json:"parentId"`
+	Kind                string       `json:"kind"`
+	Level               float64      `json:"level"`
+	Width               float64      `json:"width"`
+	Widths              []float64    `json:"widths,omitempty"`
+	Discharge           float64      `json:"discharge"`
+	Grade               float64      `json:"grade"`
+	Path                [][3]float64 `json:"path"`
 }
 
 type DetailTile struct {
@@ -120,6 +127,10 @@ func (m *DetailModel) base(x, y float64) DetailPoint {
 
 	c := m.cell(x, y)
 	p := DetailPoint{Elevation: m.field("elevation", x, y), Cell: c, Temperature: m.field("temperature", x, y), Moisture: m.field("moisture", x, y)}
+	if m.World.Fields["desert"] != nil {
+		desert := m.field("desert", x, y)
+		p.Desert = &desert
+	}
 	x0, y0 := int(math.Floor(x)), int(math.Floor(y))
 	a, b := x-float64(x0), y-float64(y0)
 	weights := []float64{(1 - a) * (1 - b), a * (1 - b), (1 - a) * b, a * b}
@@ -235,6 +246,17 @@ func (m *DetailModel) buildDrainage() {
 	for i := range incoming {
 		incoming[i] = -1
 	}
+	savedWidths := make([]float64, len(e.Mask))
+	sourceWidths := make([]float64, len(e.Mask))
+	if e.Hydrology != nil {
+		for _, r := range e.Hydrology.Reaches {
+			savedWidths[r.From] = r.Width
+			if r.SourceWidthMetres > 0 && r.WidthMetres > 0 {
+				sourceWidths[r.From] = r.Width * r.SourceWidthMetres / r.WidthMetres
+			}
+		}
+	}
+
 	for i := range e.Mask {
 		j := int(e.get("flow", i))
 		if j >= 0 && (incoming[j] < 0 || e.get("accumulation", i) > e.get("accumulation", incoming[j])) {
@@ -277,21 +299,25 @@ func (m *DetailModel) buildDrainage() {
 		q := e.get("accumulation", i)
 		grade := math.Max(0, z0-z1)
 		widthAt := func(c int) float64 {
-			slope := 0.
-			if to := int(e.get("flow", c)); to >= 0 {
-				slope = math.Max(0, e.get("drainageElevation", c)-e.get("drainageElevation", to))
+			if value := savedWidths[c]; value > 0 {
+				return value
 			}
-			if e.Geography != nil {
-				to := int(e.get("flow", c))
-				km := e.Geography.WorldScale
-				if to >= 0 {
-					km = e.stepKM(c, to)
+			to := int(e.get("flow", c))
+			if to < 0 || e.get("waterBody", c) > 0 {
+				if value := savedWidths[i]; value > 0 {
+					return value
 				}
-				return clamp(4.8*math.Sqrt(e.get("dischargeM3s", c))*(.45+.55/(1+slope/180))/(math.Max(.01, km)*1000), .006, .32)
+				_, width := e.channelDimensions(i, j)
+				return width
 			}
-			return (.018 + math.Min(.32, math.Sqrt(e.get("accumulation", c))*.012)) * (.45 + .55/(1+slope/180))
+			_, width := e.channelDimensions(c, to)
+			return width
 		}
 
+		startWidth := widthAt(i)
+		if sourceWidths[i] > 0 {
+			startWidth = sourceWidths[i]
+		}
 		if e.Geography != nil && e.Geography.WrapX && math.Abs(bx-ax) > float64(w)/2 {
 			// Split the projection seam; both pieces represent the same reach.
 			// Never draw a continent-spanning line across the flat map.
@@ -323,7 +349,7 @@ func (m *DetailModel) buildDrainage() {
 					}
 					path[0] = [3]float64{a[0] + (b[0]-a[0])*hi, a[1] + (b[1]-a[1])*hi, a[2] + (b[2]-a[2])*hi}
 				}
-				m.Features = append(m.Features, DetailFeature{ID: featureID, NetworkID: id, ParentID: parent, Kind: "river", Level: level, Width: widthAt(i), Widths: []float64{widthAt(i), widthAt(j)}, Discharge: q, Grade: grade, Path: path})
+				m.Features = append(m.Features, DetailFeature{ID: featureID, NetworkID: id, ParentID: parent, Kind: "river", Level: level, Width: widthAt(i), Widths: []float64{startWidth, widthAt(j)}, Discharge: q, Grade: grade, Path: path})
 			}
 			continue
 		}
@@ -340,7 +366,11 @@ func (m *DetailModel) buildDrainage() {
 			path[k][1] += ny * wave
 			path[k][0] = clamp(path[k][0], 0, float64(w-1))
 			path[k][1] = clamp(path[k][1], 0, float64(e.Options.Rows-1))
-			widths[k] = (widthAt(i)*(1-t) + widthAt(j)*t) * (1 + .07*math.Sin(6*math.Pi*t)*math.Sin(math.Pi*t))
+			growth := t
+			if sourceWidths[i] > 0 {
+				growth = t * t
+			}
+			widths[k] = (startWidth*(1-growth) + widthAt(j)*growth) * (1 + .07*math.Sin(6*math.Pi*t)*math.Sin(math.Pi*t))
 		}
 
 		if e.Hydrology != nil && e.Hydrology.NetworkVersion >= 2 && e.get("waterBody", j) == 0 {
@@ -399,7 +429,7 @@ func (m *DetailModel) buildDrainage() {
 			}
 			break
 		}
-		m.Features = append(m.Features, DetailFeature{ID: id, ParentID: fmt.Sprintf("%x/drainage/%d", m.Seed, j), Kind: "river", Level: level, Width: widths[0], Widths: widths, Discharge: q, Grade: grade, Path: path})
+		m.Features = append(m.Features, DetailFeature{ID: id, ParentID: fmt.Sprintf("%x/drainage/%d", m.Seed, j), Kind: "river", Level: level, Width: widthAt(i), Widths: widths, Discharge: q, Grade: grade, Path: path})
 
 	}
 }

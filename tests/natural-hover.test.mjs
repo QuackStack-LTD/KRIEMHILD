@@ -27,6 +27,16 @@ test('Hover distinguishes a deposit beneath the cursor from a nearby occurrence'
  assert.equal(naturalGoodLabel({name:'Iron ore',location:'here',rating:'Abundant'}),'Iron ore — Abundant');
  assert.equal(naturalGoodLabel({name:'Gold',location:'nearby',distance:1.24}),'Gold — Nearby (1.2 cells)');
 });
+
+test('Scaled worlds query and display nearby resources in kilometres',async t=>{
+ const original={document:globalThis.document,fetch:globalThis.fetch,localStorage:globalThis.localStorage};t.after(()=>Object.assign(globalThis,original));
+ globalThis.document={createElement:()=>new Element()};globalThis.localStorage={getItem:()=>null,setItem(){}};
+ const requests=[];globalThis.fetch=async url=>{requests.push(url);return {ok:true,json:async()=>({terrain:'Forest',x:4,y:5,distanceUnits:'km',available:true,geology:[],goods:[{name:'Gold',location:'nearby',distance:123.4,description:'Stored deposit'}]})}};
+ const host=new Element(),hover=createNaturalHover(host);t.after(()=>hover.dispose());
+ const solver={id:'planet',W:160,H:100,environment:{geography:{planetary_radius:6371,latitude_north:90,latitude_south:-90,longitude_west:-180,longitude_east:180}}};
+ hover.pin(solver,{x:4,y:5});await wait(180);
+ assert.match(requests[0],/radiusKm=500/);assert.match(host.textContent,/123.4 km/);assert.match(host.textContent,/km east of west edge/);assert.doesNotMatch(host.textContent,/123.4 cells/);
+});
 test('Hover debounces movement, ignores stale replies, changes radius and disposes requests',async t=>{
  const original={document:globalThis.document,fetch:globalThis.fetch,localStorage:globalThis.localStorage};
  t.after(()=>Object.assign(globalThis,original));
@@ -52,7 +62,7 @@ test('Hover debounces movement, ignores stale replies, changes radius and dispos
  assert.match(host.textContent,/Terrain: Forest/);
  assert.doesNotMatch(host.textContent,/Stale lake/);
  assert.match(host.textContent,/Timber/);
- const radius=host.children[1].children[0];
+ const radius=host.children[1].children.find(child=>child.type==='number');
  radius.value='0';radius.listeners.change();
  await wait(180);
  assert.match(pending[2].url,/radius=0/);
@@ -85,9 +95,26 @@ test('Pin locks the description, repins, supports radius, clears and resets betw
  const data={terrain:'Pinned forest',x:8,y:9,available:true,geology:[{kind:'basin',rock:'shale',ageMa:30,process:'Deposition'},{kind:'basin',rock:'shale',ageMa:30,process:'Deposition'}],goods:[]};
  requests[1].resolve({ok:true,json:async()=>data});await wait(0);requests[0].resolve({ok:true,json:async()=>({...data,terrain:'Stale'})});await wait(0);
  assert.match(host.textContent,/Pinned forest/);assert.doesNotMatch(host.textContent,/Stale/);assert.equal(host.textContent.match(/Deposition/g).length,1);
- const radius=host.children[1].children[0];radius.value='5';radius.listeners.change();await wait(170);assert.match(requests[2].url,/x=8&y=9&radius=5/);
+ const radius=host.children[1].children.find(child=>child.type==='number');radius.value='5';radius.listeners.change();await wait(170);assert.match(requests[2].url,/x=8&y=9&radius=5/);
  hover.pin({id:'a'},{x:4,y:5});await wait(170);assert.ok(requests[2].options.signal.aborted);assert.deepEqual(hover.pinned(),{x:4,y:5});
  host.children[3].listeners.click();assert.equal(hover.pinned(),null);assert.equal(changes.at(-1),null);
  hover.update({id:'a'},{x:6,y:7});await wait(170);assert.match(requests.at(-1).url,/x=6&y=7/);
  hover.pin({id:'a'},{x:4,y:5});hover.update({id:'b'},null);assert.equal(hover.pinned(),null);assert.doesNotMatch(host.textContent,/Pinned forest/);
+});
+
+test('builder descriptions retain the physical sample supplied by the rendered detail tile',async t=>{
+ const original={document:globalThis.document,fetch:globalThis.fetch,localStorage:globalThis.localStorage};t.after(()=>Object.assign(globalThis,original));
+ globalThis.document={createElement:()=>new Element()};globalThis.localStorage={getItem:()=>null,setItem(){}};
+ globalThis.fetch=async()=>({ok:true,json:async()=>({terrain:'Wrong coarse forest',x:2,y:3,available:false})});
+ let seen;const host=new Element(),hover=createNaturalHover(host,()=>{},(s,p,sample)=>{seen=sample;return {terrain:sample?.riverVisible?'River':'Plain'}});t.after(()=>hover.dispose());
+ hover.update({id:'builder'},{x:2,y:3,elevation:120,riverVisible:true});await wait(180);assert.equal(seen.riverVisible,true);assert.match(host.textContent,/Terrain: River/);assert.doesNotMatch(host.textContent,/Wrong coarse forest/);
+});
+
+
+test('terrain hover includes saved habitats and resident species even without a resource layer',async t=>{
+ const original={document:globalThis.document,fetch:globalThis.fetch,localStorage:globalThis.localStorage};t.after(()=>Object.assign(globalThis,original));
+ globalThis.document={createElement:()=>new Element()};globalThis.localStorage={getItem:()=>null,setItem(){}};
+ globalThis.fetch=async()=>({ok:true,json:async()=>({terrain:'Forest',x:1,y:2,available:false,biosphere:{available:true,stale:true,worldId:'world',ageId:'age',habitats:[{name:'Forest floor',description:'Shaded habitat'}],lifeforms:[{id:'fern',name:'Silver fern',group:'plant',roles:['producer'],abundance:.7,status:'native',seasons:['Summer']},{id:'fox',name:'Fox',group:'animal',abundance:.2,status:'native'}]}})});
+ const host=new Element(),hover=createNaturalHover(host);t.after(()=>hover.dispose());hover.update({id:'terrain'},{x:1,y:2});await wait(180);
+ assert.match(host.textContent,/Forest floor/);assert.match(host.textContent,/Silver fern/);assert.match(host.textContent,/Fox/);assert.match(host.textContent,/environmental changes/);assert.match(host.textContent,/70% relative abundance/);
 });

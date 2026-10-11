@@ -208,6 +208,9 @@ func (e *Environment) buildClimate(p ClimateParameters, scale ClimateScale) {
 	}
 	waterDistance := e.gridDistance(waterMask, 1)
 	kinds, names := make([]string, len(e.Mask)), make([]string, len(e.Mask))
+	// A continuous, persisted suitability field shares the climate model's
+	// annual water-balance threshold. Rendering must not invent dry patches.
+	e.Fields["desert"] = make([]float64, len(e.Mask))
 	var representative [12]ClimateMonth
 	landCount := 0
 	for i := range state.Cells {
@@ -215,6 +218,19 @@ func (e *Environment) buildClimate(p ClimateParameters, scale ClimateScale) {
 		c.Months, c.Modifiers = e.climateMonths(i, p, scale, waterDistance)
 		c.Seasons, c.Estimate = climateSeasons(c.Months, c.Modifiers, p)
 		kinds[i], names[i] = climateClass(c.Months, c.Modifiers, p)
+		rain, demand, warmest := 0., 0., -100.
+		for _, month := range c.Months {
+			rain += month.Rain
+			demand += month.Evaporation
+			warmest = math.Max(warmest, month.Temperature)
+		}
+		if e.climateField("waterBody", i) == 0 && warmest >= 10 {
+			e.set("desert", i, clamp(.5+(.25-rain/math.Max(1, demand))*4, 0, 1))
+		}
+		// Inland dune sand needs an arid climate; beaches remain independent.
+		if e.Fields["dune"] != nil && !e.desertAt(i) {
+			e.set("dune", i, 0)
+		}
 		if e.climateField("waterBody", i) == 0 {
 			landCount++
 			for month, v := range c.Months {
@@ -264,6 +280,7 @@ func (e *Environment) buildClimate(p ClimateParameters, scale ClimateScale) {
 		state.Zones = append(state.Zones, ClimateRegion{fmt.Sprintf("climate-%08x-%d", Seed(e.Options.Seed), start), kinds[start], names[start], cells})
 	}
 	e.Climate = state
+	e.groupDunes()
 }
 
 // Recompute the climate of an edited surface without rebuilding or moving its

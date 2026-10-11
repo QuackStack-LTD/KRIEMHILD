@@ -1,0 +1,5 @@
+.river-thickness-control{margin:12px 0;padding:10px 0}
+.river-thickness-control>label,.river-thickness-control>div{display:flex;align-items:center;gap:10px;justify-content:space-between}
+.river-thickness-control input{flex:1;min-width:0;width:100%}
+.river-thickness-control output{font-variant-numeric:tabular-nums;white-space:nowrap}
+.river-thickness-control small{display:block;line-height:1.4;opacity:.75;margin-top:6px}

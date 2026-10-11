@@ -29,6 +29,11 @@ func RestoreDetailModel(e *Environment, s DetailState) (*DetailModel, error) {
 		if f.ID == "" || ids[f.ID] || f.ParentID == "" || (f.Kind != "river" && f.Kind != "canal") || len(f.Path) < 2 || len(f.Path) > 4096 || (len(f.Widths) != 0 && len(f.Widths) != len(f.Path)) {
 			return nil, fmt.Errorf("invalid detail feature")
 		}
+		for _, v := range []float64{f.Width, f.PhysicalWidthMetres, f.DischargeM3s, f.ValleyWidthMetres, f.ValleyWidth} {
+			if !finite(v) || v < 0 {
+				return nil, fmt.Errorf("invalid saved channel dimensions")
+			}
+		}
 		ids[f.ID] = true
 		for _, p := range f.Path {
 			if !finite(p[0]) || !finite(p[1]) || !finite(p[2]) || p[0] < 0 || p[1] < 0 || p[0] > float64(e.Options.Columns-1) || p[1] > float64(e.Options.Rows-1) {
@@ -165,6 +170,9 @@ func RestoreProjectSolver(s *Solver, c Config, e *Environment, edit Snapshot) er
 		if err := e.ValidateGeographicData(); err != nil {
 			return err
 		}
+		if err := e.ValidateLandStructures(); err != nil {
+			return err
+		}
 		if err := e.ValidateArchipelagos(); err != nil {
 			return err
 		}
@@ -233,6 +241,9 @@ func ValidateDetailTile(t DetailTile, e *Environment) error {
 		return fmt.Errorf("invalid detail tile coordinates or dimensions")
 	}
 	for _, p := range t.Points {
+		if p.Desert != nil && (!finite(*p.Desert) || *p.Desert < 0 || *p.Desert > 1) {
+			return fmt.Errorf("invalid detail climate suitability")
+		}
 		if p.Cell < 0 || p.Cell >= len(e.Mask) || !finite(p.Elevation) || !finite(p.Parent) || !finite(p.WaterDepth) || p.WaterBody < 0 || p.WaterDepth < 0 {
 			return fmt.Errorf("invalid detail sample")
 		}

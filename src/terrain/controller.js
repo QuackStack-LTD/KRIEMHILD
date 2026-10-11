@@ -1,3 +1,5 @@
+import {terrainInspection,formatMapLocation} from './terrain-inspection.js';
+import {subscribeRiverThickness} from './river-display.js';
 import {climateSettings,climateSettingIds,climateInputs,geographicSettings,riverSettings,erosionSettings} from './climate-ui.js';
 import {bindInspectionClick,createInspectionPin} from './inspection-pin.js';
 import { createNaturalHover } from './natural-hover.js';
@@ -15,12 +17,11 @@ import { installEnvironmentOverlays, fieldColor, overlayLegend, drawPhysicalEnti
 export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
   installEnvironmentOverlays(document.getElementById('environmentOverlay'));
   const lifecycle = new AbortController();
-  const naturalHover=createNaturalHover(document.getElementById("naturalHover"),point=>{explorer.setInspectionPin(point);view?.setInspectionPin(point);updateBasePin();});
+  const naturalHover=createNaturalHover(document.getElementById("naturalHover"),point=>{explorer.setInspectionPin(point);view?.setInspectionPin(point);updateBasePin();},(active,point)=>terrainInspection(active,point,view?.inspectionSample(point)||explorer.samplePoint(point)));
   let disposed = false;
   let initializing=true,suspended=false,suspended3DCamera=null;
   let generation = 0;
   let inFlight = false;
-  let paintQueue = Promise.resolve();
   function listen(target, event, handler) {
     target.addEventListener(event, (...args) => {
       if(suspended)return;
@@ -68,16 +69,11 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
     iconSize: $('iconSize'),
     iconSizeOut: $('iconSizeOut'),
     view3d: $('view3d'),
+    surface3d: $('surface3d'),
     resetCamera: $('resetCamera'),
     height3d: $('height3d'),
     height3dOut: $('height3dOut'),
     canvasWrap: document.querySelector('.canvas-wrap'),
-    brushOn: $('brushOn'),
-    brushType: $('brushType'),
-    brushSwatch: $('brushSwatch'),
-    brushSize: $('brushSize'),
-    brushSizeOut: $('brushSizeOut'),
-    brushCursor: $('brushCursor'),
     jitter: $('jitter'),
     jitterOut: $('jitterOut'),
     types: $('types'),
@@ -101,7 +97,7 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
     tabs: [...document.querySelectorAll('.tabs [role="tab"]')],
   };
   const ctx = ui.canvas.getContext('2d');
-  const HOVER_HINT = 'Hover over a cell to see what it can still become.';
+  const HOVER_HINT = 'Hover over the map to inspect terrain and geographic coordinates.';
   const STORAGE_KEY = 'kriemhild.types.v1';
   const BG = [17, 20, 24]; // cells still in superposition fade toward the page background
   const MAX_VORONOI_PIXELS = 8e6; // above this the Voronoi buffer uses fewer pixels per cell
@@ -120,6 +116,7 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
   let seedUsed = 0;
   let hoverCell = -1;
   let hoverDetail = null;
+  let hoverPoint = null;
   let off = null;
   let offCtx = null;
   let image = null;
@@ -135,7 +132,7 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
   let roughness = null; // per cell, -1…1: small bumps so flat areas don't look like plastic
   let heightBuf = null;
   let blurBuf = null;
-  const explorer = createExplorer(ui.canvasWrap,ui.canvas,()=>ui.brushOn.checked,queueAutosave);
+  const explorer = createExplorer(ui.canvasWrap,ui.canvas,queueAutosave);
 
   // ---- colours --------------------------------------------------------------
 
@@ -278,7 +275,6 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
     kindEditor.render();
     climateEditor.render();
     updateAddButton();
-    updateBrushTypes();
     compileAndGenerate();
     return true;
   }
@@ -339,7 +335,6 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
       setPreset(null); // edited by hand: no longer a preset
       if (kind === 'structure') updateAddButton();
       if (kind === 'structure' || kind === 'label') climateEditor.render(); // zones list type names
-      updateBrushTypes();
       if (kind === 'label') {
         if (rules && rules.types.length === config.types.length) {
           config.types.forEach((t, i) => (rules.types[i].name = t.name));
@@ -425,7 +420,6 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
     if (!rules) return;
     stop();
     if (solverError) showError('');
-    brush.painting = false;
     const sphere = ui.shape.value === 'sphere';
     const width = readInt(ui.width, 16, 256, 160);
     if (sphere) ui.height.value = Math.max(5, Math.round(width / 2)); // a globe's map is 2:1
@@ -442,7 +436,7 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
     try {
       if ($('environment').checked) {
         const physicalValues=Object.fromEntries(climateSettingIds.map(id=>[id,$(id).value]));
-        nextSolver = await RemoteSolver.create({ environment: {geography:geographicSettings(physicalValues,width,height,readInt(ui.cellSize,1,40,6)),riverOptions:riverSettings(physicalValues),erosion:erosionSettings(physicalValues),seasonalClimate:climateSettings(Object.fromEntries(climateSettingIds.map(id=>[id,$(id).value])),width,height,readInt(ui.cellSize,1,40,6)),realism:$('realism').checked,columns:width,rows:height,seed:String(seedUsed),landPercent:Number($('landCoverage').value),temperatureOffset:Number($('temperatureOffset').value),rainfall:Number($('rainfall').value),plateCount:Number($('plateCount').value),continentCount:Math.max(2,Number(ui.contPoints.value)),selection:ui.selection.value,stability:Math.min(10,ui.stability.checked?stabilityStrength():0),latitudeNorth:Number($('latitudeNorth').value),latitudeSouth:Number($('latitudeSouth').value),ruggedness:Number($('ruggedness').value),volcanism:Number($('volcanism').value),islandFrequency:Number($('islandFrequency').value),islandCoastalShare:Number($('islandCoastalShare').value),radius2:RADIUS_STEPS[Number(ui.radius.value)].radius2}, config, wrapX: sphere });
+        nextSolver = await RemoteSolver.create({ environment: {geography:geographicSettings(physicalValues,width,height,readInt(ui.cellSize,1,40,6)),riverOptions:riverSettings(physicalValues),erosion:erosionSettings(physicalValues),seasonalClimate:climateSettings(Object.fromEntries(climateSettingIds.map(id=>[id,$(id).value])),width,height,readInt(ui.cellSize,1,40,6)),realism:$('realism').checked,columns:width,rows:height,seed:String(seedUsed),landPercent:Number($('landCoverage').value),temperatureOffset:Number($('temperatureOffset').value),rainfall:Number($('rainfall').value),plateCount:Number($('plateCount').value),continentCount:Math.max(2,Number(ui.contPoints.value)),selection:ui.selection.value,stability:Math.min(10,ui.stability.checked?stabilityStrength():0),latitudeNorth:Number($('latitudeNorth').value),latitudeSouth:Number($('latitudeSouth').value),ruggedness:Number($('ruggedness').value),volcanism:Number($('volcanism').value),landShape:{large:Number($('landShapeLarge').value),medium:Number($('landShapeMedium').value),small:Number($('landShapeSmall').value)},islandFrequency:Number($('islandFrequency').value),islandCoastalShare:Number($('islandCoastalShare').value),radius2:RADIUS_STEPS[Number(ui.radius.value)].radius2}, config, wrapX: sphere });
       } else {
     nextSolver = await RemoteSolver.create({ config, options: {
       width,
@@ -504,7 +498,7 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
       h = vor.h;
     }
     buildTiles();
-    if (view) view.setMap(solver.W, solver.H, ui.canvas, { sphere: solver.wrapX,waterFields:solver.environment?.fields,solver });
+    if (view) view.setMap(solver.W, solver.H, ui.canvas, { sphere: ui.surface3d.value === 'globe',waterFields:solver.environment?.fields,solver });
     if (!off || off.width !== w || off.height !== h) {
       off = document.createElement('canvas');
       off.width = w;
@@ -690,8 +684,9 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
     drawPhysicalEntities(ctx,solver,vor,layer);
     $('environmentLegend').textContent=overlayLegend(solver.environment,layer);
   }
+  subscribeRiverThickness(()=>{if(!suspended)draw();},lifecycle.signal);
   listen($('environmentOverlay'), 'change',()=>{if(solver){solver.markAllDirty();draw();}});
-  for(const id of ['landCoverage','temperatureOffset','rainfall','plateCount','latitudeNorth','latitudeSouth','ruggedness','volcanism','islandFrequency','islandCoastalShare']) listen($(id), 'change',()=>generate());
+  for(const id of ['landCoverage','temperatureOffset','rainfall','plateCount','latitudeNorth','latitudeSouth','ruggedness','volcanism','islandFrequency','islandCoastalShare','landShapeLarge','landShapeMedium','landShapeSmall']) listen($(id), 'change',()=>generate());
   async function updateGenerationMode(){
     const request=++presetRequest;
     updateModeControls();
@@ -718,7 +713,7 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
     basePin.show(r.left-host.left+(p.x+.5)/solver.W*r.width,r.top-host.top+(p.y+.5)/solver.H*r.height);
   }
   const pinResize=new ResizeObserver(updateBasePin);pinResize.observe(ui.canvasWrap);
-  bindInspectionClick(ui.canvasWrap,()=>!ui.brushOn.checked||!!view,e=>{
+  bindInspectionClick(ui.canvasWrap,()=>true,e=>{
     if(!solver||!e.target.matches('canvas'))return null;
     if(view)return view.pick(e);
     const p=explorer.point(e),cell=cellAt(e);if(cell<0)return null;
@@ -827,7 +822,7 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
     view.textureChanged();
     view.setHeights(computeHeights(),heightScale());
   }
-  function heightScale(){return Number(ui.height3d.value)*(solver.wrapX?(solver.W/(2*Math.PI))*.03:Math.max(solver.W,solver.H)/50)}
+  function heightScale(){return Number(ui.height3d.value)*(ui.surface3d.value==='globe'?(solver.W/(2*Math.PI))*.03:Math.max(solver.W,solver.H)/50)}
 
   async function setView3d(on) {
     if (on && !view) {
@@ -845,10 +840,10 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
       view = viewModule.createView(ui.canvasWrap,queueAutosave);
       view.setInspectionPin(naturalHover.pinned());
       let lastNaturalPick=0;
-      listen(view.renderer.domElement,'pointermove',event=>{if(performance.now()-lastNaturalPick<120)return;lastNaturalPick=performance.now();const p=view?.pick(event);if(p)naturalHover.update(solver,p);});
+      listen(view.renderer.domElement,'pointermove',event=>{if(performance.now()-lastNaturalPick<120)return;lastNaturalPick=performance.now();const p=view?.pick(event);hoverPoint=p;hoverCell=p?Math.round(p.y)*solver.W+Math.round(p.x):-1;hoverDetail=p?view?.inspectionSample(p):null;updateHover();});
       ui.canvasWrap.classList.add('is-3d');
       if (solver) {
-        view.setMap(solver.W, solver.H, ui.canvas, { sphere: solver.wrapX,waterFields:solver.environment?.fields,solver });
+        view.setMap(solver.W, solver.H, ui.canvas, { sphere: ui.surface3d.value === 'globe',waterFields:solver.environment?.fields,solver });
         update3d();
       }
     } else if (!on && view) {
@@ -860,7 +855,6 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
     updateBasePin();
     ui.resetCamera.disabled = !view;
     ui.height3d.disabled = !view;
-    updateBrushControls(); // the brush only works on the 2D map
     updateHover();
   }
 
@@ -944,39 +938,27 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
 
   function updateHover() {
     const el = ui.hover;
-    naturalHover.update(solver,solver&&hoverCell>=0?{x:hoverDetail?.x??hoverCell%solver.W,y:hoverDetail?.y??Math.floor(hoverCell/solver.W)}:null);
-    if (view) {
-      el.textContent = '3D view: drag to rotate, right-drag to pan, scroll to zoom.';
-      return;
-    }
+    const point=hoverDetail||hoverPoint||(solver&&hoverCell>=0?{x:hoverCell%solver.W,y:Math.floor(hoverCell/solver.W)}:null);
+    naturalHover.update(solver,point);
     if (!solver || hoverCell < 0 || hoverCell >= solver.N) {
-      el.textContent = ui.brushOn.checked
-        ? 'Brush: drag on the map to paint, right-click a cell to pick up its type.'
-        : HOVER_HINT;
+      el.textContent = HOVER_HINT;
       return;
     }
-    const x = hoverCell % solver.W;
-    const y = (hoverCell / solver.W) | 0;
-    const zone = solver.zoneAt(hoverCell);
-    el.textContent = `${hoverDetail?`(${hoverDetail.x.toFixed(3)}, ${hoverDetail.y.toFixed(3)})`:`(${x}, ${y})`}${zone >= 0 ? ` ${rules.climate.zones[zone].name} zone` : ''}  `;
+    el.textContent = `${formatMapLocation(solver,point)} \u00b7 `;
+    const inspected=terrainInspection(solver,point,hoverDetail);
+    if(inspected){const label=document.createElement('strong');label.textContent=inspected.terrain;el.append(label,' \u00b7 ');}
     const env=solver.environment;
     if(env){
       const f=env.fields,c=hoverCell;
-      const climate=env.climateZones?.[f.climate?.[c]];
-      el.append(`${climate?climate+' · ':''}${Math.round(hoverDetail?.elevation??f.elevation[c])} m · ${f.temperature[c].toFixed(1)} °C · ${Math.round(f.precipitation[c])} mm/yr · `);
-      if(f.waterDepth?.[c]>0)el.append(`Depth ${f.waterDepth[c].toFixed(1)} m · surface ${f.waterLevel[c].toFixed(1)} m · `);
-      else if(f.elevation[c]<0)el.append('Dry depression below sea level · ');
+        const climate=env.seasonalZones?.[f.seasonalClimate?.[c]]??env.climateZones?.[f.climate?.[c]];
+      el.append(`${climate?climate+' · ':''}${Math.round(hoverDetail?.elevation??f.elevation[c])} m · ${(hoverDetail?.temperature??f.temperature[c]).toFixed(1)} °C · ${Math.round(f.precipitation[c])} mm/yr · `);
+      if((hoverDetail?.waterDepth??f.waterDepth?.[c])>0)el.append(`Depth ${(hoverDetail?.waterDepth??f.waterDepth[c]).toFixed(1)} m · surface ${(hoverDetail?.waterLevel??f.waterLevel[c]).toFixed(1)} m · `);
+      else if((hoverDetail?.elevation??f.elevation[c])<0)el.append('Dry depression below sea level · ');
       if(f.reefType?.[c]>0)el.append(`${['','Fringing reef','Barrier reef','Patch reef','Atoll'][f.reefType[c]]} · `);
       const layer=$('environmentOverlay').value;
       if(f[layer])el.append(`${layer}: ${f[layer][c].toFixed(2)} · `);
     }
-    const t = solver.typeAt(hoverCell);
-    if (t >= 0) {
-      const b = document.createElement('strong');
-      b.textContent = rules.types[t].name;
-      el.append(b);
-      return;
-    }
+    if(env||solver.typeAt(hoverCell)>=0)return;
     const opts = solver.optionsFor(hoverCell);
     if (!opts.length) {
       el.append('contradiction');
@@ -1011,175 +993,16 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
   listen(ui.canvas, 'mousemove', (e) => {
     if (!solver) return;
     hoverCell = cellAt(e);
+    hoverPoint = explorer.point(e);
     hoverDetail = explorer.sample(e);
-    moveBrushCursor(e);
-    if (brush.painting && hoverCell >= 0) paintStroke(hoverCell);
     updateHover();
   });
   listen(ui.canvas, 'mouseleave', () => {
     hoverCell = -1;
+    hoverPoint = null;
     hoverDetail = null;
-    ui.brushCursor.hidden = true;
     updateHover();
   });
-
-  // ---- brush ------------------------------------------------------------------
-  // Paints terrain onto a finished map. Painted cells are pinned; the solver reopens a margin
-  // around them and the generator refills it so the surroundings adjust to fit.
-
-  const brush = { painting: false, last: -1, stroke: null, changed: false };
-
-  function brushType() {
-    return rules ? rules.types.findIndex((t) => t.id === ui.brushType.value) : -1;
-  }
-
-  // Keeps the type picker in step with the type list (names, colours, added / deleted types).
-  function updateBrushTypes() {
-    if (!config) return;
-    const current = ui.brushType.value;
-    ui.brushType.textContent = '';
-    for (const t of config.types) {
-      const o = document.createElement('option');
-      o.value = t.id;
-      o.textContent = t.name;
-      ui.brushType.append(o);
-    }
-    const keep = config.types.some((t) => t.id === current) ? current : (config.types.find((t) => t.id === 'water') || config.types[0]).id;
-    ui.brushType.value = keep;
-    updateBrushSwatch();
-  }
-
-  function updateBrushSwatch() {
-    const t = config && config.types.find((o) => o.id === ui.brushType.value);
-    ui.brushSwatch.style.background = t ? t.color : 'transparent';
-  }
-
-  function updateBrushControls() {
-    const on = ui.brushOn.checked && !view;
-    ui.canvasWrap.classList.toggle('brushing', on);
-    ui.brushSizeOut.textContent = ui.brushSize.value;
-    ui.brushOn.disabled = !!view;
-    ui.brushOn.parentElement.title = view ? 'The brush works in the 2D view' : 'Paint terrain onto the map (B)';
-    if (!on) ui.brushCursor.hidden = true;
-  }
-
-  function moveBrushCursor(e) {
-    if (!ui.brushOn.checked || view || !solver) {
-      ui.brushCursor.hidden = true;
-      return;
-    }
-    const r = ui.canvas.getBoundingClientRect();
-    const size = (explorer.pixelScale() ?? r.width / solver.W) * (2 * Number(ui.brushSize.value) + 1);
-    Object.assign(ui.brushCursor.style, { left: `${e.clientX}px`, top: `${e.clientY}px`, width: `${size}px`, height: `${size}px` });
-    ui.brushCursor.hidden = false;
-  }
-
-  // Cells within the brush radius of a centre cell (round brush, wraps on a sphere).
-  function brushDisc(center, out) {
-    const { W, H } = solver;
-    const r = Number(ui.brushSize.value);
-    const cx = center % W;
-    const cy = (center / W) | 0;
-    for (let dy = -r; dy <= r; dy++) {
-      const y = cy + dy;
-      if (y < 0 || y >= H) continue;
-      for (let dx = -r; dx <= r; dx++) {
-        if (dx * dx + dy * dy > r * r + r) continue;
-        let x = cx + dx;
-        if (x < 0 || x >= W) {
-          if (!solver.wrapX) continue;
-          x = (x + W) % W;
-        }
-        out.add(y * W + x);
-      }
-    }
-  }
-
-  function startStroke(cell) {
-    if (!solver || brush.painting || brushType() < 0) return;
-    if (solver.status !== 'done') {
-      showError('Let the map finish generating before painting.');
-      return;
-    }
-    if (solverError) showError('');
-    brush.painting = true;
-    brush.changed = false;
-    brush.stroke = new Set();
-    brush.last = -1;
-    paintStroke(cell);
-  }
-
-  // Paints from the last stroke position to `cell`, stamping the brush along the way so fast
-  // mouse moves don't leave gaps.
-  function paintStroke(cell) {
-    const t = brushType();
-    if (t < 0) return;
-    const { W } = solver;
-    const cells = new Set();
-    const x1 = cell % W;
-    const y1 = (cell / W) | 0;
-    if (brush.last < 0) {
-      brushDisc(cell, cells);
-    } else {
-      const x0 = brush.last % W;
-      const y0 = (brush.last / W) | 0;
-      let dx = x1 - x0;
-      if (solver.wrapX && Math.abs(dx) > W / 2) dx -= Math.sign(dx) * W; // the short way round
-      const n = Math.max(Math.abs(dx), Math.abs(y1 - y0), 1);
-      for (let i = 1; i <= n; i++) {
-        const x = (Math.round(x0 + (dx * i) / n) + W) % W;
-        const y = Math.round(y0 + ((y1 - y0) * i) / n);
-        brushDisc(y * W + x, cells);
-      }
-    }
-    brush.last = cell;
-    // Only cells this stroke hasn't painted yet: re-painting would reshuffle their surroundings.
-    const fresh = [...cells].filter((c) => !brush.stroke.has(c));
-    if (!fresh.length) return;
-    for (const c of fresh) brush.stroke.add(c);
-    const active = solver;
-    paintQueue = paintQueue.then(async () => {
-      if (active !== solver || disposed) return;
-      if (!await active.paint(fresh, t)) { showError(active.message); return; }
-      if (active === solver && !disposed) { showError(''); draw(); }
-    }).catch(error => { if (active === solver && !disposed) showError(error.message); });
-  }
-
-  function endStroke() {
-    if (!brush.painting) return;
-    brush.painting = false;
-    paintQueue = paintQueue.then(() => {
-      if (!disposed) updateBrushControls();
-    });
-  }
-
-  listen(ui.canvas, 'mousedown', (e) => {
-    if (!ui.brushOn.checked || view || e.button !== 0) return;
-    e.preventDefault();
-    const cell = cellAt(e);
-    if (cell >= 0) startStroke(cell);
-  });
-  listen(window, 'mouseup', endStroke);
-  // Right-click picks up the type under the cursor.
-  listen(ui.canvas, 'contextmenu', (e) => {
-    if (!ui.brushOn.checked || !solver) return;
-    e.preventDefault();
-    const t = solver.typeAt(cellAt(e));
-    if (t >= 0) {
-      ui.brushType.value = rules.types[t].id;
-      updateBrushSwatch();
-      updateHover();
-    }
-  });
-  listen(ui.brushOn, 'change', () => {
-    updateBrushControls();
-    updateHover();
-  });
-  listen(ui.brushType, 'change', () => {
-    updateBrushSwatch();
-    updateHover();
-  });
-  listen(ui.brushSize, 'input', updateBrushControls);
 
   // ---- controls ------------------------------------------------------------------
 
@@ -1237,6 +1060,7 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
     ui.height3dOut.textContent = `×${Number(ui.height3d.value).toFixed(1)}`;
   }
   listen(ui.view3d, 'change', () => setView3d(ui.view3d.checked));
+  listen(ui.surface3d, 'change', () => { if(view){view.setMap(solver.W,solver.H,ui.canvas,{sphere:ui.surface3d.value==='globe',waterFields:solver.environment?.fields,solver});update3d();} });
   listen(ui.resetCamera, 'click', () => view && view.resetCamera());
   listen(ui.height3d, 'input', () => {
     updateHeightLabel();
@@ -1440,11 +1264,7 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
     if (t.matches && t.matches('input[type="text"], input[type="number"], textarea')) return;
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (t.closest && t.closest('select')) return; // letters pick options in a dropdown
-    if (e.key === 'b' || e.key === 'B') {
-      ui.brushOn.checked = !ui.brushOn.checked && !view;
-      updateBrushControls();
-      updateHover();
-    } else if (e.key === 'g' || e.key === 'G') generate();
+    if (e.key === 'g' || e.key === 'G') generate();
     else if (e.key === 's' || e.key === 'S') stepOnce();
     else if (e.key === 'c' || e.key === 'C') cleanupOnce();
     else if (e.key === ' ' && !(t.closest && t.closest('button, summary, label'))) {
@@ -1585,24 +1405,24 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
   // ---- start ------------------------------------------------------------------
 
   const SETTINGS_KEY = 'kriemhild.settings.v1';
-  const settingIds = [...climateSettingIds,'environment','realism','landCoverage','plateCount','temperatureOffset','rainfall','latitudeNorth','latitudeSouth','ruggedness','volcanism','islandFrequency','islandCoastalShare',
+  const settingIds = [...climateSettingIds,'environment','realism','landCoverage','plateCount','temperatureOffset','rainfall','latitudeNorth','latitudeSouth','ruggedness','volcanism','islandFrequency','islandCoastalShare','landShapeLarge','landShapeMedium','landShapeSmall',
     'width','height','cellSize','shape','seed','continents','contPoints','contStrength','climate',
     'climLayout','climStrength','selection','radius','stability','stabilityStrength','cleanupPasses',
-    'speed','instant','voronoi','jitter','textures','iconSize','contShow','height3d','environmentOverlay'];
+    'speed','instant','voronoi','jitter','textures','iconSize','contShow','surface3d','height3d','environmentOverlay'];
   listen($('seasonMode'),'change',()=>{$('seasonCount').disabled=$('seasonMode').value!=='custom';});
   let projectBusy=false;
   const viewClient=crypto.randomUUID();let viewSequence=0;
   function captureProjectUI(compact=false){
     const palette=exportable();
     const compatible=palette.types.length===solver.T&&palette.types.every((t,i)=>t.id===solver.config.types[i].id);
-    return {seedUsed,presetId,palette:compatible?palette:solver.config,settings:Object.fromEntries(settingIds.map(id=>{const el=$(id);return [id,el.type==='checkbox'?el.checked:el.value];})),camera2d:explorer.cameraState(),view3d:!!view||!!suspended3DCamera,camera3d:view?.cameraState()||suspended3DCamera,paused,activeTab:document.querySelector('[role="tab"][aria-selected="true"]')?.id,brush:{on:ui.brushOn.checked,type:ui.brushType.value,size:ui.brushSize.value},...(!compact?{offsets:Array.from(offsets),roughness:Array.from(roughness)}:{})};
+    return {seedUsed,presetId,palette:compatible?palette:solver.config,settings:Object.fromEntries(settingIds.map(id=>{const el=$(id);return [id,el.type==='checkbox'?el.checked:el.value];})),camera2d:explorer.cameraState(),view3d:!!view||!!suspended3DCamera,camera3d:view?.cameraState()||suspended3DCamera,paused,activeTab:document.querySelector('[role="tab"][aria-selected="true"]')?.id,...(!compact?{offsets:Array.from(offsets),roughness:Array.from(roughness)}:{})};
   }
   const autosaver=new AutosaveQueue(async({active,payload})=>{await active.stageView(payload);},(state,error)=>{
     if(disposed)return;
     $('autosaveStatus').textContent=state==='error'?`Session update failed: ${error.message}`:'Click Save in the top bar to store the world and explored detail.';
   });
   function queueAutosave(){if(disposed||suspended||projectBusy||!solver)return;autosaver.schedule({active:solver,payload:{ui:captureProjectUI(),client:viewClient,sequence:++viewSequence}});}
-  async function flushAutosave(){if(!solver)return;await paintQueue;queueAutosave();try{await autosaver.flush();}catch(error){if(error.status!==404)throw error;autosaver.discard();}}
+  async function flushAutosave(){if(!solver)return;queueAutosave();try{await autosaver.flush();}catch(error){if(error.status!==404)throw error;autosaver.discard();}}
   // Capture controls managed by child editors as well as map gestures.
   for(const event of ['input','change','click','pointerup','pointercancel','wheel','keyup'])document.addEventListener(event,e=>{if(e.target.closest?.('.generator-host'))setTimeout(queueAutosave,0);},{signal:lifecycle.signal,passive:true});
   function projectControls(busy){projectBusy=busy;for(const id of ['saveProject','openProject','openProjectFolder','openStoredProject','generate'])$(id).disabled=busy;}
@@ -1620,7 +1440,7 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
     if(!solver||solver.status!=='done'){showError('Finish generating the world before saving its project.');return;}
     projectControls(true);$('projectStatus').textContent='Saving world fields, explored tiles and edits…';
     try{
-      await paintQueue;const active=solver;
+      const active=solver;
       const uiState=captureProjectUI();
       const blob=await active.saveProject(uiState);
       const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`KRIEMHILD-${seedUsed}.world.zip`;a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);
@@ -1640,7 +1460,7 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
       if(disposed||ticket!==generation){await next.dispose();return;}
       const saved=next.projectUI||{},palette=normalize(saved.palette||next.config);
       if(palette.types.length!==next.T||palette.types.some((t,i)=>t.id!==next.config.types[i].id))throw new Error('Saved display palette does not match the world.');
-      await paintQueue;const previous=solver;await setView3d(false);
+      const previous=solver;await setView3d(false);
       config=palette;solver=next;rules=next.rules;solver.config=palette;solver.rules=compileRules(palette);rules=solver.rules;
       for(const id of settingIds){const el=$(id),value=saved.settings?.[id];if(value===undefined)continue;
         if(el.type==='checkbox')el.checked=value===true;
@@ -1649,7 +1469,8 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
         else el.value=String(value);
       }
       $('environment').checked=!!solver.environment;$('realism').checked=!!solver.environment?.options.realism;
-      for(const id of ['islandFrequency','islandCoastalShare'])if(saved.settings?.[id]===undefined&&solver.environment?.options[id]!==undefined)$(id).value=solver.environment.options[id];
+      for(const [id,key] of [['landShapeLarge','large'],['landShapeMedium','medium'],['landShapeSmall','small']])if(saved.settings?.[id]===undefined)$(id).value=solver.environment?.options.landShape?.[key]??1;
+      for(const id of ['islandFrequency','islandCoastalShare','landShapeLarge','landShapeMedium','landShapeSmall'])if(saved.settings?.[id]===undefined&&solver.environment?.options[id]!==undefined)$(id).value=solver.environment.options[id];
       const climate=solver.environment?.options.seasonalClimate;
       if(climate){for(const [control,key] of Object.entries(climateInputs))if(saved.settings?.[control]===undefined)$(control).value=climate[key]??'';if(saved.settings?.seasonMode===undefined)$('seasonMode').value=climate.mode||'automatic';if(saved.settings?.seasonCount===undefined)$('seasonCount').value=climate.count||4;if(saved.settings?.seasonNames===undefined)$('seasonNames').value=(climate.names||[]).join(', ');if(saved.settings?.climateCoverage===undefined)$('climateCoverage').value=climate.coverage||'';}
       const geography=solver.environment?.options.geography,riverOptions=solver.environment?.options.riverOptions,erosion=solver.environment?.options.erosion;
@@ -1661,13 +1482,12 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
       const rng=makeRng(seedUsed^0x9e3779b9),restoreArray=(value,n)=>Array.isArray(value)&&value.length===n&&value.every(Number.isFinite)?Float32Array.from(value):Float32Array.from({length:n},()=>rng()*2-1);
       offsets=restoreArray(saved.offsets,solver.N*2);roughness=restoreArray(saved.roughness,solver.N);
       typeRgb=config.types.map(t=>parseColor(t.color,t.id));maskColors=new Map();maskHeights.clear();
-      brush.painting=false;paused=solver.status==='running';autoCleaned=solver.status==='done';solveMs=0;
-      setPreset(PRESETS.some(p=>p.id===saved.presetId)?saved.presetId:null);updateModeControls();editor.render();kindEditor.render();climateEditor.render();updateAddButton();updateBrushTypes();
+      paused=solver.status==='running';autoCleaned=solver.status==='done';solveMs=0;
+      setPreset(PRESETS.some(p=>p.id===saved.presetId)?saved.presetId:null);updateModeControls();editor.render();kindEditor.render();climateEditor.render();updateAddButton();
       setupSurface();draw();explorer.restoreCamera(saved.camera2d);
-      ui.view3d.checked=saved.view3d===true;await setView3d(ui.view3d.checked);view?.restoreCamera(saved.camera3d);
+      ui.surface3d.value=saved.settings?.surface3d==='globe'?'globe':'flat';ui.view3d.checked=saved.view3d===true;await setView3d(ui.view3d.checked);if(saved.settings?.surface3d)view?.restoreCamera(saved.camera3d);
       if(previous?.id!==next.id)await previous?.dispose();save();persistSettings();showError('');
       if(saved.activeTab&&$(saved.activeTab))selectTab($(saved.activeTab));
-      if(saved.brush){ui.brushOn.checked=!!saved.brush.on;ui.brushType.value=saved.brush.type;ui.brushSize.value=saved.brush.size;updateBrushControls();}
       $('projectStatus').textContent=`World loaded from project · ${next.storedDetailCount} stored detail tiles. Missing detail will be generated only when explored.`;
       void refreshProjects();onWorld(solver);return solver;
     }catch(error){if(next&&next!==solver)await next.dispose();showError(error.message);$('projectStatus').textContent='Project could not be opened.';schedule();throw error;}finally{projectControls(false);queueAutosave();}
@@ -1712,7 +1532,7 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
       previousPhysicalMode = physical;
       if (config) editor.render();
     }
-    for (const id of ['landCoverage','plateCount','temperatureOffset','rainfall','environmentOverlay','latitudeNorth','latitudeSouth','ruggedness','volcanism','islandFrequency','islandCoastalShare']) $(id).disabled = !physical;
+    for (const id of ['landCoverage','plateCount','temperatureOffset','rainfall','environmentOverlay','latitudeNorth','latitudeSouth','ruggedness','volcanism','islandFrequency','islandCoastalShare','landShapeLarge','landShapeMedium','landShapeSmall']) $(id).disabled = !physical;
     $('modeHint').textContent = physical
       ? 'Physical environment layers onto the preset: its land coverage, climate, relief, points and terrain preferences shape the result. Environmental constraints replace legacy adjacency and climate-band weights.'
       : 'Terrain rules: continental kinds, climate weights, neighbor radius and terrain adjacency all apply. Physical settings and overlays are unavailable.';
@@ -1750,7 +1570,6 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
   updateTextureLabel();
   updateHeightLabel();
   updateShapeControls();
-  updateBrushControls();
   ui.resetCamera.disabled = true;
   ui.height3d.disabled = true;
   updateRadiusLabel();

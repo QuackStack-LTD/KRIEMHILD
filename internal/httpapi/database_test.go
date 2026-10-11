@@ -31,6 +31,8 @@ func TestDatabaseProjectReopensWithoutSessionOrTileCache(t *testing.T) {
 	}
 	autoRequest(t, first, "POST", "/api/sessions/original/save", `{}`)
 	worldID := v.worldID
+	expectedShapes, _ := json.Marshal(v.solver.Environment.ContinentalStructures)
+	expectedIslands, _ := json.Marshal(v.solver.Environment.Archipelagos)
 	first.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("DELETE", "/api/sessions/original", nil))
 	if _, err = os.Stat(v.dir); !os.IsNotExist(err) {
 		t.Fatal("original cache survived")
@@ -54,6 +56,11 @@ func TestDatabaseProjectReopensWithoutSessionOrTileCache(t *testing.T) {
 	json.Unmarshal(res.Body.Bytes(), &state)
 	if state.Count < 4 {
 		t.Fatal("saved detail missing")
+	}
+	loadedShapes, _ := json.Marshal(fresh.sessions[state.ID].solver.Environment.ContinentalStructures)
+	loadedIslands, _ := json.Marshal(fresh.sessions[state.ID].solver.Environment.Archipelagos)
+	if !bytes.Equal(expectedShapes, loadedShapes) || !bytes.Equal(expectedIslands, loadedIslands) {
+		t.Fatal("database restore regenerated continental or island shapes")
 	}
 	got, err := fresh.sessions[state.ID].storedDetail(3, 2, 1)
 	if err != nil || !bytes.Equal(got, tile) {

@@ -1,4 +1,4 @@
-﻿export async function historyRequest(path='',body,method=body===undefined?'GET':'POST'){
+export async function historyRequest(path='',body,method=body===undefined?'GET':'POST'){
  const response=await fetch(`/api/worlds${path}`,{method,headers:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});
  if(response.status===204)return null;const data=await response.json();if(!response.ok)throw Error(data.error||'World request failed');return data;
 }
@@ -23,7 +23,7 @@ export function mergeConflicts(doc,primary,secondary){
  const otherMaps=new Map(doc.maps.filter(m=>m.ageId===secondary).map(m=>[m.id,m]));
  const conflicts=doc.maps.filter(m=>m.ageId===primary&&otherMaps.has(m.id)&&m.snapshot!==otherMaps.get(m.id).snapshot).map(m=>({id:m.id,name:m.name,kind:'Map snapshot'}));
  const others=new Map(doc.entities.filter(e=>e.ageId===secondary).map(e=>[e.id,e]));
- const signature=e=>JSON.stringify({name:e.name,kind:e.kind,properties:e.properties,deleted:!!e.deleted,shapes:doc.representations.filter(r=>r.ageId===e.ageId&&r.entityId===e.id).map(r=>({map:r.mapId,shape:r.shape})).sort((a,b)=>a.map.localeCompare(b.map))});
+ const signature=e=>JSON.stringify({name:e.name,kind:e.kind,properties:e.properties,system:e.system,deleted:!!e.deleted,shapes:doc.representations.filter(r=>r.ageId===e.ageId&&r.entityId===e.id).map(r=>({map:r.mapId,shape:r.shape})).sort((a,b)=>a.map.localeCompare(b.map))});
  for(const e of doc.entities.filter(e=>e.ageId===primary)){const other=others.get(e.id);if(other&&signature(e)!==signature(other))conflicts.push({id:e.id,name:e.name,kind:e.deleted||other.deleted?'Entity deletion':'Entity properties / geometry'});}
  return conflicts;
 }

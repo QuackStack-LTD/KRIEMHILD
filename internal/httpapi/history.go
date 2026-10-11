@@ -27,9 +27,14 @@ func validHistoryRoute(path string) bool {
 			return false
 		}
 	}
-	return len(p) == 2 || (len(p) == 3 && (p[2] == "graph" || p[2] == "terrains"))
+	return len(p) == 2 || (len(p) == 3 && strings.Contains("|graph|terrains|atlas|characters|profile|networks|years|organizations|culture|flora|biosphere|magic|library|writing|", "|"+p[2]+"|"))
 }
 func (s *Server) historyRoutes() {
+	s.writingRoutes()
+	s.libraryRoutes()
+	s.biosphereRoutes()
+	s.systemRoutes()
+	s.mux.HandleFunc("GET /api/worlds/{world}/maps/{map}/preview", s.atlasPreview)
 	s.mux.HandleFunc("POST /api/sessions/{id}/name-geography", s.nameGeography)
 	s.mux.HandleFunc("GET /api/worlds", s.listHistories)
 	s.mux.HandleFunc("POST /api/worlds", s.createHistory)
@@ -256,7 +261,18 @@ func (s *Server) applyHistoricalMap(ctx context.Context, v *session) error {
 	v.historical = m
 	v.historyWorld = d.World.ID
 	model := v.authored()
+	for id, a := range model.Artworks {
+		if a.MapID != m.ID && a.MapID != v.worldID {
+			delete(model.Artworks, id)
+		}
+	}
 	if model.Header.MapID != m.ID {
+		// A child starts from the parent snapshot; discard unrelated unnamed objects.
+		for id, shape := range model.Entities {
+			if !world.HasAuthoredName(shape.Name) && !m.Bounds.Intersects(world.Box(shape.Points)) {
+				delete(model.Entities, id)
+			}
+		}
 		model.Header.History = []world.Change{}
 		model.Header.Cursor = 0
 		model.Header.View = json.RawMessage(`{}`)

@@ -20,21 +20,24 @@ type Layer struct {
 	Order   int    `json:"order"`
 }
 type Entity struct {
-	Cells     []int        `json:"cells,omitempty"`
-	SourceID  string       `json:"sourceId,omitempty"`
-	ID        string       `json:"id"`
-	Name      string       `json:"name"`
-	Kind      string       `json:"kind"`
-	Layer     string       `json:"layer"`
-	ParentID  string       `json:"parentId,omitempty"`
-	Geometry  string       `json:"geometry"`
-	Points    [][2]float64 `json:"points"`
-	Color     string       `json:"color"`
-	MinDetail float64      `json:"minDetail"`
-	Created   *int         `json:"created,omitempty"`
-	Destroyed *int         `json:"destroyed,omitempty"`
-	Notes     string       `json:"notes,omitempty"`
-	Deleted   bool         `json:"deleted,omitempty"`
+	LabelName string                 `json:"labelName,omitempty"`
+	LogicalID string                 `json:"logicalId,omitempty"`
+	River     *terrain.DetailFeature `json:"river,omitempty"`
+	Cells     []int                  `json:"cells,omitempty"`
+	SourceID  string                 `json:"sourceId,omitempty"`
+	ID        string                 `json:"id"`
+	Name      string                 `json:"name"`
+	Kind      string                 `json:"kind"`
+	Layer     string                 `json:"layer"`
+	ParentID  string                 `json:"parentId,omitempty"`
+	Geometry  string                 `json:"geometry"`
+	Points    [][2]float64           `json:"points"`
+	Color     string                 `json:"color"`
+	MinDetail float64                `json:"minDetail"`
+	Created   *int                   `json:"created,omitempty"`
+	Destroyed *int                   `json:"destroyed,omitempty"`
+	Notes     string                 `json:"notes,omitempty"`
+	Deleted   bool                   `json:"deleted,omitempty"`
 }
 type Operation struct {
 	River    *terrain.DetailFeature `json:"river,omitempty"`
@@ -71,6 +74,7 @@ type Header struct {
 	View         json.RawMessage `json:"view"`
 }
 type State struct {
+	Artworks                    map[string]Artwork   `json:"artworks,omitempty"`
 	Header                      Header               `json:"metadata"`
 	Entities                    map[string]Entity    `json:"entities"`
 	Operations                  map[string]Operation `json:"modifications"`
@@ -94,6 +98,9 @@ func (s *State) Reindex(w, h int) {
 	s.entityIndex = NewIndex(s.W, s.H)
 	s.operationIndex = NewIndex(s.W, s.H)
 	s.dirty = map[string]bool{}
+	if s.Artworks == nil {
+		s.Artworks = map[string]Artwork{}
+	}
 	if s.Entities == nil {
 		s.Entities = map[string]Entity{}
 	}
@@ -102,7 +109,7 @@ func (s *State) Reindex(w, h int) {
 	}
 	for id, e := range s.Entities {
 		if !e.Deleted {
-			s.entityIndex.Put(id, Box(e.Points), e.MinDetail)
+			s.entityIndex.Put(id, e.Bounds(), e.MinDetail)
 		}
 	}
 	for id, o := range s.Operations {
@@ -126,6 +133,12 @@ func Box(points [][2]float64) Bounds {
 	b.Width = mx - b.X
 	b.Height = my - b.Y
 	return b
+}
+func (e Entity) Bounds() Bounds {
+	if e.River != nil {
+		return entityRiverOperation(e).Bounds()
+	}
+	return Box(e.Points)
 }
 func (o Operation) Bounds() Bounds {
 	if len(o.Path) > 0 {
@@ -168,7 +181,10 @@ func validID(id string) bool {
 	return true
 }
 func (s *State) ValidateEntity(e Entity) error {
-	if !validID(e.ID) || len(e.Name) > 160 || strings.TrimSpace(e.Name) == "" || len(e.Kind) > 80 || e.Kind == "" || len(e.Notes) > 8192 || !finite(e.MinDetail) || e.MinDetail < 0 || e.MinDetail > 8 {
+	if len(e.LabelName) > 200 {
+		return fmt.Errorf("map label exceeds 200 characters")
+	}
+	if !validID(e.ID) || len(e.Name) > 160 || (strings.TrimSpace(e.Name) == "" && e.Kind != "house") || len(e.Kind) > 80 || e.Kind == "" || len(e.Notes) > 8192 || !finite(e.MinDetail) || e.MinDetail < 0 || e.MinDetail > 8 {
 		return fmt.Errorf("invalid entity properties")
 	}
 	if _, ok := s.Layer(e.Layer); !ok {
@@ -189,6 +205,14 @@ func (s *State) ValidateEntity(e Entity) error {
 	for _, p := range e.Points {
 		if !s.validPoint(p) {
 			return fmt.Errorf("geometry outside world")
+		}
+	}
+	if e.River != nil {
+		if e.Kind != "river" || e.Geometry != "line" {
+			return fmt.Errorf("channel requires a river line")
+		}
+		if err := s.validateRiver(entityRiverOperation(e)); err != nil {
+			return err
 		}
 	}
 	if len(e.Color) != 7 || e.Color[0] != '#' {
@@ -277,7 +301,7 @@ func (s *State) apply(key string, data json.RawMessage) {
 		s.Entities[e.ID] = e
 		s.entityIndex.Remove(e.ID)
 		if !e.Deleted {
-			s.entityIndex.Put(e.ID, Box(e.Points), e.MinDetail)
+			s.entityIndex.Put(e.ID, e.Bounds(), e.MinDetail)
 		}
 	} else if strings.HasPrefix(key, "operation/") {
 		var o Operation
@@ -327,8 +351,15 @@ func (s *State) PutEntity(e Entity) (*Bounds, error) {
 			}
 		}
 	}
-	s.record(Change{Key: "entity/" + e.ID, Before: raw(old), After: raw(e)})
-	return nil, nil
+	var dirty *Bounds
+	if old.River != nil || e.River != nil {
+		a, b := old.Bounds(), e.Bounds()
+		x, y := math.Min(a.X, b.X), math.Min(a.Y, b.Y)
+		bounds := Bounds{x, y, math.Max(a.X+a.Width, b.X+b.Width) - x, math.Max(a.Y+a.Height, b.Y+b.Height) - y}
+		dirty = &bounds
+	}
+	s.record(Change{Key: "entity/" + e.ID, Before: raw(old), After: raw(e), Bounds: dirty})
+	return dirty, nil
 }
 func (s *State) AddOperation(o Operation) (*Bounds, error) {
 	if err := s.editable(o.Layer); err != nil {
@@ -355,7 +386,7 @@ func (s *State) SetLayers(layers []Layer) (*Bounds, error) {
 	var dirty *Bounds
 	for _, l := range layers {
 		old, _ := s.Layer(l.ID)
-		if old.Visible != l.Visible && (l.ID == "elevation" || l.ID == "water" || l.ID == "vegetation") {
+		if old.Visible != l.Visible && (l.ID == "elevation" || l.ID == "water" || l.ID == "vegetation" || l.ID == "natural-features") {
 			b := Bounds{0, 0, s.W, s.H}
 			dirty = &b
 		}
@@ -447,11 +478,28 @@ func (s *State) Ops(b Bounds) []Operation {
 			out = append(out, o)
 		}
 	}
-	sort.Slice(out, func(i, j int) bool { return out[i].Sequence < out[j].Sequence })
+	entityIDs, _ := s.entityIndex.Query(b, 8, len(s.Entities)+1)
+	for _, id := range entityIDs {
+		e := s.Entities[id]
+		if e.River != nil && !e.Deleted && s.visible(e.Layer) {
+			out = append(out, entityRiverOperation(e))
+		}
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Sequence == out[j].Sequence {
+			return out[i].ID < out[j].ID
+		}
+		return out[i].Sequence < out[j].Sequence
+	})
 	return out
 }
 func (s *State) Parts(all bool) map[string]any {
 	p := map[string]any{"builder/header": s.Header}
+	for id, a := range s.Artworks {
+		if all || s.dirty["artwork/"+id] {
+			p["builder/artwork/"+id] = a
+		}
+	}
 	if !all {
 		for key := range s.dirty {
 			if strings.HasPrefix(key, "entity/") {
@@ -480,6 +528,14 @@ func (s *State) Validate(w, h int) error {
 		return fmt.Errorf("invalid world metadata")
 	}
 	s.Reindex(w, h)
+	for id, a := range s.Artworks {
+		if id != a.ID {
+			return fmt.Errorf("artwork identity mismatch")
+		}
+		if err := a.Validate(); err != nil {
+			return err
+		}
+	}
 	defaults := New(w, h)
 	if len(s.Header.Layers) != len(defaults.Header.Layers) {
 		return fmt.Errorf("invalid layer inventory")
@@ -603,6 +659,13 @@ func AllowedGeometry(layer, kind, geometry string) bool {
 // pending commands or marking unrelated inherited entities as local edits.
 func (s *State) RefreshRepresentations(shapes map[string]Entity) {
 	dirty := s.dirty
+	for id, shape := range s.Entities {
+		if !HasAuthoredName(shape.Name) {
+			if _, exists := shapes[id]; !exists {
+				shapes[id] = shape
+			}
+		}
+	}
 	for key := range dirty {
 		if strings.HasPrefix(key, "entity/") {
 			id := strings.TrimPrefix(key, "entity/")
@@ -612,4 +675,10 @@ func (s *State) RefreshRepresentations(shapes map[string]Entity) {
 	s.Entities = shapes
 	s.Reindex(int(s.W)+1, int(s.H)+1)
 	s.dirty = dirty
+}
+
+// HasAuthoredName separates saved drawables from named logical entities.
+func HasAuthoredName(name string) bool {
+	name = strings.TrimSpace(name)
+	return name != "" && !strings.HasPrefix(strings.ToLower(name), "example-")
 }

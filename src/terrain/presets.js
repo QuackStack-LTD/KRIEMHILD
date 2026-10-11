@@ -27,7 +27,7 @@
       settings: { radius2: 2, stability: 6, continents: { points: 40, strength: 6 }, climate: null, cleanup: 3 },
       rules: {
         odds: { water: 0.75, land: 0.12, jungle: 0.08, volcanic: 0.05 },
-        weights: { reef: 0.12, sand: 0.5, jungle: 0.6, swamp: 0.2, oasis: 0, village: 0.08, glacier: 0, tundra: 0, taiga: 0, snow: 0.1 },
+        weights: { reef: 0.12, sand: 0.5, jungle: 0.6, swamp: 0.2, oasis: 0, glacier: 0, tundra: 0, taiga: 0, snow: 0.1 },
         near: { reef: { reef: 4 }, jungle: { jungle: 3 } },
       },
     },
@@ -40,7 +40,7 @@
         odds: { volcanic: 0.6, mountain: 0.25, desert: 0.1, water: 0.05 },
         weights: {
           lava: 1.5, ash: 1.2, mountain: 0.6, desert: 0.4, mesa: 0.3,
-          deep_water: 0.05, water: 0.1, reef: 0, grass: 0.1, meadow: 0, hills: 0.1, farmland: 0, village: 0,
+          deep_water: 0.05, water: 0.1, reef: 0, grass: 0.1, meadow: 0, hills: 0.1, farmland: 0,
           forest: 0.1, snow: 0.05, oasis: 0, tundra: 0, taiga: 0, glacier: 0, swamp: 0, jungle: 0,
         },
         near: { lava: { lava: 8 }, ash: { ash: 5 } },
@@ -53,7 +53,7 @@
       settings: { radius2: 2, stability: 2, continents: { points: 30, strength: 5 }, climate: { strength: 1.5, layout: 'both' }, cleanup: 1 },
       rules: {
         odds: { water: 0.2, land: 0.14, mountain: 0.14, desert: 0.14, tundra: 0.13, jungle: 0.13, volcanic: 0.12 },
-        weights: { village: 0.15, farmland: 0.12, oasis: 0.1, reef: 0.15, meadow: 0.3, hills: 0.4, swamp: 0.3, mesa: 0.3 },
+        weights: { farmland: 0.12, oasis: 0.1, reef: 0.15, meadow: 0.3, hills: 0.4, swamp: 0.3, mesa: 0.3 },
       },
     },
     {
@@ -68,13 +68,13 @@
     },
     {
       id: 'villages',
-      name: 'Villages and fields',
-      description: 'Countryside: farmland around villages, meadows, hills, woods and lakes.',
+      name: 'Meadows and fields',
+      description: 'Open countryside with fields, meadows, hills, woods and lakes. Add settlements in the builders.',
       settings: { radius2: 2, stability: 6, continents: { points: 14, strength: 5 }, climate: null, cleanup: 2 },
       rules: {
         odds: { land: 0.65, water: 0.2, mountain: 0.1, jungle: 0.05 },
-        weights: { farmland: 0.6, village: 0.3, meadow: 0.4, hills: 0.3, grass: 0.7, forest: 0.4, swamp: 0.05, jungle: 0, desert: 0, dunes: 0, mesa: 0, tundra: 0, glacier: 0 },
-        near: { farmland: { farmland: 5, village: 3 }, village: { village: 4, farmland: 1 } },
+        weights: { farmland: 0.6, meadow: 0.4, hills: 0.3, grass: 0.7, forest: 0.4, swamp: 0.05, jungle: 0, desert: 0, dunes: 0, mesa: 0, tundra: 0, glacier: 0 },
+        near: { farmland: { farmland: 5 } },
       },
     },
     {
@@ -86,7 +86,7 @@
         odds: { tundra: 0.5, water: 0.3, mountain: 0.2 },
         weights: {
           glacier: 0.6, tundra: 0.6, taiga: 0.5, snow: 0.6, mountain: 0.4,
-          jungle: 0, swamp: 0, desert: 0, dunes: 0, mesa: 0, oasis: 0, reef: 0, farmland: 0, lava: 0.02, village: 0.02,
+          jungle: 0, swamp: 0, desert: 0, dunes: 0, mesa: 0, oasis: 0, reef: 0, farmland: 0, lava: 0.02,
         },
       },
     },

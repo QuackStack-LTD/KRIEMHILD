@@ -61,6 +61,7 @@ func (e *Environment) carveStorageBasins() bool {
 		}
 		counts[id]++
 		radius := 1.6 + .8*clamp(candidate.score, 0, 1)
+		radius = e.basinRadiusCells(i, radius, 65+35*clamp(candidate.score, 0, 1))
 		for dy := -5; dy <= 5; dy++ {
 			for dx := -5; dx <= 5; dx++ {
 				x, y := i%w+dx, i/w+dy

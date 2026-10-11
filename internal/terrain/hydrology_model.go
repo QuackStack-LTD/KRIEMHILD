@@ -36,30 +36,42 @@ type HydroBasin struct {
 	Downstream  string      `json:"downstream"`
 }
 type HydroReach struct {
-	DischargeM3s float64       `json:"dischargeM3s,omitempty"`
-	WidthMetres  float64       `json:"widthMetres,omitempty"`
-	RiverID      string        `json:"riverId,omitempty"`
-	Class        string        `json:"class,omitempty"`
-	Branches     []HydroBranch `json:"branches,omitempty"`
-	ID           string        `json:"id"`
-	From         int           `json:"from"`
-	To           int           `json:"to"`
-	Upstream     []string      `json:"upstream"`
-	Downstream   string        `json:"downstream"`
-	Watershed    string        `json:"watershed"`
-	Source       string        `json:"source"`
-	Regime       string        `json:"regime"`
-	Morphology   string        `json:"morphology"`
-	Order        int           `json:"order"`
-	Discharge    float64       `json:"discharge"`
-	DryDischarge float64       `json:"dryDischarge"`
-	Width        float64       `json:"width"`
+	SourceWidthMetres float64       `json:"sourceWidthMetres,omitempty"`
+	BankWidthFactor   float64       `json:"bankWidthFactor,omitempty"`
+	ChannelPath       [][3]float64  `json:"channelPath,omitempty"`
+	ValleyWidthMetres float64       `json:"valleyWidthMetres,omitempty"`
+	IncisionMetres    float64       `json:"incisionMetres,omitempty"`
+	DischargeM3s      float64       `json:"dischargeM3s,omitempty"`
+	WidthMetres       float64       `json:"widthMetres,omitempty"`
+	RiverID           string        `json:"riverId,omitempty"`
+	Class             string        `json:"class,omitempty"`
+	Branches          []HydroBranch `json:"branches,omitempty"`
+	ID                string        `json:"id"`
+	From              int           `json:"from"`
+	To                int           `json:"to"`
+	Upstream          []string      `json:"upstream"`
+	Downstream        string        `json:"downstream"`
+	Watershed         string        `json:"watershed"`
+	Source            string        `json:"source"`
+	Regime            string        `json:"regime"`
+	Morphology        string        `json:"morphology"`
+	Order             int           `json:"order"`
+	Discharge         float64       `json:"discharge"`
+	DryDischarge      float64       `json:"dryDischarge"`
+	Width             float64       `json:"width"`
 }
 type HydroBranch struct {
-	ID         string  `json:"id"`
-	To         int     `json:"to"`
-	Downstream string  `json:"downstream"`
-	Fraction   float64 `json:"fraction"`
+	Path         [][3]float64 `json:"path,omitempty"`
+	SplitNode    int          `json:"splitNode,omitempty"`
+	JoinNode     int          `json:"joinNode,omitempty"`
+	Cells        []int        `json:"cells,omitempty"`
+	Kind         string       `json:"kind,omitempty"`
+	Discharge    float64      `json:"discharge,omitempty"`
+	DischargeM3s float64      `json:"dischargeM3s,omitempty"`
+	ID           string       `json:"id"`
+	To           int          `json:"to"`
+	Downstream   string       `json:"downstream"`
+	Fraction     float64      `json:"fraction"`
 }
 type MarineRegion struct {
 	ID          string   `json:"id"`
@@ -102,6 +114,7 @@ type HydroCanal struct {
 	Aqueducts   []int   `json:"aqueducts"`
 }
 type HydrologyState struct {
+	Topology       *HydroTopology    `json:"topology,omitempty"`
 	NetworkVersion int               `json:"networkVersion,omitempty"`
 	Rivers         []RiverSystem     `json:"rivers,omitempty"`
 	Watersheds     []DrainageBasin   `json:"watersheds,omitempty"`

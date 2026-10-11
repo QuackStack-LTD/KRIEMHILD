@@ -22,15 +22,15 @@ func (o EnvironmentOptions) validateRiverOptions() error {
 			}
 		}
 		if r.VisibleOrder < 0 || r.VisibleOrder > 12 {
-			return fmt.Errorf("visible stream order must be 0?12")
+			return fmt.Errorf("visible stream order must be 0-12")
 		}
 		if r.EphemeralDensity != nil && (!finite(*r.EphemeralDensity) || *r.EphemeralDensity < 0 || *r.EphemeralDensity > 1) {
-			return fmt.Errorf("ephemeral density must be 0?1")
+			return fmt.Errorf("ephemeral density must be 0-1")
 		}
 	}
 	if r := o.Erosion; r != nil {
-		if r.Iterations < 0 || r.Iterations > 6 || !finite(r.YearsMa) || r.YearsMa < 0 || r.YearsMa > 50 || !finite(r.Strength) || r.Strength < 0 || r.Strength > 3 {
-			return fmt.Errorf("erosion requires 0?6 iterations, 0?50 Ma and strength 0?3")
+		if !finite(r.ToleranceMetres) || r.ToleranceMetres < 0 || r.ToleranceMetres > 10 || r.Iterations < 0 || r.Iterations > 6 || !finite(r.YearsMa) || r.YearsMa < 0 || r.YearsMa > 50 || !finite(r.Strength) || r.Strength < 0 || r.Strength > 3 {
+			return fmt.Errorf("erosion requires 0-6 iterations, 0-50 Ma and strength 0-3")
 		}
 	}
 	return nil

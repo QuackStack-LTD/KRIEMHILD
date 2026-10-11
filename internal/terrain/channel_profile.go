@@ -23,6 +23,9 @@ func SampleChannel(f DetailFeature, x, y float64) ChannelSample {
 			width = f.Widths[k-1]*(1-t) + f.Widths[k]*t
 		}
 		valley := width*(2.5+3/(1+f.Grade/100)) + .04
+		if f.ValleyWidth > 0 {
+			valley = math.Max(width, f.ValleyWidth)
+		}
 		if !best.Valid || d/valley < best.Distance/best.Valley {
 			best = ChannelSample{true, d, width, valley, a[2]*(1-t) + b[2]*t, f.Discharge, f.Grade, (float64(k-1) + t) / float64(len(f.Path)-1), f.Depth}
 		}

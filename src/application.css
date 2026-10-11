@@ -25,3 +25,5 @@ button.danger{color:#ffafa6;border-color:#814f4b}.working-world{margin:24px 0;pa
 .natural-hover>button {margin-top:8px;}
 
 .climate-description{margin:12px 0;padding:10px;border:1px solid #48635b;border-radius:6px}.climate-description>summary{font-weight:600;cursor:pointer;margin-bottom:8px}.climate-description details{margin:9px 0;padding-top:7px;border-top:1px solid #344a43}.climate-description p{line-height:1.6}.climate-settings{margin:14px 0}.climate-settings>summary{cursor:pointer;padding:10px 0}
+
+.spot-biosphere{margin:12px 0;padding-top:10px;border-top:1px solid #46534a}.spot-biosphere>strong,.spot-biosphere>b{display:block}.spot-biosphere p{margin:5px 0 10px}.spot-biosphere a{color:#b8d6aa}.spot-biosphere summary{cursor:pointer}

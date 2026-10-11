@@ -1,3 +1,4 @@
+import {riverWidthPixels} from './river-width.js';
 import {updateHydrologyReport} from './hydrology-report.js';
 // Environmental data comes from Go. These functions only visualize it.
 const climateColors = ['#245e94','#136d38','#32904b','#a7b858','#d9b06a','#b9a58b','#c6b769','#64b9a3','#77a16a','#406d62','#acbbb3','#e6f4fa','#a8adc5'];
@@ -13,7 +14,7 @@ const ranges = {
 };
 export function installEnvironmentOverlays(select) {
 	for(const [value,label] of [['riverClass','Major river routes'],['riverSystem','River systems and tributary connections']]){const option=document.createElement('option');option.value=value;option.textContent=label;select.append(option);}
-  const fields = ['seasonalClimate','seasonCount','runoff','recharge','baseflow','waterTableDepth','streamOrder','watershed','permeability','lithology','snowmelt','glacierMelt','dryDischarge','spring','geothermal','beach','coastType','climate','wind','latitude','current','windY','slope','oceanDistance','tectonicStress','summerRain','winterRain','growingSeason','drainageElevation','river','freshwaterDistance','rockType','layering','caprock','erosion','sandSupply','sandTransport','deposition','vegetation','substrate','snowBalance','duneField','duneOrientation','hotspot','vent','cultivated','village','ocean','waterLevel','waterDepth','waterBody','basin','catchmentArea','shelf','seamount','reefType','light','landform','highland','mountainCore','geology'];
+  const fields = ['hillslopeRunoff','hillslopeAreaKM2','seasonalClimate','seasonCount','runoff','recharge','baseflow','waterTableDepth','streamOrder','watershed','permeability','lithology','snowmelt','glacierMelt','dryDischarge','spring','geothermal','beach','coastType','climate','wind','latitude','current','windY','slope','oceanDistance','tectonicStress','summerRain','winterRain','growingSeason','drainageElevation','river','freshwaterDistance','rockType','layering','caprock','erosion','sandSupply','sandTransport','deposition','vegetation','substrate','snowBalance','duneField','duneOrientation','hotspot','vent','cultivated','village','ocean','waterLevel','waterDepth','waterBody','basin','catchmentArea','shelf','seamount','reefType','light','landform','highland','mountainCore','geology'];
   for(const name of fields) if(![...select.options].some(o=>o.value===name)) {
     const option=document.createElement('option'); option.value=name;
     option.textContent=name==='seasonalClimate'?'Seasonal climate zones':name==='seasonCount'?'Local season count':name==='climate'?'Derived climate zones':name==='wind'?'Wind direction (arrows)':name.replace(/([A-Z])/g,' $1').replace(/^./,c=>c.toUpperCase());
@@ -40,7 +41,8 @@ export function fieldColor(environment,name,c) {
   if(name==='landform')return ['#245e94','#a6c76b','#769a58','#6c8053','#bda274','#8a8580','#e1e9ec','#997c60','#c8a583'][v];
   if(['plate','duneField','vent','waterBody','basin','watershed','riverSystem'].includes(name)) return `hsl(${v*137.508%360} 48% ${v===0&&!['plate','watershed'].includes(name)?18:56}%)`;
   let t;
-  if(name==='flow'||name==='accumulation') t=Math.log1p(Math.max(0,v))/8;
+  if(['flow','accumulation','hillslopeRunoff'].includes(name)) t=Math.log1p(Math.max(0,v))/8;
+  else if(name==='hillslopeAreaKM2')t=Math.log1p(Math.max(0,v))/16;
   else { const [lo,hi]=ranges[name]||[0,1];t=(v-lo)/(hi-lo); }
   t=Math.max(0,Math.min(1,t));
   return `rgb(${Math.round(40+200*t)},${Math.round(80+100*(1-Math.abs(t-.5)*2))},${Math.round(200-160*t)})`;
@@ -49,6 +51,8 @@ export function overlayLegend(e,name) {
   if(typeof document!=='undefined')updateHydrologyReport(document.getElementById('hydrologyReport'),e);
   if(name==='riverClass')return 'Gold: major trunks; green: regional rivers; blue: local streams. Arrowheads show downstream flow.';
   if(name==='riverSystem')return 'Distinct colors identify whole rivers. Tributaries join their receiving river; arrowheads show flow direction.';
+  if(name==='hillslopeRunoff')return 'Multiple-flow-direction hillslope runoff concentration before channel extraction; logarithmic scale.';
+  if(name==='hillslopeAreaKM2')return 'Fractional contributing hillslope area (km?), distributed among downhill facets before primary channels are extracted.';
   if(name==='watershed')return 'Distinct colors identify connected catchments, including drainage through lake outlets.';
   if(name==='terrain'&&e?.hydrology)return `${(e.hydrology.reaches||[]).length} connected river reaches ? ${(e.hydrology.springs||[]).length} springs ? ${(e.hydrology.wetlands||[]).length} wetlands ? ${(e.hydrology.canals||[]).length} engineered canals. ${(e.hydrology.diagnostics||[]).length?e.hydrology.diagnostics.map(d=>d.object+': '+d.reason).join(' / '):'Hydrology validation passed.'}`;
   if(name==='terrain') return e?.options.realism?'Rivers in blue · dune ridges follow wind · volcanic vents in red.':'';
@@ -84,8 +88,15 @@ export function drawPhysicalEntities(ctx,solver,vor,overlay) {
   }
   if(e.options.realism && (overlay==='terrain'||overlay==='river'||overlay==='accumulation')) {
     ctx.strokeStyle='#62c7ed';
-    for(const r of e.entities.rivers||[]) {
-      ctx.lineWidth=Math.max(.7,Math.min(3,Math.log1p(r.discharge)*.4));ctx.beginPath();
+    const reaches=e.hydrology?.reaches;
+    if(reaches?.length){
+      ctx.lineCap='round';
+      for(const r of reaches){
+        ctx.lineWidth=riverWidthPixels({...r,physicalWidthMetres:r.widthMetres},0,Math.min(sx,sy),0);
+        ctx.beginPath();ctx.moveTo(...point(r.from));ctx.lineTo(...point(r.to));ctx.stroke();
+      }
+    }else for(const r of e.entities.rivers||[]) {
+      ctx.lineWidth=riverWidthPixels(r,0,Math.min(sx,sy),0);ctx.beginPath();
       r.path.forEach((c,i)=>{const [x,y]=point(c);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);});ctx.stroke();
     }
   }

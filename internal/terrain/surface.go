@@ -38,6 +38,14 @@ func (e *Environment) carveDepressions(sample func(float64, float64) float64) {
 			continue
 		}
 		radius := 2. + sample(float64(i%w)+7, float64(i/w)+19)*2
+		physicalRadius := 100.
+		if rift {
+			physicalRadius = 220
+		}
+		if caldera {
+			physicalRadius = 35
+		}
+		radius = e.basinRadiusCells(i, radius, physicalRadius)
 		floor := -100 - 500*sample(float64(i%w)+531, float64(i/w)+617)
 		for dy := -5; dy <= 5; dy++ {
 			for dx := -5; dx <= 5; dx++ {
@@ -152,7 +160,7 @@ func (e *Environment) buildReefs(sample func(float64, float64) float64) {
 		// a second scale leaves gaps rather than painting entire coastlines pink.
 		x, y := float64(i%w)/float64(w), float64(i/w)/float64(h)
 		province := sample(x*9+813, y*9+927)
-		if !atollRims[i] && (province < .69 || sample(x*32+619, y*32+731) < .48) {
+		if !atollRims[i] && (province < .70 || sample(x*32+619, y*32+731) < .48) {
 			continue
 		}
 		kind := 3.

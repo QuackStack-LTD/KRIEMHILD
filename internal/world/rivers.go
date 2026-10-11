@@ -1,11 +1,36 @@
 package world
 
 import (
+	"bytes"
 	"fmt"
 	"kriemhild/internal/terrain"
 	"math"
 	"sort"
 )
+
+func entityRiverOperation(e Entity) Operation {
+	return Operation{ID: "entity-" + e.ID, Kind: "river", Layer: e.Layer, Path: e.Points, Radius: 2, Amount: 100, River: e.River}
+}
+
+// Natural-feature river lines and landscape river edits share the saved channel
+// representation. The profile is part of the entity, so undo, moves and history
+// snapshots retain exactly the same water geometry as the visible object.
+func (s *State) PrepareEntityRiver(entity *Entity, e *terrain.Environment) {
+	entity.River = nil
+	if e == nil || entity.Kind != "river" || entity.Geometry != "line" || entity.SourceID != "" || len(entity.Points) < 2 {
+		return
+	}
+	if old, ok := s.Entities[entity.ID]; ok && old.River != nil && bytes.Equal(raw(old.Points), raw(entity.Points)) {
+		profile := *old.River
+		profile.Level = entity.MinDetail
+		entity.River = &profile
+		return
+	}
+	op := entityRiverOperation(*entity)
+	s.prepareRiver(&op, e)
+	entity.River = op.River
+	entity.River.Level = entity.MinDetail
+}
 
 func (o Operation) influenceRadius() float64 {
 	r := o.Radius
@@ -59,7 +84,10 @@ func (s *State) prepareRiver(o *Operation, e *terrain.Environment) {
 	}
 	width := clamp(o.Radius*.08, .02, .34)
 	q := math.Max(2, math.Pow(math.Max(.012, width-.018)/.012, 2))
-	f := &terrain.DetailFeature{ID: "authored/" + o.ID, Kind: "river", Width: width, Discharge: q, Level: clamp(6-math.Log2(1+q)*1.1, 0, 6), Depth: math.Abs(o.Amount)}
+	if e.Geography != nil {
+		q = math.Max(2, math.Pow(o.Radius*6, 2))
+	}
+	f := &terrain.DetailFeature{ID: "authored/" + o.ID, Kind: "river", Width: width, Discharge: q, Level: clamp(6-math.Log2(1+q)*1.1, 0, 6), Depth: math.Abs(o.Amount), Regime: "perennial"}
 	length := 0.
 	for i := 1; i < len(points); i++ {
 		a, b := points[i-1], points[i]
@@ -85,6 +113,58 @@ func (s *State) prepareRiver(o *Operation, e *terrain.Environment) {
 	for i := range f.Path {
 		t := float64(i) / float64(len(f.Path)-1)
 		f.Widths = append(f.Widths, width*(.7+.3*t)*(1+.07*math.Sin(6*math.Pi*t)*math.Sin(math.Pi*t)))
+	}
+	if e.Geography != nil {
+		// The brush controls discharge, not a fraction of a planetary grid cell.
+		// Use the generated river model, including latitude and slope, for width.
+		f.DischargeM3s = q
+		f.Class = "stream"
+		if q >= 1000 {
+			f.Class, f.Level = "major", 0
+		} else if q >= 100 {
+			f.Class, f.Level = "regional", 1.5
+		}
+		for k, p := range f.Path {
+			a, b := f.Path[max(0, k-1)], f.Path[min(len(f.Path)-1, k+1)]
+			x, y := int(math.Round(p[0])), int(math.Round(p[1]))
+			dx, dy := 0, 0
+			if math.Abs(b[0]-a[0]) >= math.Abs(b[1]-a[1]) {
+				dx = 1
+				if b[0] < a[0] {
+					dx = -1
+				}
+			} else {
+				dy = 1
+				if b[1] < a[1] {
+					dy = -1
+				}
+			}
+			if x+dx < 0 || x+dx >= e.Options.Columns {
+				dx = -dx
+			}
+			if y+dy < 0 || y+dy >= e.Options.Rows {
+				dy = -dy
+			}
+			i, j := y*e.Options.Columns+x, (y+dy)*e.Options.Columns+x+dx
+			share := math.Pow(f.Widths[k]/width, 1/.56)
+			discharge := q * share
+			sediment := 0.
+			if len(e.Fields["sediment"]) == e.Options.Columns*e.Options.Rows {
+				sediment = sampleGrid(e.Fields["sediment"], e.Options.Columns, e.Options.Rows, p[0], p[1])
+			}
+			metres, cells := e.ChannelDimensions(i, j, discharge, f.Grade, sediment)
+			f.Widths[k] = math.Min(1, cells)
+			f.DischargesM3s = append(f.DischargesM3s, discharge)
+			if k == 0 {
+				f.PhysicalWidthMetres = metres * f.Widths[k] / cells
+			}
+		}
+		f.ValleyWidth = f.Widths[len(f.Widths)-1] * (2.5 + 3/(1+f.Grade/100))
+		f.ValleyWidthMetres = f.ValleyWidth / f.Widths[0] * f.PhysicalWidthMetres
+	}
+	f.Morphology = "meandering"
+	if f.Grade > 90 {
+		f.Morphology = "steep"
 	}
 	f.Width = f.Widths[0]
 	o.River = f
@@ -126,6 +206,18 @@ func (s *State) PrepareLegacyRivers(e *terrain.Environment) {
 		o := s.Operations[id]
 		s.prepareRiver(&o, e)
 		s.apply("operation/"+id, raw(o))
+	}
+	ids = nil
+	for id, entity := range s.Entities {
+		if !entity.Deleted && entity.Kind == "river" && entity.Geometry == "line" && entity.SourceID == "" && entity.River == nil {
+			ids = append(ids, id)
+		}
+	}
+	sort.Strings(ids)
+	for _, id := range ids {
+		entity := s.Entities[id]
+		s.PrepareEntityRiver(&entity, e)
+		s.apply("entity/"+id, raw(entity))
 	}
 }
 

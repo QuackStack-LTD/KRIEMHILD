@@ -7,6 +7,14 @@ func TestOffshoreMarginsDoNotStampLongRectangularCoasts(t *testing.T) {
 		o := realismOptions(t, `{"columns":128,"rows":96,"landPercent":55}`)
 		o.Seed = seed
 		e := BuildEnvironment(o)
+		for i, land := range e.Mask {
+			x, y := i%o.Columns, i/o.Columns
+			if x == 0 || y == 0 || x == o.Columns-1 || y == o.Rows-1 {
+				if land != 0 || e.get("ocean", i) == 0 || e.get("waterDepth", i) <= 0 {
+					t.Fatalf("%s complete-world continent is clipped at (%d,%d)", seed, x, y)
+				}
+			}
+		}
 		maxRun := 0
 		for side := 0; side < 4; side++ {
 			length, depth := o.Columns, o.Rows

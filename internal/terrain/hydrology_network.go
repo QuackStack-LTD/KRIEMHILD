@@ -166,7 +166,8 @@ func (e *Environment) selectBasinChannels() []bool {
 		}
 		candidates[id] = append(candidates[id], i)
 	}
-	trace := func(start int) {
+	trace := func(start int) int {
+		added := 0
 		start = origin[start]
 		for at, k := start, 0; at >= 0 && k < n; k++ {
 			if visible[at] {
@@ -174,12 +175,16 @@ func (e *Environment) selectBasinChannels() []bool {
 			}
 			if f("waterBody", at) == 0 {
 				visible[at] = true
+				if f("flow", at) >= 0 {
+					added++
+				}
 			}
 			if f("lake", at) > 0 && f("accumulation", at) <= f("hydroLoss", at) {
 				break
 			}
 			at = int(f("flow", at))
 		}
+		return added
 	}
 	e.Hydrology.Targets = nil
 	for id := 1; id < len(sizes); id++ {
@@ -213,6 +218,56 @@ func (e *Environment) selectBasinChannels() []bool {
 				count++
 			}
 		}
+		// Complete the selected trunks with their supplied tributaries before
+		// spending the coverage budget on independent coastal catchments. A
+		// finely indented continent has many short coastal outlets; ranking
+		// these alone used to hide the branches of its larger inland systems.
+		type tributary struct {
+			cell  int
+			score float64
+		}
+		tributaries := []tributary{}
+		seenHeads := map[int]bool{}
+		for _, i := range list {
+			head := origin[i]
+			if visible[head] || seenHeads[head] {
+				continue
+			}
+			seenHeads[head] = true
+			at, cells, length, supply := head, 0, 0., 0.
+			for steps := 0; at >= 0 && steps < n && !visible[at]; steps++ {
+				if f("lake", at) > 0 && f("accumulation", at) <= f("hydroLoss", at) {
+					break
+				}
+				j := int(f("flow", at))
+				if j < 0 {
+					break
+				}
+				if f("waterBody", at) == 0 {
+					cells++
+					length += e.hydroStep(at, j)
+					supply = math.Max(supply, f("accumulation", at))
+				}
+				at = j
+			}
+			if at >= 0 && visible[at] && cells >= 2 && supply >= .7*resolution {
+				tributaries = append(tributaries, tributary{i, length * math.Log1p(supply)})
+			}
+		}
+		sort.SliceStable(tributaries, func(a, b int) bool { return tributaries[a].score > tributaries[b].score })
+		// A small allowance completes already selected networks even when the
+		// mandatory trunk pass used the local-stream budget. It is not a quota
+		// for inventing water or drawing every hillslope runoff path.
+		tributaryBudget := max(target, count+count/4)
+		for _, branch := range tributaries {
+			if count >= tributaryBudget {
+				break
+			}
+			if visible[origin[branch.cell]] {
+				continue
+			}
+			count += trace(branch.cell)
+		}
 		for _, i := range list {
 			if count >= target {
 				break
@@ -220,15 +275,7 @@ func (e *Environment) selectBasinChannels() []bool {
 			if visible[i] {
 				continue
 			}
-			before := 0
-			for at, k := origin[i], 0; at >= 0 && k < n && !visible[at]; k++ {
-				if labels[at] == id && f("waterBody", at) == 0 && f("flow", at) >= 0 {
-					before++
-				}
-				at = int(f("flow", at))
-			}
-			trace(i)
-			count += before
+			count += trace(i)
 		}
 		e.Hydrology.Targets = append(e.Hydrology.Targets, DrainageTarget{Landmass: id, LandCells: land[id], SupportedCells: len(list), TargetCells: target, ActualCells: count, TargetLakeCells: int(float64(land[id]) * .008 * wet), TargetWetlandCells: int(float64(land[id]) * .025 * wet)})
 	}

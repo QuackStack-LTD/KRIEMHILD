@@ -1,0 +1,1786 @@
+{
+  "types": {
+    "continent": {
+      "category": "geography",
+      "spatial": true,
+      "label": "Continent"
+    },
+    "island": {
+      "category": "geography",
+      "spatial": true,
+      "label": "Island"
+    },
+    "river": {
+      "category": "geography",
+      "spatial": true,
+      "label": "River"
+    },
+    "lake": {
+      "category": "geography",
+      "spatial": true,
+      "label": "Lake"
+    },
+    "sea": {
+      "category": "geography",
+      "spatial": true,
+      "label": "Sea"
+    },
+    "ocean": {
+      "category": "geography",
+      "spatial": true,
+      "label": "Ocean"
+    },
+    "mountain": {
+      "category": "geography",
+      "spatial": true,
+      "label": "Mountain"
+    },
+    "forest": {
+      "category": "geography",
+      "spatial": true,
+      "label": "Forest"
+    },
+    "grassland": {
+      "category": "geography",
+      "spatial": true,
+      "label": "Grassland"
+    },
+    "desert": {
+      "category": "geography",
+      "spatial": true,
+      "label": "Desert"
+    },
+    "region": {
+      "category": "geography",
+      "spatial": true,
+      "label": "Region"
+    },
+    "city": {
+      "category": "settlements",
+      "spatial": true,
+      "label": "City"
+    },
+    "town": {
+      "category": "settlements",
+      "spatial": true,
+      "label": "Town"
+    },
+    "village": {
+      "category": "settlements",
+      "spatial": true,
+      "label": "Village"
+    },
+    "district": {
+      "category": "settlements",
+      "spatial": true,
+      "label": "District"
+    },
+    "building": {
+      "category": "settlements",
+      "spatial": true,
+      "label": "Building"
+    },
+    "road": {
+      "category": "settlements",
+      "spatial": true,
+      "label": "Road"
+    },
+    "infrastructure": {
+      "category": "settlements",
+      "spatial": true,
+      "label": "Infrastructure"
+    },
+    "house": {
+      "category": "settlements",
+      "spatial": true,
+      "label": "House"
+    },
+    "castle": {
+      "category": "settlements",
+      "spatial": true,
+      "label": "Castle"
+    },
+    "temple": {
+      "category": "settlements",
+      "spatial": true,
+      "label": "Temple"
+    },
+    "landmark": {
+      "category": "settlements",
+      "spatial": true,
+      "label": "Landmark"
+    },
+    "country": {
+      "category": "politics",
+      "spatial": true,
+      "label": "Country"
+    },
+    "state": {
+      "category": "politics",
+      "spatial": true,
+      "label": "State"
+    },
+    "kingdom": {
+      "category": "politics",
+      "spatial": true,
+      "label": "Kingdom"
+    },
+    "empire": {
+      "category": "politics",
+      "spatial": true,
+      "label": "Empire"
+    },
+    "nation": {
+      "category": "politics",
+      "spatial": false,
+      "label": "Nation"
+    },
+    "people": {
+      "category": "politics",
+      "spatial": false,
+      "label": "People"
+    },
+    "territorial-claim": {
+      "category": "politics",
+      "spatial": true,
+      "label": "Territorial Claim"
+    },
+    "political-institution": {
+      "category": "politics",
+      "spatial": false,
+      "label": "Political Institution"
+    },
+    "character": {
+      "category": "people",
+      "spatial": false,
+      "label": "Character"
+    },
+    "family": {
+      "category": "people",
+      "spatial": false,
+      "label": "Family"
+    },
+    "house-family": {
+      "category": "people",
+      "spatial": false,
+      "label": "House Family"
+    },
+    "dynasty": {
+      "category": "people",
+      "spatial": false,
+      "label": "Dynasty"
+    },
+    "organization": {
+      "category": "organizations",
+      "spatial": false,
+      "label": "Organization"
+    },
+    "branch": {
+      "category": "organizations",
+      "spatial": false,
+      "label": "Branch"
+    },
+    "guild": {
+      "category": "organizations",
+      "spatial": false,
+      "label": "Guild"
+    },
+    "order": {
+      "category": "organizations",
+      "spatial": false,
+      "label": "Order"
+    },
+    "school": {
+      "category": "organizations",
+      "spatial": false,
+      "label": "School"
+    },
+    "culture": {
+      "category": "culture",
+      "spatial": false,
+      "label": "Culture"
+    },
+    "cultural-variant": {
+      "category": "culture",
+      "spatial": false,
+      "label": "Cultural Variant"
+    },
+    "religion": {
+      "category": "culture",
+      "spatial": false,
+      "label": "Religion"
+    },
+    "custom": {
+      "category": "culture",
+      "spatial": false,
+      "label": "Custom"
+    },
+    "tradition": {
+      "category": "culture",
+      "spatial": false,
+      "label": "Tradition"
+    },
+    "ideology": {
+      "category": "culture",
+      "spatial": false,
+      "label": "Ideology"
+    },
+    "political-movement": {
+      "category": "culture",
+      "spatial": false,
+      "label": "Political Movement"
+    },
+    "event": {
+      "category": "history",
+      "spatial": false,
+      "label": "Event"
+    },
+    "migration": {
+      "category": "history",
+      "spatial": false,
+      "label": "Migration"
+    },
+    "war": {
+      "category": "history",
+      "spatial": false,
+      "label": "War"
+    },
+    "treaty": {
+      "category": "history",
+      "spatial": false,
+      "label": "Treaty"
+    },
+    "succession": {
+      "category": "history",
+      "spatial": false,
+      "label": "Succession"
+    },
+    "book": {
+      "category": "records",
+      "spatial": false,
+      "label": "Book"
+    },
+    "manuscript": {
+      "category": "records",
+      "spatial": false,
+      "label": "Manuscript"
+    },
+    "decree": {
+      "category": "records",
+      "spatial": false,
+      "label": "Decree"
+    },
+    "scripture": {
+      "category": "records",
+      "spatial": false,
+      "label": "Scripture"
+    },
+    "chronicle": {
+      "category": "records",
+      "spatial": false,
+      "label": "Chronicle"
+    },
+    "in-world-map": {
+      "category": "records",
+      "spatial": false,
+      "label": "In World Map"
+    },
+    "organization-unit": {
+      "category": "institutional",
+      "spatial": false,
+      "label": "Organizational unit"
+    },
+    "organization-position": {
+      "category": "institutional",
+      "spatial": false,
+      "label": "Office"
+    },
+    "concept": {
+      "category": "culture",
+      "label": "Concept",
+      "spatial": false
+    },
+    "worldview": {
+      "category": "culture",
+      "label": "Worldview",
+      "spatial": false
+    },
+    "philosophy": {
+      "category": "culture",
+      "label": "Philosophy",
+      "spatial": false
+    },
+    "belief": {
+      "category": "culture",
+      "label": "Belief",
+      "spatial": false
+    },
+    "doctrine": {
+      "category": "culture",
+      "label": "Doctrine",
+      "spatial": false
+    },
+    "religious-movement": {
+      "category": "culture",
+      "label": "Religious Movement",
+      "spatial": false
+    },
+    "cultural-movement": {
+      "category": "culture",
+      "label": "Cultural Movement",
+      "spatial": false
+    },
+    "practice": {
+      "category": "culture",
+      "label": "Practice",
+      "spatial": false
+    },
+    "ritual": {
+      "category": "culture",
+      "label": "Ritual",
+      "spatial": false
+    },
+    "sacred-narrative": {
+      "category": "culture",
+      "label": "Sacred Narrative",
+      "spatial": false
+    },
+    "cultural-symbol": {
+      "category": "culture",
+      "label": "Cultural Symbol",
+      "spatial": false
+    },
+    "festival": {
+      "category": "culture",
+      "label": "Festival",
+      "spatial": false
+    },
+    "lifeform": {
+      "category": "biosphere",
+      "spatial": false,
+      "label": "Lifeform"
+    },
+    "system": {
+      "category": "systems",
+      "spatial": false,
+      "label": "System"
+    },
+    "system-principle": {
+      "category": "systems",
+      "spatial": false,
+      "label": "Principle"
+    },
+    "system-rule": {
+      "category": "systems",
+      "spatial": false,
+      "label": "Rule"
+    },
+    "system-capability": {
+      "category": "systems",
+      "spatial": false,
+      "label": "Capability"
+    },
+    "system-method": {
+      "category": "systems",
+      "spatial": false,
+      "label": "Method"
+    },
+    "system-resource": {
+      "category": "systems",
+      "spatial": false,
+      "label": "Resource"
+    },
+    "system-component": {
+      "category": "systems",
+      "spatial": false,
+      "label": "Component"
+    },
+    "system-implementation": {
+      "category": "systems",
+      "spatial": false,
+      "label": "Implementation"
+    },
+    "system-application": {
+      "category": "systems",
+      "spatial": false,
+      "label": "Application"
+    },
+    "system-development": {
+      "category": "systems",
+      "spatial": false,
+      "label": "Development"
+    },
+    "archive": {
+      "category": "records",
+      "spatial": false,
+      "label": "Archive"
+    },
+    "document": {
+      "category": "records",
+      "spatial": false,
+      "label": "Document"
+    },
+    "certificate": {
+      "category": "records",
+      "spatial": false,
+      "label": "Certificate"
+    }
+  },
+  "relations": {
+    "contains": {
+      "family": "geographical",
+      "sources": [],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "contains"
+    },
+    "located-within": {
+      "family": "geographical",
+      "sources": [],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "located within"
+    },
+    "contained-by": {
+      "family": "geographical",
+      "sources": [],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "contained by"
+    },
+    "flows-through": {
+      "family": "geographical",
+      "sources": [],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "flows through"
+    },
+    "originates-at": {
+      "family": "geographical",
+      "sources": [],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "originates at"
+    },
+    "originates-in": {
+      "family": "geographical",
+      "sources": [],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "originates in"
+    },
+    "empties-into": {
+      "family": "geographical",
+      "sources": [],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "empties into"
+    },
+    "borders": {
+      "family": "geographical",
+      "sources": [],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "borders"
+    },
+    "represented-on": {
+      "family": "geographical",
+      "sources": [],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "represented on"
+    },
+    "part-of": {
+      "family": "geographical",
+      "sources": [],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "part of"
+    },
+    "governs": {
+      "family": "political",
+      "sources": [
+        "politics"
+      ],
+      "destinations": [
+        "politics",
+        "settlements",
+        "geography"
+      ],
+      "reciprocal": false,
+      "label": "governs"
+    },
+    "controls": {
+      "family": "political",
+      "sources": [
+        "politics",
+        "organizations"
+      ],
+      "destinations": [
+        "settlements",
+        "politics",
+        "geography",
+        "organizations"
+      ],
+      "reciprocal": false,
+      "label": "controls"
+    },
+    "claims": {
+      "family": "political",
+      "sources": [
+        "politics"
+      ],
+      "destinations": [
+        "politics",
+        "settlements",
+        "geography"
+      ],
+      "reciprocal": false,
+      "label": "claims"
+    },
+    "capital-of": {
+      "family": "political",
+      "sources": [
+        "city",
+        "town"
+      ],
+      "destinations": [
+        "country",
+        "state",
+        "kingdom",
+        "empire"
+      ],
+      "reciprocal": false,
+      "label": "capital of"
+    },
+    "subordinate-to": {
+      "family": "historical",
+      "sources": [],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "subordinate to"
+    },
+    "successor-of": {
+      "family": "historical",
+      "sources": [],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "successor of"
+    },
+    "predecessor-of": {
+      "family": "historical",
+      "sources": [],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "predecessor of"
+    },
+    "biological-parent": {
+      "family": "genealogical",
+      "sources": [
+        "character"
+      ],
+      "destinations": [
+        "character"
+      ],
+      "reciprocal": false,
+      "label": "biological parent"
+    },
+    "adoptive-parent": {
+      "family": "genealogical",
+      "sources": [
+        "character"
+      ],
+      "destinations": [
+        "character"
+      ],
+      "reciprocal": false,
+      "label": "adoptive parent"
+    },
+    "parent-of": {
+      "family": "genealogical",
+      "sources": [
+        "character"
+      ],
+      "destinations": [
+        "character"
+      ],
+      "reciprocal": false,
+      "label": "parent of"
+    },
+    "child-of": {
+      "family": "genealogical",
+      "sources": [
+        "character"
+      ],
+      "destinations": [
+        "character"
+      ],
+      "reciprocal": false,
+      "label": "child of"
+    },
+    "guardian-of": {
+      "family": "genealogical",
+      "sources": [
+        "character"
+      ],
+      "destinations": [
+        "character"
+      ],
+      "reciprocal": false,
+      "label": "guardian of"
+    },
+    "spouse": {
+      "family": "genealogical",
+      "sources": [
+        "character"
+      ],
+      "destinations": [
+        "character"
+      ],
+      "reciprocal": true,
+      "label": "spouse"
+    },
+    "partner": {
+      "family": "genealogical",
+      "sources": [
+        "character"
+      ],
+      "destinations": [
+        "character"
+      ],
+      "reciprocal": true,
+      "label": "partner"
+    },
+    "sibling": {
+      "family": "genealogical",
+      "sources": [
+        "character"
+      ],
+      "destinations": [
+        "character"
+      ],
+      "reciprocal": true,
+      "label": "sibling"
+    },
+    "member-of-family": {
+      "family": "genealogical",
+      "sources": [
+        "character"
+      ],
+      "destinations": [
+        "family",
+        "house-family",
+        "dynasty"
+      ],
+      "reciprocal": false,
+      "label": "member of family"
+    },
+    "friend": {
+      "family": "social",
+      "sources": [
+        "character"
+      ],
+      "destinations": [
+        "character"
+      ],
+      "reciprocal": true,
+      "label": "friend"
+    },
+    "rival": {
+      "family": "social",
+      "sources": [
+        "character"
+      ],
+      "destinations": [
+        "character"
+      ],
+      "reciprocal": true,
+      "label": "rival"
+    },
+    "colleague": {
+      "family": "social",
+      "sources": [
+        "character"
+      ],
+      "destinations": [
+        "character"
+      ],
+      "reciprocal": true,
+      "label": "colleague"
+    },
+    "ally": {
+      "family": "social",
+      "sources": [
+        "character"
+      ],
+      "destinations": [
+        "character"
+      ],
+      "reciprocal": true,
+      "label": "ally"
+    },
+    "enemy": {
+      "family": "social",
+      "sources": [
+        "character"
+      ],
+      "destinations": [
+        "character"
+      ],
+      "reciprocal": true,
+      "label": "enemy"
+    },
+    "mentor": {
+      "family": "social",
+      "sources": [
+        "character"
+      ],
+      "destinations": [
+        "character"
+      ],
+      "reciprocal": false,
+      "label": "mentor"
+    },
+    "student": {
+      "family": "social",
+      "sources": [
+        "character"
+      ],
+      "destinations": [
+        "character"
+      ],
+      "reciprocal": false,
+      "label": "student"
+    },
+    "practices": {
+      "family": "cultural",
+      "sources": [],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "practices"
+    },
+    "belongs-to": {
+      "family": "cultural",
+      "sources": [],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "belongs to"
+    },
+    "follows": {
+      "family": "cultural",
+      "sources": [],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "follows"
+    },
+    "shares-culture-with": {
+      "family": "cultural",
+      "sources": [],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "shares culture with"
+    },
+    "derives-from": {
+      "family": "cultural",
+      "sources": [],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "derives from"
+    },
+    "member-of": {
+      "family": "organizational",
+      "sources": [
+        "character",
+        "organizations"
+      ],
+      "destinations": [
+        "organizations",
+        "people",
+        "politics"
+      ],
+      "reciprocal": false,
+      "label": "member of"
+    },
+    "attended": {
+      "family": "organizational",
+      "sources": [
+        "character"
+      ],
+      "destinations": [
+        "organizations",
+        "people",
+        "politics"
+      ],
+      "reciprocal": false,
+      "label": "attended"
+    },
+    "employed-by": {
+      "family": "organizational",
+      "sources": [
+        "character"
+      ],
+      "destinations": [
+        "organizations",
+        "people",
+        "politics"
+      ],
+      "reciprocal": false,
+      "label": "employed by"
+    },
+    "served-in": {
+      "family": "organizational",
+      "sources": [
+        "character"
+      ],
+      "destinations": [
+        "organizations",
+        "people",
+        "politics"
+      ],
+      "reciprocal": false,
+      "label": "served in"
+    },
+    "branch-of": {
+      "family": "organizational",
+      "sources": [],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "branch of"
+    },
+    "founded-by": {
+      "family": "organizational",
+      "sources": [],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "founded by"
+    },
+    "headquartered-in": {
+      "family": "organizational",
+      "sources": [
+        "organizations",
+        "organization-unit"
+      ],
+      "destinations": [
+        "geography",
+        "settlements",
+        "politics"
+      ],
+      "reciprocal": false,
+      "label": "headquartered in"
+    },
+    "operates-in": {
+      "family": "organizational",
+      "sources": [
+        "organizations",
+        "organization-unit"
+      ],
+      "destinations": [
+        "geography",
+        "settlements",
+        "politics"
+      ],
+      "reciprocal": false,
+      "label": "operates in"
+    },
+    "participated-in": {
+      "family": "historical",
+      "sources": [],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "participated in"
+    },
+    "caused": {
+      "family": "historical",
+      "sources": [],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "caused"
+    },
+    "succeeded": {
+      "family": "historical",
+      "sources": [],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "succeeded"
+    },
+    "displaced": {
+      "family": "historical",
+      "sources": [],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "displaced"
+    },
+    "migrated-from": {
+      "family": "historical",
+      "sources": [],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "migrated from"
+    },
+    "migrated-to": {
+      "family": "historical",
+      "sources": [],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "migrated to"
+    },
+    "born-in": {
+      "family": "geographical",
+      "sources": [
+        "character"
+      ],
+      "destinations": [
+        "geography",
+        "settlements",
+        "politics"
+      ],
+      "reciprocal": false,
+      "label": "born in"
+    },
+    "resides-in": {
+      "family": "geographical",
+      "sources": [
+        "character"
+      ],
+      "destinations": [
+        "geography",
+        "settlements",
+        "politics"
+      ],
+      "reciprocal": false,
+      "label": "resides in"
+    },
+    "citizen-of": {
+      "family": "political",
+      "sources": [
+        "character"
+      ],
+      "destinations": [
+        "politics"
+      ],
+      "reciprocal": false,
+      "label": "citizen of"
+    },
+    "custom": {
+      "family": "social",
+      "sources": [],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "custom"
+    },
+    "flows-into": {
+      "family": "geographical",
+      "sources": [],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "empties into"
+    },
+    "appointed-to": {
+      "family": "organizational",
+      "sources": [
+        "character"
+      ],
+      "destinations": [
+        "organization-position"
+      ],
+      "reciprocal": false,
+      "label": "appointed to"
+    },
+    "branch-site": {
+      "family": "organizational",
+      "sources": [
+        "organizations",
+        "organization-unit"
+      ],
+      "destinations": [
+        "geography",
+        "settlements",
+        "politics"
+      ],
+      "reciprocal": false,
+      "label": "branch site"
+    },
+    "mobile-base": {
+      "family": "organizational",
+      "sources": [
+        "organizations"
+      ],
+      "destinations": [
+        "geography",
+        "settlements",
+        "politics"
+      ],
+      "reciprocal": false,
+      "label": "mobile base"
+    },
+    "owns-site": {
+      "family": "organizational",
+      "sources": [
+        "organizations"
+      ],
+      "destinations": [
+        "settlements"
+      ],
+      "reciprocal": false,
+      "label": "owns site"
+    },
+    "affiliate-of": {
+      "family": "organizational",
+      "sources": [
+        "organizations"
+      ],
+      "destinations": [
+        "organizations"
+      ],
+      "reciprocal": false,
+      "label": "affiliate of"
+    },
+    "institution-alliance": {
+      "family": "organizational",
+      "sources": [
+        "organizations"
+      ],
+      "destinations": [
+        "organizations"
+      ],
+      "reciprocal": true,
+      "label": "institution alliance"
+    },
+    "competes-with": {
+      "family": "organizational",
+      "sources": [
+        "organizations"
+      ],
+      "destinations": [
+        "organizations"
+      ],
+      "reciprocal": true,
+      "label": "competes with"
+    },
+    "cooperates-with": {
+      "family": "organizational",
+      "sources": [
+        "organizations"
+      ],
+      "destinations": [
+        "organizations"
+      ],
+      "reciprocal": true,
+      "label": "cooperates with"
+    },
+    "sponsors": {
+      "family": "organizational",
+      "sources": [
+        "organizations"
+      ],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "sponsors"
+    },
+    "funds": {
+      "family": "organizational",
+      "sources": [
+        "organizations"
+      ],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "funds"
+    },
+    "serves": {
+      "family": "organizational",
+      "sources": [
+        "organizations"
+      ],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "serves"
+    },
+    "represents": {
+      "family": "organizational",
+      "sources": [
+        "organizations"
+      ],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "represents"
+    },
+    "advises": {
+      "family": "organizational",
+      "sources": [
+        "organizations"
+      ],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "advises"
+    },
+    "protects": {
+      "family": "organizational",
+      "sources": [
+        "organizations"
+      ],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "protects"
+    },
+    "opposes": {
+      "family": "organizational",
+      "sources": [
+        "organizations"
+      ],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "opposes"
+    },
+    "infiltrates": {
+      "family": "organizational",
+      "sources": [
+        "organizations"
+      ],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "infiltrates"
+    },
+    "influences": {
+      "family": "organizational",
+      "sources": [
+        "organizations"
+      ],
+      "destinations": [],
+      "reciprocal": false,
+      "label": "influences"
+    },
+    "split-from": {
+      "family": "organizational",
+      "sources": [
+        "organizations"
+      ],
+      "destinations": [
+        "organizations"
+      ],
+      "reciprocal": false,
+      "label": "split from"
+    },
+    "institution-event": {
+      "family": "organizational",
+      "sources": [
+        "organizations"
+      ],
+      "destinations": [
+        "history"
+      ],
+      "reciprocal": false,
+      "label": "institution event"
+    },
+    "institution-rival": {
+      "family": "organizational",
+      "sources": [
+        "organizations"
+      ],
+      "destinations": [
+        "organizations"
+      ],
+      "reciprocal": true,
+      "label": "institution rival"
+    },
+    "contractor-for": {
+      "family": "organizational",
+      "sources": [
+        "character",
+        "organizations"
+      ],
+      "destinations": [
+        "organizations"
+      ],
+      "reciprocal": false,
+      "label": "contractor for"
+    },
+    "client-of": {
+      "family": "organizational",
+      "sources": [
+        "character",
+        "organizations",
+        "politics"
+      ],
+      "destinations": [
+        "organizations"
+      ],
+      "reciprocal": false,
+      "label": "client of"
+    },
+    "informs": {
+      "family": "organizational",
+      "sources": [
+        "character"
+      ],
+      "destinations": [
+        "organizations"
+      ],
+      "reciprocal": false,
+      "label": "informs"
+    },
+    "founder-of": {
+      "family": "organizational",
+      "sources": [
+        "character"
+      ],
+      "destinations": [
+        "organizations"
+      ],
+      "reciprocal": false,
+      "label": "founder of"
+    },
+    "teaches": {
+      "family": "cultural",
+      "sources": [
+        "culture",
+        "organizations",
+        "character"
+      ],
+      "destinations": [
+        "belief",
+        "doctrine",
+        "worldview",
+        "philosophy",
+        "ideology"
+      ],
+      "reciprocal": false,
+      "label": "teaches"
+    },
+    "interprets": {
+      "family": "cultural",
+      "sources": [
+        "culture",
+        "organizations",
+        "character"
+      ],
+      "destinations": [
+        "culture"
+      ],
+      "reciprocal": false,
+      "label": "interprets"
+    },
+    "disputes": {
+      "family": "cultural",
+      "sources": [
+        "culture",
+        "organizations",
+        "character"
+      ],
+      "destinations": [
+        "culture"
+      ],
+      "reciprocal": false,
+      "label": "disputes"
+    },
+    "affirms": {
+      "family": "cultural",
+      "sources": [
+        "culture",
+        "organizations",
+        "character"
+      ],
+      "destinations": [
+        "belief",
+        "doctrine"
+      ],
+      "reciprocal": false,
+      "label": "affirms"
+    },
+    "rejects": {
+      "family": "cultural",
+      "sources": [
+        "culture",
+        "organizations",
+        "character"
+      ],
+      "destinations": [
+        "belief",
+        "doctrine"
+      ],
+      "reciprocal": false,
+      "label": "rejects"
+    },
+    "reforms": {
+      "family": "cultural",
+      "sources": [
+        "culture"
+      ],
+      "destinations": [
+        "culture"
+      ],
+      "reciprocal": false,
+      "label": "reforms"
+    },
+    "diverges-from": {
+      "family": "cultural",
+      "sources": [
+        "culture"
+      ],
+      "destinations": [
+        "culture"
+      ],
+      "reciprocal": false,
+      "label": "diverges from"
+    },
+    "merges-with": {
+      "family": "cultural",
+      "sources": [
+        "culture"
+      ],
+      "destinations": [
+        "culture"
+      ],
+      "reciprocal": true,
+      "label": "merges with"
+    },
+    "challenges": {
+      "family": "cultural",
+      "sources": [
+        "culture"
+      ],
+      "destinations": [
+        "culture"
+      ],
+      "reciprocal": false,
+      "label": "challenges"
+    },
+    "revives": {
+      "family": "cultural",
+      "sources": [
+        "culture"
+      ],
+      "destinations": [
+        "culture"
+      ],
+      "reciprocal": false,
+      "label": "revives"
+    },
+    "transforms": {
+      "family": "cultural",
+      "sources": [
+        "culture"
+      ],
+      "destinations": [
+        "culture"
+      ],
+      "reciprocal": false,
+      "label": "transforms"
+    },
+    "transmits": {
+      "family": "cultural",
+      "sources": [
+        "culture",
+        "organizations",
+        "character"
+      ],
+      "destinations": [
+        "practice",
+        "custom",
+        "ritual",
+        "tradition"
+      ],
+      "reciprocal": false,
+      "label": "transmits"
+    },
+    "varies-in": {
+      "family": "cultural",
+      "sources": [
+        "culture"
+      ],
+      "destinations": [
+        "geography",
+        "settlements",
+        "politics",
+        "organizations",
+        "culture"
+      ],
+      "reciprocal": false,
+      "label": "varies in"
+    },
+    "supports-claim": {
+      "family": "cultural",
+      "sources": [
+        "culture",
+        "records"
+      ],
+      "destinations": [
+        "belief",
+        "doctrine"
+      ],
+      "reciprocal": false,
+      "label": "supports claim"
+    },
+    "contradicts-claim": {
+      "family": "cultural",
+      "sources": [
+        "culture",
+        "records"
+      ],
+      "destinations": [
+        "belief",
+        "doctrine"
+      ],
+      "reciprocal": false,
+      "label": "contradicts claim"
+    },
+    "describes-claim": {
+      "family": "cultural",
+      "sources": [
+        "culture",
+        "records"
+      ],
+      "destinations": [
+        "belief",
+        "doctrine"
+      ],
+      "reciprocal": false,
+      "label": "describes claim"
+    },
+    "cultural-influence": {
+      "family": "cultural",
+      "sources": [
+        "culture"
+      ],
+      "destinations": [
+        "culture",
+        "organizations",
+        "character"
+      ],
+      "reciprocal": false,
+      "label": "cultural influence"
+    },
+    "incorporates": {
+      "family": "cultural",
+      "sources": [
+        "culture"
+      ],
+      "destinations": [
+        "culture"
+      ],
+      "reciprocal": false,
+      "label": "incorporates"
+    },
+    "reacts-against": {
+      "family": "cultural",
+      "sources": [
+        "culture"
+      ],
+      "destinations": [
+        "culture"
+      ],
+      "reciprocal": false,
+      "label": "reacts against"
+    },
+    "associated-with": {
+      "family": "cultural",
+      "sources": [
+        "culture"
+      ],
+      "destinations": [
+        "culture",
+        "organizations",
+        "character",
+        "geography",
+        "settlements",
+        "politics",
+        "records"
+      ],
+      "reciprocal": false,
+      "label": "associated with"
+    },
+    "occurs-at": {
+      "family": "cultural",
+      "sources": [
+        "practice",
+        "custom",
+        "ritual",
+        "festival"
+      ],
+      "destinations": [
+        "geography",
+        "settlements",
+        "politics"
+      ],
+      "reciprocal": false,
+      "label": "occurs at"
+    },
+    "observed-during": {
+      "family": "cultural",
+      "sources": [
+        "practice",
+        "custom",
+        "ritual"
+      ],
+      "destinations": [
+        "festival",
+        "event"
+      ],
+      "reciprocal": false,
+      "label": "observed during"
+    },
+    "has-component": {
+      "family": "cultural",
+      "sources": [
+        "culture"
+      ],
+      "destinations": [
+        "culture"
+      ],
+      "reciprocal": false,
+      "label": "has component"
+    },
+    "system-requires": {
+      "family": "systems",
+      "sources": [
+        "systems"
+      ],
+      "destinations": [
+        "systems"
+      ],
+      "reciprocal": false,
+      "label": "Requires"
+    },
+    "system-enables": {
+      "family": "systems",
+      "sources": [
+        "systems"
+      ],
+      "destinations": [
+        "systems"
+      ],
+      "reciprocal": false,
+      "label": "Enables"
+    },
+    "system-consumes": {
+      "family": "systems",
+      "sources": [
+        "systems"
+      ],
+      "destinations": [
+        "systems"
+      ],
+      "reciprocal": false,
+      "label": "Consumes"
+    },
+    "system-produces": {
+      "family": "systems",
+      "sources": [
+        "systems"
+      ],
+      "destinations": [
+        "systems"
+      ],
+      "reciprocal": false,
+      "label": "Produces"
+    },
+    "system-restricts": {
+      "family": "systems",
+      "sources": [
+        "systems"
+      ],
+      "destinations": [
+        "systems"
+      ],
+      "reciprocal": false,
+      "label": "Restricts"
+    },
+    "system-prohibits": {
+      "family": "systems",
+      "sources": [
+        "systems"
+      ],
+      "destinations": [
+        "systems"
+      ],
+      "reciprocal": false,
+      "label": "Prohibits"
+    },
+    "system-counters": {
+      "family": "systems",
+      "sources": [
+        "systems"
+      ],
+      "destinations": [
+        "systems"
+      ],
+      "reciprocal": false,
+      "label": "Counters"
+    },
+    "system-conflicts": {
+      "family": "systems",
+      "sources": [
+        "systems"
+      ],
+      "destinations": [
+        "systems"
+      ],
+      "reciprocal": false,
+      "label": "Conflicts"
+    },
+    "system-derived-from": {
+      "family": "systems",
+      "sources": [
+        "systems"
+      ],
+      "destinations": [
+        "systems"
+      ],
+      "reciprocal": false,
+      "label": "Derived from"
+    },
+    "system-supersedes": {
+      "family": "systems",
+      "sources": [
+        "systems"
+      ],
+      "destinations": [
+        "systems"
+      ],
+      "reciprocal": false,
+      "label": "Supersedes"
+    },
+    "system-known-before": {
+      "family": "systems",
+      "sources": [
+        "systems"
+      ],
+      "destinations": [
+        "systems"
+      ],
+      "reciprocal": false,
+      "label": "Known before"
+    },
+    "system-independent-discovery": {
+      "family": "systems",
+      "sources": [
+        "systems"
+      ],
+      "destinations": [
+        "systems"
+      ],
+      "reciprocal": false,
+      "label": "Independent discovery"
+    },
+    "system-exception-to": {
+      "family": "systems",
+      "sources": [
+        "systems"
+      ],
+      "destinations": [
+        "systems"
+      ],
+      "reciprocal": false,
+      "label": "Exception to"
+    },
+    "system-knowledge": {
+      "family": "systems",
+      "sources": [
+        "character",
+        "organizations",
+        "culture"
+      ],
+      "destinations": [
+        "systems"
+      ],
+      "reciprocal": false,
+      "label": "Knowledge"
+    },
+    "system-access": {
+      "family": "systems",
+      "sources": [
+        "character",
+        "organizations",
+        "culture",
+        "politics",
+        "settlements"
+      ],
+      "destinations": [
+        "systems"
+      ],
+      "reciprocal": false,
+      "label": "Access"
+    },
+    "system-implemented-in": {
+      "family": "systems",
+      "sources": [
+        "system-implementation",
+        "system-application"
+      ],
+      "destinations": [
+        "geography",
+        "settlements",
+        "politics"
+      ],
+      "reciprocal": false,
+      "label": "Implemented in"
+    },
+    "system-uses": {
+      "family": "systems",
+      "sources": [
+        "systems"
+      ],
+      "destinations": [
+        "lifeform",
+        "geography",
+        "settlements",
+        "organizations",
+        "culture",
+        "character",
+        "records"
+      ],
+      "reciprocal": false,
+      "label": "Uses"
+    },
+    "system-supply": {
+      "family": "systems",
+      "sources": [
+        "systems"
+      ],
+      "destinations": [
+        "geography",
+        "settlements",
+        "politics"
+      ],
+      "reciprocal": false,
+      "label": "Supply"
+    },
+    "system-developed-by": {
+      "family": "systems",
+      "sources": [
+        "systems"
+      ],
+      "destinations": [
+        "character",
+        "organizations",
+        "culture"
+      ],
+      "reciprocal": false,
+      "label": "Developed by"
+    },
+    "system-documented-in": {
+      "family": "systems",
+      "sources": [
+        "systems"
+      ],
+      "destinations": [
+        "records"
+      ],
+      "reciprocal": false,
+      "label": "Documented in"
+    },
+    "archive-located-at": {
+      "family": "archival",
+      "sources": [
+        "archive"
+      ],
+      "destinations": [
+        "geography",
+        "settlements",
+        "politics",
+        "organizations"
+      ],
+      "reciprocal": false,
+      "label": "archived at / maintained by"
+    }
+  }
+}

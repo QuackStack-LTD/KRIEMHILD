@@ -104,3 +104,67 @@ func TestLegacyRiverUpgradesOnceAndPersists(t *testing.T) {
 		t.Fatal("repeated river migration")
 	}
 }
+
+func TestAuthoredPlanetaryRiverUsesGeneratedPhysicalWidths(t *testing.T) {
+	e := riverWorld()
+	e.Geography = &terrain.GeographicScale{Radius: 6371, North: 60, South: -60, West: -180, East: 180}
+	s := New(65, 65)
+	o := Operation{ID: "physical", Kind: "river", Layer: "water", Center: [2]float64{20, 10}, Radius: 2, Amount: 100, Path: [][2]float64{{20, 10}, {30, 10}, {40, 10}}}
+	s.Prepare(&o, e)
+	f := o.River
+	metres, cells := e.ChannelDimensions(10*65+20, 10*65+21, f.DischargesM3s[0], f.Grade, 0)
+	if math.Abs(f.Width-cells) > 1e-10 || math.Abs(f.PhysicalWidthMetres-metres) > 1e-8 || f.Width >= .01 || f.Class != "regional" || f.Regime != "perennial" || len(f.DischargesM3s) != len(f.Path) {
+		t.Fatal("authored river does not share the generated width model", f.Width, cells, f.PhysicalWidthMetres, metres)
+	}
+	if _, err := s.AddOperation(o); err != nil {
+		t.Fatal(err)
+	}
+	data, _ := json.Marshal(s)
+	var restored State
+	if err := json.Unmarshal(data, &restored); err != nil {
+		t.Fatal(err)
+	}
+	if err := restored.Validate(65, 65); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(restored.Operations[o.ID].River, f) {
+		t.Fatal("saved physical channel changed")
+	}
+}
+
+func TestRiverEntitySharesChannelAndUndoInvalidatesTerrain(t *testing.T) {
+	s := New(65, 65)
+	e := Entity{ID: "logical-river", Name: "River", Kind: "river", Layer: "natural-features", Geometry: "line", Color: "#000000", Points: [][2]float64{{20, 10}, {30, 12}, {40, 10}}}
+	s.PrepareEntityRiver(&e, riverWorld())
+	dirty, err := s.PutEntity(e)
+	if err != nil || dirty == nil {
+		t.Fatal("river edit must invalidate terrain", err)
+	}
+	ops := s.Ops(Bounds{20, 10, 20, 2})
+	if len(ops) != 1 || !reflect.DeepEqual(ops[0].River, e.River) {
+		t.Fatal("logical river bypassed shared channel")
+	}
+	if b, err := s.Undo(false); err != nil || b == nil || len(s.Ops(*dirty)) != 0 {
+		t.Fatal("undo left river geometry", err)
+	}
+	if b, err := s.Undo(true); err != nil || b == nil || len(s.Ops(*dirty)) != 1 {
+		t.Fatal("redo lost river geometry", err)
+	}
+	data, _ := json.Marshal(s)
+	var restored State
+	if err := json.Unmarshal(data, &restored); err != nil {
+		t.Fatal(err)
+	}
+	if err := restored.Validate(65, 65); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(restored.Entities[e.ID].River, e.River) {
+		t.Fatal("logical river did not persist")
+	}
+	moved := e
+	moved.Points = [][2]float64{{22, 15}, {32, 17}, {42, 15}}
+	s.PrepareEntityRiver(&moved, riverWorld())
+	if reflect.DeepEqual(moved.River.Path, e.River.Path) {
+		t.Fatal("moved river kept old course")
+	}
+}

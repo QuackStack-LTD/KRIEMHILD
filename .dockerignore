@@ -16,6 +16,9 @@
 !tests/detail-camera.test.mjs
 !tests/water-surface.test.mjs
 !tests/autosave.test.mjs
+!tests/world-project.test.mjs
+!tests/worldbuilding.test.mjs
+!tests/library-files.test.mjs
 **/.tools
 **/.tools/**
 **/data
@@ -23,3 +26,6 @@
 **/*.sqlite*
 **/*.world.zip
 **/.env*
+
+!vendor-js/
+!vendor-js/**

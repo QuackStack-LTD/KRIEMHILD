@@ -1,8 +1,10 @@
 package httpapi
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"kriemhild/internal/history"
 	"kriemhild/internal/terrain"
 	"kriemhild/internal/world"
 	"math"
@@ -138,14 +140,40 @@ func (s *Server) worldCommand(w http.ResponseWriter, r *http.Request) {
 		fail(w, 409, "Finish generation before building.")
 		return
 	}
+	changedEntity := req.Entity.ID
+	if req.Kind == "undo" && model.Header.Cursor > 0 {
+		changedEntity = strings.TrimPrefix(model.Header.History[model.Header.Cursor-1].Key, "entity/")
+	}
+	if req.Kind == "redo" && model.Header.Cursor < len(model.Header.History) {
+		changedEntity = strings.TrimPrefix(model.Header.History[model.Header.Cursor].Key, "entity/")
+	}
 	previousView := append(json.RawMessage(nil), model.Header.View...)
 	switch req.Kind {
 	case "entity":
+		if v.historical != nil && v.historical.Kind == "settlement" && req.Entity.Layer == "natural-features" {
+			err = fmt.Errorf("geographical features are edited in the Map Builder")
+			break
+		}
 		if req.Entity.ID == "" {
 			req.Entity.ID = token()
 		}
-		dirty, err = model.PutEntity(req.Entity)
+		changedEntity = req.Entity.ID
+		if strings.TrimSpace(req.Entity.Name) == "" {
+			req.Entity.Name = "example-" + req.Entity.ID
+		}
+		req.Entity.River = nil // Capture authoritative terrain-following geometry.
+		if req.Entity.Color == "" {
+			req.Entity.Color = "#000000"
+		}
+		if err = model.ValidateEntity(req.Entity); err == nil {
+			model.PrepareEntityRiver(&req.Entity, v.solver.Environment)
+			dirty, err = model.PutEntity(req.Entity)
+		}
 	case "operation":
+		if v.historical != nil && v.historical.Kind == "settlement" {
+			err = fmt.Errorf("terrain is edited in the Map Builder")
+			break
+		}
 		if v.solver.Environment == nil {
 			fail(w, 400, "Landscape editing requires Physical environment.")
 			return
@@ -190,6 +218,34 @@ func (s *Server) worldCommand(w http.ResponseWriter, r *http.Request) {
 		fail(w, 400, err.Error())
 		return
 	}
+	// Publish entity identity and representation immediately. Terrain, explored
+	// tiles and artwork still use the explicit Save action.
+	if v.historical != nil && (req.Kind == "entity" || req.Kind == "undo" || req.Kind == "redo") {
+		if shape, ok := model.Entities[changedEntity]; ok {
+			_, err = s.projects.UpdateHistory(context.Background(), v.historyWorld, -1, func(d *history.Document) error {
+				m := d.Map(v.historical.AgeID, v.historical.ID)
+				if m == nil {
+					return fmt.Errorf("map no longer exists in this Age")
+				}
+				if shape.LogicalID != "" {
+					e := d.Entity(m.AgeID, shape.LogicalID)
+					if e == nil || e.Deleted || e.Kind != shape.Kind {
+						return fmt.Errorf("invalid logical entity reference")
+					}
+				}
+				changes := world.New(v.solver.W, v.solver.H)
+				changes.Entities[shape.ID] = shape
+				d.Sync(*m, changes)
+				return nil
+			})
+			if err != nil {
+				v.unsaved = true
+				fail(w, 503, "Could not persist entity: "+err.Error())
+				return
+			}
+		}
+	}
+
 	if dirty != nil {
 		expanded := dirty.Expand(2)
 		dirty = &expanded
@@ -225,7 +281,7 @@ func (v *session) composedDetail(l, x, y int) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if v.world == nil || len(v.world.Operations) == 0 {
+	if v.world == nil || (len(v.world.Operations) == 0 && len(v.world.Entities) == 0) {
 		return base, nil
 	}
 	var tile terrain.DetailTile

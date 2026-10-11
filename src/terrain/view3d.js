@@ -52,6 +52,10 @@ export function createView(container,onCameraChange=()=>{},onFrame=()=>{}) {
     W = width;
     H = height;
     sphere = !!opts.sphere;
+    renderer.domElement.dataset.surface=sphere?'globe':'flat';
+    const extent=opts.solver?.historicalMap?.parentId?opts.solver.historicalMap.bounds:null;
+    renderer.clippingPlanes=[];
+    if(extent&&!sphere){const left=(extent.x/(W-1)-.5)*W,right=((extent.x+extent.width)/(W-1)-.5)*W,top=(extent.y/(H-1)-.5)*H,bottom=((extent.y+extent.height)/(H-1)-.5)*H;renderer.clippingPlanes=[new THREE.Plane(new THREE.Vector3(1,0,0),-left),new THREE.Plane(new THREE.Vector3(-1,0,0),right),new THREE.Plane(new THREE.Vector3(0,0,1),-top),new THREE.Plane(new THREE.Vector3(0,0,-1),bottom)];}
     waterFields=opts.waterFields||null;
     waterScale=null;
     const step = Math.max(1, Math.ceil(Math.sqrt((W * H) / MAX_VERTICES)));
@@ -85,7 +89,7 @@ export function createView(container,onCameraChange=()=>{},onFrame=()=>{}) {
     if(waterFields){sea.geometry.dispose();sea.geometry=new THREE.BufferGeometry();sea.material.depthWrite=false;sea.material.side=THREE.DoubleSide;sea.material.opacity=.25;}
     scene.add(land);
     scene.add(sea);
-    if(opts.solver?.environment){detailScene=createDetailScene(scene,camera,renderer,opts.solver);land.visible=false;sea.visible=false;}
+    if(opts.solver?.environment){detailScene=createDetailScene(scene,camera,renderer,opts.solver,sphere);land.visible=false;sea.visible=false;}
 
 
     const size = sphere ? radius * 3 : Math.max(W, H);
@@ -239,7 +243,7 @@ export function createView(container,onCameraChange=()=>{},onFrame=()=>{}) {
   renderer.domElement.addEventListener('wheel',zoomAtTerrain,{capture:true,passive:false});
   function surfaceAt(x,y){if(detailScene)return detailScene.surfaceAt(x,y);if(!land)return null;return meshSurface(land.geometry.attributes.position.array,sphere?gw+1:gw,sphere?gh+1:gh,x/(W-1)*(sphere?gw:gw-1),y/(H-1)*(sphere?gh:gh-1));}
   return {setInspectionPin(point){inspection=point;if(!point)pin.hide();}, setMap, setHeights, textureChanged, resetCamera, dispose, scene,camera,renderer,controls,
-    surfaceAt,
+    surfaceAt,inspectionSample:point=>detailScene?.inspectionSample(point)??null,
     surfaceStep:()=>detailScene?.surfaceStep()??1,surfaceVersion:()=>detailScene?.surfaceVersion()??0,
     viewport:()=>detailScene?.viewport()??{bounds:{x:0,y:0,width:W-1,height:H-1},detail:0,pixels:6},
     pick(event){const rect=renderer.domElement.getBoundingClientRect();raycaster.setFromCamera(new THREE.Vector2((event.clientX-rect.left)/rect.width*2-1,1-(event.clientY-rect.top)/rect.height*2),camera);const hit=raycaster.intersectObjects(detailScene?.terrainMeshes()||(land?[land]:[]),false)[0];if(!hit)return null;const p=detailScene?detailScene.coordinates(hit.point):{x:(hit.point.x/W+.5)*(W-1),y:(hit.point.z/H+.5)*(H-1)};return {...p,point:hit.point};},

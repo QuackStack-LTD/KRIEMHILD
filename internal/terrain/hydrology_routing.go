@@ -64,15 +64,7 @@ func (e *Environment) simulateHydrology() {
 			heap.Push(queue, floodCell{j, filled[j]})
 		}
 	}
-	for i := 0; i < n; i++ {
-		if f("waterBody", i) > 0 {
-			continue
-		}
-		j := e.steepestDrain(i, int(f("flow", i)), rank, func(k int) float64 { return filled[k] })
-		if j >= 0 {
-			set("flow", i, float64(j))
-		}
-	}
+	e.routeWatersheds(rank, func(k int) float64 { return filled[k] })
 	e.accumulateWater()
 	if e.Geography != nil {
 		e.breachNumericalPits(filled)
@@ -157,7 +149,7 @@ func (e *Environment) simulateHydrology() {
 				coverage := smooth(clamp((level-f("elevation", i))/4, 0, 1))
 				r := f("precipitation", i) / 1000 * coverage * e.areaWeight(i)
 				lakeTemperature := f("temperature", i) - math.Max(0, level-f("elevation", i))*.0065
-				v := math.Max(.12, (lakeTemperature+25)*.028) * coverage * e.areaWeight(i)
+				v := e.lakeEvaporation(i, lakeTemperature) * coverage * e.areaWeight(i)
 				s := f("permeability", i) * .18 * coverage * e.areaWeight(i)
 				rain += r
 				evap += v
@@ -271,20 +263,12 @@ func (e *Environment) simulateHydrology() {
 	}
 	// Reconcile the provisional graph with actual terrain and supported water.
 	// Land cannot use an uphill spill route simply because priority flood found it.
-	for i := 0; i < n; i++ {
-		if f("waterBody", i) > 0 {
-			continue
+	e.routeWatersheds(rank, func(k int) float64 {
+		if f("waterBody", k) > 0 {
+			return f("waterLevel", k)
 		}
-		j := int(f("flow", i))
-		surface := func(k int) float64 {
-			if f("waterBody", k) > 0 {
-				return f("waterLevel", k)
-			}
-			return f("elevation", k)
-		}
-		best := e.steepestDrain(i, j, rank, surface)
-		set("flow", i, float64(best))
-	}
+		return f("elevation", k)
+	})
 	// Each lake has a connected internal routing tree and exactly one natural
 	// spill outlet, or a closed storage root. Multiple incoming rivers are kept.
 	for b := range e.Hydrology.Basins {
@@ -408,7 +392,28 @@ func (e *Environment) breachNumericalPits(filled []float64) {
 		cells := []int{}
 		levels := []float64{}
 		outlet := false
+		previous := i
 		for steps := 0; at >= 0 && steps < 16; steps++ {
+			// A provisional diagonal may cross a tiny filled corner even when
+			// its destination is already below the source. Breach that saddle,
+			// too; otherwise actual-surface routing strands the trunk upstream
+			// of a centimetre-scale sill after erosion/deposition feedback.
+			w := e.Options.Columns
+			if previous%w != at%w && previous/w != at/w {
+				a, b := previous/w*w+at%w, at/w*w+previous%w
+				corner := a
+				if e.get("elevation", b) < e.get("elevation", a) {
+					corner = b
+				}
+				if e.get("elevation", corner) > target {
+					if e.get("waterBody", corner) > 0 || e.get("elevation", corner)-target > 3 {
+						break
+					}
+					cells = append(cells, corner)
+					levels = append(levels, target)
+					target -= .001
+				}
+			}
 			surface := e.get("elevation", at)
 			if e.get("waterBody", at) > 0 {
 				surface = e.get("waterLevel", at)
@@ -423,6 +428,7 @@ func (e *Environment) breachNumericalPits(filled []float64) {
 			cells = append(cells, at)
 			levels = append(levels, target)
 			target -= .001
+			previous = at
 			at = int(e.get("flow", at))
 		}
 		if !outlet {

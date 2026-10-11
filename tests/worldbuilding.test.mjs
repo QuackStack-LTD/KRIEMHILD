@@ -1,0 +1,38 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+// Load the shared JSON registry without relying on Node's version-specific JSON import syntax.
+import {readFile} from 'node:fs/promises';
+const source=await readFile(new URL('../src/worldbuilding/model.js',import.meta.url),'utf8'),registry=await readFile(new URL('../internal/history/registry.json',import.meta.url),'utf8');
+const {compareAge,contextualRelations,graphData,entityDetailMap,profileConnections,connectionPorts,portPoint,edgeGeometry,familyConflict,familyJunctions,ageYears,characterRelationKinds}=await import('data:text/javascript;base64,'+Buffer.from(source.replace("import registry from '../../internal/history/registry.json';",`const registry=${registry};`)).toString('base64'));
+const entity=(id,age,kind='character',extra={})=>({id,ageId:age,continuityId:id,name:id,kind,properties:{},...extra});
+function fixture(){return {ages:[{id:'first'},{id:'next',inheritedFrom:'first'}],entities:[entity('a','first'),entity('a','next'),entity('b','first'),entity('b','next')],relations:[],representations:[]}}
+test('comparison recognizes renames, additions, removals and relationship changes by continuity',()=>{const d=fixture();d.entities[1].name='Renamed';d.entities[3].deleted=true;d.entities.push(entity('c','next'));assert.deepEqual(compareAge(d,'next').map(x=>[x.entity.id,x.status]),[['a','modified'],['c','added'],['b','removed']]);d.entities[1].name='a';assert.equal(compareAge(d,'next')[0].status,'unchanged');d.relations.push({id:'r',ageId:'next',source:'a',destination:'c',kind:'friend'});assert.equal(compareAge(d,'next')[0].status,'modified')});
+test('attendance connections require known overlapping dates',()=>{const d=fixture();d.relations=[{id:'1',ageId:'next',source:'a',destination:'school',kind:'attended',validFrom:'100',validTo:'105'},{id:'2',ageId:'next',source:'b',destination:'school',kind:'attended',validFrom:'104',validTo:'110'}];assert.equal(contextualRelations(d,'next').filter(r=>r.automatic).length,1);d.relations[1].validFrom='106';assert.equal(contextualRelations(d,'next').filter(r=>r.automatic).length,0);d.relations[1].validFrom='';assert.equal(contextualRelations(d,'next').filter(r=>r.automatic).length,0)});
+test('family and social graphs retain cycles and multiple distinct edges',()=>{const d=fixture();d.relations=[{id:'a',ageId:'next',source:'a',destination:'b',kind:'sibling'},{id:'b',ageId:'next',source:'a',destination:'b',kind:'rival'},{id:'c',ageId:'next',source:'b',destination:'a',kind:'friend'}];const g=graphData(d,'next',{center:'a'});assert.equal(g.nodes.length,2);assert.equal(g.edges.length,2);assert.ok(g.edges.every(e=>e.kind!=='sibling'));assert.equal(graphData(d,'next',{genealogy:true}).edges.length,1)});
+
+test('place thumbnails use their own child map and never a parent terrain map',()=>{const d={maps:[{id:'root',ageId:'a'},{id:'city-map',ageId:'a',parentId:'root',entityId:'city'},{id:'other-age',ageId:'b',parentId:'root',entityId:'city'}]};assert.equal(entityDetailMap(d,{id:'city',ageId:'a'}).id,'city-map');assert.equal(entityDetailMap(d,{id:'village',ageId:'a'}),null)});
+test('country profiles group duplicate spatial facts without losing political meaning',()=>{const e={id:'country',ageId:'a'},d={relations:[{id:'1',ageId:'a',source:'city',destination:'country',kind:'contained-by',automatic:true},{id:'2',ageId:'a',source:'city',destination:'country',kind:'part-of',automatic:true},{id:'3',ageId:'a',source:'country',destination:'city',kind:'governs',automatic:false}]};const rows=profileConnections(d,e);assert.equal(rows.length,1);assert.deepEqual(rows[0].meanings.map(m=>m.text),['contains','governs']);assert.equal(profileConnections(d,{id:'city',ageId:'a'})[0].meanings[0].text,'located within')});
+
+test('eight connection ports and persisted endpoints terminate on node boundaries',()=>{assert.equal(connectionPorts.length,8);const a={x:100,y:100},b={x:400,y:300},r={sourcePort:'ne',destinationPort:'w'};const g=edgeGeometry(a,b,r);assert.deepEqual(g.start,{x:180,y:75});assert.deepEqual(g.end,{x:320,y:304});assert.match(g.path,/ C/);assert.notEqual(edgeGeometry(a,b,r,1).path,edgeGeometry(a,b,r,2).path);for(const port of connectionPorts){const p=portPoint(a,port);assert.ok(Math.abs(p.x-a.x)===80||p.y===75||p.y===133)}});
+test('family validation normalizes child direction and rejects contradictory ancestry',()=>{const d=fixture();d.relations=[{id:'p',ageId:'next',source:'a',destination:'b',kind:'parent-of'},{id:'q',ageId:'next',source:'b',destination:'c',kind:'parent-of'}];assert.match(familyConflict(d,'next',{source:'a',destination:'b',kind:'child-of'}),/ancestor/);assert.match(familyConflict(d,'next',{source:'b',destination:'a',kind:'child-of'}),/already/);assert.match(familyConflict(d,'next',{source:'c',destination:'a',kind:'parent-of'}),/ancestor/);assert.match(familyConflict(d,'next',{source:'a',destination:'b',kind:'sibling'}),/siblings/);assert.equal(familyConflict(d,'first',{source:'b',destination:'a',kind:'parent-of'}),'')});
+test('saved family views include members without requiring a family entity',()=>{const d=fixture();d.world={networks:[{id:'family-view',ageId:'next',genealogy:true,memberIds:['a']}]};assert.deepEqual(graphData(d,'next',{family:'family-view',genealogy:true}).nodes.map(e=>e.id),['a']);});
+
+test('two parents share one junction and one descent line per child',()=>{
+ const d=fixture();d.entities.push(entity('child','next'),entity('child2','next'));
+ d.relations=[{id:'married',ageId:'next',source:'a',destination:'b',kind:'spouse',sourcePort:'e',destinationPort:'w'},...['child','child2'].flatMap(id=>[{id:id+'/a',ageId:'next',source:'a',destination:id,kind:'biological-parent'},{id:id+'/b',ageId:'next',source:id,destination:'b',kind:'child-of'}])];
+ const graph=graphData(d,'next',{genealogy:true}),j=familyJunctions(graph);
+ assert.equal(j.unions.length,1);assert.equal(j.links.length,2);assert.equal(j.hidden.size,4);assert.equal(j.unions[0].partner.id,'married');
+ for(const link of j.links){assert.deepEqual(link.start,j.unions[0].geometry.label);assert.deepEqual(link.end,portPoint(graph.positions.get(link.child),'n'));assert.match(link.path,/ C/);assert.equal(link.relation.source,link.child)}
+ d.relations=d.relations.filter(r=>r.id!=='married');const noMarriage=familyJunctions(graphData(d,'next',{genealogy:true}));assert.equal(noMarriage.unions.length,1);assert.equal(noMarriage.unions[0].partner,undefined);assert.equal(d.relations.length,4);
+ d.relations=d.relations.filter(r=>!r.id.endsWith('/b'));assert.equal(familyJunctions(graphData(d,'next',{genealogy:true})).links.length,0);
+});
+
+test('year timeline is numerically ordered and confined to its Age',()=>{
+ const doc={years:[{id:'10',ageId:'a',number:10},{id:'-4',ageId:'a',number:-4},{id:'2',ageId:'a',number:2},{id:'0',ageId:'b',number:0}]};assert.deepEqual(ageYears(doc,'a').map(y=>y.number),[-4,2,10]);assert.equal(doc.years[0].number,10);assert.deepEqual(ageYears({},'a'),[]);
+});
+
+test('relationship graphs and creation choices exclude geography, politics and generic historical links',()=>{
+ const d=fixture();d.relations=['friend','custom','contains','part-of','successor-of','flows-through','biological-parent','branch-of'].map(kind=>({id:kind,ageId:'next',source:'a',destination:'b',kind}));
+ assert.deepEqual(graphData(d,'next').edges.map(e=>e.kind),['friend','custom']);
+ const types=characterRelationKinds(false);assert.ok(types.includes('friend'));assert.ok(types.includes('custom'));for(const kind of ['contains','successor-of','parent-of','branch-of','flows-through'])assert.ok(!types.includes(kind));
+});

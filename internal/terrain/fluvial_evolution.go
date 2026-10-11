@@ -3,9 +3,10 @@ package terrain
 import "math"
 
 type ErosionOptions struct {
-	Iterations int     `json:"iterations"`
-	YearsMa    float64 `json:"duration_ma"`
-	Strength   float64 `json:"strength"`
+	ToleranceMetres float64 `json:"tolerance_metres,omitempty"`
+	Iterations      int     `json:"iterations"`
+	YearsMa         float64 `json:"duration_ma"`
+	Strength        float64 `json:"strength"`
 }
 type FluvialLandform struct {
 	ID         string  `json:"id"`
@@ -21,13 +22,16 @@ type FluvialLandform struct {
 	Process    string  `json:"process"`
 }
 type Geomorphology struct {
-	Version     int               `json:"version"`
-	Parameters  ErosionOptions    `json:"parameters"`
-	Iterations  int               `json:"iterations"`
-	ErodedM3    float64           `json:"erodedM3"`
-	DepositedM3 float64           `json:"depositedM3"`
-	ExportedM3  float64           `json:"exportedM3"`
-	Landforms   []FluvialLandform `json:"landforms"`
+	Converged      bool              `json:"converged,omitempty"`
+	MaxChanges     []float64         `json:"maxChanges,omitempty"`
+	RoutingChanges []int             `json:"routingChanges,omitempty"`
+	Version        int               `json:"version"`
+	Parameters     ErosionOptions    `json:"parameters"`
+	Iterations     int               `json:"iterations"`
+	ErodedM3       float64           `json:"erodedM3"`
+	DepositedM3    float64           `json:"depositedM3"`
+	ExportedM3     float64           `json:"exportedM3"`
+	Landforms      []FluvialLandform `json:"landforms"`
 }
 
 // Bounded stream-power / sediment-capacity approximation. All modifications
@@ -37,9 +41,12 @@ func (e *Environment) evolveRiverLandscape() {
 	if e.Geography == nil && e.Options.Erosion == nil {
 		return
 	}
-	opt := ErosionOptions{Iterations: 2, YearsMa: 2, Strength: 1}
+	opt := ErosionOptions{Iterations: 4, YearsMa: 2, Strength: 1, ToleranceMetres: .05}
 	if e.Options.Erosion != nil {
 		opt = *e.Options.Erosion
+	}
+	if opt.ToleranceMetres == 0 {
+		opt.ToleranceMetres = .05
 	}
 	g := &Geomorphology{Version: 1, Parameters: opt}
 	e.Geomorphology = g
@@ -85,6 +92,8 @@ func (e *Environment) evolveRiverLandscape() {
 		before := append([]float64(nil), e.Fields["elevation"]...)
 		cut := make([]float64, n)
 		load := make([]float64, n)
+		channels := e.selectBasinChannels()
+		oldRouting := append([]float64(nil), e.Fields["flow"]...)
 		order := e.accumulateWater()
 		dt := opt.YearsMa / float64(opt.Iterations)
 		for _, i := range order {
@@ -102,9 +111,12 @@ func (e *Environment) evolveRiverLandscape() {
 			permanence := .2 + .8*clamp(f("dryDischarge", i)/math.Max(1e-9, f("accumulation", i))/.35, 0, 1)
 			uplift := 1 + f("tectonicStress", i)*.7
 			power := math.Pow(math.Max(0, discharge), .38) * math.Sqrt(grade) * dt * opt.Strength * 85 * permanence * uplift / (.25 + rocks[i])
+			if !channels[i] {
+				power *= .12
+			} // Diffuse hillslope wash; concentrated channels do the incision.
 			// Coarse cells store area-averaged valley lowering; do not turn an entire
 			// 200-km planetary cell into a narrow canyon or erode existing mountains away.
-			width := clamp(.05+math.Sqrt(math.Max(0, discharge))*.06, .05, 35)
+			width := clamp((.05+math.Sqrt(math.Max(0, discharge))*.06)*math.Sqrt(e.channelBankFactor(i)), .05, 35)
 			fraction := clamp(width/km, .04, 1)
 			incision := math.Min(120*dt, math.Min(drop*.3, power*fraction))
 			if before[i] > 0 {
@@ -199,6 +211,7 @@ func (e *Environment) evolveRiverLandscape() {
 			e.Heights[i] = int(round(f("elevation", i) / 4))
 		}
 
+		e.refreshDrainageSlopes()
 		e.connectOcean()
 		e.precipitation()
 		for i, factor := range e.Options.ClimateAdjustments {
@@ -214,7 +227,16 @@ func (e *Environment) evolveRiverLandscape() {
 		for i := range before {
 			maxChange = math.Max(maxChange, math.Abs(f("elevation", i)-before[i]))
 		}
-		if maxChange < .01 {
+		rerouted := 0
+		for i, v := range oldRouting {
+			if v != f("flow", i) {
+				rerouted++
+			}
+		}
+		g.MaxChanges = append(g.MaxChanges, maxChange)
+		g.RoutingChanges = append(g.RoutingChanges, rerouted)
+		if maxChange < opt.ToleranceMetres && rerouted == 0 {
+			g.Converged = true
 			break
 		}
 	}
@@ -301,5 +323,16 @@ func (e *Environment) reconcilePlanetSeam() {
 	}
 	for i := range e.Mask {
 		e.Heights[i] = int(round(e.get("elevation", i) / 4))
+	}
+}
+
+// Refresh before the next runoff/erosion pass, not just at final rendering.
+func (e *Environment) refreshDrainageSlopes() {
+	for i := range e.Mask {
+		slope := 0.
+		for _, j := range e.neighbors(i) {
+			slope = math.Max(slope, math.Abs(e.get("elevation", i)-e.get("elevation", j))/2000)
+		}
+		e.set("slope", i, clamp(slope, 0, 1))
 	}
 }

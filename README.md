@@ -42,13 +42,13 @@ On Windows, use `bin/kriemhild.exe`. Ship the binary with `dist/`; Node.js is on
 
 ## Preserved behavior
 
-- Original dark layout, map canvas, brush toolbar, and World / Terrain / Generator / View tabs.
+- Dark layout, explorable map canvas, terrain inspection readout, and World / Terrain / Generator / View tabs.
 - Seeded WFC with random/entropy cell selection, neighborhood radii, weights, neighbor boosts, propagation, backtracking, local repairs, stability, and cleanup.
 - Continental kinds, latitude climate bands, editable terrain palettes, presets, browser persistence, JSON import/export.
 - Physical environment: continuous terrain, tectonics, temperature, wind, precipitation, rain shadows, priority-flood drainage, geological and biome suitability, and numerical overlays.
-- Brush painting with environmental/adjacency constraints, right-click eyedropper, 30-stroke undo, animation, pause/resume, and single stepping.
+- Cursor inspection and pinned descriptions, animation, pause/resume, and single stepping.
 - Voronoi/square rendering, terrain textures, landscape/globe 3D, PNG and SVG export.
-- Shortcuts: **G** generate, **Space** pause/resume, **S** step, **C** cleanup, **B** brush, **Ctrl/Cmd+Z** undo.
+- Shortcuts: **G** generate, **Space** pause/resume, **S** step, **C** cleanup, **Ctrl/Cmd+Z** undo.
 
 New worlds initially use the original terrain-rule engine. Presets compose with both Physical environment and Real-world geology & climate: selecting a preset keeps the switches enabled, and enabling physics keeps the preset selected. Each preset supplies land coverage, latitude, temperature, rainfall, plate activity and relief appropriate to its theme. Terrain weights, neighbor boosts, radius, stability and point count remain effective within environmental constraints. Turning physics off restores the named preset's original palette. Physical mode uses environmental masks instead of legacy adjacency/climate-band weights. Its Points control distributes land/ocean regions; higher counts generally produce smaller landmasses. High land coverage may still join them into a supercontinent.
 
@@ -80,7 +80,7 @@ Open http://127.0.0.1:8124. The container serves React and the Go API. Click **S
 
 Running the binary or image without `DATABASE_URL` still uses embedded SQLite. With PostgreSQL configured, it requires that database to be available. See [container setup and releases](docs/CONTAINERS.md) and [world saving and deletion](docs/AUTOSAVE.md).
 
-Use **View → Save → Export world ZIP** for a portable backup of a completed world, explored detail and edits. **Open world ZIP** or **Open world folder** restores it without regenerating geography or depending on old server caches. See [Portable world projects](docs/WORLD_PROJECTS.md) for the manifest and validation. Active sessions expire after 30 minutes of inactivity, and only explicitly saved versions remain in the database. The original Generation brush toolbar resets its visible undo stack when reopening; Builder undo/redo persists. This is a local application; it starts on the loopback interface.
+Use **View → Save → Export world ZIP** for a portable backup of a completed world, explored detail and edits. **Open world ZIP** or **Open world folder** restores it without regenerating geography or depending on old server caches. See [Portable world projects](docs/WORLD_PROJECTS.md) for the manifest and validation. Active sessions expire after 30 minutes of inactivity, and only explicitly saved versions remain in the database. Terrain painting is available through the Builders, not the Generator. Builder undo/redo persists. This is a local application; it starts on the loopback interface.
 
 ## Validation
 
@@ -99,3 +99,31 @@ Physical maps now support hierarchical exploration in 2D and 3D: scroll toward t
 See [Historical Worlds](docs/HISTORICAL_WORLDS.md) for the World/Age hierarchy, timelines, map inheritance, Settlement Builder, and portable historical archives.
 
 Physical terrains also store a seasonal climate layer. Open **World > Map > Climate, seasons & planetary scale** for automatic or custom seasons, optional names and planetary parameters. Pin a map point for its annual summary and seasonal conditions. Climate zones and local season counts are available as overlays. Saved climate profiles survive database restarts, historical Age inheritance and ZIP import without regeneration; see [portable climate data](docs/WORLD_PROJECTS.md#seasonal-climate-model).
+
+Both builders provide **Generate Illustrated Map** for a white-paper medieval illustration. This explicit action saves the complete source map first. The preview offers **Save to World**, **Export SVG**, and **Export PNG** (up to 8,192 pixels). Saved artwork is an independent snapshot included in map and historical World ZIPs; see [illustrated maps](docs/ILLUSTRATED_MAPS.md).
+
+
+New physical worlds use `organic-spines-1`: seeded curved and branching variable-width crustal spines, rift cuts, shelf fragments, hooked peninsulas, crescents and enclosed basins. Plate settings guide formation and orientation; separate large, medium and fine domain warps deform entire structures. **World > Map > Continental and island shapes** exposes each deformation strength (0-3). Relative spine distance retains narrow cores during land-coverage adjustment, while resolved submerged sutures separate overlapping crustal bodies. Existing shelf, elevation, erosion and hydrology stages build the actual terrain and decide whether enclosed depressions contain water. This is a procedural geological approximation, not a tectonic time simulation.
+
+The model records source plate provenance, original and placed coordinates, spines/cuts, deformation parameters and stable IDs. New island foundations carry their own shapes. Database and ZIP restores load that geometry and the final elevation unchanged; older worlds without the optional records remain supported. Generate a new terrain to use the new shapes.
+
+[Open the nine-seed silhouette gallery](docs/landshape-gallery/index.html) and [shape diagnostics](docs/landshape-gallery/metrics.json). Reproduce it with `go run ./cmd/landshape-gallery`; use `-out`, `-seeds`, `-width` and `-height` for another comparison. All panels run the full terrain/hydrology pipeline at identical settings. Tests measure aspect ratio, hull concavity, coastline complexity, bay depth, component sizes, zero-noise structural topology, determinism and cold database/ZIP restoration. Diagnostics are in simulation cells; they do not imply equal physical cell sizes across latitudes.
+
+River routing favors established downhill collecting valleys, and channel selection completes supplied tributaries before adding independent coastal streams. Delta and braid eligibility accounts for geographic distance, so a gentle planetary floodplain is not mistaken for a steep slope merely because its grid cells are large. Significant tributaries remain visible with their continental trunk; saved braided channels appear when their separation becomes resolvable. Continental shape generation is unchanged.
+
+New river networks store narrow physical source widths and widen through their first catchment and downstream confluences. Geological width variation is shared within each watershed, and receiving channels accommodate their combined tributaries. The same saved profiles drive terrain channels, map rendering and illustrated export. Existing saved worlds retain their stored river networks and explored detail; generate a new terrain for these generation changes. Regression coverage includes organic-continent network length and junctions, downhill flow, split/rejoin budgets, physical width profiles, and database/ZIP restoration.
+
+Generator inspection uses the same physical material classification as terrain rendering, including refined tiles and visible river channels. Geographic coordinates and nearby-resource distances use the saved planetary radius and geographic extent, accounting for latitude and longitude wrapping; search radii are in kilometers. Unscaled legacy maps explicitly retain cell units. Click to pin a description, then move outside the map to read it.
+
+The Time Graph inspector can delete its selected Age, including that Age's maps and logical entities. Other Ages retain their independent snapshots. Linear neighbors reconnect, empty timelines disappear, and a World always retains at least one Age. Deletion is persisted and respected by portable World exports.
+
+New terrain uses the seasonal climate water balance to determine deserts: annual rainfall below one quarter of modeled evaporative demand, excluding polar/tundra climates. Rendering, hover inspection, terrain selection and inland dune eligibility consume the same persisted suitability field. Noise does not independently create desert patches. Lake-generating depressions use kilometer-scale radii, and open-water evaporation responds to dry air and wind; lake water levels, footprints and outlets still follow terrain and catchment supply. Existing saved terrain is restored without regenerating its basins.
+
+
+Biosphere provides habitat-based ecological generation and editing, with guided previews,
+reference and fictional lifeforms, biological rules, Age-independent histories and World
+ZIP persistence. See [Biosphere architecture and workflow](docs/WORLDBUILDING.md#biosphere-version-1).
+
+### Magic & Technology
+
+The System Designer provides a structured workbench for principles, mechanics, capabilities, resources, methods, implementations, and applications. Review draft rule changes to trace dependencies, advisory conflicts, affected people and places, and recorded supply. Records remain independent across Ages and travel with World ZIP exports. See [System Designer](docs/SYSTEM_DESIGNER.md) for the data model, source queries, and validation limits.

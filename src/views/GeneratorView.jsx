@@ -1,3 +1,4 @@
+import RiverThicknessControl from './RiverThicknessControl.jsx';
 import { useEffect, useRef } from 'react';
 import { mountTerrain } from '../terrain/controller.js';
 export default function GeneratorView({onReady,onWorld}) {
@@ -15,17 +16,7 @@ export default function GeneratorView({onReady,onWorld}) {
         <output id="detailStatus" aria-live="polite">World</output>
         <span>Scroll at cursor to explore ? drag to pan</span>
       </div>
-      <div className="toolbar">
-        <label className="check"><input id="brushOn" type="checkbox" /> Brush <kbd>B</kbd></label>
-        <span className="swatch" id="brushSwatch"></span>
-        <select id="brushType" aria-label="Terrain type to paint"></select>
-        <label className="tool-size">Size
-          <input id="brushSize" type="range" min="0" max="12" step="1" defaultValue="2" />
-          <output id="brushSizeOut"></output>
-        </label>
-      </div>
-      <div id="brushCursor" hidden></div>
-      <div className="hover" id="hover">Hover over a cell to see what it can still become.</div>
+      <div className="hover" id="hover">Hover over the map to inspect terrain and geographic coordinates.</div>
       <div id="naturalHover" />
     </section>
 
@@ -72,12 +63,16 @@ export default function GeneratorView({onReady,onWorld}) {
           <h2>Map</h2>
           <label className="check"><input id="environment" type="checkbox" defaultChecked /> Physical environment</label>
           <label className="check"><input id="realism" type="checkbox" /> Real-world geology &amp; climate</label>
-          <p className="hint">Enables physical mode with derived climate zones, rivers, wind-shaped dunes, volcanic activity and water-dependent farms and villages. Turn off to use the earlier physical model.</p>
+          <p className="hint">Enables physical mode with derived climate zones, rivers, wind-shaped dunes, volcanic activity and water-dependent soil fertility. Turn off to use the earlier physical model.</p>
           <p className="hint">Choose a preset, then layer physical environment and real-world rules onto it. Presets set the land coverage, climate and geology; physical conditions constrain where their terrain can appear.</p>
           <p id="modeHint" className="hint"></p>
           <div className="row3"><label>Land %<input id="landCoverage" type="number" min="1" max="75" defaultValue="42" /></label><label>Plates<input id="plateCount" type="number" min="3" max="32" defaultValue="12" /></label></div>
           <div className="row3"><label>North latitude<input id="latitudeNorth" type="number" min="-90" max="90" defaultValue="90" /></label><label>South latitude<input id="latitudeSouth" type="number" min="-90" max="90" defaultValue="-90" /></label></div>
           <div className="row3"><label>Island groups<input id="islandFrequency" type="number" min="0" max="3" step="0.1" defaultValue="1" title="Geological island-group frequency: 0 disables added groups, 1 normal, 3 abundant" /></label><label>Coastal share<input id="islandCoastalShare" type="number" min="0" max="1" step="0.05" defaultValue="0.6" title="Share of new groups near continental margins and marginal seas; the rest favor open-ocean tectonics and hotspots" /></label></div>
+          <details className="climate-settings"><summary>Continental and island shapes</summary>
+            <div className="row3"><label>Large-scale deformation<input id="landShapeLarge" type="number" min="0" max="3" step="0.1" defaultValue="1" /></label><label>Bays and capes<input id="landShapeMedium" type="number" min="0" max="3" step="0.1" defaultValue="1" /></label><label>Coastline detail<input id="landShapeSmall" type="number" min="0" max="3" step="0.1" defaultValue="1" /></label></div>
+            <p className="hint">Independent deformation strengths (0-3). Curved, branching and rifted geological structures remain even at zero; these settings reshape them at different scales on generation.</p>
+          </details>
           <div className="row3"><label>Relief %<input id="ruggedness" type="number" min="1" max="200" defaultValue="100" /></label><label>Volcanic activity<input id="volcanism" type="number" min="0.1" max="3" step="0.1" defaultValue="1" /></label></div>
           <div className="row3"><label>Temperature offset °C<input id="temperatureOffset" type="number" min="-25" max="25" defaultValue="0" /></label><label>Rain multiplier<input id="rainfall" type="number" min="0.1" max="3" step="0.1" defaultValue="1" /></label></div>
           <div className="row3">
@@ -103,7 +98,7 @@ export default function GeneratorView({onReady,onWorld}) {
             <div className="row3"><label>Minimum catchment (km?)<input id="riverMinArea" type="number" min="1" max="10000000" placeholder="80" /></label><label>Minimum flow (m?/s)<input id="riverMinDischarge" type="number" min="0.01" max="1000000" step="0.01" placeholder="0.5" /></label></div>
             <div className="row3"><label>Visible stream order<input id="riverVisibleOrder" type="number" min="1" max="12" placeholder="2" /></label><label>Ephemeral density<input id="ephemeralDensity" type="number" min="0" max="1" step="0.05" placeholder="0.35" /></label></div>
             <div className="row3"><label>Major catchment (km?)<input id="riverMajorArea" type="number" min="1" max="100000000" placeholder="20000" /></label><label>Regional catchment (km?)<input id="riverRegionalArea" type="number" min="1" max="100000000" placeholder="1500" /></label></div>
-            <div className="row3"><label>Erosion passes<input id="erosionIterations" type="number" min="0" max="6" defaultValue="2" /></label><label>Duration (million years)<input id="erosionDuration" type="number" min="0" max="50" step="0.1" defaultValue="2" /></label><label>Erosion strength<input id="erosionStrength" type="number" min="0" max="3" step="0.1" defaultValue="1" /></label></div>
+            <div className="row3"><label>Erosion passes<input id="erosionIterations" type="number" min="0" max="6" defaultValue="4" /></label><label>Duration (million years)<input id="erosionDuration" type="number" min="0" max="50" step="0.1" defaultValue="2" /></label><label>Erosion strength<input id="erosionStrength" type="number" min="0" max="3" step="0.1" defaultValue="1" /></label></div>
             <p className="hint">Channels require concentrated upstream water. Small streams are revealed at closer zooms. Erosion modifies actual elevation, then recalculates drainage; zero passes disables it.</p>
           </details>
           <label className="field shape-field">Shape
@@ -228,7 +223,7 @@ export default function GeneratorView({onReady,onWorld}) {
       </section>
 
       
-      <section className="tab-panel" id="panel-view" role="tabpanel" aria-labelledby="tab-view" hidden><section className="group"><h2>Environmental overlay</h2><select id="environmentOverlay"><option value="terrain">Terrain</option><option value="temperature">temperature</option><option value="summer">summer</option><option value="winter">winter</option><option value="precipitation">precipitation</option><option value="elevation">elevation</option><option value="windX">windX</option><option value="windStrength">windStrength</option><option value="moisture">moisture</option><option value="aridity">aridity</option><option value="plate">plate</option><option value="boundary">boundary</option><option value="bathymetry">bathymetry</option><option value="flow">flow</option><option value="accumulation">accumulation</option><option value="groundwater">groundwater</option><option value="snow">snow</option><option value="glacier">glacier</option><option value="dune">dune</option><option value="reef">reef</option><option value="volcano">volcano</option><option value="sediment">sediment</option><option value="fertility">fertility</option><option value="mesa">mesa</option><option value="oasis">oasis</option><option value="wetland">wetland</option><option value="farmland">farmland</option><option value="settlement">settlement</option><option value="lava">lava</option><option value="ash">ash</option><option value="lake">lake</option><option value="salinity">salinity</option><option value="clarity">clarity</option></select></section>
+      <section className="tab-panel" id="panel-view" role="tabpanel" aria-labelledby="tab-view" hidden><RiverThicknessControl/><section className="group"><h2>Environmental overlay</h2><select id="environmentOverlay"><option value="terrain">Terrain</option><option value="temperature">temperature</option><option value="summer">summer</option><option value="winter">winter</option><option value="precipitation">precipitation</option><option value="elevation">elevation</option><option value="windX">windX</option><option value="windStrength">windStrength</option><option value="moisture">moisture</option><option value="aridity">aridity</option><option value="plate">plate</option><option value="boundary">boundary</option><option value="bathymetry">bathymetry</option><option value="flow">flow</option><option value="accumulation">accumulation</option><option value="groundwater">groundwater</option><option value="snow">snow</option><option value="glacier">glacier</option><option value="dune">dune</option><option value="reef">reef</option><option value="volcano">volcano</option><option value="sediment">sediment</option><option value="fertility">fertility</option><option value="mesa">mesa</option><option value="oasis">oasis</option><option value="wetland">wetland</option><option value="farmland">farmland</option><option value="settlement">settlement</option><option value="lava">lava</option><option value="ash">ash</option><option value="lake">lake</option><option value="salinity">salinity</option><option value="clarity">clarity</option></select></section>
         <section className="group">
           <div className="group-head">
             <h2>Voronoi cells</h2>
@@ -257,8 +252,9 @@ export default function GeneratorView({onReady,onWorld}) {
         <section className="group">
           <div className="group-head">
             <h2>3D view</h2>
-            <label className="switch" title="Show the map as a landscape (or a globe for sphere worlds)"><input id="view3d" type="checkbox" aria-label="3D view" /><span></span></label>
+            <label className="switch" title="Show terrain elevation and depressions"><input id="view3d" type="checkbox" aria-label="3D view" /><span></span></label>
           </div>
+          <label className="field">3D surface<select id="surface3d" defaultValue="flat"><option value="flat">Flat terrain relief</option><option value="globe">Planet globe</option></select></label>
           <label className="field slider-label" htmlFor="height3d">Height exaggeration</label>
           <div className="speed">
             <input id="height3d" type="range" min="0" max="3" step="0.1" defaultValue="1" />

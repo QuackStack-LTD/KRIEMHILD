@@ -28,4 +28,4 @@ export function geographicSettings(values,width,height,pixelsPerCell){
 export function riverSettings(values){
  const r={};for(const [id,key] of Object.entries({riverMinArea:'minimum_area_km2',riverMinDischarge:'minimum_discharge_m3s',riverVisibleOrder:'visible_stream_order',riverMajorArea:'major_area_km2',riverRegionalArea:'regional_area_km2',ephemeralDensity:'ephemeral_density'}))if(values[id]!==''&&values[id]!=null)r[key]=Number(values[id]);return r;
 }
-export function erosionSettings(values){return {iterations:Number(values.erosionIterations??2),duration_ma:Number(values.erosionDuration??2),strength:Number(values.erosionStrength??1)};}
+export function erosionSettings(values){return {iterations:Number(values.erosionIterations??4),duration_ma:Number(values.erosionDuration??2),strength:Number(values.erosionStrength??1)};}

@@ -159,6 +159,30 @@ func TestNaturalQueryBoundsAndManifestValidation(t *testing.T) {
 	}
 }
 
+func TestNaturalQueryKilometreAPI(t *testing.T) {
+	v := projectFixture(t)
+	s := New(t.TempDir())
+	s.sessions["metric-query"] = v
+	path := "/api/sessions/metric-query/world/natural?x=20&y=15&radiusKm=500"
+	result := autoRequest(t, s, "GET", path, "")
+	if result["distanceUnits"] != "km" {
+		t.Fatal("metric radius returned cell distances", result["distanceUnits"])
+	}
+	for _, raw := range []string{"-1", "NaN", "160001", ""} {
+		r := httptest.NewRecorder()
+		s.ServeHTTP(r, httptest.NewRequest("GET", "/api/sessions/metric-query/world/natural?x=20&y=15&radiusKm="+raw, nil))
+		if r.Code != 400 {
+			t.Fatalf("radius %q accepted: %d", raw, r.Code)
+		}
+	}
+	v.solver.Environment.Geography = nil
+	r := httptest.NewRecorder()
+	s.ServeHTTP(r, httptest.NewRequest("GET", path, nil))
+	if r.Code != 400 {
+		t.Fatal("unscaled legacy world invented kilometre distances")
+	}
+}
+
 func TestNaturalMaximumPhysicalWorldArchive(t *testing.T) {
 	options, err := terrain.DecodeEnvironment([]byte(`{"columns":192,"rows":128,"realism":true,"seed":"maximum-resources"}`))
 	if err != nil {

@@ -136,13 +136,18 @@ func (e *Environment) finishHydrology() {
 		if f("summer", i) < 1 {
 			r.Regime = "frozen-seasonal"
 		}
-		grade := math.Max(0, f("drainageElevation", i)-f("drainageElevation", j))
-		r.Width = (.018 + math.Min(.32, math.Sqrt(r.Discharge)*.012)) * (.45 + .55/(1+grade/180))
+		grade := e.channelMorphologyGrade(i, j, math.Max(0, f("drainageElevation", i)-f("drainageElevation", j)))
+		r.WidthMetres, r.Width = e.channelDimensions(i, j)
 		if e.Geography != nil {
 			r.DischargeM3s = f("dischargeM3s", i)
-			r.WidthMetres = 4.8 * math.Sqrt(r.DischargeM3s) * (.45 + .55/(1+grade/180))
-			r.Width = clamp(r.WidthMetres/(math.Max(.01, e.stepKM(i, j))*1000), .006, .32)
 		}
+		if values := e.Fields["valleyWidthKM"]; len(values) > i {
+			r.ValleyWidthMetres = values[i] * 1000
+		}
+		if values := e.Fields["fluvialIncision"]; len(values) > i {
+			r.IncisionMetres = values[i]
+		}
+
 		if grade < 40 {
 			r.Morphology = "meandering"
 		}
@@ -152,14 +157,7 @@ func (e *Environment) finishHydrology() {
 		if f("ocean", j) > 0 && grade < 20 && f("sediment", i) > .35 && r.Discharge > 8 {
 			r.Morphology = "delta"
 		}
-		if r.Morphology == "delta" {
-			for _, mouth := range e.neighbors(i) {
-				if mouth != j && f("ocean", mouth) > 0 && f("waterLevel", mouth) <= f("elevation", i) {
-					r.Branches = append(r.Branches, HydroBranch{ID: r.ID + "/distributary", To: mouth, Downstream: e.waterRef(mouth), Fraction: .3})
-					break
-				}
-			}
-		}
+
 		e.Hydrology.Reaches = append(e.Hydrology.Reaches, r)
 	}
 	// Springs may emerge above the visible network; store their complete
@@ -175,6 +173,8 @@ func (e *Environment) finishHydrology() {
 			at = int(f("flow", at))
 		}
 	}
+	e.orderVisibleReaches()
+	e.buildHydroBranches()
 	e.buildHydroWetlands(visible)
 	e.buildHydroCoasts(visible)
 	e.buildHydroCanals(visible)
@@ -198,6 +198,9 @@ func (e *Environment) finishHydrology() {
 	}
 	if e.Hydrology.NetworkVersion > 0 {
 		e.summarizeRiverSystems()
+		e.finishChannelWidths()
+		e.buildSubcellChannels()
+		e.summarizeHydroTopology()
 	}
 }
 

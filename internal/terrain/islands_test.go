@@ -88,7 +88,7 @@ func TestArchipelagoDistributionControlsAndHeightfields(t *testing.T) {
 		o.IslandCoastalShare = coastal
 		e := BuildEnvironment(o)
 		if len(e.Archipelagos) == 0 {
-			t.Fatal("no supported groups for distribution control")
+			t.Fatalf("no supported groups for coastal share %g", coastal)
 		}
 		for _, g := range e.Archipelagos {
 			if (g.Setting == "open-ocean") != (coastal == 0) {

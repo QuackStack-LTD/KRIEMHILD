@@ -21,6 +21,7 @@ import (
 )
 
 type session struct {
+	biosphereHover  *biosphereHoverCache
 	climate         authoredClimate
 	natural         *terrain.NaturalIndex
 	mu              sync.Mutex
@@ -106,6 +107,9 @@ func NewWithOptions(dist string, options Options) *Server {
 	s.mux.HandleFunc("GET /api/sessions/{id}/world", s.worldInfo)
 	s.mux.HandleFunc("GET /api/sessions/{id}/world/state", s.worldState)
 	s.mux.HandleFunc("GET /api/sessions/{id}/world/entities", s.worldEntities)
+	s.mux.HandleFunc("POST /api/sessions/{id}/world/illustration", s.illustrationData)
+	s.mux.HandleFunc("GET /api/sessions/{id}/world/artworks", s.listArtworks)
+	s.mux.HandleFunc("POST /api/sessions/{id}/world/artworks", s.saveArtwork)
 	s.mux.HandleFunc("GET /api/sessions/{id}/world/natural", s.worldNatural)
 	s.mux.HandleFunc("GET /api/sessions/{id}/world/climate", s.worldClimateOverlay)
 	s.mux.HandleFunc("POST /api/sessions/{id}/world", s.worldCommand)

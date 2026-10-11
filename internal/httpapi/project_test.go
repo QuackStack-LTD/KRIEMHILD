@@ -88,6 +88,12 @@ func TestWorldProjectColdRestartRestoresStoredWorldAndDetail(t *testing.T) {
 	}
 	expected := v.solver.Snapshot()
 	expectedHydrology, _ := json.Marshal(v.solver.Environment.Hydrology)
+	expectedShapes, _ := json.Marshal(v.solver.Environment.ContinentalStructures)
+	if len(v.solver.Environment.ContinentalStructures) == 0 {
+		t.Fatal("fixture lacks continental grammar")
+	}
+	expectedIslands, _ := json.Marshal(v.solver.Environment.Archipelagos)
+
 	worldID := v.worldID
 	count := len(v.tiles)
 	oldDir := v.dir
@@ -117,6 +123,11 @@ func TestWorldProjectColdRestartRestoresStoredWorldAndDetail(t *testing.T) {
 	}
 	if !reflect.DeepEqual(fieldCopy, loaded.solver.Environment.Fields) || !reflect.DeepEqual(expected, loaded.solver.Snapshot()) {
 		t.Fatal("stored world or edits changed on cold import")
+	}
+	loadedShapes, _ := json.Marshal(loaded.solver.Environment.ContinentalStructures)
+	loadedIslands, _ := json.Marshal(loaded.solver.Environment.Archipelagos)
+	if !bytes.Equal(expectedShapes, loadedShapes) || !bytes.Equal(expectedIslands, loadedIslands) {
+		t.Fatal("continental or island geometry changed on ZIP restoration")
 	}
 	loadedHydrology, _ := json.Marshal(loaded.solver.Environment.Hydrology)
 	if !bytes.Equal(expectedHydrology, loadedHydrology) || loaded.solver.Environment.Hydrology == nil {

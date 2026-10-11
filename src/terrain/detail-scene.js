@@ -1,3 +1,5 @@
+import {sampleTerrainTile,renderedRiverAt} from './terrain-inspection.js';
+import {getRiverThickness} from './river-display.js';
 import {riverStyle} from './feature-style.js';
 import * as THREE from 'three';
 import {DetailTiles,tileKey} from './detail-tiles.js';
@@ -8,10 +10,10 @@ import {meshSurface} from './mesh-surface.js';
 
 // A covering quadtree: parent quadrants disappear only after the corresponding
 // child is available. Border vertices stitch to the actual parent edge.
-export function createDetailScene(scene,camera,renderer,solver){
+export function createDetailScene(scene,camera,renderer,solver,sphere=solver.wrapX){
   let dirty=true,lastSignature='',lastClimateRevision=null,lastLayer='',palette=null,disposed=false,revision=0,surfaceVersion=0,viewport=null;
   const store=new DetailTiles(solver,()=>{dirty=true;}),group=new THREE.Group(),meshes=new Map();scene.add(group);
-  const W=solver.W,H=solver.H,sphere=solver.wrapX,radius=W/(2*Math.PI),ray=new THREE.Raycaster(),plane=new THREE.Plane(new THREE.Vector3(0,1,0),0),ball=new THREE.Sphere(new THREE.Vector3(),radius);
+  const W=solver.W,H=solver.H,radius=W/(2*Math.PI),ray=new THREE.Raycaster(),plane=new THREE.Plane(new THREE.Vector3(0,1,0),0),ball=new THREE.Sphere(new THREE.Vector3(),radius);
   function position(x,y,z){
     if(!sphere)return new THREE.Vector3((x/(W-1)-.5)*W,z,(y/(H-1)-.5)*H);
     const lon=x/(W-1)*Math.PI*2,lat=y/(H-1)*Math.PI,r=radius+z;
@@ -39,7 +41,8 @@ export function createDetailScene(scene,camera,renderer,solver){
       else if(bounds.x+bounds.width>W-1)regions=[{...bounds,width:W-1-bounds.x},{...bounds,x:0,width:bounds.x+bounds.width-(W-1)}];
     }
     viewport={bounds,regions,detail,pixels};
-    const signature=[Math.round(bounds.x*16),Math.round(bounds.y*16),Math.round(bounds.width*16),Math.round(bounds.height*16),Math.round(detail*64),scale,layer].join('/');
+    const riverThickness=getRiverThickness();
+    const signature=[riverThickness,Math.round(bounds.x*16),Math.round(bounds.y*16),Math.round(bounds.width*16),Math.round(bounds.height*16),Math.round(detail*64),scale,layer].join('/');
     if(signature!==lastSignature){store.request(regions,pixels);dirty=true;lastSignature=signature;}
     if(!dirty)return;dirty=false;surfaceVersion++;
     store.request(regions,pixels);
@@ -59,7 +62,7 @@ export function createDetailScene(scene,camera,renderer,solver){
       const neighborTiles=[[-1,0],[1,0],[0,-1],[0,1]].map(([x,y])=>active.get(tileKey(tile.level,tile.x+x,tile.y+y)));
       const neighbors=neighborTiles.map(Boolean);
       const edgeBlend=neighborTiles.map(t=>t?Math.min(blend,smooth(detail-t.level+1)*smooth((performance.now()-t.loaded)/180)):0);
-      const stamp=[revision,tile.loaded,Math.round(detail*64),Math.round(blend*64),children.join(),neighbors.join(),edgeBlend.map(v=>Math.round(v*64)).join(),scale,layer].join('/');
+      const stamp=[riverThickness,revision,tile.loaded,Math.round(detail*64),Math.round(blend*64),children.join(),neighbors.join(),edgeBlend.map(v=>Math.round(v*64)).join(),scale,layer].join('/');
       const previous=meshes.get(key);if(previous?.userData.stamp===stamp)continue;if(previous)disposeMesh(previous);
       const n=tile.size,verts=[],uv=[],indices=[],water=[];
       const f=solver.environment.fields;
@@ -119,5 +122,9 @@ export function createDetailScene(scene,camera,renderer,solver){
     for(let level=8;level>=0;level--){const step=2**-level,tx=Math.floor(x/(32*step)),ty=Math.floor(y/(32*step)),mesh=meshes.get(tileKey(level,tx,ty));if(mesh)return meshSurface(mesh.geometry.attributes.position.array,33,33,x/step-tx*32,y/step-ty*32);}
     return null;
   }
-  return {update,surfaceAt,coordinates,viewport:()=>viewport,surfaceVersion:()=>surfaceVersion,surfaceStep:()=>Math.min(1,...[...meshes.values()].map(m=>m.userData.tile.step)),invalidate(bounds){store.invalidate(bounds);dirty=true;lastSignature='';},refresh(){revision++;dirty=true;palette=null;lastSignature='';},meshes:()=>[...meshes.values()].flatMap(m=>[m,...m.children]),terrainMeshes:()=>[...meshes.values()],dispose(){disposed=true;store.dispose();for(const m of meshes.values())disposeMesh(m);meshes.clear();scene.remove(group);}};
+  function inspectionSample(point){
+    for(let level=8;level>=0;level--){const step=2**-level,tx=Math.floor(point.x/(32*step)),ty=Math.floor(point.y/(32*step)),mesh=meshes.get(tileKey(level,tx,ty));if(mesh){const tile=mesh.userData.tile;return {...sampleTerrainTile(tile,point,viewport.detail),riverVisible:renderedRiverAt(tile.features,point,viewport.pixels,viewport.detail)};}}
+    return null;
+  }
+  return {update,surfaceAt,inspectionSample,coordinates,viewport:()=>viewport,surfaceVersion:()=>surfaceVersion,surfaceStep:()=>Math.min(1,...[...meshes.values()].map(m=>m.userData.tile.step)),invalidate(bounds){store.invalidate(bounds);dirty=true;lastSignature='';},refresh(){revision++;dirty=true;palette=null;lastSignature='';},meshes:()=>[...meshes.values()].flatMap(m=>[m,...m.children]),terrainMeshes:()=>[...meshes.values()],dispose(){disposed=true;store.dispose();for(const m of meshes.values())disposeMesh(m);meshes.clear();scene.remove(group);}};
 }

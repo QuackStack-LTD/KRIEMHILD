@@ -195,7 +195,16 @@ func restoreCheckpoint(id string, parts map[string][]byte, cacheRoot string) (v 
 			return nil, err
 		}
 		for key, data := range parts {
-			if strings.HasPrefix(key, "builder/entity/") {
+			if strings.HasPrefix(key, "builder/artwork/") {
+				var a world.Artwork
+				if err = expandJSON(data, &a); err != nil {
+					return nil, err
+				}
+				if key != "builder/artwork/"+a.ID {
+					return nil, fmt.Errorf("artwork identity mismatch")
+				}
+				v.world.Artworks[a.ID] = a
+			} else if strings.HasPrefix(key, "builder/entity/") {
 				var entity world.Entity
 				if err = expandJSON(data, &entity); err != nil {
 					return nil, err

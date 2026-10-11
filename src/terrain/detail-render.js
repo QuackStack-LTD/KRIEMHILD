@@ -1,3 +1,4 @@
+import {riverWidthPixels} from './river-width.js';
 import {biomeColor,coarseMaterial,materialSeed} from './biome-material.js';
 import {riverStyle} from './feature-style.js';
 import {fieldColor,riverSystemColor} from './environment-view.js';
@@ -32,6 +33,7 @@ export function tileImage(tile,solver,palette,layer,blend=1){
   const ctx=canvas.getContext('2d'),image=ctx.createImageData(canvas.width,canvas.height),n=canvas.width;
   const height=i=>tile.points[i].parent+(tile.points[i].elevation-tile.points[i].parent)*blend;
   const samples=tile.points.map(p=>({parent:p.parent??0,elevation:p.elevation??0,waterDepth:p.waterDepth??0,waterLevel:p.waterLevel??0,temperature:p.temperature??15,moisture:p.moisture??.5,vegetation:p.vegetation??.5,rock:p.rock??0,sand:p.sand??0,snow:p.snow??0,wetland:p.wetland??0,floodplain:p.floodplain??0,riverDepth:p.riverDepth??0}));
+  const hasDesert=tile.points.some(p=>p.desert!==undefined);
   const p={},position={x:0,y:0,seed:palette.seed||0};
   const gradients=tile.points.map((v,index)=>{
     if(v.gradient)return [v.gradient[2]+(v.gradient[0]-v.gradient[2])*blend,v.gradient[3]+(v.gradient[1]-v.gradient[3])*blend];
@@ -58,6 +60,7 @@ export function tileImage(tile,solver,palette,layer,blend=1){
     p.riverDepth=a0.riverDepth*w0+a1.riverDepth*w1+a2.riverDepth*w2+a3.riverDepth*w3;
     let wetCoverage=0,waterWeight=0;p.waterBody=0;
     for(let k=0;k<4;k++){const body=tile.points[indices[k]].waterBody;if(body>0){wetCoverage+=weights[k];if(weights[k]>waterWeight){p.waterBody=body;waterWeight=weights[k];}}}if(wetCoverage<.5)p.waterBody=0;
+    if(hasDesert)p.desert=indices.reduce((v,index,k)=>v+(tile.points[index].desert??0)*weights[k],0);
     position.x=x;position.y=y;
     let rgb=layer==='terrain'?null:baseColor(solver,palette,x,y,null);
     if(layer==='terrain'){
@@ -97,7 +100,7 @@ export function drawDetailFeatures(ctx,tiles,camera,detail,layer){
   const seen=new Set();ctx.save();
   for(const {tile,arrival} of tiles)for(const f of tile.features){
     if(seen.has(f.id))continue;seen.add(f.id);
-    const alpha=(debug?1:smooth(detail-f.level+1))*arrival;if(alpha<=0)continue;
+    const alpha=(debug?1:smooth(detail-Math.max(f.level,f.morphologyLevel||0)+1))*arrival;if(alpha<=0)continue;
     if(!['river','canal'].includes(f.kind)||f.path.length<2)continue;
     ctx.globalAlpha=alpha;const path=f.path.map(p=>[camera.x+p[0]*camera.scale,camera.y+p[1]*camera.scale]);
     // Variable-width ribbons meet at shared hydraulic junction widths. Banks
@@ -106,7 +109,7 @@ export function drawDetailFeatures(ctx,tiles,camera,detail,layer){
       const left=[],right=[];
       for(let i=0;i<path.length;i++){
         const a=path[Math.max(0,i-1)],b=path[Math.min(path.length-1,i+1)],len=Math.hypot(b[0]-a[0],b[1]-a[1])||1;
-        const radius=Math.max(minWidth,(f.widths?.[i]??f.width)*camera.scale*factor)/2;
+        const radius=Math.max(minWidth,riverWidthPixels(f,i,camera.scale,detail)*factor)/2;
         const nx=-(b[1]-a[1])/len*radius,ny=(b[0]-a[0])/len*radius;
         left.push([path[i][0]+nx,path[i][1]+ny]);right.push([path[i][0]-nx,path[i][1]-ny]);
       }
@@ -121,7 +124,7 @@ export function drawDetailFeatures(ctx,tiles,camera,detail,layer){
       continue;
     }
     if(detail>2&&f.discharge>=2){ctx.globalAlpha=alpha*smooth(detail-2)*.28;ribbon(1.35,riverStyle.bank,0);}
-    ctx.globalAlpha=alpha*(f.regime==='seasonal'?.75:1);ribbon(1,f.regime==='ephemeral'?'#978569':riverStyle.water,Math.min(1.6,.8+Math.sqrt(f.discharge||0)*.03));
+    ctx.globalAlpha=alpha*(f.regime==='seasonal'?.75:1);ribbon(1,f.regime==='ephemeral'?'#978569':riverStyle.water,0);
     if(detail>4){ctx.globalAlpha=alpha*.2;ribbon(.55,riverStyle.highlight,0);}
   }
   ctx.restore();

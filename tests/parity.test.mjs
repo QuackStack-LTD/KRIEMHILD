@@ -9,7 +9,9 @@ import { setTimeout as delay } from 'node:timers/promises';
 const root = path.resolve(import.meta.dirname, '..');
 const reference = vm.createContext({});
 for (const name of ['wfc.js', 'environment.js', 'presets.js']) vm.runInContext(fs.readFileSync(path.join(import.meta.dirname, 'reference', name), 'utf8'), reference);
-const config = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, 'reference/tiles.json'), 'utf8'));
+// Compare the unchanged WFC algorithm on the current natural-terrain palette.
+// Villages are now builder objects, deliberately absent from generation rules.
+const config = JSON.parse(fs.readFileSync(path.join(root, 'internal/terrain/tiles.json'), 'utf8'));
 const currentPresets=vm.createContext({});
 vm.runInContext(fs.readFileSync(path.join(root,'src/terrain/presets.js'),'utf8'),currentPresets);
 const plain = value => JSON.parse(JSON.stringify(value));

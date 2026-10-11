@@ -16,7 +16,9 @@ func (m *DetailModel) refineHydroFeatures() {
 
 	// Uniform visibility along each named river; no isolated mouth/head segments.
 	levels := map[string]float64{}
+	systems := map[string]RiverSystem{}
 	for _, river := range e.Hydrology.Rivers {
+		systems[river.ID] = river
 		level := clamp(6-math.Log2(1+river.Discharge)*1.1, 2.5, 6)
 		if river.Class == "major" {
 			level = 0
@@ -24,6 +26,16 @@ func (m *DetailModel) refineHydroFeatures() {
 			level = 1.5
 		}
 		levels[river.ID] = level
+	}
+	// Significant tributaries are part of a world-scale trunk's silhouette.
+	// Hiding all regional rivers until zoom 1.5 made connected continental
+	// networks look like independent lines. Promote only supplied tributaries,
+	// keeping unrelated small coastal catchments at their ordinary scale.
+	for _, river := range e.Hydrology.Rivers {
+		parent, ok := systems[river.Downstream]
+		if ok && parent.Class == "major" && river.Class == "regional" && river.Discharge >= parent.Discharge*.08 {
+			levels[river.ID] = 0
+		}
 	}
 	// A tributary cannot become visible before its receiving river.
 	for pass := 0; pass < len(e.Hydrology.Rivers); pass++ {
@@ -80,81 +92,97 @@ func (m *DetailModel) refineHydroFeatures() {
 		f.ParentID = r.Downstream
 		f.Regime = r.Regime
 		f.Morphology = r.Morphology
-		if r.Morphology == "braided" && len(f.Path) > 3 {
-			for side := 0; side < 2; side++ {
-				branch := f
-				branch.Path = append([][3]float64(nil), f.Path...)
-				branch.Widths = append([]float64(nil), f.Widths...)
-				branch.Width *= .58
-				branch.Discharge *= .5
-				if side == 1 {
-					branch.ID += "/braid"
-				}
-				sign := 1.
-				if side == 1 {
-					sign = -1
-				}
-				for k, p := range branch.Path {
-					a, b := f.Path[max(0, k-1)], f.Path[min(len(f.Path)-1, k+1)]
-					length := math.Hypot(b[0]-a[0], b[1]-a[1])
-					if length == 0 {
-						continue
-					}
-					t := float64(k) / float64(len(f.Path)-1)
-					offset := math.Sin(math.Pi*t) * f.Width * .65 * sign
-					branch.Path[k][0] = clamp(p[0]-(b[1]-a[1])/length*offset, 0, float64(e.Options.Columns-1))
-					branch.Path[k][1] = clamp(p[1]+(b[0]-a[0])/length*offset, 0, float64(e.Options.Rows-1))
-					branch.Widths[k] *= .58
-				}
-				m.Features = append(m.Features, branch)
+		f.PhysicalWidthMetres = r.WidthMetres
+		f.DischargeM3s = r.DischargeM3s
+		f.ValleyWidthMetres = r.ValleyWidthMetres
+		if r.WidthMetres > 0 && r.ValleyWidthMetres > 0 {
+			f.ValleyWidth = r.ValleyWidthMetres / r.WidthMetres * r.Width
+		}
+		if len(r.ChannelPath) > 0 {
+			f.Path = append([][3]float64(nil), r.ChannelPath...)
+		}
+		fraction := 0.
+		for _, b := range r.Branches {
+			if len(b.Path) == 0 {
+				fraction += b.Fraction
 			}
-		} else {
-			fraction := 0.
-			for _, branch := range r.Branches {
-				fraction += branch.Fraction
-			}
-			f.Discharge *= 1 - fraction
-			for k := range f.Widths {
-				f.Widths[k] *= math.Sqrt(1 - fraction)
-			}
-			f.Width *= math.Sqrt(1 - fraction)
-			m.Features = append(m.Features, f)
+		}
+		f.Discharge *= 1 - fraction
+		f.DischargeM3s *= 1 - fraction
+		factor := math.Pow(1-fraction, .56)
+		f.Width *= factor
+		f.PhysicalWidthMetres *= factor
+		f.DischargesM3s = make([]float64, len(f.Path))
+		for k := range f.Widths {
+			share := fraction
 			for _, b := range r.Branches {
-				branch := f
-				branch.ID = b.ID
-				branch.ParentID = b.Downstream
-				branch.Discharge = r.Discharge * b.Fraction
-				branch.Path = nil
-				branch.Widths = nil
-				start := f.Path[0]
-				end := [3]float64{float64(b.To % e.Options.Columns), float64(b.To / e.Options.Columns), e.get("waterLevel", b.To)}
-				for k := 0; k <= 24; k++ {
-					t := float64(k) / 24
-					point := [3]float64{start[0] + (end[0]-start[0])*t, start[1] + (end[1]-start[1])*t, start[2] + (end[2]-start[2])*t}
-					branch.Path = append(branch.Path, point)
-					branch.Widths = append(branch.Widths, r.Width*math.Sqrt(b.Fraction))
-					if wet := m.base(point[0], point[1]); k > 0 && wet.WaterBody > 0 {
-						a, b := branch.Path[k-1], point
-						lo, hi := 0., 1.
-						for n := 0; n < 20; n++ {
-							t := (lo + hi) / 2
-							if m.base(a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t).WaterBody > 0 {
-								hi = t
-							} else {
-								lo = t
-							}
-						}
-						branch.Path[k] = [3]float64{a[0] + (b[0]-a[0])*lo, a[1] + (b[1]-a[1])*lo, wet.WaterLevel}
-						for n := range branch.Path {
-							t := float64(n) / float64(k)
-							branch.Path[n][2] = start[2]*(1-t) + wet.WaterLevel*t
-						}
-						break
+				if len(b.Path) > 0 && k >= b.SplitNode && k <= b.JoinNode {
+					share += b.Fraction
+				}
+			}
+			f.Widths[k] *= math.Pow(1-share, .56)
+			f.DischargesM3s[k] = r.DischargeM3s * (1 - share)
+		}
+		m.Features = append(m.Features, f)
+		// Projection-seam copies share identity; create side channels once.
+		if f.ID != r.ID {
+			continue
+		}
+		for _, b := range r.Branches {
+			branch := f
+			branch.ID = b.ID
+			branch.ParentID = b.Downstream
+			branch.Discharge = r.Discharge * b.Fraction
+			branch.DischargeM3s = r.DischargeM3s * b.Fraction
+			factor := math.Pow(b.Fraction, .56)
+			branch.Width = r.Width * factor
+			branch.PhysicalWidthMetres = r.WidthMetres * factor
+			branch.DischargesM3s = nil
+			if len(b.Path) > 0 {
+				separation := 0.
+				for k, p := range b.Path {
+					at := b.SplitNode + k
+					if at >= 0 && at < len(r.ChannelPath) {
+						anchor := r.ChannelPath[at]
+						separation = math.Max(separation, math.Hypot(p[0]-anchor[0], p[1]-anchor[1]))
 					}
 				}
-				branch.Width = r.Width * math.Sqrt(b.Fraction)
+				// Reveal a saved braid as soon as its actual channel separation
+				// becomes resolvable, instead of hiding every braid until level 5.
+				branch.MorphologyLevel = clamp(math.Log2(.15/math.Max(1e-9, separation)), 0, 6)
+				branch.Path = append([][3]float64(nil), b.Path...)
+				branch.Widths = make([]float64, len(b.Path))
+				for k := range branch.Widths {
+					branch.Widths[k] = branch.Width
+				}
 				m.Features = append(m.Features, branch)
+				continue
 			}
+			branch.Path = nil
+			branch.Widths = nil
+			cells := b.Cells
+			if len(cells) == 0 {
+				cells = []int{r.From, b.To}
+			} // Stored legacy deltas.
+			for k := 1; k < len(cells); k++ {
+				a, c := cells[k-1], cells[k]
+				z0, z1 := e.get("drainageElevation", a), e.get("drainageElevation", c)
+				if e.get("waterBody", c) > 0 {
+					z1 = e.get("waterLevel", c)
+				}
+				for step := 0; step < 12; step++ {
+					t := float64(step) / 12
+					branch.Path = append(branch.Path, [3]float64{float64(a%e.Options.Columns)*(1-t) + float64(c%e.Options.Columns)*t, float64(a/e.Options.Columns)*(1-t) + float64(c/e.Options.Columns)*t, z0*(1-t) + z1*t})
+					branch.Widths = append(branch.Widths, branch.Width)
+				}
+			}
+			end := [3]float64{float64(b.To % e.Options.Columns), float64(b.To / e.Options.Columns), e.get("drainageElevation", b.To)}
+			if e.get("waterBody", b.To) > 0 {
+				end[2] = e.get("waterLevel", b.To)
+			}
+			branch.Path = append(branch.Path, end)
+			branch.Widths = append(branch.Widths, branch.Width)
+			m.Features = append(m.Features, branch)
 		}
 	}
 	for _, sp := range e.Hydrology.Springs {
@@ -219,6 +247,9 @@ func (m *DetailModel) clipHydroShore(f *DetailFeature) {
 		f.Path = f.Path[:k+1]
 		if len(f.Widths) > k {
 			f.Widths = f.Widths[:k+1]
+		}
+		if len(f.DischargesM3s) > k {
+			f.DischargesM3s = f.DischargesM3s[:k+1]
 		}
 		return
 	}

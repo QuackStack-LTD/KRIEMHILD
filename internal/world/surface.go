@@ -175,8 +175,20 @@ func (s *State) ApplyTile(tile *terrain.DetailTile, parent *terrain.DetailTile) 
 
 // Coarse view composition is needed when entering an editor, not per brush stroke.
 func (s *State) Environment(base *terrain.Environment) *terrain.Environment {
-	if base == nil || len(s.Operations) == 0 {
+	if base == nil {
 		return base
+	}
+	if len(s.Operations) == 0 {
+		hasRiver := false
+		for _, entity := range s.Entities {
+			if !entity.Deleted && entity.River != nil {
+				hasRiver = true
+				break
+			}
+		}
+		if !hasRiver {
+			return base
+		}
 	}
 	e := *base
 	e.Fields = make(map[string][]float64, len(base.Fields))

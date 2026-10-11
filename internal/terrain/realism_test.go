@@ -83,14 +83,12 @@ func TestRealismDeterminismAndConstraints(t *testing.T) {
 				}
 			}
 		}
-		for _, s := range e.Entities.Settlements {
-			if len(s.Farms) == 0 || f("freshwaterDistance", s.Cell) > 2 || f("farmland", s.Cell) < .15 {
-				t.Fatal("settlement lacks water/farms")
-			}
-			for _, j := range s.Farms {
-				if f("farmland", j) < .15 || f("cultivated", j) != 1 || f("slope", j) > .18 {
-					t.Fatal("invalid farm")
-				}
+		if len(e.Entities.Settlements) != 0 {
+			t.Fatal("terrain generation placed settlements")
+		}
+		for i := range e.Mask {
+			if f("village", i) != 0 || f("cultivated", i) != 0 {
+				t.Fatal("terrain generation placed a village or its farms")
 			}
 		}
 		t.Logf("%s: rivers=%d volcanoes=%d dunes=%d settlements=%d", seed, len(e.Entities.Rivers), len(e.Entities.Volcanoes), len(e.Entities.DuneFields), len(e.Entities.Settlements))

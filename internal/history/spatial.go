@@ -55,7 +55,7 @@ func (d *Document) Child(age, parentID, entityID, name string, b world.Bounds) (
 	for _, r := range append([]Representation(nil), d.Representations...) {
 		if r.AgeID == age && r.MapID == parentID && b.Intersects(world.Box(r.Shape.Points)) {
 			r.MapID = m.ID
-			r.ID = m.ID + "/" + r.EntityID
+			r.ID = m.ID + "/" + r.Shape.ID
 			d.Representations = append(d.Representations, r)
 		}
 	}
@@ -65,7 +65,11 @@ func (d *Document) Child(age, parentID, entityID, name string, b world.Bounds) (
 // Sync logical identity separately from a map's drawables. Inherited footprints
 // and geological features share identity; internal buildings remain map-local.
 func (d *Document) Sync(m Map, state *world.State) {
-	for id, shape := range state.Entities {
+	for shapeID, shape := range state.Entities {
+		id := shapeID
+		if shape.LogicalID != "" {
+			id = shape.LogicalID
+		}
 		ei := -1
 		for i, e := range d.Entities {
 			if e.AgeID == m.AgeID && e.ID == id {
@@ -73,13 +77,19 @@ func (d *Document) Sync(m Map, state *world.State) {
 				break
 			}
 		}
-		if shape.Deleted {
+		if shape.Deleted || !world.HasAuthoredName(shape.Name) {
 			if ei >= 0 {
-				d.Entities[ei].Deleted = true
+				remaining := false
+				for _, r := range d.Representations {
+					if r.AgeID == m.AgeID && r.EntityID == id && r.Shape.ID != shapeID {
+						remaining = true
+					}
+				}
+				d.Entities[ei].Deleted = !remaining
 			}
 			out := d.Representations[:0]
 			for _, r := range d.Representations {
-				if r.AgeID != m.AgeID || r.EntityID != id {
+				if r.AgeID != m.AgeID || r.Shape.ID != shapeID {
 					out = append(out, r)
 				}
 			}
@@ -88,13 +98,23 @@ func (d *Document) Sync(m Map, state *world.State) {
 		}
 		natural := shape.Layer == "natural-features"
 		props, _ := json.Marshal(map[string]any{"notes": shape.Notes, "created": shape.Created, "destroyed": shape.Destroyed, "category": shape.Layer})
-		e := Entity{ID: id, AgeID: m.AgeID, TerrainID: m.TerrainID, HomeMap: m.ID, Name: shape.Name, Kind: shape.Kind, Natural: natural, SourceID: shape.SourceID, Properties: props}
+		e := Entity{ContinuityID: id, ID: id, AgeID: m.AgeID, TerrainID: m.TerrainID, HomeMap: m.ID, Name: shape.Name, Kind: shape.Kind, Natural: natural, SourceID: shape.SourceID, Properties: props}
 		if natural {
 			for p := d.Map(m.AgeID, e.HomeMap); p != nil && p.ParentID != ""; p = d.Map(m.AgeID, e.HomeMap) {
 				e.HomeMap = p.ParentID
 			}
 		}
 		if ei >= 0 {
+			e.Content = cloneContent(d.Entities[ei].Content)
+			e.CreatedAt = d.Entities[ei].CreatedAt
+			e.UpdatedAt = d.Entities[ei].UpdatedAt
+			e.ContinuityID = d.Entities[ei].ContinuityID
+			e.Names = append([]EntityName(nil), d.Entities[ei].Names...)
+			merged := map[string]any{}
+			_ = json.Unmarshal(d.Entities[ei].Properties, &merged)
+			_ = json.Unmarshal(props, &merged)
+			e.Properties, _ = json.Marshal(merged)
+			e.TerrainID = d.Entities[ei].TerrainID
 			e.HomeMap = d.Entities[ei].HomeMap
 			e.SourceID = d.Entities[ei].SourceID
 			d.Entities[ei] = e
@@ -104,15 +124,19 @@ func (d *Document) Sync(m Map, state *world.State) {
 		found := false
 		for i := range d.Representations {
 			r := &d.Representations[i]
-			if r.AgeID == m.AgeID && r.EntityID == id {
+			if r.AgeID == m.AgeID && r.EntityID == id && r.Shape.ID == shapeID {
+				oldLabel := r.Shape.LabelName
 				r.Shape = shape
+				if r.MapID != m.ID {
+					r.Shape.LabelName = oldLabel
+				}
 				if r.MapID == m.ID {
 					found = true
 				}
 			}
 		}
 		if !found {
-			d.Representations = append(d.Representations, Representation{ID: m.ID + "/" + id, AgeID: m.AgeID, MapID: m.ID, EntityID: id, Shape: shape})
+			d.Representations = append(d.Representations, Representation{ID: m.ID + "/" + shapeID, AgeID: m.AgeID, MapID: m.ID, EntityID: id, Shape: shape})
 		}
 		if natural {
 			for _, other := range d.Maps {
@@ -124,13 +148,13 @@ func (d *Document) Sync(m Map, state *world.State) {
 				}
 				exists := false
 				for _, r := range d.Representations {
-					if r.AgeID == m.AgeID && r.MapID == other.ID && r.EntityID == id {
+					if r.AgeID == m.AgeID && r.MapID == other.ID && r.EntityID == id && r.Shape.ID == shapeID {
 						exists = true
 						break
 					}
 				}
 				if !exists {
-					d.Representations = append(d.Representations, Representation{ID: other.ID + "/" + id, AgeID: m.AgeID, MapID: other.ID, EntityID: id, Shape: shape})
+					d.Representations = append(d.Representations, Representation{ID: other.ID + "/" + shapeID, AgeID: m.AgeID, MapID: other.ID, EntityID: id, Shape: shape})
 				}
 			}
 		}
@@ -203,6 +227,7 @@ func enclosed(shape, area world.Entity, inside func([2]float64) bool) bool {
 }
 
 func (d *Document) Resolve(age string) {
+	d.pruneReferences(age)
 	valid := map[string]bool{}
 	entities := map[string]Entity{}
 	for _, e := range d.Entities {
@@ -219,9 +244,15 @@ func (d *Document) Resolve(age string) {
 	}
 	d.Relations = out
 	shapes := map[string]world.Entity{}
+	owners := map[string]string{}
+	shapeTerrain := map[string]string{}
 	for _, r := range d.Representations {
 		if r.AgeID == age {
-			shapes[r.EntityID] = r.Shape
+			shapes[r.Shape.ID] = r.Shape
+			owners[r.Shape.ID] = r.EntityID
+			if m := d.Map(age, r.MapID); m != nil {
+				shapeTerrain[r.Shape.ID] = m.TerrainID
+			}
 		}
 	}
 	add := func(from, to, kind string) {
@@ -231,7 +262,7 @@ func (d *Document) Resolve(age string) {
 				return
 			}
 		}
-		d.Relations = append(d.Relations, Relation{id, age, from, to, kind, true})
+		d.Relations = append(d.Relations, Relation{ID: id, AgeID: age, Source: from, Destination: to, Kind: kind, Automatic: true})
 	}
 	widths := map[string]int{}
 	for _, t := range d.Terrains {
@@ -248,25 +279,27 @@ func (d *Document) Resolve(age string) {
 			}
 		}
 	}
-	for id, a := range shapes {
+	for shapeID, a := range shapes {
+		id := owners[shapeID]
 		if a.ParentID != "" && valid[a.ParentID] {
 			add(id, a.ParentID, "part-of")
 		}
-		for other, b := range shapes {
-			if id == other || entities[id].TerrainID != entities[other].TerrainID {
+		for otherShapeID, b := range shapes {
+			other := owners[otherShapeID]
+			if id == other || shapeTerrain[shapeID] != shapeTerrain[otherShapeID] {
 				continue
 			}
 			if b.Geometry == "polygon" {
 				inside := func(p [2]float64) bool {
-					if cells := regions[other]; cells != nil {
-						w := widths[entities[other].TerrainID]
+					if cells := regions[otherShapeID]; cells != nil {
+						w := widths[shapeTerrain[otherShapeID]]
 						return cells[int(math.Round(p[1]))*w+int(math.Round(p[0]))]
 					}
 					return contains(p, b.Points)
 				}
 				ab, bb := world.Box(a.Points), world.Box(b.Points)
 				if a.Geometry != "polygon" || ab.Width*ab.Height < bb.Width*bb.Height-1e-8 {
-					if enclosed(a, b, inside) {
+					if enclosed(a, b, inside) && a.ParentID != other {
 						add(id, other, "contained-by")
 					}
 				}
@@ -286,7 +319,7 @@ func (d *Document) Shapes(m Map) map[string]world.Entity {
 	out := map[string]world.Entity{}
 	for _, r := range d.Representations {
 		if r.AgeID == m.AgeID && r.MapID == m.ID {
-			out[r.EntityID] = r.Shape
+			out[r.Shape.ID] = r.Shape
 		}
 	}
 	for id, s := range out {
@@ -300,6 +333,7 @@ func (d *Document) Shapes(m Map) map[string]world.Entity {
 
 // Tombstones distinguish a deletion from content that never existed on a branch.
 func (d *Document) PruneDeleted(age string) {
+	d.pruneLibrary(age)
 	deleted := map[string]bool{}
 	for _, e := range d.Entities {
 		if e.AgeID == age && e.Deleted {
@@ -313,4 +347,35 @@ func (d *Document) PruneDeleted(age string) {
 		}
 	}
 	d.Representations = reps
+	for i := range d.Entities {
+		e := &d.Entities[i]
+		if e.AgeID != age {
+			continue
+		}
+		for j := range e.Names {
+			if deleted[e.Names[j].ContextID] {
+				e.Names[j].ContextID = ""
+			}
+		}
+	}
+	relations := d.Relations[:0]
+	for _, r := range d.Relations {
+		if r.AgeID != age || (!deleted[r.Source] && !deleted[r.Destination] && !deleted[r.ContextID]) {
+			relations = append(relations, r)
+		}
+	}
+	d.Relations = relations
+	for i := range d.World.Networks {
+		v := &d.World.Networks[i]
+		if v.AgeID != age {
+			continue
+		}
+		if deleted[v.CenterID] {
+			v.CenterID = ""
+		}
+		if deleted[v.FamilyID] {
+			v.FamilyID = ""
+		}
+	}
+
 }

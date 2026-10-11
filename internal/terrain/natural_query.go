@@ -67,8 +67,24 @@ func NewNaturalIndex(e *Environment) *NaturalIndex {
 	return idx
 }
 func (idx *NaturalIndex) Query(x, y, radius float64, wrap bool) NaturalQuery {
+	return idx.query(x, y, radius, wrap, false)
+}
+
+// QueryKM measures great-circle distance to actual occurrence geometry. It
+// does not multiply grid distance by one equatorial scale near the poles.
+func (idx *NaturalIndex) QueryKM(x, y, radius float64) NaturalQuery {
+	return idx.query(x, y, radius, false, true)
+}
+
+func (idx *NaturalIndex) query(x, y, radius float64, wrap, kilometres bool) NaturalQuery {
 	out := NaturalQuery{X: x, Y: y, Radius: radius, DistanceUnits: "parent-grid cells", Goods: []NaturalHit{}, Geology: []GeologicalContext{}}
 	e := idx.e
+	if kilometres {
+		out.DistanceUnits = "km"
+		if e == nil || e.Geography == nil {
+			return out
+		}
+	}
 	if e == nil || e.Geology == nil || e.Resources == nil {
 		return out
 	}
@@ -92,12 +108,23 @@ func (idx *NaturalIndex) Query(x, y, radius float64, wrap bool) NaturalQuery {
 	distances := map[int]float64{}
 	centers := []float64{x}
 	if wrap {
-		centers = append(centers, x-float64(w-1), x+float64(w-1))
+		centers = append(centers, x-float64(w), x+float64(w))
+	}
+	radiusY := radius
+	if kilometres {
+		radiusY = radius / e.Geography.WorldScale
 	}
 	for _, cx := range centers {
-		for yy := max(0, int(math.Floor(y-radius-.5))); yy <= min(h-1, int(math.Ceil(y+radius+.5))); yy++ {
-			for xx := max(0, int(math.Floor(cx-radius-.5))); xx <= min(w-1, int(math.Ceil(cx+radius+.5))); xx++ {
+		for yy := max(0, int(math.Floor(y-radiusY-.5))); yy <= min(h-1, int(math.Ceil(y+radiusY+.5))); yy++ {
+			left, right := max(0, int(math.Floor(cx-radius-.5))), min(w-1, int(math.Ceil(cx+radius+.5)))
+			if kilometres {
+				left, right = 0, w-1 // Longitude coverage expands toward a pole.
+			}
+			for xx := left; xx <= right; xx++ {
 				d := math.Hypot(math.Max(0, math.Abs(cx-float64(xx))-.5), math.Max(0, math.Abs(y-float64(yy))-.5))
+				if kilometres {
+					d = e.distanceToCellKM(x, y, xx, yy)
+				}
 				if d > radius {
 					continue
 				}
@@ -105,6 +132,9 @@ func (idx *NaturalIndex) Query(x, y, radius float64, wrap bool) NaturalQuery {
 					distance := d
 					if point := e.Resources.Occurrences[k].Geometry.Point; point != nil {
 						distance = math.Hypot(cx-point[0], y-point[1])
+						if kilometres {
+							distance = e.PointDistanceKM(x, y, point[0], point[1])
+						}
 					}
 					if distance > radius {
 						continue

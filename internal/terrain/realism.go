@@ -4,7 +4,6 @@ package terrain
 // are derived from the seeded environmental state; rendering never places them.
 import (
 	"math"
-	"sort"
 )
 
 var ClimateZones = []string{"Ocean", "Rainforest", "Monsoon", "Savanna", "Hot desert", "Cold desert", "Mediterranean", "Oceanic", "Continental", "Boreal", "Tundra", "Ice cap", "Alpine"}
@@ -141,7 +140,7 @@ func (e *Environment) realisticEntities(sample func(float64, float64) float64) {
 	e.buildRivers()
 	e.transportSand()
 	e.buildVolcanoes()
-	e.placeSettlements()
+	e.assessCultivationPotential()
 }
 
 func (e *Environment) buildRivers() {
@@ -269,6 +268,17 @@ func (e *Environment) transportSand() {
 			set("dune", i, clamp(f("deposition", i)*10*f("aridity", i)*(1-f("vegetation", i)), 0, 1))
 		}
 	}
+	e.groupDunes()
+}
+
+func (e *Environment) groupDunes() {
+	if e.Fields["duneField"] == nil {
+		return
+	}
+	w, h := e.Options.Columns, e.Options.Rows
+	f, set := e.get, e.set
+	e.Fields["duneField"] = make([]float64, len(e.Mask))
+	e.Entities.DuneFields = []Region{}
 	for i := range e.Mask {
 		if f("dune", i) <= .13 || f("duneField", i) > 0 {
 			continue
@@ -377,10 +387,8 @@ func (e *Environment) buildVolcanoes() {
 	}
 }
 
-func (e *Environment) placeSettlements() {
-	w, h := e.Options.Columns, e.Options.Rows
+func (e *Environment) assessCultivationPotential() {
 	f, set := e.get, e.set
-	order := []int{}
 	for i := range e.Mask {
 		set("farmland", i, 0)
 		set("settlement", i, 0)
@@ -389,48 +397,6 @@ func (e *Environment) placeSettlements() {
 		}
 		water := math.Max(f("moisture", i)*.7, math.Exp(-f("freshwaterDistance", i)/3))
 		set("farmland", i, f("fertility", i)*water*(1-f("slope", i)/.2)*f("growingSeason", i))
-	}
-	for i := range e.Mask {
-		if f("farmland", i) < .15 || f("freshwaterDistance", i) > 2 {
-			continue
-		}
-		support := 0.
-		for _, j := range nb(i, w, h) {
-			support += f("farmland", j)
-		}
-		set("settlement", i, f("farmland", i)*clamp(support, 0, 1))
-		if f("settlement", i) > .08 {
-			order = append(order, i)
-		}
-	}
-	sort.SliceStable(order, func(a, b int) bool { return f("settlement", order[a]) > f("settlement", order[b]) })
-	blocked := make([]bool, len(e.Mask))
-	for _, i := range order {
-		if blocked[i] {
-			continue
-		}
-		s := Settlement{Cell: i}
-		for _, j := range nb(i, w, h) {
-			if f("farmland", j) > .15 && f("village", j) == 0 {
-				s.Farms = append(s.Farms, j)
-			}
-		}
-		if len(s.Farms) == 0 {
-			continue
-		}
-		set("village", i, 1)
-		for _, j := range s.Farms {
-			set("cultivated", j, 1)
-		}
-		e.Entities.Settlements = append(e.Entities.Settlements, s)
-		for dy := -4; dy <= 4; dy++ {
-			for dx := -4; dx <= 4; dx++ {
-				x, y := i%w+dx, i/w+dy
-				if x >= 0 && x < w && y >= 0 && y < h {
-					blocked[y*w+x] = true
-				}
-			}
-		}
 	}
 }
 
@@ -454,7 +420,7 @@ func (e *Environment) realisticCandidates(i int) []string {
 	for _, x := range []struct {
 		field, id string
 		threshold float64
-	}{{"lava", "lava", .2}, {"ash", "ash", .2}, {"glacier", "glacier", .35}, {"snow", "snow", .3}, {"village", "village", .5}, {"cultivated", "farmland", .5}} {
+	}{{"lava", "lava", .2}, {"ash", "ash", .2}, {"glacier", "glacier", .35}, {"snow", "snow", .3}, {"cultivated", "farmland", .5}} {
 		if f(x.field, i) > x.threshold {
 			return []string{x.id}
 		}
@@ -468,7 +434,7 @@ func (e *Environment) realisticCandidates(i int) []string {
 	if f("oasis", i) > .5 {
 		return []string{"oasis"}
 	}
-	if f("dune", i) > .13 {
+	if f("dune", i) > .13 && e.desertAt(i) {
 		return []string{"dunes", "desert"}
 	}
 	if f("mesa", i) > .18 {
@@ -480,11 +446,12 @@ func (e *Environment) realisticCandidates(i int) []string {
 	if f("elevation", i) > 900 && f("slope", i) > .15 {
 		return []string{"hills", "mountain"}
 	}
+	if e.desertAt(i) {
+		return []string{"desert"}
+	}
 	switch int(f("climate", i)) {
 	case 1, 2:
 		return []string{"jungle"}
-	case 4, 5:
-		return []string{"desert"}
 	case 9:
 		return []string{"taiga"}
 	case 10, 11, 12:

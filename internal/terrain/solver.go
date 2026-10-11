@@ -77,6 +77,22 @@ type Solver struct {
 func NewSolver(r *Rules, o Options, masks []uint32) *Solver {
 	s := &Solver{Rules: r, W: o.Width, H: o.Height, N: o.Width * o.Height, T: len(r.Config.Types), K: len(r.Config.Continents), Z: len(r.Config.Climates), Radius2: max(1, o.Radius2), WrapX: o.WrapX, Selection: o.Selection, Stability: math.Max(0, o.Stability), RNG: RNG(o.Seed), EnvironmentMasks: masks, LastRepair: -1, LastRadius: 2, Conflict: -1, Compat: map[uint32]uint32{}}
 	s.Full = uint32((uint64(1) << s.T) - 1)
+	// Settlements are authored in builders, never collapsed as terrain biomes.
+	// Keep legacy type IDs intact so stored worlds can still be restored.
+	for i, t := range r.Config.Types {
+		if t.ID == "village" || t.EnvironmentType == "village" {
+			s.Full &^= bit(i)
+		}
+	}
+	if masks != nil {
+		s.EnvironmentMasks = append([]uint32(nil), masks...)
+		for i := range s.EnvironmentMasks {
+			s.EnvironmentMasks[i] &= s.Full
+			if s.EnvironmentMasks[i] == 0 {
+				s.EnvironmentMasks[i] = s.Full
+			}
+		}
+	}
 	s.MaxRepairs = max(2000, s.N)
 	if masks == nil {
 		var water uint32

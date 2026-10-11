@@ -239,12 +239,18 @@ func (e *Environment) ValidateHydrology() []HydroDiagnostic {
 		}
 		fraction := 0.
 		for _, branch := range r.Branches {
+			if ids[branch.ID] {
+				add(branch.ID, "duplicate side-channel identity")
+			}
+			ids[branch.ID] = true
 			fraction += branch.Fraction
 			if branch.ID == "" || branch.To < 0 || branch.To >= n || !ids[branch.Downstream] || branch.Fraction <= 0 {
 				add(r.ID, "invalid distributary connection")
 				continue
 			}
-			if f("waterBody", branch.To) == 0 || f("waterLevel", branch.To) > f("elevation", r.From) {
+			if len(branch.Cells) > 0 || len(branch.Path) > 0 {
+				e.validateHydroBranch(r, branch, add)
+			} else if branch.Downstream != e.waterRef(branch.To) || f("waterBody", branch.To) == 0 || f("waterLevel", branch.To) > f("elevation", r.From) {
 				add(branch.ID, "distributary has no downhill receiving water")
 			}
 		}
@@ -253,6 +259,9 @@ func (e *Environment) ValidateHydrology() []HydroDiagnostic {
 		}
 		if !finite(r.Discharge) || r.Discharge <= 0 || !finite(r.Width) || r.Width <= 0 || r.DryDischarge < 0 || r.DryDischarge > r.Discharge+.001 {
 			add(r.ID, "invalid discharge or channel dimensions")
+		}
+		if !finite(r.SourceWidthMetres) || r.SourceWidthMetres < 0 || r.SourceWidthMetres > r.WidthMetres {
+			add(r.ID, "invalid physical headwater width")
 		}
 		minimumSupply := 2.
 		if e.Hydrology.NetworkVersion > 0 {
@@ -377,12 +386,13 @@ func (e *Environment) ValidateHydrology() []HydroDiagnostic {
 	if e.Hydrology.NetworkVersion > 0 {
 		e.validateRiverSystems(add)
 	}
+	e.validateHydroConservation(add)
 	return out
 }
 
 func (e *Environment) validateRiverSystems(add func(string, string)) {
 	h := e.Hydrology
-	if (h.NetworkVersion < 1 || h.NetworkVersion > 3) || h.Statistics == nil {
+	if (h.NetworkVersion < 1 || h.NetworkVersion > 4) || h.Statistics == nil {
 		add("hydrology", "missing or unsupported river-system summary")
 		return
 	}

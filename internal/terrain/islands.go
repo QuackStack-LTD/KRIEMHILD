@@ -9,14 +9,15 @@ import (
 // These are geological foundations, including drowned members, not decorative
 // map objects. Actual shorelines and water connectivity come from the surface.
 type IslandFoundation struct {
-	ID      string     `json:"id"`
-	Center  [2]float64 `json:"center"`
-	Radius  float64    `json:"radius"`
-	Aspect  float64    `json:"aspect"`
-	Bearing float64    `json:"bearing"`
-	Summit  float64    `json:"summitMetres"`
-	Age     float64    `json:"ageMa"`
-	Stage   string     `json:"stage"`
+	Shape   *LandmassStructure `json:"shape,omitempty"`
+	ID      string             `json:"id"`
+	Center  [2]float64         `json:"center"`
+	Radius  float64            `json:"radius"`
+	Aspect  float64            `json:"aspect"`
+	Bearing float64            `json:"bearing"`
+	Summit  float64            `json:"summitMetres"`
+	Age     float64            `json:"ageMa"`
+	Stage   string             `json:"stage"`
 }
 type Archipelago struct {
 	ID           string             `json:"id"`
@@ -50,6 +51,17 @@ func (e *Environment) buildArchipelagos(hotspots [][2]float64) {
 	landDistance := distance(e.Mask, w, h, 1)
 	original := append([]int(nil), e.Mask...)
 	sites := []islandSite{}
+	// Use local plume-province maxima on each oceanic plate. A fixed global
+	// noise cutoff can reject every offshore opportunity after the continents
+	// move, even though a plate still has a coherent mantle-plume province.
+	plumePeak := make([]float64, len(e.Plates))
+	for i, land := range original {
+		x, y := i%w, i/w
+		p := int(e.get("plate", i))
+		if land == 0 && !e.Plates[p].Continental && landDistance[i] > 8*scale && min(x, y, w-1-x, h-1-y) > e.Margin+3 {
+			plumePeak[p] = math.Max(plumePeak[p], patch(float64(x)/float64(w)*6+71, float64(y)/float64(h)*6+49))
+		}
+	}
 	// Rank sites only within supported settings. Coherent productivity provinces
 	// and irregular exclusion distances leave substantial empty ocean regions.
 	for i := range e.Mask {
@@ -57,25 +69,9 @@ func (e *Environment) buildArchipelagos(hotspots [][2]float64) {
 		if original[i] != 0 || min(x, y, w-1-x, h-1-y) <= e.Margin+3 || landDistance[i] < 1.5 {
 			continue
 		}
-		plate := int(e.get("plate", i))
-		p := e.Plates[plate]
-		other := -1
-		nearest := math.Inf(1)
-		for k, q := range e.Plates {
-			if k == plate {
-				continue
-			}
-			d := math.Hypot(float64(x)-q.X, float64(y)-q.Y)
-			if d < nearest {
-				nearest = d
-				other = k
-			}
-		}
-		if other < 0 {
-			continue
-		}
-		q := e.Plates[other]
-		bearing := math.Atan2(q.Y-p.Y, q.X-p.X) + math.Pi/2
+		plate, other, _, _, _, bearing := e.platesAt(float64(x), float64(y))
+		p, q := e.Plates[plate], e.Plates[other]
+
 		process, setting := "", "open-ocean"
 		coastal := landDistance[i] < 8*scale && e.get("shelf", i) > .35
 		switch {
@@ -92,7 +88,7 @@ func (e *Environment) buildArchipelagos(hotspots [][2]float64) {
 			gx := landDistance[y*w+min(w-1, x+1)] - landDistance[y*w+max(0, x-1)]
 			gy := landDistance[min(h-1, y+1)*w+x] - landDistance[max(0, y-1)*w+x]
 			bearing = math.Atan2(gy, gx) + math.Pi/2
-		case landDistance[i] > 8*scale && !p.Continental && patch(float64(x)/float64(w)*6+71, float64(y)/float64(h)*6+49) > .58:
+		case landDistance[i] > 8*scale && !p.Continental && patch(float64(x)/float64(w)*6+71, float64(y)/float64(h)*6+49) >= math.Min(.58, plumePeak[plate]-.04):
 			process = "hotspot-track"
 			bearing = math.Atan2(p.VY, p.VX)
 		}
@@ -238,6 +234,9 @@ func (e *Environment) buildArchipelagos(hotspots [][2]float64) {
 				f.Stage = "submerged-bank"
 				f.Summit = -15 - hash(i, 140+k)*100
 			}
+			e.shapeIslandFoundation(&f, site.process)
+			f.Shape.Plate = site.plate
+			f.Shape.OtherPlate = site.other
 			if e.applyIslandFoundation(f, volcanic, original, landBudget-added, patch) {
 				g.Foundations = append(g.Foundations, f)
 				g.Path = append(g.Path, f.Center)
@@ -274,14 +273,17 @@ func (e *Environment) applyIslandFoundation(f IslandFoundation, volcanic bool, o
 				continue
 			} // existing continental mountain systems are untouched
 			dx, dy := float64(x)-f.Center[0], float64(y)-f.Center[1]
-			u := (dx*math.Cos(f.Bearing) + dy*math.Sin(f.Bearing)) / f.Aspect
-			v := -dx*math.Sin(f.Bearing) + dy*math.Cos(f.Bearing)
-			r := math.Hypot(u, v) / f.Radius
-			roughness := .18 + .1*clamp(f.Age/30, 0, 1)
-			if !volcanic {
-				roughness += .28
+			r := math.Hypot(dx, dy) / f.Radius
+			if f.Shape != nil {
+				r = math.Max(0, 1-f.Shape.field(float64(x), float64(y)))
+			} else {
+				// Backward-compatible primitive for pre-grammar imported foundations.
+				u := (dx*math.Cos(f.Bearing) + dy*math.Sin(f.Bearing)) / f.Aspect
+				v := -dx*math.Sin(f.Bearing) + dy*math.Cos(f.Bearing)
+				r = math.Hypot(u, v) / f.Radius
+				r *= .85 + .3*patch(float64(x)*.53+73, float64(y)*.53+89)
 			}
-			r *= 1 - roughness/2 + roughness*patch(float64(x)*.53+73, float64(y)*.53+89)
+
 			if r > 6 {
 				continue
 			}
@@ -299,6 +301,9 @@ func (e *Environment) applyIslandFoundation(f IslandFoundation, volcanic bool, o
 				z = -15 - math.Abs(f.Summit) - 180*smooth(r/3)
 			}
 			if f.Stage == "subsiding-atoll" {
+				if f.Shape != nil {
+					r = math.Hypot(dx/f.Aspect, dy) / f.Radius * (.8 + .4*patch(float64(x)/3+71, float64(y)/3+97))
+				}
 				rim = math.Exp(-math.Pow((r-1.25)/.42, 2))
 				z = -100 + 86*rim
 				if r > 2 {
@@ -462,18 +467,23 @@ func (e *Environment) ValidateArchipelagos() error {
 		}
 		if g.Process == "subduction-arc" {
 			p, q := e.Plates[g.Plate], e.Plates[g.OtherPlate]
-			convergence := (p.VX-q.VX)*(q.X-p.X) + (p.VY-q.VY)*(q.Y-p.Y)
+			convergence := e.islandPlateConvergence(p, q)
 			if convergence <= 0 || p.Continental && q.Continental || !p.Continental && (q.Continental || g.Plate > g.OtherPlate) {
 				return fmt.Errorf("unsupported subduction arc %s", g.ID)
 			}
 		}
 		if g.Process == "spreading-chain" {
 			p, q := e.Plates[g.Plate], e.Plates[g.OtherPlate]
-			if p.Continental || (p.VX-q.VX)*(q.X-p.X)+(p.VY-q.VY)*(q.Y-p.Y) >= 0 {
+			if p.Continental || e.islandPlateConvergence(p, q) >= 0 {
 				return fmt.Errorf("unsupported spreading chain %s", g.ID)
 			}
 		}
 		for k, f := range g.Foundations {
+			if f.Shape != nil {
+				if err := validateLandmassStructure(*f.Shape); err != nil {
+					return err
+				}
+			}
 			if !register(f.ID) || !point(f.Center) || g.Path[k] != f.Center || !finite(f.Radius) || f.Radius <= 0 || f.Radius > 20 || !finite(f.Aspect) || f.Aspect < .3 || f.Aspect > 2 || !finite(f.Bearing) || !finite(f.Summit) || f.Summit < -1000 || f.Summit > 4000 || !finite(f.Age) || f.Age < 0 || f.Age > 4600 {
 				return fmt.Errorf("invalid island foundation %s", f.ID)
 			}
@@ -493,4 +503,47 @@ func (e *Environment) ValidateArchipelagos() error {
 		}
 	}
 	return nil
+}
+
+// Independent shape grammars are evaluated into the same physical island base.
+// Bank width/aspect, tectonic bearing, erosion age and subsidence stay causal.
+func (e *Environment) shapeIslandFoundation(f *IslandFoundation, process string) {
+	seed := Seed(e.Options.Seed + "/" + f.ID)
+	rng := RNG(seed)
+	forms := []string{"curved", "hook", "crescent", "isthmus", "branched"}
+	form := forms[int(rng.Next()*float64(len(forms)))]
+	if process == "spreading-chain" {
+		form = "rifted"
+	}
+	if f.Age < 6 && process == "hotspot-track" {
+		form = "curved"
+	}
+	warp := e.Options.shapeOptions()
+	warp.Large *= .65
+	warp.Medium *= .8
+	warp.Small *= clamp(f.Age/30, .3, 1.2)
+	s := makeLandmass(seed, form, f.Center, f.Radius*.68, f.Bearing, warp)
+	s.ID = f.ID + "/shape"
+	s.Process = process
+	for _, paths := range [][][]LandSpinePoint{s.Spines, s.Cuts} {
+		for _, path := range paths {
+			for j := range path {
+				dx, dy := path[j].X-f.Center[0], path[j].Y-f.Center[1]
+				along := (dx*math.Cos(f.Bearing) + dy*math.Sin(f.Bearing)) * (f.Aspect - 1)
+				path[j].X += along * math.Cos(f.Bearing)
+				path[j].Y += along * math.Sin(f.Bearing)
+			}
+		}
+	}
+	f.Shape = &s
+}
+
+func (e *Environment) islandPlateConvergence(p, q Plate) float64 {
+	dx := q.X - p.X
+	// Stored pre-grammar archipelagos used unwrapped plate distances. Validate
+	// their recorded causal model without relocating or regenerating them.
+	if len(e.ContinentalStructures) > 0 && e.Geography != nil && e.Geography.WrapX {
+		dx = math.Remainder(dx, float64(e.Options.Columns))
+	}
+	return (p.VX-q.VX)*dx + (p.VY-q.VY)*(q.Y-p.Y)
 }

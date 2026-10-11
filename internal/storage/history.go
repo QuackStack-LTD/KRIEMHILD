@@ -10,10 +10,11 @@ import (
 	"kriemhild/internal/history"
 	"kriemhild/internal/world"
 	"sort"
+	"strings"
 	"time"
 )
 
-var historyTables = []string{"ages", "timelines", "edges", "terrains", "maps", "entities", "representations", "relations"}
+var historyTables = []string{"ages", "timelines", "edges", "terrains", "maps", "entities", "representations", "relations", "years", "biospheres", "library_files"}
 
 // A World spans multiple tables. PostgreSQL readers must see one consistent
 // version across all queries, including while another editor saves a map.
@@ -26,7 +27,7 @@ func (s *Store) beginHistory(ctx context.Context, readOnly bool) (*sql.Tx, error
 }
 
 func (s *Store) migrateHistory(ctx context.Context) error {
-	statements := []string{"CREATE TABLE IF NOT EXISTS history_worlds (id TEXT PRIMARY KEY, name TEXT NOT NULL, revision INTEGER NOT NULL, updated_at BIGINT NOT NULL, data TEXT NOT NULL)", "CREATE TABLE IF NOT EXISTS history_blobs (hash TEXT PRIMARY KEY, data BYTEA NOT NULL)", "CREATE TABLE IF NOT EXISTS history_snapshots (hash TEXT PRIMARY KEY, data TEXT NOT NULL)"}
+	statements := []string{"CREATE TABLE IF NOT EXISTS writing_documents (id TEXT PRIMARY KEY,name TEXT NOT NULL,body TEXT NOT NULL,revision INTEGER NOT NULL,updated_at BIGINT NOT NULL)", "CREATE TABLE IF NOT EXISTS history_worlds (id TEXT PRIMARY KEY, name TEXT NOT NULL, revision INTEGER NOT NULL, updated_at BIGINT NOT NULL, data TEXT NOT NULL)", "CREATE TABLE IF NOT EXISTS history_blobs (hash TEXT PRIMARY KEY, data BYTEA NOT NULL)", "CREATE TABLE IF NOT EXISTS history_snapshots (hash TEXT PRIMARY KEY, data TEXT NOT NULL)"}
 	for _, table := range historyTables {
 		statements = append(statements, "CREATE TABLE IF NOT EXISTS history_"+table+" (world_id TEXT NOT NULL REFERENCES history_worlds(id) ON DELETE CASCADE, id TEXT NOT NULL, age_id TEXT NOT NULL, project_id TEXT NOT NULL, source_id TEXT NOT NULL, destination_id TEXT NOT NULL, kind TEXT NOT NULL, data TEXT NOT NULL, PRIMARY KEY(world_id,id))")
 	}
@@ -63,7 +64,7 @@ func readHistory(ctx context.Context, q historyQuery, id string) (*history.Docum
 	if err := json.Unmarshal([]byte(raw), &d.World); err != nil {
 		return nil, err
 	}
-	dest := []any{&d.Ages, &d.Timelines, &d.Edges, &d.Terrains, &d.Maps, &d.Entities, &d.Representations, &d.Relations}
+	dest := []any{&d.Ages, &d.Timelines, &d.Edges, &d.Terrains, &d.Maps, &d.Entities, &d.Representations, &d.Relations, &d.Years, &d.Biospheres, &d.LibraryFiles}
 	for i, table := range historyTables {
 		rows, err := q.QueryContext(ctx, "SELECT data FROM history_"+table+" WHERE world_id=$1 ORDER BY id", id)
 		if err != nil {
@@ -88,6 +89,8 @@ func readHistory(ctx context.Context, q historyQuery, id string) (*history.Docum
 			return nil, err
 		}
 	}
+	d.MigrateFamilyViews()
+	d.SyncYears()
 	sort.SliceStable(d.Timelines, func(i, j int) bool { return d.Timelines[i].Order < d.Timelines[j].Order })
 	return d, nil
 }
@@ -104,6 +107,8 @@ func (s *Store) History(ctx context.Context, id string) (*history.Document, erro
 	return d, tx.Commit()
 }
 func writeHistory(ctx context.Context, tx *sql.Tx, d *history.Document, expected int, create bool) error {
+	d.MigrateFamilyViews()
+	d.SyncYears()
 	if err := d.Validate(); err != nil {
 		return err
 	}
@@ -124,7 +129,7 @@ func writeHistory(ctx context.Context, tx *sql.Tx, d *history.Document, expected
 			return fmt.Errorf("World changed; reload before retrying")
 		}
 	}
-	groups := []any{d.Ages, d.Timelines, d.Edges, d.Terrains, d.Maps, d.Entities, d.Representations, d.Relations}
+	groups := []any{d.Ages, d.Timelines, d.Edges, d.Terrains, d.Maps, d.Entities, d.Representations, d.Relations, d.Years, d.Biospheres, d.LibraryFiles}
 	for i, table := range historyTables {
 		if _, err := tx.ExecContext(ctx, "DELETE FROM history_"+table+" WHERE world_id=$1", d.World.ID); err != nil {
 			return err
@@ -238,6 +243,12 @@ func snapshotManifest(ctx context.Context, q historyQuery, id string) (map[strin
 	return out, err
 }
 func (s *Store) SnapshotParts(ctx context.Context, id string) (map[string][]byte, error) {
+	return s.SnapshotPartsMatching(ctx, id, nil)
+}
+
+// SnapshotPartsMatching avoids reading explored tiles when only environmental
+// layers and authored surface operations are needed.
+func (s *Store) SnapshotPartsMatching(ctx context.Context, id string, prefixes []string) (map[string][]byte, error) {
 	tx, err := s.beginHistory(ctx, true)
 	if err != nil {
 		return nil, err
@@ -249,6 +260,13 @@ func (s *Store) SnapshotParts(ctx context.Context, id string) (map[string][]byte
 	}
 	parts := map[string][]byte{}
 	for path, h := range manifest {
+		matched := len(prefixes) == 0
+		for _, prefix := range prefixes {
+			matched = matched || strings.HasPrefix(path, prefix)
+		}
+		if !matched {
+			continue
+		}
 		var data []byte
 		if err = tx.QueryRowContext(ctx, "SELECT data FROM history_blobs WHERE hash=$1", h).Scan(&data); err != nil {
 			return nil, err
@@ -305,6 +323,12 @@ func (s *Store) CommitHistoricalMap(ctx context.Context, project string, parts m
 	changed := world.New(int(state.W)+1, int(state.H)+1)
 	for id, shape := range state.Entities {
 		if _, ok := parts["builder/entity/"+id]; ok {
+			if shape.LogicalID != "" {
+				e := d.Entity(m.AgeID, shape.LogicalID)
+				if e == nil || e.Deleted || e.Kind != shape.Kind {
+					return true, fmt.Errorf("additional map region must reference an active entity of the same type")
+				}
+			}
 			changed.Entities[id] = shape
 		}
 	}
@@ -358,18 +382,40 @@ func (s *Store) HistoryBundle(ctx context.Context, id string) (Bundle, error) {
 			b.Blobs[h] = data
 		}
 	}
+	for _, f := range d.LibraryFiles {
+		for _, v := range f.Versions {
+			if _, ok := b.Blobs[v.Hash]; ok {
+				continue
+			}
+			var data []byte
+			if err = tx.QueryRowContext(ctx, "SELECT data FROM history_blobs WHERE hash=$1", v.Hash).Scan(&data); err != nil {
+				return b, err
+			}
+			b.Blobs[v.Hash] = data
+		}
+	}
 	return b, tx.Commit()
 }
 func (b Bundle) Validate() error {
 	if b.Format != "KRIEMHILD-WORLD" || b.Schema != 1 || b.Document == nil {
 		return fmt.Errorf("unsupported World archive")
 	}
+	b.Document.MigrateFamilyViews()
+	b.Document.SyncYears()
 	if err := b.Document.Validate(); err != nil {
 		return err
 	}
 	for _, m := range b.Document.Maps {
 		if b.Snapshots[m.Snapshot] == nil {
 			return fmt.Errorf("missing map snapshot")
+		}
+	}
+	for _, f := range b.Document.LibraryFiles {
+		for _, v := range f.Versions {
+			data, ok := b.Blobs[v.Hash]
+			if !ok || hash(data) != v.Hash || int64(len(data)) != v.Size {
+				return fmt.Errorf("missing or corrupt Library file: %s", v.Name)
+			}
 		}
 	}
 	for id, manifest := range b.Snapshots {
@@ -410,4 +456,32 @@ func (s *Store) ImportHistory(ctx context.Context, b Bundle) error {
 		return err
 	}
 	return tx.Commit()
+}
+
+// SnapshotPart reads one immutable layer without loading explored terrain chunks.
+func (s *Store) SnapshotPart(ctx context.Context, id, name string) ([]byte, error) {
+	tx, err := s.beginHistory(ctx, true)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+	manifest, err := snapshotManifest(ctx, tx, id)
+	if err != nil {
+		return nil, err
+	}
+	hash, ok := manifest[name]
+	if !ok {
+		return nil, sql.ErrNoRows
+	}
+	var data []byte
+	if err = tx.QueryRowContext(ctx, "SELECT data FROM history_blobs WHERE hash=$1", hash).Scan(&data); err != nil {
+		return nil, err
+	}
+	return data, tx.Commit()
+}
+
+func (s *Store) HistoryRevision(ctx context.Context, id string) (int, error) {
+	var revision int
+	err := s.db.QueryRowContext(ctx, "SELECT revision FROM history_worlds WHERE id=$1", id).Scan(&revision)
+	return revision, err
 }
