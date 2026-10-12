@@ -6,6 +6,7 @@ import (
 )
 
 func (s *Server) writingRoutes() {
+	s.writerRoutes()
 	s.mux.HandleFunc("GET /api/writing", func(w http.ResponseWriter, r *http.Request) {
 		if !s.historyStore(w) {
 			return

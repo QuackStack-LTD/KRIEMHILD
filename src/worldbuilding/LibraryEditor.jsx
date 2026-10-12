@@ -33,7 +33,12 @@ export default function LibraryEditor({ bytes, name, onSave, onDirty, busy }) {
     let live = true;
     const objectURL = URL.createObjectURL(
       new Blob([bytes], {
-        type: kind === "pdf" ? "application/pdf" : "application/octet-stream",
+        type:
+          kind === "pdf"
+            ? "application/pdf"
+            : extension(name) === "svg"
+              ? "image/svg+xml"
+              : "application/octet-stream",
       }),
     );
     setURL(objectURL);
@@ -159,6 +164,16 @@ export default function LibraryEditor({ bytes, name, onSave, onDirty, busy }) {
       setError(e.message);
     }
   }
+  if (["svg", "png", "jpg", "jpeg", "webp"].includes(extension(name)))
+    return (
+      <figure className="library-survey">
+        <img src={url} alt={name} />
+        <figcaption>
+          Stored visual artifact. Download or replace the file to revise its
+          drawing.
+        </figcaption>
+      </figure>
+    );
   if (kind === "binary")
     return (
       <p>

@@ -25,6 +25,7 @@ test.describe("Editing and specialized surfaces", () => {
     await page.getByRole("button", { name: "Create archive folder" }).click();
     let dialog = page.getByRole("dialog");
     await dialog.getByRole("textbox", { name: "Name", exact: true }).fill(name);
+    await dialog.getByLabel("Archive owner").selectOption(place.id);
     await dialog.locator("select[multiple]").selectOption(place.id);
     await dialog.getByRole("button", { name: "Save", exact: true }).click();
     await expect(dialog).toHaveCount(0);

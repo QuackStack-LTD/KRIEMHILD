@@ -31,13 +31,27 @@ func (s *Store) SaveLibraryFile(ctx context.Context, worldID string, revision in
 		return nil, err
 	}
 	f := d.LibraryFile(e.AgeID, e.ID)
+	h := hash(data)
+	if f != nil && (f.Status == "lost" || f.Status == "destroyed") && (len(f.Versions) == 0 || f.Versions[len(f.Versions)-1].Hash != h) {
+		return nil, fmt.Errorf("the contents of lost or destroyed documents cannot be edited")
+	}
+	if f != nil && f.Record != nil && f.ArchiveID != archive {
+		return nil, fmt.Errorf("use Preservation & custody to transfer a historical document")
+	}
 	if f == nil {
 		d.LibraryFiles = append(d.LibraryFiles, history.LibraryFile{ID: e.ID, AgeID: e.AgeID})
 		f = &d.LibraryFiles[len(d.LibraryFiles)-1]
 	}
 	f.ArchiveID = archive
-	h := hash(data)
-	f.Versions = append(f.Versions, history.LibraryVersion{Hash: h, Name: name, MIME: mime, Size: int64(len(data)), CreatedAt: time.Now().UnixMilli()})
+	var provenance *history.ArchiveRecord
+	if f.Record != nil {
+		copy := *f.Record
+		copy.AuthoredEdits = copy.AuthoredEdits || len(f.Versions) == 0 || f.Versions[len(f.Versions)-1].Hash != h
+		f.Record = &copy
+		versionCopy := copy
+		provenance = &versionCopy
+	}
+	f.Versions = append(f.Versions, history.LibraryVersion{Hash: h, Name: name, MIME: mime, Size: int64(len(data)), CreatedAt: time.Now().UnixMilli(), Provenance: provenance})
 	if _, err = tx.ExecContext(ctx, "INSERT INTO history_blobs(hash,data) VALUES($1,$2) ON CONFLICT(hash) DO NOTHING", h, data); err != nil {
 		return nil, err
 	}

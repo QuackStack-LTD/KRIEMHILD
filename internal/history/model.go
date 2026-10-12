@@ -74,6 +74,7 @@ type Map struct {
 	Kind      string       `json:"kind"`
 }
 type Entity struct {
+	Archive      *ArchiveConfig      `json:"archive,omitempty"`
 	System       *SystemRecord       `json:"system,omitempty"`
 	Biology      *biosphere.Lifeform `json:"biology,omitempty"`
 	Content      *ConceptContent     `json:"content,omitempty"`
@@ -252,7 +253,9 @@ func (d *Document) ValidateGraph() error {
 	return nil
 }
 func (d *Document) inherit(from, to string, overwrite bool) {
-	d.inheritLibrary(from, to, overwrite)
+	// File inheritance follows entity cloning so dated archive coverage can be
+	// reconciled in the destination Age without mutating the source records.
+	defer d.inheritLibrary(from, to, overwrite)
 	for _, v := range append([]NetworkView(nil), d.World.Networks...) {
 		if v.AgeID == from {
 			v.AgeID = to
@@ -326,6 +329,7 @@ func (d *Document) inherit(from, to string, overwrite bool) {
 		v.Properties = append(json.RawMessage(nil), v.Properties...)
 		v.Content = cloneContent(v.Content)
 		v.System = cloneSystem(v.System)
+		v.Archive = cloneArchive(v.Archive)
 		v.Biology = biosphere.Clone(v.Biology)
 		v.Names = append([]EntityName(nil), v.Names...)
 		if v.ContinuityID == "" {
@@ -457,6 +461,11 @@ func (d *Document) Apply(c Command) (err error) {
 		d.Terrains = slices.DeleteFunc(d.Terrains, func(v Terrain) bool { return v.AgeID == id })
 		d.Maps = slices.DeleteFunc(d.Maps, func(v Map) bool { return v.AgeID == id })
 		d.Entities = slices.DeleteFunc(d.Entities, func(v Entity) bool { return v.AgeID == id })
+		for i := range d.Entities {
+			if c := d.Entities[i].Archive; c != nil {
+				c.Sources = slices.DeleteFunc(c.Sources, func(s KnowledgeSource) bool { return s.SourceAge == id || s.ArrivalAge == id })
+			}
+		}
 		d.Representations = slices.DeleteFunc(d.Representations, func(v Representation) bool { return v.AgeID == id })
 		d.Relations = slices.DeleteFunc(d.Relations, func(v Relation) bool { return v.AgeID == id })
 		if joinBefore && joinAfter {

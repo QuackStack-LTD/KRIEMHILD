@@ -31,6 +31,7 @@ func (s *Store) migrateHistory(ctx context.Context) error {
 	for _, table := range historyTables {
 		statements = append(statements, "CREATE TABLE IF NOT EXISTS history_"+table+" (world_id TEXT NOT NULL REFERENCES history_worlds(id) ON DELETE CASCADE, id TEXT NOT NULL, age_id TEXT NOT NULL, project_id TEXT NOT NULL, source_id TEXT NOT NULL, destination_id TEXT NOT NULL, kind TEXT NOT NULL, data TEXT NOT NULL, PRIMARY KEY(world_id,id))")
 	}
+	statements = append(statements, writerSchema...)
 	statements = append(statements, "CREATE UNIQUE INDEX IF NOT EXISTS history_map_project ON history_maps(project_id)")
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -46,6 +47,9 @@ func (s *Store) migrateHistory(ctx context.Context) error {
 		if _, err = tx.ExecContext(ctx, q); err != nil {
 			return err
 		}
+	}
+	if err = migrateWriter(ctx, tx); err != nil {
+		return err
 	}
 	return tx.Commit()
 }

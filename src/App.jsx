@@ -67,7 +67,7 @@ import "./history.css";
 import { Atlas, Characters } from "./worldbuilding/Workspace.jsx";
 import Profile from "./worldbuilding/Profile.jsx";
 import Networks from "./worldbuilding/Networks.jsx";
-import Writing from "./worldbuilding/Writing.jsx";
+const Writing = lazy(() => import("./worldbuilding/Writing.jsx"));
 import YearTimeline from "./worldbuilding/YearTimeline.jsx";
 import "./worldbuilding/years.css";
 
@@ -1203,7 +1203,11 @@ export default function App() {
                 }}
               />
             ) : page === "writing" ? (
-              <Writing onBack={() => navigate(`/worlds/${id}`)} />
+              <Writing
+                key={id}
+                doc={doc}
+                onBack={() => navigate(`/worlds/${id}`)}
+              />
             ) : page === "characters" ? (
               <Characters
                 key={current.id}

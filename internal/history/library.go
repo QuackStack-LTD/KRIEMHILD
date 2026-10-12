@@ -12,13 +12,18 @@ const MaxLibraryFileSize = 64 << 20
 
 // File versions point to immutable, content-addressed blobs, shared across Ages.
 type LibraryVersion struct {
-	Hash      string `json:"hash"`
-	Name      string `json:"name"`
-	MIME      string `json:"mime"`
-	Size      int64  `json:"size"`
-	CreatedAt int64  `json:"createdAt"`
+	Provenance *ArchiveRecord `json:"provenance,omitempty"`
+	Hash       string         `json:"hash"`
+	Name       string         `json:"name"`
+	MIME       string         `json:"mime"`
+	Size       int64          `json:"size"`
+	CreatedAt  int64          `json:"createdAt"`
 }
 type LibraryFile struct {
+	Record    *ArchiveRecord   `json:"record,omitempty"`
+	Custody   []CustodyEvent   `json:"custody,omitempty"`
+	CopyOf    string           `json:"copyOf,omitempty"`
+	Status    string           `json:"status,omitempty"`
 	ID        string           `json:"id"`
 	AgeID     string           `json:"ageId"`
 	ArchiveID string           `json:"archiveId"`
@@ -42,6 +47,9 @@ func ArchiveParent(e Entity) string {
 	return p.ParentArchive
 }
 func (d *Document) validateLibrary() error {
+	if err := d.validateArchives(); err != nil {
+		return err
+	}
 	seen := map[string]bool{}
 	for _, f := range d.LibraryFiles {
 		key := f.AgeID + "/" + f.ID
@@ -80,8 +88,20 @@ func (d *Document) inheritLibrary(from, to string, overwrite bool) {
 		if f.AgeID != from {
 			continue
 		}
+		if a := d.Age(to); a != nil && a.StartedFromYear != nil && a.StartedFromYear.AgeID == from {
+			var keep bool
+			f, keep = d.libraryAtYear(f, to, from, a.StartedFromYear.Number)
+			if !keep {
+				continue
+			}
+		}
 		f.AgeID = to
 		f.Versions = append([]LibraryVersion(nil), f.Versions...)
+		for i := range f.Versions {
+			f.Versions[i].Provenance = cloneArchiveRecord(f.Versions[i].Provenance)
+		}
+		f.Record = cloneArchiveRecord(f.Record)
+		f.Custody = append([]CustodyEvent(nil), f.Custody...)
 		if old := d.LibraryFile(to, f.ID); old == nil {
 			d.LibraryFiles = append(d.LibraryFiles, f)
 		} else if overwrite {
@@ -135,4 +155,74 @@ func (d *Document) validateArchiveDeletion(age string, ids []string) error {
 		}
 	}
 	return nil
+}
+
+// A branch from a particular year must not inherit documents or versions that
+// demonstrably had not arrived yet. Undated authored files retain legacy behavior.
+func (d *Document) libraryAtYear(f LibraryFile, to, from string, year int64) (LibraryFile, bool) {
+	oldVersions := f.Versions
+	f.Versions = nil
+	for _, v := range oldVersions {
+		if v.Provenance != nil && v.Provenance.RecordingAge == from && v.Provenance.RecordingYear > year {
+			continue
+		}
+		f.Versions = append(f.Versions, v)
+	}
+	keep := len(f.Versions) > 0
+	for _, c := range f.Custody {
+		if c.Action == "copy" && c.AgeID == from && c.Year > year {
+			keep = false
+		}
+	}
+	// Reconstruct custody at the cut, retaining evidence in the source Age.
+	prior := append([]CustodyEvent(nil), f.Custody...)
+	if len(prior) > 0 {
+		f.ArchiveID = prior[0].From
+		f.Status = "present"
+		f.Custody = nil
+		for _, c := range prior {
+			if c.AgeID == from && c.Year > year {
+				continue
+			}
+			f.Custody = append(f.Custody, c)
+			switch c.Action {
+			case "lose":
+				f.Status = "lost"
+			case "destroy":
+				f.Status = "destroyed"
+			default:
+				f.Status = "present"
+			}
+			f.ArchiveID = c.To
+		}
+	}
+	validKeys := map[string]bool{}
+	for _, v := range f.Versions {
+		if v.Provenance != nil {
+			validKeys[v.Provenance.CoverageKey] = true
+		}
+	}
+	invalidKeys := map[string]bool{}
+	for _, v := range oldVersions {
+		if v.Provenance != nil && (!keep || !validKeys[v.Provenance.CoverageKey]) {
+			invalidKeys[v.Provenance.CoverageKey] = true
+		}
+	}
+	for i := range d.Entities {
+		e := &d.Entities[i]
+		if e.AgeID != to || e.Archive == nil {
+			continue
+		}
+		e.Archive.Coverage = slices.DeleteFunc(e.Archive.Coverage, func(c ArchiveCoverage) bool { return c.DocumentID == f.ID && invalidKeys[c.Key] })
+	}
+	if !keep {
+		if e := d.Entity(to, f.ID); e != nil {
+			e.Deleted = true
+		}
+		return f, false
+	}
+	if last := f.Versions[len(f.Versions)-1].Provenance; last != nil {
+		f.Record = cloneArchiveRecord(last)
+	}
+	return f, true
 }

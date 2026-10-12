@@ -6,6 +6,18 @@ import { activeEntities, registry, label } from "./model.js";
 import { newLibraryFile } from "./library-files.js";
 import LibraryEditor from "./LibraryEditor.jsx";
 import "./library.css";
+import {
+  ArchiveOwnerField,
+  ArchiveSettings,
+  GatherDocumentsDialog,
+  ArchiveCustodyDialog,
+  DocumentProvenance,
+} from "./ArchiveTools.jsx";
+import {
+  archiveCategories,
+  archiveDefaults,
+  matchesArchiveFilters,
+} from "./archives.js";
 
 const id = () => crypto.randomUUID();
 const documentTypes = Object.entries(registry.types).filter(
@@ -41,6 +53,14 @@ export default function Library({
     [dirty, setDirty] = useState(false),
     [content, setContent] = useState(null),
     [version, setVersion] = useState("");
+  const [archiveDialog, setArchiveDialog] = useState("");
+  const [filters, setFilters] = useState({
+    age: "",
+    type: "",
+    entity: "",
+    year: "",
+    recorded: "",
+  });
   const upload = useRef(null),
     replace = useRef(null),
     current = all.find((e) => e.id === selected),
@@ -59,6 +79,7 @@ export default function Library({
     if (!(await mayLeave())) return;
     setDirty(false);
     setFolder(value);
+    setFilters({ age: "", type: "", entity: "", year: "", recorded: "" });
     setShowArchives(false);
     setSelected("");
     setVersion("");
@@ -255,7 +276,10 @@ export default function Library({
               </div>
               <div className="library-toolbar">
                 <a href={url(selected, shown?.hash)}>Download file</a>
-                <button disabled={busy} onClick={() => replace.current.click()}>
+                <button
+                  disabled={busy || ["lost", "destroyed"].includes(file.status)}
+                  onClick={() => replace.current.click()}
+                >
                   Replace file
                 </button>
                 <button
@@ -302,6 +326,34 @@ export default function Library({
                   </button>
                 )}
               </div>
+              <div className="library-toolbar">
+                <button onClick={() => setArchiveDialog("custody")}>
+                  Preservation & custody
+                </button>
+                {file.record && (
+                  <button
+                    disabled={
+                      !archive?.archive ||
+                      file.status === "destroyed" ||
+                      file.status === "lost"
+                    }
+                    onClick={() => setArchiveDialog("revise")}
+                  >
+                    Revise generated document
+                  </button>
+                )}
+              </div>
+              <DocumentProvenance
+                file={{ ...file, record: shown?.provenance || file.record }}
+                doc={doc}
+                onProfile={onProfile}
+              />
+              {["lost", "destroyed"].includes(file.status) && (
+                <p>
+                  This is a preserved historical view of a {file.status}{" "}
+                  physical document. Its contents cannot be saved or replaced.
+                </p>
+              )}
               <input
                 hidden
                 type="file"
@@ -319,7 +371,7 @@ export default function Library({
                   name={shown.name}
                   onSave={saveBytes}
                   onDirty={setDirty}
-                  busy={busy}
+                  busy={busy || ["lost", "destroyed"].includes(file.status)}
                 />
               ) : (
                 <p>Loading file…</p>
@@ -350,6 +402,61 @@ export default function Library({
               </div>
               {archive && (
                 <>
+                  <section className="archive-context">
+                    <div className="library-toolbar">
+                      <button onClick={() => setArchiveDialog("settings")}>
+                        Archive Settings
+                      </button>
+                      <button
+                        className="primary"
+                        disabled={!archive.archive || busy}
+                        onClick={() => setArchiveDialog("gather")}
+                      >
+                        Gather Documents
+                      </button>
+                    </div>
+                    {archive.archive ? (
+                      <p>
+                        Owner:{" "}
+                        {all.find((e) => e.id === archive.archive.ownerId)
+                          ?.name || "Historical owner"}{" "}
+                        · {archive.archive.purpose} archive ·{" "}
+                        {archive.archive.intensity} documentation ·{" "}
+                        {archive.archive.knowledgeScope} knowledge.{" "}
+                        {(archive.archive.coverage || []).length} covered
+                        records.{" "}
+                        {archive.archive.retention === "review" &&
+                          "Review inherited custody and preservation in this Age."}
+                      </p>
+                    ) : (
+                      <p>
+                        Select an owner in Archive Settings to enable
+                        knowledge-limited document gathering. Existing files
+                        remain available.
+                      </p>
+                    )}
+                    {files.some(
+                      (f) => f.archiveId === archive.id && f.record,
+                    ) && (
+                      <p>
+                        Historical coverage:{" "}
+                        {[
+                          ...new Set(
+                            files
+                              .filter(
+                                (f) => f.archiveId === archive.id && f.record,
+                              )
+                              .map(
+                                (f) =>
+                                  `${doc.ages.find((a) => a.id === f.record.sourceAge)?.name || "Historical Age"}, year ${f.record.fromYear}`,
+                              ),
+                          ),
+                        ]
+                          .slice(0, 12)
+                          .join("; ")}
+                      </p>
+                    )}
+                  </section>
                   <div className="archive-locations">
                     <span>Locations & custodians: </span>
                     {locations(archive).map((e) => (
@@ -362,6 +469,76 @@ export default function Library({
                         Link a place or organization in Archive properties.
                       </span>
                     )}
+                  </div>
+                  <div className="archive-form-grid archive-filters">
+                    <label>
+                      Source Age
+                      <select
+                        value={filters.age}
+                        onChange={(e) =>
+                          setFilters({ ...filters, age: e.target.value })
+                        }
+                      >
+                        <option value="">All Ages</option>
+                        {doc.ages.map((a) => (
+                          <option key={a.id} value={a.id}>
+                            {a.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Record category
+                      <select
+                        value={filters.type}
+                        onChange={(e) =>
+                          setFilters({ ...filters, type: e.target.value })
+                        }
+                      >
+                        <option value="">All categories</option>
+                        {archiveCategories.map((v) => (
+                          <option key={v}>{v}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Related entity
+                      <select
+                        value={filters.entity}
+                        onChange={(e) =>
+                          setFilters({ ...filters, entity: e.target.value })
+                        }
+                      >
+                        <option value="">All entities</option>
+                        {all.map((e) => (
+                          <option key={e.id} value={e.id}>
+                            {e.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Covered year
+                      <input
+                        type="number"
+                        step="1"
+                        value={filters.year}
+                        onChange={(e) =>
+                          setFilters({ ...filters, year: e.target.value })
+                        }
+                      />
+                    </label>
+                    <label>
+                      Recording year
+                      <input
+                        type="number"
+                        step="1"
+                        value={filters.recorded}
+                        onChange={(e) =>
+                          setFilters({ ...filters, recorded: e.target.value })
+                        }
+                      />
+                    </label>
                   </div>
                   <div className="library-toolbar">
                     <button
@@ -411,7 +588,11 @@ export default function Library({
               {archive && (
                 <div className="library-file-list">
                   {files
-                    .filter((f) => f.archiveId === folder)
+                    .filter(
+                      (f) =>
+                        f.archiveId === folder &&
+                        matchesArchiveFilters(f, filters),
+                    )
                     .map((f) => ({ f, e: all.find((e) => e.id === f.id) }))
                     .filter(
                       ({ e }) =>
@@ -425,7 +606,10 @@ export default function Library({
                         <span>▤ {e.name}</span>
                         <small>
                           {label(e.kind)} · {f.versions.at(-1).name} ·{" "}
-                          {f.versions.length} version(s)
+                          {f.versions.length} version(s) ·{" "}
+                          {f.status || "present"}
+                          {f.record &&
+                            ` · ${f.record.category} · recorded ${f.record.recordingYear}`}
                         </small>
                       </button>
                     ))}
@@ -441,6 +625,39 @@ export default function Library({
           )}
         </section>
       </div>
+      {archiveDialog === "settings" && archive && (
+        <ArchiveSettings
+          archive={archive}
+          doc={doc}
+          age={age}
+          all={all}
+          command={command}
+          close={() => setArchiveDialog("")}
+        />
+      )}
+      {["gather", "revise"].includes(archiveDialog) && archive && (
+        <GatherDocumentsDialog
+          doc={doc}
+          age={age}
+          archive={archive}
+          onDocument={onDocument}
+          reviseId={archiveDialog === "revise" ? selected : ""}
+          close={() => setArchiveDialog("")}
+        />
+      )}
+      {archiveDialog === "custody" && file && (
+        <ArchiveCustodyDialog
+          doc={doc}
+          age={age}
+          file={file}
+          archives={archives}
+          onDocument={(d) => {
+            onDocument(d);
+            setSelected("");
+          }}
+          close={() => setArchiveDialog("")}
+        />
+      )}
       {dialog && (
         <LibraryDialog
           key={dialog.type + (dialog.entity?.id || "")}
@@ -465,6 +682,7 @@ export default function Library({
                     ageId: age.id,
                     kind: "archive",
                     name: values.name,
+                    archive: values.archiveConfig,
                     properties: {
                       ...dialog.entity?.properties,
                       summary: values.summary,
@@ -580,6 +798,7 @@ export function LibraryDialog({
   const entity = dialog.entity,
     isArchive = dialog.type === "archive";
   const [values, setValues] = useState({
+    archiveConfig: entity?.archive || null,
     name: entity?.name || "",
     kind: entity?.kind || "document",
     summary: entity?.properties?.summary || "",
@@ -624,7 +843,7 @@ export function LibraryDialog({
           </button>
           <button
             className="primary"
-            disabled={busy || (isArchive && !values.locations.length)}
+            disabled={busy || (isArchive && !values.archiveConfig?.ownerId)}
           >
             Save
           </button>
@@ -652,6 +871,17 @@ export function LibraryDialog({
       </label>
       {isArchive ? (
         <>
+          <ArchiveOwnerField
+            all={all}
+            config={values.archiveConfig}
+            onChange={(next) =>
+              field("archiveConfig", {
+                ...next,
+                coverage: values.archiveConfig?.coverage || [],
+                sources: values.archiveConfig?.sources || [],
+              })
+            }
+          />
           <label>
             Parent archive
             <select
@@ -669,13 +899,12 @@ export function LibraryDialog({
             </select>
           </label>
           <label>
-            Linked places & organizations (select one or more)
+            Linked places & organizations (optional)
             <small>
               Hold Ctrl (Command on Mac) to select more than one location; Shift
               selects a range.
             </small>
             <select
-              required
               multiple
               size="6"
               value={values.locations}

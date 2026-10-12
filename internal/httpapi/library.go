@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"kriemhild/internal/history"
+	"kriemhild/internal/storage"
 	"mime"
 	"net/http"
 	"path/filepath"
@@ -11,6 +12,40 @@ import (
 )
 
 func (s *Server) libraryRoutes() {
+	s.mux.HandleFunc("POST /api/worlds/{world}/archives/gather", func(w http.ResponseWriter, r *http.Request) {
+		if !s.historyStore(w) {
+			return
+		}
+		var req history.GatherRequest
+		r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			fail(w, 400, "Invalid gathering request")
+			return
+		}
+		d, result, err := s.projects.GatherArchive(r.Context(), r.PathValue("world"), req)
+		if err != nil {
+			fail(w, 409, err.Error())
+			return
+		}
+		respond(w, 200, map[string]any{"document": d, "result": result})
+	})
+	s.mux.HandleFunc("POST /api/worlds/{world}/archives/custody", func(w http.ResponseWriter, r *http.Request) {
+		if !s.historyStore(w) {
+			return
+		}
+		var req storage.ArchiveCustodyRequest
+		r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			fail(w, 400, "Invalid custody request")
+			return
+		}
+		d, err := s.projects.ArchiveCustody(r.Context(), r.PathValue("world"), req)
+		if err != nil {
+			fail(w, 409, err.Error())
+			return
+		}
+		respond(w, 200, d)
+	})
 	s.mux.HandleFunc("POST /api/worlds/{world}/library", func(w http.ResponseWriter, r *http.Request) {
 		if !s.historyStore(w) {
 			return

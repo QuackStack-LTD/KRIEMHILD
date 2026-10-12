@@ -37,9 +37,11 @@ type, language, script, cultural/geographical context and validity without new i
   prevent location or institutional types between two characters.
 - **Organizations:** searchable directory and dedicated institutional profiles; see below.
 - **Culture & Religion and Library:** reserved workspace pages using the shared registry.
-- **Writing:** independent creator drafts in `writing_documents`, with explicit saving,
-  optimistic revisions, text import/download and deletion. They are not fictional entities
-  and are deliberately excluded from World ZIPs.
+- **Writing:** World-associated manuscript projects, ordered chapters/scenes, rich-text
+  drafting, revision-safe autosave, recovery, planning views and optional Age-aware
+  references. Legacy drafts migrate to unassigned Loose Drafts. Manuscripts are not
+  fictional entities and use a separate project backup instead of World ZIPs.
+  See [Writer workspace](WRITER-WORKSPACE.md) for workflows, API and backup format.
 
 The main navigation and Age context are shared. Builders/generators hide the worldbuilding
 sidebar and timeline. Profiles show their own Age indicator without the timeline. Time
@@ -266,3 +268,83 @@ dynamics or evolution, infer arbitrary biological prose, resolve migration paths
 sub-cell detail, or fabricate caves without underlying environmental support. Distribution
 abundance is a relative habitat potential, not a census. Manual lifecycle, lineage and
 seasonal records support further worldbuilding without making those simulation claims.
+
+
+## Knowledge-limited World Archives
+
+Library folders remain the existing archive entities and folder browser. New folders
+choose an owner independently of their locations; existing folders keep their files
+and can be configured through **Archive Settings**. Configuration is an additive,
+versioned `Entity.archive` record. Purpose supplies recording priorities; intensity
+controls significance/detail thresholds. Neither increases knowledge access.
+
+**Gather Documents** previews eligible and skipped sources before saving. Select an
+Age, a year range, or available history, and give the recording year in the active
+Age. Gathering writes files, provenance and coverage in one revision-checked database
+transaction. Repeating it does not overwrite authored text or regenerate previously
+covered records, including records subsequently transferred, lost, destroyed or deleted.
+A maximum of 256 new documents is committed per batch; repeat gathering to continue.
+**Revise generated document** explicitly creates another immutable file version.
+
+Knowledge rules are intentionally conservative:
+
+- An owner knows its own dated records and explicitly dated participation in events.
+- One authored, dated `governs`, `controls`, `member-of` or `subordinate-to` link can
+  establish official institutional records. Automatically derived spatial links,
+  proximity, claims, visits and unrestricted transitive traversal do not grant access.
+- Diplomatic, trade, messenger, expedition, intelligence, observation and inherited
+  reports use explicit evidence sources: subject, source Age, covered years,
+  categories, strength, arrival Age and arrival year. Incidental evidence is ignored.
+  Reports cannot arrive before the source period ends within the same Age.
+- Arrival dates are compared within their Age. Inherited evidence remains available
+  in later Ages, except when a branch starts before the evidence arrived. Alternative
+  branches are not implicitly available; their records require an explicit source.
+- Available history includes inherited lineage and explicit sources, not every Age
+  in the World. Past source data is still subject to knowledge checks.
+- Undated current-state observations and geometry are never replayed as earlier
+  historical facts. They are gathered only at or after the latest dated state in that
+  Age, with the selected observation year. Dated events can still be gathered earlier.
+
+Supported sources include Year events; dated family, political and organizational
+relations; embedded cultural components; and supplied population, taxation, inventory,
+laws, harvest, production, prices, debts, shipments, summary, biography, traditions,
+customs and rituals. Missing values are omitted rather than simulated. Gathered
+artifacts include Markdown chronicles/accounts/reports, CSV registers and inventories,
+SVG surveys of known entity representations, existing embedded portraits/emblems, and
+CSV indexes of already-preserved source documents. Surveys contain only that entity's
+geometry, not an omniscient surrounding map. Indexes exclude other indexes and missing
+physical records. No external AI or asset service is needed.
+
+`LibraryFile.record` and each generated file version carry model version, artifact
+kind, category, attributed owner, recording Age/year, creation year, covered period,
+source Age, related entities, source identifiers, coverage key, evidence, reliability
+and a source snapshot or visual digest. Authored edits remain separate file versions
+and never edit the source entities. Source metadata remains readable if an original
+Age is later removed. Filters distinguish event/observation dates from recording dates.
+
+**Preservation & custody** supports copying, transfer, confiscation, inheritance,
+loss, recovery and destruction, with a dated reason. Copies get independent physical
+IDs and retain a `copyOf` reference and original information provenance. Custody is
+Age-scoped; destruction cannot be reversed as recovery. Source bytes remain preserved
+for the author's historical inspection even when a physical document is unavailable
+in-world. Preserve/review retention policies do not invent automatic destruction.
+
+The existing World database stores these fields in the entity and Library records.
+The existing World ZIP includes their full metadata and content-addressed file blobs;
+no server-local dependency is required after import. Age inheritance deep-copies
+settings, sources, coverage, custody and version metadata while sharing immutable bytes.
+Branches from a specified year exclude future generated versions and coverage, and
+restore documented custody at the cut without changing the source Age.
+Legacy folders and user uploads without generated provenance remain supported.
+
+API: `POST /api/worlds/{world}/archives/gather` accepts World revision, Age/archive,
+scope, source Age, optional range, recording year, `preview`, and optional `reviseId`;
+it returns the World document and per-source decisions. `POST .../archives/custody`
+accepts revision, Age, document, destination (where applicable), action, year and reason.
+Configuration uses the existing entity command.
+
+Tests cover knowledge boundaries, delayed and incidental sources, inheritance and
+branch dates, deterministic generation, CSV formula safety, repeat gathering,
+authored revisions, custody, database restart and actual World ZIP import. Browser
+checks exercised creation, settings, gathering, repeat gathering, a messenger arriving
+in year 30 (excluded in year 29), generated document viewing and mobile dialog bounds.

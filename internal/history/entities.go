@@ -230,6 +230,7 @@ func (d *Document) applyEntities(c Command) (bool, error) {
 		}
 		e := *c.Entity
 		e.System = cloneSystem(e.System)
+		e.Archive = cloneArchive(e.Archive)
 		e.AgeID = c.AgeID
 		e.Content = cloneContent(e.Content)
 		e.Biology = biosphere.Clone(e.Biology)
@@ -242,6 +243,9 @@ func (d *Document) applyEntities(c Command) (bool, error) {
 			e.ID = ID()
 		}
 		old := d.Entity(c.AgeID, e.ID)
+		if old != nil && e.Archive == nil {
+			e.Archive = cloneArchive(old.Archive)
+		}
 		if old == nil {
 			e.CreatedAt = e.UpdatedAt
 			if _, ok := Registry.Types[e.Kind]; !ok {

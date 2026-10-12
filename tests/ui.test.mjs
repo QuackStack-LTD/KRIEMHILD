@@ -263,7 +263,7 @@ test("Library archive creation uses the shared visible modal with labeled fields
   assert.equal(
     panel.querySelector(".dialog-actions button:last-child").disabled,
     true,
-    "Location selection is required before saving",
+    "Archive owner selection is required before saving",
   );
 });
 test("Biosphere preview remains in the body with separate habitat groups, not in the action footer", async () => {
