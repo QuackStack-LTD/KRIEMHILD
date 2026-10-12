@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { registerNavigationGuard, confirmAction } from "../ui/feedback.js";
 import { request, orderedNodes, inlineReferences } from "./model.js";
+import { useAuth } from "../../auth/AuthProvider.jsx";
 export default function useWriter(worldId) {
+  const account = useAuth();
   const [projects, setProjects] = useState([]),
     [project, setProject] = useState(null),
     [nodes, setNodes] = useState([]),
@@ -11,12 +13,18 @@ export default function useWriter(worldId) {
     [error, setError] = useState(""),
     [recovery, setRecovery] = useState(null),
     [epoch, setEpoch] = useState(0);
+  const room = useRef(null);
   const state = useRef({}),
     flight = useRef(null),
     generation = useRef(0),
     base = useRef(null);
   state.current = { project, draft, dirty, status };
-  const key = (n) => "kriemhild.writer.recovery." + n.projectId + "." + n.id;
+  const key = (n) =>
+    "kriemhild.writer.recovery." +
+    (account?.user.id ? account.user.id + "." : "") +
+    n.projectId +
+    "." +
+    n.id;
   function accept(n) {
     base.current = n;
     setDraft(n);
@@ -98,10 +106,54 @@ export default function useWriter(worldId) {
     setError("");
     flight.current = (async () => {
       try {
-        const saved = await request("/projects/" + n.projectId + "/nodes", {
-          node: n,
-          label,
-        });
+        if (room.current) await room.current.flush();
+        let saved;
+        try {
+          saved = await request("/projects/" + n.projectId + "/nodes", {
+            node: n,
+            label,
+          });
+        } catch (e) {
+          if (e.status !== 409 || !room.current) throw e;
+          const bundle = await request("/projects/" + n.projectId),
+            current = bundle.nodes.find((x) => x.id === n.id);
+          if (!current || current.deleted) throw e;
+          const ignore = new Set([
+            "revision",
+            "updatedAt",
+            "createdAt",
+            "authorId",
+            "content",
+            "text",
+            "references",
+          ]);
+          const patch = Object.fromEntries(
+            Object.entries(n).filter(
+              ([k, v]) =>
+                !ignore.has(k) &&
+                JSON.stringify(v) !== JSON.stringify(base.current?.[k]),
+            ),
+          );
+          if (
+            Object.keys(patch).some(
+              (k) =>
+                JSON.stringify(current[k]) !==
+                  JSON.stringify(base.current?.[k]) &&
+                JSON.stringify(current[k]) !== JSON.stringify(patch[k]),
+            )
+          )
+            throw e;
+          saved = await request("/projects/" + n.projectId + "/nodes", {
+            node: {
+              ...current,
+              ...patch,
+              content: n.content,
+              text: n.text,
+              references: n.references,
+            },
+            label,
+          });
+        }
         base.current = saved;
         setNodes((prev) => [...prev.filter((x) => x.id !== saved.id), saved]);
         if (generation.current === g) {
@@ -249,6 +301,11 @@ export default function useWriter(worldId) {
   }
   const visible = nodes.map((n) => (n.id === draft?.id ? draft : n));
   return {
+    accept: (n) => {
+      setNodes((prev) => [...prev.filter((x) => x.id !== n.id), n]);
+      accept(n);
+    },
+    room,
     projects,
     project,
     nodes: visible,

@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"kriemhild/internal/storage"
 	"kriemhild/internal/terrain"
 	"kriemhild/internal/world"
 	"math"
@@ -766,6 +767,13 @@ func (s *Server) importProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	v.unsaved, v.dirty = true, true
+	if s.auth != nil {
+		if s.auth.Config.Mode == "oidc" {
+			v.worldID = token()
+		}
+		v.creatorID = storage.Actor(r.Context())
+		v.actorID = v.creatorID
+	}
 	_ = s.replaceWorld(v.worldID, func() error { return nil })
 
 	s.mu.Lock()

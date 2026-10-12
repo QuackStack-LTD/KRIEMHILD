@@ -55,6 +55,15 @@ func (s *Server) listProjects(w http.ResponseWriter, r *http.Request) {
 		fail(w, 503, "Project database is unavailable")
 		return
 	}
+	if s.auth != nil {
+		visible := []storage.Project{}
+		for _, p := range projects {
+			if s.role(r, p.ID) != "" {
+				visible = append(visible, p)
+			}
+		}
+		projects = visible
+	}
 	respond(w, 200, map[string]any{"database": s.projects.Driver(), "projects": projects})
 }
 func (s *Server) openStoredProject(w http.ResponseWriter, r *http.Request) {

@@ -138,6 +138,7 @@ func (s *Server) saveWorld(v *session, changed bool) error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
+	ctx = storage.WithActor(ctx, v.actorID)
 	historical, err := s.projects.CommitHistoricalMap(ctx, v.worldID, parts, v.authored())
 	if err != nil {
 		return err
@@ -152,6 +153,11 @@ func (s *Server) saveWorld(v *session, changed bool) error {
 	}
 
 	v.persisted = true
+	if historical {
+		if d, _, e := s.projects.MapContext(ctx, v.worldID); e == nil {
+			v.historyRevision = d.World.Revision
+		}
+	}
 	v.unsaved = false
 	v.world.Saved()
 	v.dirty = false

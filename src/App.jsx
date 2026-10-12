@@ -4,6 +4,7 @@ import {
   allowNavigation,
 } from "./worldbuilding/ui/feedback.js";
 import Dialog from "./worldbuilding/ui/Dialog.jsx";
+import AccountControls from "./auth/AccountControls.jsx";
 import { lazy, Suspense } from "react";
 const LibraryPage = lazy(() => import("./worldbuilding/Library.jsx"));
 function Library(props) {
@@ -494,6 +495,12 @@ export default function App() {
       </div>
     );
   async function command(c) {
+    if (c.kind === "select") {
+      if (!(await allowNavigation())) return;
+      setDoc((d) => ({ ...d, world: { ...d.world, currentAge: c.ageId } }));
+      setSelected(c.ageId);
+      return { ...doc, world: { ...doc.world, currentAge: c.ageId } };
+    }
     if (["select", "age"].includes(c.kind) && !(await allowNavigation()))
       return;
     return run(async () => {
@@ -682,6 +689,15 @@ export default function App() {
           </>
         )}
         {busy && <span role="status">Working...</span>}
+        <AccountControls
+          worldId={id}
+          revision={doc?.world.revision || 0}
+          onRefresh={async () => {
+            if (!(await allowNavigation())) return;
+            const next = await historyRequest(`/${id}`);
+            setDoc(next);
+          }}
+        />
       </header>
       {id && page !== "writing" && doc?.world.id === id && (
         <nav
@@ -800,12 +816,20 @@ export default function App() {
                 <span className="world-glyph">&#9678;</span>
                 <h3>{w.name}</h3>
                 <p>{w.description || "A world of unfolding histories"}</p>
+                {w.role && (
+                  <small>
+                    {w.role === "owner"
+                      ? "Owned by you"
+                      : `Shared with you · ${w.role}`}
+                  </small>
+                )}
                 <div>
                   <button onClick={() => navigate(`/worlds/${w.id}`)}>
                     Continue World
                   </button>
                   <button
                     className="danger"
+                    disabled={w.role && w.role !== "owner"}
                     onClick={async () => {
                       if (
                         await confirmAction(

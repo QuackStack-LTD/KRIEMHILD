@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"kriemhild/internal/history"
+	"kriemhild/internal/storage"
 	"kriemhild/internal/terrain"
 	"kriemhild/internal/world"
 	"math"
@@ -43,6 +44,7 @@ func sessionState(v *session) map[string]any {
 	}
 	out["environment"] = renderEnvironment(e)
 	out["worldId"] = v.worldID
+	out["mapRevision"] = v.collabRevision
 	out["historicalMap"] = v.historical
 	out["historyWorldId"] = v.historyWorld
 	out["unsaved"] = v.unsaved
@@ -222,7 +224,12 @@ func (s *Server) worldCommand(w http.ResponseWriter, r *http.Request) {
 	// tiles and artwork still use the explicit Save action.
 	if v.historical != nil && (req.Kind == "entity" || req.Kind == "undo" || req.Kind == "redo") {
 		if shape, ok := model.Entities[changedEntity]; ok {
-			_, err = s.projects.UpdateHistory(context.Background(), v.historyWorld, -1, func(d *history.Document) error {
+			revision := -1
+			if s.auth != nil {
+				revision = v.historyRevision
+			}
+			var updated *history.Document
+			updated, err = s.projects.UpdateHistory(storage.WithActor(context.Background(), v.actorID), v.historyWorld, revision, func(d *history.Document) error {
 				m := d.Map(v.historical.AgeID, v.historical.ID)
 				if m == nil {
 					return fmt.Errorf("map no longer exists in this Age")
@@ -243,6 +250,7 @@ func (s *Server) worldCommand(w http.ResponseWriter, r *http.Request) {
 				fail(w, 503, "Could not persist entity: "+err.Error())
 				return
 			}
+			v.historyRevision = updated.World.Revision
 		}
 	}
 

@@ -1,6 +1,6 @@
-.workspace {
-  max-width: 1600px;
-  margin: auto;
+.world-page.workspace {
+  max-width: none;
+  margin: 0;
 }
 .workspace-heading {
   display: flex;

@@ -873,6 +873,7 @@ export function LibraryDialog({
         <>
           <ArchiveOwnerField
             all={all}
+            ageId={age.id}
             config={values.archiveConfig}
             onChange={(next) =>
               field("archiveConfig", {

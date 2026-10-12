@@ -8,6 +8,12 @@ services:
     environment:
       KRIEMHILD_ADDR: 0.0.0.0:8124
       KRIEMHILD_DATA_DIR: /data
+      KRIEMHILD_AUTH_MODE: oidc
+      KRIEMHILD_PUBLIC_URL: ${KRIEMHILD_PUBLIC_URL:?Set the public HTTPS origin}
+      KRIEMHILD_OIDC_ISSUER: ${KRIEMHILD_OIDC_ISSUER:?Set the Keycloak realm HTTPS issuer}
+      KRIEMHILD_OIDC_CLIENT_ID: ${KRIEMHILD_OIDC_CLIENT_ID:-kriemhild}
+      KRIEMHILD_OIDC_CLIENT_SECRET: ${KRIEMHILD_OIDC_CLIENT_SECRET:?Set the OIDC client secret}
+      KRIEMHILD_LEGACY_OWNER_SUBJECT: ${KRIEMHILD_LEGACY_OWNER_SUBJECT:-}
       DATABASE_URL: postgres://kriemhild:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/kriemhild?sslmode=disable
     volumes:
       - kriemhild-data:/data

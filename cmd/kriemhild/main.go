@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"kriemhild/internal/auth"
 	"kriemhild/internal/httpapi"
 	"kriemhild/internal/storage"
 	"log"
@@ -71,11 +72,12 @@ func run() error {
 	dist := flag.String("dist", env("KRIEMHILD_DIST", "dist"), "React build directory")
 	data := flag.String("data", env("KRIEMHILD_DATA_DIR", "data"), "Writable project database and cache directory")
 	check := flag.Bool("healthcheck", false, "Check the running server readiness and exit")
+	backup := flag.String("backup-sqlite", "", "Write a consistent SQLite backup to a new file and exit")
 	flag.Parse()
 	if *check {
 		return healthcheck(*addr)
 	}
-	if _, err := os.Stat(filepath.Join(*dist, "index.html")); err != nil {
+	if _, err := os.Stat(filepath.Join(*dist, "index.html")); err != nil && *backup == "" {
 		return errors.New("React build missing; run npm run build or configure KRIEMHILD_DIST")
 	}
 	dsn, err := databaseURL()
@@ -89,11 +91,20 @@ func run() error {
 		return err
 	}
 	defer store.Close()
+	if *backup != "" {
+		return store.BackupSQLite(context.Background(), *backup)
+	}
 	cache := filepath.Join(*data, "cache")
 	if err = os.MkdirAll(cache, 0700); err != nil {
 		return fmt.Errorf("project cache directory is not writable: %w", err)
 	}
-	app := httpapi.NewWithOptions(*dist, httpapi.Options{Projects: store, CacheDir: cache})
+	authCtx, authCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	identity, err := auth.New(authCtx, auth.Config{Mode: env("KRIEMHILD_AUTH_MODE", "local"), Issuer: os.Getenv("KRIEMHILD_OIDC_ISSUER"), ClientID: os.Getenv("KRIEMHILD_OIDC_CLIENT_ID"), ClientSecret: os.Getenv("KRIEMHILD_OIDC_CLIENT_SECRET"), PublicURL: os.Getenv("KRIEMHILD_PUBLIC_URL"), LegacySubject: os.Getenv("KRIEMHILD_LEGACY_OWNER_SUBJECT")}, store, *addr)
+	authCancel()
+	if err != nil {
+		return err
+	}
+	app := httpapi.NewWithOptions(*dist, httpapi.Options{Projects: store, CacheDir: cache, Auth: identity})
 	server := &http.Server{Addr: *addr, Handler: app, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 2 * time.Minute, WriteTimeout: 5 * time.Minute, IdleTimeout: 60 * time.Second}
 	stop, release := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer release()

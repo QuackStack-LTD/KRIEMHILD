@@ -28,6 +28,15 @@ func (s *Server) writerRoutes() {
 	}
 	handle("GET /api/writer/projects", func(w http.ResponseWriter, r *http.Request) error {
 		p, e := s.projects.WriterProjects(r.Context(), r.URL.Query().Get("world"))
+		if s.auth != nil {
+			visible := []storage.WritingProject{}
+			for _, v := range p {
+				if v.WorldID != "" && s.role(r, v.WorldID) != "" {
+					visible = append(visible, v)
+				}
+			}
+			p = visible
+		}
 		if e == nil {
 			respond(w, 200, p)
 		}

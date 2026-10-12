@@ -63,6 +63,20 @@ func (s *Server) listHistories(w http.ResponseWriter, r *http.Request) {
 		fail(w, 503, err.Error())
 		return
 	}
+	if s.auth != nil {
+		visible := []map[string]any{}
+		for _, v := range list {
+			if role := s.role(r, v.ID); role != "" {
+				raw, _ := json.Marshal(v)
+				item := map[string]any{}
+				json.Unmarshal(raw, &item)
+				item["role"] = role
+				visible = append(visible, item)
+			}
+		}
+		respond(w, 200, visible)
+		return
+	}
 	respond(w, 200, list)
 }
 func (s *Server) createHistory(w http.ResponseWriter, r *http.Request) {
@@ -195,6 +209,7 @@ func (s *Server) acceptTerrain(w http.ResponseWriter, r *http.Request) {
 	}
 	v.historical = &m
 	v.historyWorld = d.World.ID
+	v.historyRevision = d.World.Revision
 	respond(w, 201, map[string]any{"document": d, "map": m})
 }
 func (s *Server) childMap(w http.ResponseWriter, r *http.Request) {
@@ -260,6 +275,7 @@ func (s *Server) applyHistoricalMap(ctx context.Context, v *session) error {
 	}
 	v.historical = m
 	v.historyWorld = d.World.ID
+	v.historyRevision = d.World.Revision
 	model := v.authored()
 	for id, a := range model.Artworks {
 		if a.MapID != m.ID && a.MapID != v.worldID {
@@ -388,6 +404,12 @@ func (s *Server) importHistory(w http.ResponseWriter, r *http.Request) {
 		}
 		if v.dir != "" {
 			os.RemoveAll(v.dir)
+		}
+	}
+	if s.auth != nil {
+		b.Document.World.ID = history.ID()
+		for i := range b.Document.Maps {
+			b.Document.Maps[i].ProjectID = history.ID()
 		}
 	}
 	if _, lookupErr := s.projects.History(r.Context(), b.Document.World.ID); lookupErr == nil {

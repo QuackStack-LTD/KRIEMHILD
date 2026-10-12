@@ -8,25 +8,31 @@ import {
 } from "./archives.js";
 import { label, registry } from "./model.js";
 
-export function ArchiveOwnerField({ all, config, onChange }) {
+export function ArchiveOwnerField({ all, ageId, config, onChange }) {
+  const owners = all.filter(
+    (e) =>
+      !e.deleted &&
+      e.ageId === ageId &&
+      (e.kind === "character" ||
+        registry.types[e.kind]?.category === "organizations"),
+  );
   return (
     <label>
       Archive owner
       <select
+        aria-label="Archive owner"
         required
         value={config?.ownerId || ""}
         onChange={(e) =>
-          onChange(archiveDefaults(all.find((x) => x.id === e.target.value)))
+          onChange(archiveDefaults(owners.find((x) => x.id === e.target.value)))
         }
       >
         <option value="">Choose its owner</option>
-        {all
-          .filter((e) => registry.types[e.kind]?.category !== "records")
-          .map((e) => (
-            <option key={e.id} value={e.id}>
-              {e.name} — {label(e.kind)}
-            </option>
-          ))}
+        {owners.map((e) => (
+          <option key={e.id} value={e.id}>
+            {e.name} — {label(e.kind)}
+          </option>
+        ))}
       </select>
       <small>Ownership is distinct from the archive's physical location.</small>
     </label>
@@ -69,6 +75,7 @@ export function ArchiveSettings({ archive, doc, age, all, command, close }) {
     >
       <ArchiveOwnerField
         all={all}
+        ageId={age.id}
         config={config}
         onChange={(next) =>
           setConfig({

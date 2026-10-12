@@ -32,6 +32,7 @@ WORKDIR /app
 COPY --from=backend --chmod=0555 /out/kriemhild /app/kriemhild
 COPY --from=frontend /src/dist /app/dist
 ENV KRIEMHILD_ADDR=0.0.0.0:8124 \
+    KRIEMHILD_AUTH_MODE=oidc \
     KRIEMHILD_DIST=/app/dist \
     KRIEMHILD_DATA_DIR=/data
 USER 10001:10001

@@ -30,14 +30,15 @@ type WriterSettings struct {
 	DefaultAge    string  `json:"defaultAge,omitempty"`
 }
 type WritingProject struct {
-	ID        string         `json:"id"`
-	WorldID   string         `json:"worldId"`
-	Name      string         `json:"name"`
-	Type      string         `json:"projectType"`
-	Settings  WriterSettings `json:"settings"`
-	Revision  int            `json:"revision"`
-	CreatedAt int64          `json:"createdAt"`
-	UpdatedAt int64          `json:"updatedAt"`
+	ImportedWorldID string         `json:"importedWorldId,omitempty"`
+	ID              string         `json:"id"`
+	WorldID         string         `json:"worldId"`
+	Name            string         `json:"name"`
+	Type            string         `json:"projectType"`
+	Settings        WriterSettings `json:"settings"`
+	Revision        int            `json:"revision"`
+	CreatedAt       int64          `json:"createdAt"`
+	UpdatedAt       int64          `json:"updatedAt"`
 }
 type WritingReference struct {
 	WorldID  string `json:"worldId"`
@@ -47,6 +48,7 @@ type WritingReference struct {
 	Wording  string `json:"wording,omitempty"`
 }
 type WritingNode struct {
+	AuthorID     string             `json:"authorId,omitempty"`
 	ID           string             `json:"id"`
 	ProjectID    string             `json:"projectId"`
 	ParentID     string             `json:"parentId"`
@@ -81,11 +83,13 @@ type WritingVersion struct {
 	Label string      `json:"label"`
 }
 type WriterBundle struct {
-	Format   string           `json:"format"`
-	Version  int              `json:"version"`
-	Project  WritingProject   `json:"project"`
-	Nodes    []WritingNode    `json:"nodes"`
-	Versions []WritingVersion `json:"versions"`
+	Comments []Comment                   `json:"comments,omitempty"`
+	Updates  map[string][]DocumentUpdate `json:"updates,omitempty"`
+	Format   string                      `json:"format"`
+	Version  int                         `json:"version"`
+	Project  WritingProject              `json:"project"`
+	Nodes    []WritingNode               `json:"nodes"`
+	Versions []WritingVersion            `json:"versions"`
 }
 
 func plainWriterContent(text string) json.RawMessage {
@@ -262,6 +266,15 @@ func (s *Store) writerBundle(ctx context.Context, id string, versions bool) (Wri
 		return b, err
 	}
 	defer tx.Rollback()
+	b, err = writerBundleTx(ctx, tx, id, versions)
+	if err != nil {
+		return b, err
+	}
+	return b, tx.Commit()
+}
+func writerBundleTx(ctx context.Context, tx *sql.Tx, id string, versions bool) (WriterBundle, error) {
+	b := WriterBundle{Format: "kriemhild-writing", Version: 1, Versions: []WritingVersion{}}
+	var err error
 	b.Project, err = writerProject(ctx, tx, id)
 	if err != nil {
 		return b, err
@@ -271,7 +284,7 @@ func (s *Store) writerBundle(ctx context.Context, id string, versions bool) (Wri
 		return b, err
 	}
 	if !versions {
-		return b, tx.Commit()
+		return b, nil
 	}
 	rows, err := tx.QueryContext(ctx, `SELECT data,label FROM writer_versions WHERE project_id=$1 ORDER BY node_id,revision`, id)
 	if err != nil {
@@ -295,7 +308,45 @@ func (s *Store) writerBundle(ctx context.Context, id string, versions bool) (Wri
 	if err != nil {
 		return b, err
 	}
-	return b, tx.Commit()
+	b.Updates = map[string][]DocumentUpdate{}
+	for _, n := range b.Nodes {
+		rows, e := tx.QueryContext(ctx, `SELECT id,data,actor_id FROM document_updates WHERE node_id=$1 ORDER BY at,id`, n.ID)
+		if e != nil {
+			return b, e
+		}
+		updates := []DocumentUpdate{}
+		for rows.Next() {
+			var u DocumentUpdate
+			if e = rows.Scan(&u.ID, &u.Data, &u.Author); e != nil {
+				rows.Close()
+				return b, e
+			}
+			updates = append(updates, u)
+		}
+		e = rows.Err()
+		rows.Close()
+		if e != nil {
+			return b, e
+		}
+		if len(updates) > 0 {
+			b.Updates[n.ID] = updates
+		}
+	}
+	rows, err = tx.QueryContext(ctx, `SELECT id,node_id,actor_id,anchor,body,suggestion,status,at FROM document_comments WHERE node_id IN (SELECT id FROM writer_nodes WHERE project_id=$1) ORDER BY at`, id)
+	if err != nil {
+		return b, err
+	}
+	for rows.Next() {
+		var c Comment
+		if err = rows.Scan(&c.ID, &c.NodeID, &c.Author, &c.Anchor, &c.Body, &c.Suggestion, &c.Status, &c.At); err != nil {
+			rows.Close()
+			return b, err
+		}
+		b.Comments = append(b.Comments, c)
+	}
+	err = rows.Err()
+	rows.Close()
+	return b, err
 }
 
 // Validate both hierarchy and semantic rich content before persisting it. Text is derived, never trusted.
@@ -493,6 +544,13 @@ func (s *Store) SaveWriterNode(ctx context.Context, project string, n *WritingNo
 		return err
 	}
 	defer tx.Rollback()
+	if err = saveWriterNodeTx(ctx, tx, project, n, label); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+func saveWriterNodeTx(ctx context.Context, tx *sql.Tx, project string, n *WritingNode, label string) error {
+	var err error
 	// Serialize structural edits, including moves, against the project row.
 	if _, err = tx.ExecContext(ctx, `UPDATE writer_projects SET revision=revision WHERE id=$1`, project); err != nil {
 		return err
@@ -582,6 +640,7 @@ func (s *Store) SaveWriterNode(ctx context.Context, project string, n *WritingNo
 	expected := n.Revision
 	n.Revision++
 	n.UpdatedAt = time.Now().UnixMilli()
+	n.AuthorID = Actor(ctx)
 	if n.CreatedAt == 0 {
 		n.CreatedAt = n.UpdatedAt
 	}
@@ -610,20 +669,28 @@ func (s *Store) SaveWriterNode(ctx context.Context, project string, n *WritingNo
 	if _, err = tx.ExecContext(ctx, `INSERT INTO writer_versions(node_id,revision,project_id,label,data) VALUES($1,$2,$3,$4,$5)`, n.ID, n.Revision, project, label, string(raw)); err != nil {
 		return err
 	}
-	return tx.Commit()
+	return nil
 }
 
 // ImportWriter creates an independent project in one transaction, retaining revision history.
 func (s *Store) ImportWriter(ctx context.Context, b WriterBundle, world string) (WritingProject, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return WritingProject{}, err
+	}
+	defer tx.Rollback()
+	p, err := importWriterTx(ctx, tx, b, world)
+	if err != nil {
+		return p, err
+	}
+	return p, tx.Commit()
+}
+func importWriterTx(ctx context.Context, tx *sql.Tx, b WriterBundle, world string) (WritingProject, error) {
 	p := b.Project
 	if b.Format != "kriemhild-writing" || b.Version != 1 || len(b.Nodes) > 10000 || len(b.Versions) > 100000 {
 		return p, fmt.Errorf("unsupported or oversized writing backup")
 	}
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return p, err
-	}
-	defer tx.Rollback()
+	var err error
 	if world != "" {
 		var id string
 		if err = tx.QueryRowContext(ctx, `SELECT id FROM history_worlds WHERE id=$1`, world).Scan(&id); err != nil {
@@ -659,6 +726,7 @@ func (s *Store) ImportWriter(ctx context.Context, b WriterBundle, world string) 
 		}
 		n.ID = id
 		n.ProjectID = p.ID
+		n.AuthorID = Actor(ctx)
 		if n.ParentID != "" {
 			n.ParentID = ids[n.ParentID]
 			if n.ParentID == "" {
@@ -727,7 +795,40 @@ func (s *Store) ImportWriter(ctx context.Context, b WriterBundle, world string) 
 			}
 		}
 	}
-	return p, tx.Commit()
+	if Actor(ctx) != "" {
+		for old, updates := range b.Updates {
+			node := ids[old]
+			if node == "" {
+				return p, fmt.Errorf("updates reference missing scene")
+			}
+			size := 0
+			for _, u := range updates {
+				size += len(u.Data)
+				if size > 64<<20 || len(u.Data) > 2<<20 {
+					return p, fmt.Errorf("document update history too large")
+				}
+				id := TokenHash(string(u.Data))
+				if strings.HasPrefix(u.ID, "seed") {
+					id = "seed:" + id
+				}
+				if _, err = tx.ExecContext(ctx, `INSERT INTO document_updates(node_id,id,actor_id,data,at) VALUES($1,$2,$3,$4,$5) ON CONFLICT(node_id,id) DO NOTHING`, node, id, Actor(ctx), u.Data, time.Now().UnixMilli()); err != nil {
+					return p, err
+				}
+			}
+		}
+	}
+	if Actor(ctx) != "" {
+		for _, c := range b.Comments {
+			node := ids[c.NodeID]
+			if node == "" || len(c.Anchor) > 16000 || len(c.Body) > 20000 || len(c.Suggestion) > 20000 {
+				return p, fmt.Errorf("invalid imported comment")
+			}
+			if _, err = tx.ExecContext(ctx, `INSERT INTO document_comments(id,node_id,actor_id,anchor,body,suggestion,status,at) VALUES($1,$2,$3,$4,$5,$6,$7,$8)`, randomID(), node, Actor(ctx), c.Anchor, c.Body, c.Suggestion, c.Status, c.At); err != nil {
+				return p, err
+			}
+		}
+	}
+	return p, nil
 }
 
 func writerID() string {

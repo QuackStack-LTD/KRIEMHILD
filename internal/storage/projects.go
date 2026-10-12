@@ -29,6 +29,7 @@ type Project struct {
 type Store struct {
 	db     *sql.DB
 	driver string
+	lease  *sql.Conn
 }
 
 func Open(ctx context.Context, dataDir, databaseURL string) (*Store, error) {
@@ -71,7 +72,7 @@ func Open(ctx context.Context, dataDir, databaseURL string) (*Store, error) {
 		db.SetMaxOpenConns(1)
 		db.SetMaxIdleConns(1)
 	}
-	s := &Store{db, driver}
+	s := &Store{db: db, driver: driver}
 	if err = db.PingContext(ctx); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("%s project database is unavailable; check connectivity and credentials", s.Driver())
@@ -84,6 +85,10 @@ func Open(ctx context.Context, dataDir, databaseURL string) (*Store, error) {
 		db.Close()
 		return nil, err
 	}
+	if err = s.migrateAccess(ctx); err != nil {
+		db.Close()
+		return nil, err
+	}
 	return s, nil
 }
 func (s *Store) Driver() string {
@@ -92,7 +97,13 @@ func (s *Store) Driver() string {
 	}
 	return "sqlite"
 }
-func (s *Store) Close() error                   { return s.db.Close() }
+func (s *Store) Close() error {
+	if s.lease != nil {
+		s.lease.ExecContext(context.Background(), "SELECT pg_advisory_unlock(1263683918)")
+		s.lease.Close()
+	}
+	return s.db.Close()
+}
 func (s *Store) Ping(ctx context.Context) error { return s.db.PingContext(ctx) }
 
 func (s *Store) migrate(ctx context.Context) error {
@@ -149,6 +160,9 @@ func (s *Store) Save(ctx context.Context, p Project, archive []byte) error {
 		return err
 	}
 	defer tx.Rollback()
+	if err = ensureOwnership(ctx, tx, p.ID); err != nil {
+		return err
+	}
 	_, err = tx.ExecContext(ctx, `INSERT INTO kriemhild_projects(id,seed,width,height,detail_tiles,bytes,updated_at,archive)
  VALUES($1,$2,$3,$4,$5,$6,$7,$8)
  ON CONFLICT(id) DO UPDATE SET seed=excluded.seed,width=excluded.width,height=excluded.height,detail_tiles=excluded.detail_tiles,bytes=excluded.bytes,updated_at=excluded.updated_at,archive=excluded.archive`, p.ID, p.Seed, p.Width, p.Height, p.DetailTiles, len(archive), time.Now().UTC().UnixMilli(), archive)
@@ -177,6 +191,9 @@ func (s *Store) SaveParts(ctx context.Context, p Project, parts map[string][]byt
 		return err
 	}
 	defer tx.Rollback()
+	if err = ensureOwnership(ctx, tx, p.ID); err != nil {
+		return err
+	}
 	_, err = tx.ExecContext(ctx, `INSERT INTO kriemhild_projects(id,seed,width,height,detail_tiles,bytes,updated_at,archive)
  VALUES($1,$2,$3,$4,$5,0,$6,$7) ON CONFLICT(id) DO UPDATE SET seed=excluded.seed,width=excluded.width,height=excluded.height,detail_tiles=excluded.detail_tiles,updated_at=excluded.updated_at,archive=excluded.archive`, p.ID, p.Seed, p.Width, p.Height, p.DetailTiles, time.Now().UTC().UnixMilli(), []byte{})
 	if err != nil {

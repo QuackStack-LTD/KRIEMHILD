@@ -20,13 +20,14 @@ start_app() {
   local volume=$1 dsn=${2:-}
   local args=()
   if [[ -n "$dsn" ]]; then args+=(-e "DATABASE_URL=$dsn"); fi
-  docker run -d --name "$app" --network "$network" \
+  # Linux CI uses host networking so local mode really binds to loopback.
+  local port
+  port=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()')
+  docker run -d --name "$app" --network host \
     --read-only --tmpfs /tmp:rw,size=64m --cap-drop ALL \
-    --security-opt no-new-privileges:true -p 127.0.0.1::8124 \
+    --security-opt no-new-privileges:true -e KRIEMHILD_AUTH_MODE=local -e "KRIEMHILD_ADDR=127.0.0.1:$port" \
     -v "$volume:/data" "${args[@]}" "$image" >/dev/null
-  local mapping
-  mapping=$(docker port "$app" 8124/tcp)
-  base="http://127.0.0.1:${mapping##*:}"
+  base="http://127.0.0.1:$port"
   for ((i=0;i<60;i++)); do
     if curl -fsS "$base/api/ready" >/dev/null 2>&1; then
       docker exec "$app" /app/kriemhild -healthcheck
@@ -87,6 +88,7 @@ PY
 }
 exercise sqlite "$prefix-sqlite"
 docker run -d --name "$postgres" --network "$network" \
+  -p 127.0.0.1::5432 \
   -e POSTGRES_USER=kriemhild -e POSTGRES_DB=kriemhild -e POSTGRES_PASSWORD=smoke-only-password \
   -v "$prefix-pg:/var/lib/postgresql/data" postgres:17-alpine >/dev/null
 ready=false
@@ -95,5 +97,5 @@ for ((i=0;i<60;i++)); do
   sleep 1
 done
 [[ "$ready" == true ]]
-exercise postgresql "$prefix-cache" "postgres://kriemhild:smoke-only-password@$postgres:5432/kriemhild?sslmode=disable"
-
+pg_mapping=$(docker port "$postgres" 5432/tcp)
+exercise postgresql "$prefix-cache" "postgres://kriemhild:smoke-only-password@127.0.0.1:${pg_mapping##*:}/kriemhild?sslmode=disable"

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { extensions } from "./editor.js";
+import Collaboration from "@tiptap/extension-collaboration";
+import { publishSelection, remoteSelections } from "./presence.js";
 import { requestText } from "../ui/feedback.js";
 export default function ManuscriptEditor({
   node,
@@ -9,6 +11,9 @@ export default function ManuscriptEditor({
   onEditor,
   preferences,
   findOpen,
+  collaboration,
+  collaborationRoom,
+  editable = true,
 }) {
   const latest = useRef({ onChange, onBlur });
   latest.current = { onChange, onBlur };
@@ -17,9 +22,18 @@ export default function ManuscriptEditor({
     [message, setMessage] = useState("");
   const editor = useEditor(
     {
-      extensions,
+      extensions: collaboration
+        ? [
+            ...extensions.map((e) =>
+              e.name === "starterKit" ? e.configure({ undoRedo: false }) : e,
+            ),
+            Collaboration.configure({ document: collaboration }),
+            ...(collaborationRoom ? [remoteSelections(collaborationRoom)] : []),
+          ]
+        : extensions,
+      editable,
       shouldRerenderOnTransaction: true,
-      content: node.content,
+      content: collaboration ? undefined : node.content,
       editorProps: {
         attributes: {
           role: "textbox",
@@ -29,11 +43,15 @@ export default function ManuscriptEditor({
         },
       },
       onUpdate: ({ editor }) =>
+        editable &&
         latest.current.onChange({
           content: editor.getJSON(),
           text: editor.getText(),
         }),
       onBlur: () => latest.current.onBlur(),
+      onSelectionUpdate: ({ editor }) => {
+        if (collaborationRoom) publishSelection(editor, collaborationRoom);
+      },
     },
     [node.id],
   );
@@ -41,6 +59,18 @@ export default function ManuscriptEditor({
     onEditor(editor);
     return () => onEditor(null);
   }, [editor]);
+  useEffect(() => {
+    editor?.setEditable(editable);
+  }, [editor, editable]);
+  useEffect(() => {
+    if (!editor || !collaborationRoom) return;
+    const update = () => {
+      if (!editor.isDestroyed)
+        editor.view.dispatch(editor.state.tr.setMeta("remote-presence", true));
+    };
+    collaborationRoom.presenceListeners.add(update);
+    return () => collaborationRoom.presenceListeners.delete(update);
+  }, [editor, collaborationRoom]);
   if (!editor) return null;
   function matches() {
     const found = [];
@@ -103,7 +133,8 @@ export default function ManuscriptEditor({
   ];
   return (
     <>
-      <div
+      <fieldset
+        disabled={!editable}
         className="writer-format"
         role="toolbar"
         aria-label="Text formatting"
@@ -144,7 +175,7 @@ export default function ManuscriptEditor({
         >
           Redo
         </button>
-      </div>
+      </fieldset>
       {findOpen && (
         <div className="writer-find">
           <label>
@@ -159,7 +190,7 @@ export default function ManuscriptEditor({
             />
           </label>
           <button onClick={next}>Next match</button>
-          <button onClick={replaceAll} disabled={!find}>
+          <button onClick={replaceAll} disabled={!find || !editable}>
             Replace all in scene
           </button>
           <output>{message}</output>

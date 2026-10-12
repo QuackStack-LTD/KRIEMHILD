@@ -70,13 +70,13 @@ Enable **World → Map → Real-world geology & climate** for derived climate zo
 
 ## Docker and project database
 
-Copy `.env.example` to `.env` and set a strong URL-safe PostgreSQL password. The single `docker-compose.yml` starts the app and PostgreSQL:
+Copy `.env.example` to `.env` and configure PostgreSQL, your Keycloak client, and the public HTTPS origin. Compose starts the app and PostgreSQL; provide Keycloak and an HTTPS reverse proxy separately. See [accounts, collaboration, migration and backups](docs/USER-COLLABORATION.md).
 
 ```sh
 docker compose up -d
 ```
 
-Open http://127.0.0.1:8124. The container serves React and the Go API. Click **Save** in the top bar to store the world, generation progress, edits and explored detail. Generation, imports and exploration never save to the database automatically. **Projects / Recent Worlds** reopens saved projects. **Delete world** is available on project cards and in both editors. ZIP export remains a separate portable backup.
+Open your configured HTTPS origin. The container serves React and the Go API through the reverse proxy. Hosted mode persists accepted map changes and requires authentication; loopback local mode retains the explicit **Save** workflow. **Projects / Recent Worlds** shows only accessible worlds. Owners can delete worlds. ZIP export remains a separate portable content backup.
 
 Running the binary or image without `DATABASE_URL` still uses embedded SQLite. With PostgreSQL configured, it requires that database to be available. See [container setup and releases](docs/CONTAINERS.md) and [world saving and deletion](docs/AUTOSAVE.md).
 

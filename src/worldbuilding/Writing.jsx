@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import Dialog from "./ui/Dialog.jsx";
 import { confirmAction, requestText } from "./ui/feedback.js";
 import useWriter from "./writer/useWriter.js";
-import ManuscriptEditor from "./writer/ManuscriptEditor.jsx";
+import ManuscriptEditor from "./writer/CollaborativeManuscript.jsx";
 import WriterContext from "./writer/WriterContext.jsx";
 import { markdown } from "./writer/editor.js";
+import { materializeManuscripts } from "./writer/collaboration.js";
 import { exportText, exportDocx } from "./writer/export.js";
 import {
   nodeTypes,
@@ -290,8 +291,11 @@ export default function Writing({ onBack, doc }) {
   async function exportFile(format) {
     await run(async () => {
       if (!(await w.flush())) return;
+      const currentBundle = await request(
+        "/projects/" + project.id + "?backup=1",
+      );
       const chosen = manuscriptNodes(
-        latest.current.w.nodes,
+        materializeManuscripts(currentBundle),
         exportScope === "selected" ? draft?.id : "",
         includeNotes,
       );
@@ -619,6 +623,11 @@ export default function Writing({ onBack, doc }) {
                   </label>
                   {view === "write" && (
                     <ManuscriptEditor
+                      worldId={doc.world.id}
+                      sourceWorldId={project.importedWorldId}
+                      onRoom={(room) => {
+                        w.room.current = room;
+                      }}
                       key={draft.id + ":" + w.epoch}
                       node={draft}
                       onChange={change}
@@ -1219,14 +1228,14 @@ export default function Writing({ onBack, doc }) {
                 onClick={() =>
                   run(async () => {
                     if (!(await w.flush())) return;
-                    await w.saveNode(
+                    const restored = await request(
+                      `/projects/${project.id}/recovery/${draft.id}`,
                       {
-                        ...selectedVersion.node,
+                        version: selectedVersion.node.revision,
                         revision: latest.current.w.draft.revision,
-                        deleted: false,
                       },
-                      "Restored revision " + selectedVersion.node.revision,
                     );
+                    w.accept(restored);
                     setModal("");
                   })
                 }

@@ -111,6 +111,11 @@ func (s *Store) History(ctx context.Context, id string) (*history.Document, erro
 	return d, tx.Commit()
 }
 func writeHistory(ctx context.Context, tx *sql.Tx, d *history.Document, expected int, create bool) error {
+	if create {
+		if err := ensureOwnership(ctx, tx, d.World.ID); err != nil {
+			return err
+		}
+	}
 	d.MigrateFamilyViews()
 	d.SyncYears()
 	if err := d.Validate(); err != nil {
@@ -154,7 +159,7 @@ func writeHistory(ctx context.Context, tx *sql.Tx, d *history.Document, expected
 			}
 		}
 	}
-	return nil
+	return recordRevision(ctx, tx, d.World.ID, d.World.Revision, d)
 }
 func (s *Store) CreateHistory(ctx context.Context, d *history.Document) error {
 	tx, err := s.beginHistory(ctx, false)
@@ -168,6 +173,9 @@ func (s *Store) CreateHistory(ctx context.Context, d *history.Document) error {
 	return tx.Commit()
 }
 func (s *Store) UpdateHistory(ctx context.Context, id string, revision int, fn func(*history.Document) error) (*history.Document, error) {
+	if Actor(ctx) != "" && revision < 0 {
+		return nil, fmt.Errorf("expected revision is required")
+	}
 	tx, err := s.beginHistory(ctx, false)
 	if err != nil {
 		return nil, err
@@ -210,8 +218,22 @@ func (s *Store) Histories(ctx context.Context) ([]history.World, error) {
 	return out, rows.Err()
 }
 func (s *Store) DeleteHistory(ctx context.Context, id string) error {
-	_, err := s.db.ExecContext(ctx, "DELETE FROM history_worlds WHERE id=$1", id)
-	return err
+	tx, e := s.db.BeginTx(ctx, nil)
+	if e != nil {
+		return e
+	}
+	defer tx.Rollback()
+	for _, table := range []string{"document_updates", "document_comments", "writer_versions"} {
+		if _, e = tx.ExecContext(ctx, "DELETE FROM "+table+" WHERE node_id IN (SELECT id FROM writer_nodes WHERE project_id IN (SELECT id FROM writer_projects WHERE world_id=$1))", id); e != nil {
+			return e
+		}
+	}
+	for _, q := range []string{`DELETE FROM writer_nodes WHERE project_id IN (SELECT id FROM writer_projects WHERE world_id=$1)`, `DELETE FROM writer_projects WHERE world_id=$1`, `DELETE FROM history_worlds WHERE id=$1`, `DELETE FROM world_access WHERE world_id=$1`} {
+		if _, e = tx.ExecContext(ctx, q, id); e != nil {
+			return e
+		}
+	}
+	return tx.Commit()
 }
 func (s *Store) MapContext(ctx context.Context, project string) (*history.Document, *history.Map, error) {
 	tx, err := s.beginHistory(ctx, true)
@@ -345,6 +367,7 @@ func (s *Store) CommitHistoricalMap(ctx context.Context, project string, parts m
 
 // Portable bundles contain each immutable blob once, even across many Ages.
 type Bundle struct {
+	Writing   []WriterBundle               `json:"writing,omitempty"`
 	Format    string                       `json:"format"`
 	Schema    int                          `json:"schema"`
 	Document  *history.Document            `json:"document"`
@@ -397,6 +420,31 @@ func (s *Store) HistoryBundle(ctx context.Context, id string) (Bundle, error) {
 			}
 			b.Blobs[v.Hash] = data
 		}
+	}
+	rows, err := tx.QueryContext(ctx, `SELECT id FROM writer_projects WHERE world_id=$1`, id)
+	if err != nil {
+		return b, err
+	}
+	ids := []string{}
+	for rows.Next() {
+		var key string
+		if err = rows.Scan(&key); err != nil {
+			rows.Close()
+			return b, err
+		}
+		ids = append(ids, key)
+	}
+	err = rows.Err()
+	rows.Close()
+	if err != nil {
+		return b, err
+	}
+	for _, key := range ids {
+		writing, e := writerBundleTx(ctx, tx, key, true)
+		if e != nil {
+			return b, e
+		}
+		b.Writing = append(b.Writing, writing)
 	}
 	return b, tx.Commit()
 }
@@ -458,6 +506,28 @@ func (s *Store) ImportHistory(ctx context.Context, b Bundle) error {
 	}
 	if err = writeHistory(ctx, tx, b.Document, 0, true); err != nil {
 		return err
+	}
+	for _, writing := range b.Writing {
+		old := writing.Project.WorldID
+		writing.Project.ImportedWorldID = old
+		writing.Project.WorldID = b.Document.World.ID
+		remap := func(n *WritingNode) {
+			for i := range n.References {
+				if n.References[i].WorldID == old {
+					n.References[i].WorldID = b.Document.World.ID
+				}
+			}
+			n.Content = remapWriterWorld(n.Content, old, b.Document.World.ID)
+		}
+		for i := range writing.Nodes {
+			remap(&writing.Nodes[i])
+		}
+		for i := range writing.Versions {
+			remap(&writing.Versions[i].Node)
+		}
+		if _, err = importWriterTx(ctx, tx, writing, b.Document.World.ID); err != nil {
+			return err
+		}
 	}
 	return tx.Commit()
 }

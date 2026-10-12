@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"kriemhild/internal/auth"
 	"kriemhild/internal/history"
 	"kriemhild/internal/storage"
 	"kriemhild/internal/terrain"
@@ -21,6 +22,10 @@ import (
 )
 
 type session struct {
+	creatorID       string
+	actorID         string
+	collabRevision  int
+	historyRevision int
 	biosphereHover  *biosphereHoverCache
 	climate         authoredClimate
 	natural         *terrain.NaturalIndex
@@ -52,6 +57,10 @@ type session struct {
 	composed        map[string][]byte
 }
 type Server struct {
+	auth        *auth.Service
+	accessMu    sync.Mutex
+	liveMu      sync.Mutex
+	live        map[*liveClient]bool
 	mu          sync.Mutex
 	sessions    map[string]*session
 	mux         *http.ServeMux
@@ -63,6 +72,7 @@ type Server struct {
 }
 
 type Options struct {
+	Auth     *auth.Service
 	Projects *storage.Store
 	CacheDir string
 }
@@ -73,6 +83,8 @@ func New(dist string) *Server {
 func NewWithOptions(dist string, options Options) *Server {
 	s := &Server{sessions: map[string]*session{}, mux: http.NewServeMux(), slots: make(chan struct{}, 4), detailSlots: make(chan struct{}, 3)}
 	s.projects = options.Projects
+	s.auth = options.Auth
+	s.live = map[*liveClient]bool{}
 	s.cacheRoot = options.CacheDir
 	if s.cacheRoot == "" {
 		s.cacheRoot = filepath.Join(".tools", "projects")
@@ -117,6 +129,8 @@ func NewWithOptions(dist string, options Options) *Server {
 	s.mux.HandleFunc("GET /api/projects", s.listProjects)
 	s.mux.HandleFunc("POST /api/projects/{id}/open", s.openStoredProject)
 	s.historyRoutes()
+	s.accessRoutes()
+	s.collaborationRoutes()
 	s.mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { fail(w, 404, "API route not found") })
 	s.mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" && r.Method != "HEAD" {
@@ -142,15 +156,28 @@ func NewWithOptions(dist string, options Options) *Server {
 }
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Referrer-Policy", "same-origin")
+	w.Header().Set("X-Frame-Options", "DENY")
+	if s.auth != nil && s.auth.Config.Mode == "oidc" {
+		w.Header().Set("Strict-Transport-Security", "max-age=31536000")
+		w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'")
+	}
 	if strings.HasPrefix(r.URL.Path, "/api/") {
 		w.Header().Set("Cache-Control", "no-store")
 		if origin := r.Header.Get("Origin"); origin != "" {
 			allowed := origin == "http://"+r.Host || origin == "https://"+r.Host || origin == "http://127.0.0.1:5173" || origin == "http://localhost:5173"
+			if s.auth != nil && s.auth.Config.Mode == "oidc" {
+				allowed = origin == strings.TrimRight(s.auth.Config.PublicURL, "/")
+			}
 			if !allowed {
 				fail(w, 403, "Origin not allowed")
 				return
 			}
 		}
+	}
+	if s.auth != nil && (strings.HasPrefix(r.URL.Path, "/auth/") || strings.HasPrefix(r.URL.Path, "/api/") && r.URL.Path != "/api/health" && r.URL.Path != "/api/ready") {
+		s.secureServe(w, r)
+		return
 	}
 	s.mux.ServeHTTP(w, r)
 }
@@ -270,6 +297,7 @@ func (s *Server) create(w http.ResponseWriter, r *http.Request) {
 	id := token()
 	gen, _ := json.Marshal(req)
 	v := &session{solver: solver, last: time.Now(), undo: map[string]terrain.Snapshot{}, generation: gen, cacheRoot: s.cacheRoot, worldID: token()}
+	v.creatorID, v.actorID = storage.Actor(r.Context()), storage.Actor(r.Context())
 	s.sessions[id] = v
 	v.mu.Lock()
 	s.mu.Unlock()

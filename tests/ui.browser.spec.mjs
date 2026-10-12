@@ -16,7 +16,7 @@ test.describe("Editing and specialized surfaces", () => {
     const place = doc.entities.find(
       (e) =>
         e.ageId === doc.world.currentAge &&
-        ["city", "village", "organization"].includes(e.kind) &&
+        ["character", "organization"].includes(e.kind) &&
         !e.deleted,
     );
     test.skip(!place, "The audit world needs a place or organization.");

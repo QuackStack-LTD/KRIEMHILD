@@ -37,5 +37,8 @@ func (s *Store) AttachTerrain(ctx context.Context, id, age, project, name string
 	if _, err = tx.ExecContext(ctx, "DELETE FROM kriemhild_projects WHERE id=$1", project); err != nil {
 		return nil, m, err
 	}
+	if _, err = tx.ExecContext(ctx, "DELETE FROM world_access WHERE world_id=$1", project); err != nil {
+		return nil, m, err
+	}
 	return d, m, tx.Commit()
 }

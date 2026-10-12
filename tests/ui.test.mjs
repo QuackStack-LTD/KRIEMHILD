@@ -266,6 +266,52 @@ test("Library archive creation uses the shared visible modal with labeled fields
     "Archive owner selection is required before saving",
   );
 });
+test("archive owners are active characters and organizations in the selected Age", async () => {
+  root = createRoot(document.querySelector("#host"));
+  const all = [
+    { id: "character", name: "Character", kind: "character", ageId: "now" },
+    {
+      id: "organization",
+      name: "Organization",
+      kind: "organization",
+      ageId: "now",
+    },
+    { id: "old", name: "Old character", kind: "character", ageId: "before" },
+    {
+      id: "deleted",
+      name: "Deleted character",
+      kind: "character",
+      ageId: "now",
+      deleted: true,
+    },
+    { id: "city", name: "City", kind: "city", ageId: "now" },
+    { id: "archive", name: "Archive", kind: "archive", ageId: "now" },
+  ];
+  await act(() =>
+    root.render(
+      h(
+        UIProvider,
+        null,
+        h(LibraryDialog, {
+          dialog: { type: "archive" },
+          all,
+          archives: [],
+          locations: () => [],
+          age: { id: "now", name: "Current Age" },
+          close: () => {},
+          save: async () => {},
+        }),
+      ),
+    ),
+  );
+  assert.deepEqual(
+    [
+      ...document.querySelector('select[aria-label="Archive owner"]').options,
+    ].map((o) => o.value),
+    ["", "character", "organization"],
+  );
+});
+
 test("Biosphere preview remains in the body with separate habitat groups, not in the action footer", async () => {
   const species = {
     id: "plant",
