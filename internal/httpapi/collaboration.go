@@ -253,6 +253,11 @@ func (s *Server) collaborate(w http.ResponseWriter, r *http.Request) {
 			s.accessMu.Unlock()
 			return
 		}
+		if len(message.ID) > 128 || !s.limits.allow("live:"+u.ID, 2400, time.Minute, time.Now()) {
+			s.accessMu.Unlock()
+			conn.Close(websocket.StatusPolicyViolation, "Collaboration rate or message limit exceeded")
+			return
+		}
 		switch message.Type {
 		case "selection":
 			if len(message.Selection) < 500 {

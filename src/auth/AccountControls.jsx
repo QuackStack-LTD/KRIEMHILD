@@ -1,9 +1,13 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "./AuthProvider.jsx";
 import LegacyDrafts from "./LegacyDrafts.jsx";
+import AccountSecurity from "./AccountSecurity.jsx";
 import { accountRequest } from "./api.js";
 import Dialog from "../worldbuilding/ui/Dialog.jsx";
-import { confirmAction } from "../worldbuilding/ui/feedback.js";
+import {
+  confirmAction,
+  allowNavigation,
+} from "../worldbuilding/ui/feedback.js";
 export default function AccountControls({ worldId, revision, onRefresh }) {
   const auth = useAuth();
   const [members, setMembers] = useState([]),
@@ -14,7 +18,10 @@ export default function AccountControls({ worldId, revision, onRefresh }) {
     [inviteRole, setInviteRole] = useState("editor"),
     [token, setToken] = useState(""),
     [invitations, setInvitations] = useState([]),
+    [sentInvitations, setSentInvitations] = useState([]),
+    [activity, setActivity] = useState([]),
     [revisions, setRevisions] = useState([]),
+    [moreRevisions, setMoreRevisions] = useState(false),
     [online, setOnline] = useState([]),
     [connected, setConnected] = useState(false),
     [remoteRevision, setRemoteRevision] = useState(0),
@@ -35,6 +42,11 @@ export default function AccountControls({ worldId, revision, onRefresh }) {
     const data = await accountRequest(`/api/worlds/${worldId}/members`);
     setMembers(data.members);
     setRole(data.role);
+    setSentInvitations(
+      ["owner", "administrator"].includes(data.role)
+        ? await accountRequest(`/api/worlds/${worldId}/invitations`)
+        : [],
+    );
     window.dispatchEvent(
       new CustomEvent("world-role", { detail: { worldId, role: data.role } }),
     );
@@ -119,11 +131,18 @@ export default function AccountControls({ worldId, revision, onRefresh }) {
           <button
             onClick={() => {
               setDialog("history");
-              void run(async () =>
-                setRevisions(
-                  await accountRequest(`/api/worlds/${worldId}/revisions`),
-                ),
-              );
+              void run(async () => {
+                const entries = await accountRequest(
+                  `/api/worlds/${worldId}/revisions`,
+                );
+                setRevisions(entries);
+                setMoreRevisions(entries.length === 200);
+                setActivity(
+                  manage
+                    ? await accountRequest(`/api/worlds/${worldId}/activity`)
+                    : [],
+                );
+              });
             }}
           >
             History
@@ -149,9 +168,11 @@ export default function AccountControls({ worldId, revision, onRefresh }) {
           }
           onClose={() => setDialog("")}
           size="editor"
+          trackChanges={false}
         >
           {error && <p role="alert">{error}</p>}
           {dialog === "account" && <LegacyDrafts />}
+          {dialog === "account" && <AccountSecurity mode={auth.mode} />}
           {dialog === "account" && (
             <>
               <p>
@@ -172,7 +193,16 @@ export default function AccountControls({ worldId, revision, onRefresh }) {
                   : "Account security and recovery are managed by your identity provider."}
               </p>
               {auth.mode !== "local" && (
-                <button onClick={() => run(auth.logout)}>Sign out</button>
+                <button
+                  disabled={pending}
+                  onClick={() =>
+                    run(async () => {
+                      if (await allowNavigation()) await auth.logout();
+                    })
+                  }
+                >
+                  Sign out
+                </button>
               )}
               <label>
                 Accept an invitation
@@ -218,6 +248,23 @@ export default function AccountControls({ worldId, revision, onRefresh }) {
                   }
                 >
                   Accept
+                </button>
+                <button
+                  disabled={pending}
+                  onClick={() =>
+                    run(async () => {
+                      await accountRequest(
+                        `/api/invitations/${v.id}`,
+                        undefined,
+                        "DELETE",
+                      );
+                      setInvitations((items) =>
+                        items.filter((item) => item.id !== v.id),
+                      );
+                    })
+                  }
+                >
+                  Decline
                 </button>
               </div>
             ))}
@@ -345,6 +392,7 @@ export default function AccountControls({ worldId, revision, onRefresh }) {
                           { email, role: inviteRole },
                         );
                         setToken(result.token);
+                        await loadMembers();
                       })
                     }
                   >
@@ -366,6 +414,38 @@ export default function AccountControls({ worldId, revision, onRefresh }) {
                   )}
                 </div>
               )}
+              {manage && sentInvitations.length > 0 && (
+                <section aria-label="Pending invitations">
+                  <h3>Pending invitations</h3>
+                  {sentInvitations.map((v) => (
+                    <div className="member-row" key={v.id}>
+                      <span>
+                        {v.email} · {v.role} · expires{" "}
+                        {new Date(v.expiresAt).toLocaleDateString()}
+                      </span>
+                      <button
+                        disabled={
+                          pending ||
+                          (v.role === "administrator" && role !== "owner")
+                        }
+                        onClick={() =>
+                          run(async () => {
+                            await accountRequest(
+                              `/api/worlds/${worldId}/invitations/${v.id}`,
+                              undefined,
+                              "DELETE",
+                            );
+                            setToken("");
+                            await loadMembers();
+                          })
+                        }
+                      >
+                        Cancel invitation
+                      </button>
+                    </div>
+                  ))}
+                </section>
+              )}
             </>
           )}
           {dialog === "history" && (
@@ -374,8 +454,13 @@ export default function AccountControls({ worldId, revision, onRefresh }) {
               {revisions.map((v) => (
                 <div className="member-row" key={v.revision}>
                   <span>
-                    Revision {v.revision} · {v.authorName} ·{" "}
-                    {new Date(v.at).toLocaleString()}
+                    Revision {v.revision} ·{" "}
+                    {v.kind === "world-restored"
+                      ? "Restoration"
+                      : v.kind === "world-created"
+                        ? "World created"
+                        : "Automatic recovery point"}{" "}
+                    · {v.authorName} · {new Date(v.at).toLocaleString()}
                   </span>
                   {["owner", "administrator", "editor"].includes(role) && (
                     <button
@@ -388,6 +473,7 @@ export default function AccountControls({ worldId, revision, onRefresh }) {
                             ))
                           )
                             return;
+                          if (!(await allowNavigation())) return;
                           await accountRequest(
                             `/api/worlds/${worldId}/revisions/${v.revision}/restore`,
                             { revision },
@@ -402,6 +488,44 @@ export default function AccountControls({ worldId, revision, onRefresh }) {
                   )}
                 </div>
               ))}
+              {moreRevisions && (
+                <button
+                  disabled={pending}
+                  onClick={() =>
+                    run(async () => {
+                      const entries = await accountRequest(
+                        `/api/worlds/${worldId}/revisions?before=${revisions.at(-1).revision}`,
+                      );
+                      setRevisions((current) => [...current, ...entries]);
+                      setMoreRevisions(entries.length === 200);
+                    })
+                  }
+                >
+                  Load older revisions
+                </button>
+              )}
+              {manage && (
+                <section aria-label="World activity">
+                  <h3>Sharing activity</h3>
+                  {activity.length === 0 && <p>No sharing activity yet.</p>}
+                  {activity.map((v) => (
+                    <div className="member-row" key={v.id}>
+                      <span>
+                        {v.kind.replaceAll("-", " ")} · {v.authorName} ·{" "}
+                        {new Date(v.at).toLocaleString()}
+                      </span>
+                      <small>
+                        {v.kind.startsWith("invitation-") &&
+                        v.detail.includes("@")
+                          ? v.detail
+                          : members.find(
+                              (m) => m.userId === v.detail.split(":")[0],
+                            )?.name || ""}
+                      </small>
+                    </div>
+                  ))}
+                </section>
+              )}
             </>
           )}
         </Dialog>

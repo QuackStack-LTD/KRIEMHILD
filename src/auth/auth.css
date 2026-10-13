@@ -22,6 +22,21 @@
   margin-left: auto;
   min-width: 0;
 }
+.hub-world-filter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.world-grid > article > small {
+  display: block;
+  margin-bottom: 6px;
+}
+.account-security {
+  border-bottom: 1px solid #405047;
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+}
 .account-role,
 .connection-state {
   font-size: 12px;

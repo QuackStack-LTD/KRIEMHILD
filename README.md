@@ -70,7 +70,7 @@ Enable **World → Map → Real-world geology & climate** for derived climate zo
 
 ## Docker and project database
 
-Copy `.env.example` to `.env` and configure PostgreSQL, your Keycloak client, and the public HTTPS origin. Compose starts the app and PostgreSQL; provide Keycloak and an HTTPS reverse proxy separately. See [accounts, collaboration, migration and backups](docs/USER-COLLABORATION.md).
+For a complete Keycloak, HTTPS, PostgreSQL and scheduled-backup stack, follow [self-hosted deployment](deploy/README.md). If you already operate an identity provider and reverse proxy, copy `.env.example` to `.env` and use the root Compose configuration for the app and PostgreSQL. See [accounts, collaboration, migration and backups](docs/USER-COLLABORATION.md).
 
 ```sh
 docker compose up -d

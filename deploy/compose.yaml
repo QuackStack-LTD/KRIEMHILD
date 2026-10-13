@@ -1,0 +1,146 @@
+name: kriemhild-hosted
+x-app: &app
+  image: kriemhild:hosted
+  build:
+    context: ..
+  environment: &app-env
+    KRIEMHILD_ADDR: 0.0.0.0:8124
+    KRIEMHILD_AUTH_MODE: oidc
+    KRIEMHILD_PUBLIC_URL: https://${APP_HOST:?Set APP_HOST}
+    KRIEMHILD_OIDC_ISSUER: https://${IDENTITY_HOST:?Set IDENTITY_HOST}/realms/kriemhild
+    KRIEMHILD_OIDC_CLIENT_ID: kriemhild
+    KRIEMHILD_OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:?Set OIDC_CLIENT_SECRET}
+    KRIEMHILD_LEGACY_OWNER_SUBJECT: ${KRIEMHILD_LEGACY_OWNER_SUBJECT:-}
+    DATABASE_URL: postgres://kriemhild:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@postgres:5432/kriemhild?sslmode=disable
+  networks: [backend]
+  read_only: true
+  tmpfs: ["/tmp:size=64m,mode=1777"]
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+
+services:
+  kriemhild:
+    <<: *app
+    volumes: [app-data:/data]
+    restart: unless-stopped
+    stop_grace_period: 40s
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      keycloak: {condition: service_healthy}
+      proxy: {condition: service_started}
+
+  migrate:
+    <<: *app
+    command: [-migrate-only]
+    healthcheck: {disable: true}
+    depends_on:
+      postgres: {condition: service_healthy}
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: kriemhild
+      POSTGRES_USER: kriemhild
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes: [postgres-data:/var/lib/postgresql/data]
+    networks: [backend]
+    healthcheck:
+      test: [CMD, pg_isready, -h, 127.0.0.1, -U, kriemhild, -d, kriemhild]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  keycloak-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?Set KEYCLOAK_DB_PASSWORD}
+    volumes: [keycloak-db:/var/lib/postgresql/data]
+    networks: [backend]
+    healthcheck:
+      test: [CMD, pg_isready, -h, 127.0.0.1, -U, keycloak, -d, keycloak]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.0
+    command: [start, --import-realm]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?Set KEYCLOAK_DB_PASSWORD}
+      KC_HOSTNAME: https://${IDENTITY_HOST:?Set IDENTITY_HOST}
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD}
+      APP_HOST: ${APP_HOST:?Set APP_HOST}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:?Set OIDC_CLIENT_SECRET}
+      SMTP_HOST: ${SMTP_HOST:?Set SMTP_HOST for verification and recovery}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_FROM: ${SMTP_FROM:?Set SMTP_FROM}
+      SMTP_USER: ${SMTP_USER:?Set SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:?Set SMTP_PASSWORD}
+    volumes:
+      - ./keycloak/realm.json:/opt/keycloak/data/import/kriemhild-realm.json:ro
+    networks: [backend, edge]
+    healthcheck:
+      test: [CMD, bash, -ec, "exec 3<>/dev/tcp/127.0.0.1/9000; printf 'HEAD /health/ready HTTP/1.0\r\n\r\n' >&3; grep -q '200 OK' <&3"]
+      start_period: 90s
+      interval: 10s
+      timeout: 5s
+      retries: 18
+    depends_on:
+      keycloak-db: {condition: service_healthy}
+    restart: unless-stopped
+
+  proxy:
+    image: caddy:2-alpine
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      APP_HOST: ${APP_HOST:?Set APP_HOST}
+      IDENTITY_HOST: ${IDENTITY_HOST:?Set IDENTITY_HOST}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      edge:
+      backend:
+        aliases: ["${APP_HOST:?Set APP_HOST}", "${IDENTITY_HOST:?Set IDENTITY_HOST}"]
+    restart: unless-stopped
+
+  backups:
+    image: postgres:17-alpine
+    entrypoint: [/bin/sh, /opt/backup.sh]
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      KEYCLOAK_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?Set KEYCLOAK_DB_PASSWORD}
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-30}
+    volumes:
+      - ./backup.sh:/opt/backup.sh:ro
+      - ./backups:/backups
+    networks: [backend]
+    depends_on:
+      postgres: {condition: service_healthy}
+      keycloak-db: {condition: service_healthy}
+    restart: unless-stopped
+
+networks:
+  edge:
+  backend: {internal: true}
+volumes:
+  app-data:
+  postgres-data:
+  keycloak-db:
+  caddy-data:
+  caddy-config:

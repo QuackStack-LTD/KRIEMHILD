@@ -1,0 +1,28 @@
+{
+  email {$ACME_EMAIL}
+}
+
+(private_log) {
+  log {
+    output stdout
+    format filter {
+      wrap json
+      fields {
+        request>uri delete
+        request>headers delete
+        resp_headers delete
+      }
+    }
+  }
+}
+
+{$APP_HOST} {
+  import private_log
+  reverse_proxy kriemhild:8124
+}
+
+{$IDENTITY_HOST} {
+  import private_log
+  # Management health/metrics on port 9000 remain private.
+  reverse_proxy keycloak:8080
+}

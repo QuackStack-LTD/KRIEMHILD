@@ -89,32 +89,45 @@ func (s *Store) migrateAccess(ctx context.Context) error {
 	if e = tx.QueryRowContext(ctx, `SELECT COALESCE(MAX(version),0) FROM access_schema`).Scan(&version); e != nil {
 		return e
 	}
-	if version > 1 {
+	if version > 2 {
 		return fmt.Errorf("access schema is newer than this server")
 	}
-	if version == 1 {
+	if version == 2 {
 		return tx.Commit()
 	}
+	if version < 1 {
+		for _, q := range []string{
+			`CREATE TABLE users(id TEXT PRIMARY KEY,issuer TEXT NOT NULL,subject TEXT NOT NULL,name TEXT NOT NULL,email TEXT NOT NULL,verified INTEGER NOT NULL,created_at BIGINT NOT NULL,UNIQUE(issuer,subject))`,
+			`CREATE TABLE workspaces(id TEXT PRIMARY KEY,owner_id TEXT NOT NULL UNIQUE REFERENCES users(id),name TEXT NOT NULL)`,
+			`CREATE TABLE workspace_members(workspace_id TEXT NOT NULL REFERENCES workspaces(id),user_id TEXT NOT NULL REFERENCES users(id),role TEXT NOT NULL,PRIMARY KEY(workspace_id,user_id))`,
+			`CREATE INDEX workspace_members_user ON workspace_members(user_id)`,
+			`CREATE TABLE world_access(world_id TEXT PRIMARY KEY,workspace_id TEXT NOT NULL REFERENCES workspaces(id),owner_id TEXT NOT NULL REFERENCES users(id))`,
+			`CREATE TABLE world_members(world_id TEXT NOT NULL REFERENCES world_access(world_id) ON DELETE CASCADE,user_id TEXT NOT NULL REFERENCES users(id),role TEXT NOT NULL CHECK(role IN ('owner','administrator','editor','commenter','viewer')),status TEXT NOT NULL DEFAULT 'active',PRIMARY KEY(world_id,user_id))`,
+			`CREATE UNIQUE INDEX world_one_owner ON world_members(world_id) WHERE role='owner'`,
+			`CREATE INDEX world_members_user ON world_members(user_id,status)`,
+			`CREATE TABLE world_invitations(id TEXT PRIMARY KEY,world_id TEXT NOT NULL REFERENCES world_access(world_id) ON DELETE CASCADE,token_hash TEXT NOT NULL UNIQUE,email TEXT NOT NULL,role TEXT NOT NULL,expires_at BIGINT NOT NULL,status TEXT NOT NULL,created_by TEXT NOT NULL REFERENCES users(id))`,
+			`CREATE INDEX invitations_recipient ON world_invitations(email,status)`,
+			`CREATE TABLE app_sessions(token_hash TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),csrf TEXT NOT NULL,expires_at BIGINT NOT NULL)`,
+			`CREATE INDEX sessions_user ON app_sessions(user_id)`,
+			`CREATE TABLE audit_events(id TEXT PRIMARY KEY,world_id TEXT NOT NULL,actor_id TEXT NOT NULL REFERENCES users(id),kind TEXT NOT NULL,detail TEXT NOT NULL,at BIGINT NOT NULL)`,
+			`CREATE INDEX audit_world ON audit_events(world_id,at)`,
+			`CREATE TABLE world_revisions(world_id TEXT NOT NULL REFERENCES world_access(world_id) ON DELETE CASCADE,revision INTEGER NOT NULL,actor_id TEXT NOT NULL REFERENCES users(id),at BIGINT NOT NULL,kind TEXT NOT NULL,snapshot TEXT NOT NULL,PRIMARY KEY(world_id,revision))`,
+			`CREATE TABLE document_updates(node_id TEXT NOT NULL REFERENCES writer_nodes(id),id TEXT NOT NULL,actor_id TEXT NOT NULL REFERENCES users(id),data BYTEA NOT NULL,at BIGINT NOT NULL,PRIMARY KEY(node_id,id))`,
+			`CREATE INDEX document_updates_time ON document_updates(node_id,at)`,
+			`CREATE TABLE document_comments(id TEXT PRIMARY KEY,node_id TEXT NOT NULL REFERENCES writer_nodes(id),actor_id TEXT NOT NULL REFERENCES users(id),anchor TEXT NOT NULL,body TEXT NOT NULL,suggestion TEXT NOT NULL,status TEXT NOT NULL,at BIGINT NOT NULL)`,
+			`INSERT INTO access_schema(version) VALUES(1)`,
+		} {
+			if _, e = tx.ExecContext(ctx, q); e != nil {
+				return e
+			}
+		}
+	}
 	for _, q := range []string{
-		`CREATE TABLE users(id TEXT PRIMARY KEY,issuer TEXT NOT NULL,subject TEXT NOT NULL,name TEXT NOT NULL,email TEXT NOT NULL,verified INTEGER NOT NULL,created_at BIGINT NOT NULL,UNIQUE(issuer,subject))`,
-		`CREATE TABLE workspaces(id TEXT PRIMARY KEY,owner_id TEXT NOT NULL UNIQUE REFERENCES users(id),name TEXT NOT NULL)`,
-		`CREATE TABLE workspace_members(workspace_id TEXT NOT NULL REFERENCES workspaces(id),user_id TEXT NOT NULL REFERENCES users(id),role TEXT NOT NULL,PRIMARY KEY(workspace_id,user_id))`,
-		`CREATE INDEX workspace_members_user ON workspace_members(user_id)`,
-		`CREATE TABLE world_access(world_id TEXT PRIMARY KEY,workspace_id TEXT NOT NULL REFERENCES workspaces(id),owner_id TEXT NOT NULL REFERENCES users(id))`,
-		`CREATE TABLE world_members(world_id TEXT NOT NULL REFERENCES world_access(world_id) ON DELETE CASCADE,user_id TEXT NOT NULL REFERENCES users(id),role TEXT NOT NULL CHECK(role IN ('owner','administrator','editor','commenter','viewer')),status TEXT NOT NULL DEFAULT 'active',PRIMARY KEY(world_id,user_id))`,
-		`CREATE UNIQUE INDEX world_one_owner ON world_members(world_id) WHERE role='owner'`,
-		`CREATE INDEX world_members_user ON world_members(user_id,status)`,
-		`CREATE TABLE world_invitations(id TEXT PRIMARY KEY,world_id TEXT NOT NULL REFERENCES world_access(world_id) ON DELETE CASCADE,token_hash TEXT NOT NULL UNIQUE,email TEXT NOT NULL,role TEXT NOT NULL,expires_at BIGINT NOT NULL,status TEXT NOT NULL,created_by TEXT NOT NULL REFERENCES users(id))`,
-		`CREATE INDEX invitations_recipient ON world_invitations(email,status)`,
-		`CREATE TABLE app_sessions(token_hash TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),csrf TEXT NOT NULL,expires_at BIGINT NOT NULL)`,
-		`CREATE INDEX sessions_user ON app_sessions(user_id)`,
-		`CREATE TABLE audit_events(id TEXT PRIMARY KEY,world_id TEXT NOT NULL,actor_id TEXT NOT NULL REFERENCES users(id),kind TEXT NOT NULL,detail TEXT NOT NULL,at BIGINT NOT NULL)`,
-		`CREATE INDEX audit_world ON audit_events(world_id,at)`,
-		`CREATE TABLE world_revisions(world_id TEXT NOT NULL REFERENCES world_access(world_id) ON DELETE CASCADE,revision INTEGER NOT NULL,actor_id TEXT NOT NULL REFERENCES users(id),at BIGINT NOT NULL,kind TEXT NOT NULL,snapshot TEXT NOT NULL,PRIMARY KEY(world_id,revision))`,
-		`CREATE TABLE document_updates(node_id TEXT NOT NULL REFERENCES writer_nodes(id),id TEXT NOT NULL,actor_id TEXT NOT NULL REFERENCES users(id),data BYTEA NOT NULL,at BIGINT NOT NULL,PRIMARY KEY(node_id,id))`,
-		`CREATE INDEX document_updates_time ON document_updates(node_id,at)`,
-		`CREATE TABLE document_comments(id TEXT PRIMARY KEY,node_id TEXT NOT NULL REFERENCES writer_nodes(id),actor_id TEXT NOT NULL REFERENCES users(id),anchor TEXT NOT NULL,body TEXT NOT NULL,suggestion TEXT NOT NULL,status TEXT NOT NULL,at BIGINT NOT NULL)`,
-		`INSERT INTO access_schema(version) VALUES(1)`,
+		`ALTER TABLE users ADD COLUMN closed_at BIGINT NOT NULL DEFAULT 0`,
+		`CREATE TABLE world_visits(user_id TEXT NOT NULL REFERENCES users(id),world_id TEXT NOT NULL REFERENCES world_access(world_id) ON DELETE CASCADE,opened_at BIGINT NOT NULL,PRIMARY KEY(user_id,world_id))`,
+		`CREATE INDEX world_visits_recent ON world_visits(user_id,opened_at)`,
+		`CREATE INDEX sessions_expiry ON app_sessions(expires_at)`,
+		`INSERT INTO access_schema(version) VALUES(2)`,
 	} {
 		if _, e = tx.ExecContext(ctx, q); e != nil {
 			return e
@@ -134,11 +147,14 @@ func (s *Store) ResolveUser(ctx context.Context, issuer, subject, name, email st
 	if verified {
 		v = 1
 	}
-	_, e = tx.ExecContext(ctx, `INSERT INTO users(id,issuer,subject,name,email,verified,created_at) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(issuer,subject) DO UPDATE SET name=excluded.name,email=excluded.email,verified=excluded.verified`, id, issuer, subject, name, strings.ToLower(strings.TrimSpace(email)), v, time.Now().UnixMilli())
+	_, e = tx.ExecContext(ctx, `INSERT INTO users(id,issuer,subject,name,email,verified,created_at) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(issuer,subject) DO UPDATE SET name=excluded.name,email=excluded.email,verified=excluded.verified WHERE users.closed_at=0`, id, issuer, subject, name, strings.ToLower(strings.TrimSpace(email)), v, time.Now().UnixMilli())
 	if e != nil {
 		return User{}, e
 	}
 	u, e := readUser(ctx, tx, `issuer=$1 AND subject=$2`, issuer, subject)
+	if e == sql.ErrNoRows {
+		return u, ErrAccountClosed
+	}
 	if e != nil {
 		return u, e
 	}
@@ -155,7 +171,7 @@ func (s *Store) ResolveUser(ctx context.Context, issuer, subject, name, email st
 func readUser(ctx context.Context, q historyQuery, where string, args ...any) (User, error) {
 	var u User
 	var v int
-	e := q.QueryRowContext(ctx, `SELECT id,issuer,subject,name,email,verified FROM users WHERE `+where, args...).Scan(&u.ID, &u.Issuer, &u.Subject, &u.Name, &u.Email, &v)
+	e := q.QueryRowContext(ctx, `SELECT id,issuer,subject,name,email,verified FROM users WHERE closed_at=0 AND `+where, args...).Scan(&u.ID, &u.Issuer, &u.Subject, &u.Name, &u.Email, &v)
 	u.Verified = v == 1
 	return u, e
 }
@@ -427,7 +443,12 @@ func (s *Store) AcceptInvitation(ctx context.Context, u User, secret string) (st
 }
 func (s *Store) NewSession(ctx context.Context, user string) (string, string, error) {
 	secret, csrf := randomID(), randomID()
-	_, e := s.db.ExecContext(ctx, `INSERT INTO app_sessions(token_hash,user_id,csrf,expires_at) VALUES($1,$2,$3,$4)`, TokenHash(secret), user, csrf, time.Now().Add(12*time.Hour).UnixMilli())
+	result, e := s.db.ExecContext(ctx, `INSERT INTO app_sessions(token_hash,user_id,csrf,expires_at) SELECT $1,id,$3,$4 FROM users WHERE id=$2 AND closed_at=0`, TokenHash(secret), user, csrf, time.Now().Add(12*time.Hour).UnixMilli())
+	if e == nil {
+		if count, _ := result.RowsAffected(); count != 1 {
+			e = ErrAccountClosed
+		}
+	}
 	return secret, csrf, e
 }
 func (s *Store) Session(ctx context.Context, secret string) (User, string, error) {
@@ -451,11 +472,25 @@ func recordRevision(ctx context.Context, tx *sql.Tx, id string, revision int, sn
 	if e != nil {
 		return e
 	}
-	_, e = tx.ExecContext(ctx, `INSERT INTO world_revisions(world_id,revision,actor_id,at,kind,snapshot) VALUES($1,$2,$3,$4,'world-save',$5)`, id, revision, Actor(ctx), time.Now().UnixMilli(), string(b))
+	kind, _ := ctx.Value(operationKey{}).(string)
+	if kind == "" {
+		kind = "world-save"
+	}
+	_, e = tx.ExecContext(ctx, `INSERT INTO world_revisions(world_id,revision,actor_id,at,kind,snapshot) VALUES($1,$2,$3,$4,$5,$6)`, id, revision, Actor(ctx), time.Now().UnixMilli(), kind, string(b))
 	return e
 }
 func (s *Store) Revisions(ctx context.Context, world string, after int) ([]Revision, error) {
-	rows, e := s.db.QueryContext(ctx, `SELECT r.revision,r.actor_id,u.name,r.at,r.kind FROM world_revisions r JOIN users u ON u.id=r.actor_id WHERE r.world_id=$1 AND r.revision>$2 ORDER BY r.revision DESC LIMIT 200`, world, after)
+	return s.RevisionPage(ctx, world, after, 0)
+}
+func (s *Store) RevisionPage(ctx context.Context, world string, after, before int) ([]Revision, error) {
+	if before <= 0 {
+		before = 2147483647
+	}
+	order := "DESC"
+	if after > 0 {
+		order = "ASC"
+	}
+	rows, e := s.db.QueryContext(ctx, `SELECT r.revision,r.actor_id,u.name,r.at,r.kind FROM world_revisions r JOIN users u ON u.id=r.actor_id WHERE r.world_id=$1 AND r.revision>$2 AND r.revision<$3 ORDER BY r.revision `+order+` LIMIT 200`, world, after, before)
 	if e != nil {
 		return nil, e
 	}

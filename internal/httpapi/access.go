@@ -80,7 +80,7 @@ func (s *Server) authorize(w http.ResponseWriter, r *http.Request) bool {
 		return false
 	}
 	switch p[1] {
-	case "me", "workspaces", "invitations", "defaults", "biosphere":
+	case "me", "account", "workspaces", "invitations", "defaults", "biosphere":
 		return true
 	case "worlds":
 		if len(p) == 2 || len(p) == 3 && p[2] == "import" {
@@ -89,7 +89,13 @@ func (s *Server) authorize(w http.ResponseWriter, r *http.Request) bool {
 		if len(p) == 3 && r.Method == "DELETE" {
 			permission = "owner"
 		}
-		if len(p) > 3 && (p[3] == "members" || p[3] == "invitations") {
+		if len(p) > 3 && (p[3] == "invitations" || p[3] == "activity") {
+			permission = "manage"
+		}
+		if len(p) > 3 && p[3] == "visit" {
+			permission = "view"
+		}
+		if len(p) > 3 && p[3] == "members" {
 			if mutating(r) {
 				permission = "manage"
 			}
@@ -261,6 +267,9 @@ func (s *Server) authorizeSession(w http.ResponseWriter, r *http.Request, id str
 }
 func (s *Server) secureServe(w http.ResponseWriter, r *http.Request) {
 	if strings.HasPrefix(r.URL.Path, "/auth/") {
+		if !s.limitRequest(w, r, "") {
+			return
+		}
 		s.auth.ServeHTTP(w, r)
 		return
 	}
@@ -269,12 +278,15 @@ func (s *Server) secureServe(w http.ResponseWriter, r *http.Request) {
 		fail(w, 401, "Sign in to continue")
 		return
 	}
+	if !s.limitRequest(w, r, u.ID) {
+		return
+	}
 	r = r.WithContext(auth.Context(r.Context(), u))
 	if mutating(r) && !s.auth.ValidCSRF(r, csrf) {
 		fail(w, 403, "Invalid CSRF token")
 		return
 	}
-	if r.URL.Path == "/api/me" {
+	if r.URL.Path == "/api/me" && r.Method == "GET" {
 		spaces, e := s.projects.Workspaces(r.Context(), u.ID)
 		if e != nil {
 			fail(w, 503, "Workspace unavailable")
@@ -293,6 +305,11 @@ func (s *Server) secureServe(w http.ResponseWriter, r *http.Request) {
 	// operationally; SQL revisions additionally protect durable historical writes.
 	s.accessMu.Lock()
 	defer s.accessMu.Unlock()
+	// A queued request may outlive session revocation or account closure.
+	if _, _, err := s.auth.User(r); err != nil {
+		fail(w, 401, "Sign in to continue")
+		return
+	}
 	if !s.authorize(w, r) {
 		return
 	}
@@ -444,7 +461,8 @@ func (s *Server) accessRoutes() {
 	})
 	revisions := func(w http.ResponseWriter, r *http.Request) {
 		after, _ := strconv.Atoi(r.URL.Query().Get("after"))
-		v, e := s.projects.Revisions(r.Context(), r.PathValue("world"), after)
+		before, _ := strconv.Atoi(r.URL.Query().Get("before"))
+		v, e := s.projects.RevisionPage(r.Context(), r.PathValue("world"), after, before)
 		if e != nil {
 			fail(w, 503, "History unavailable")
 			return
@@ -472,7 +490,7 @@ func (s *Server) accessRoutes() {
 			fail(w, 422, "Invalid revision")
 			return
 		}
-		d, e := s.projects.UpdateHistory(r.Context(), r.PathValue("world"), req.Revision, func(d *history.Document) error {
+		d, e := s.projects.UpdateHistory(storage.WithOperation(r.Context(), "world-restored"), r.PathValue("world"), req.Revision, func(d *history.Document) error {
 			if snapshot.World.ID != d.World.ID {
 				return fmt.Errorf("wrong world")
 			}

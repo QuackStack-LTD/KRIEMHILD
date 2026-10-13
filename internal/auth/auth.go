@@ -8,6 +8,7 @@ import (
 	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
@@ -194,6 +195,10 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			claims.Name = "Author"
 		}
 		u, e := s.Store.ResolveUser(ctx, id.Issuer, id.Subject, claims.Name, claims.Email, claims.Verified)
+		if errors.Is(e, storage.ErrAccountClosed) {
+			http.Error(w, "This KRIEMHILD account is closed. Contact the administrator to discuss recovery.", 403)
+			return
+		}
 		if e != nil {
 			http.Error(w, "account unavailable", 503)
 			return

@@ -19,6 +19,11 @@ drafts**. Choose their world explicitly. Text and named versions are preserved.
 
 ## Hosted configuration
 
+For the complete self-hosted stack, see [deploy/README.md](../deploy/README.md).
+It includes Keycloak, separate identity/application PostgreSQL databases, Caddy
+HTTPS, controlled migration, and daily backups. The root Compose file remains
+available for an externally managed identity provider and reverse proxy.
+
 Configure a confidential OIDC client in one Keycloak realm:
 
 - Standard authorization code flow enabled, PKCE S256 required.
@@ -37,7 +42,8 @@ identity provider, certificates, DNS and HTTPS reverse proxy; the application
 does not provision these services.
 
 The proxy must forward WebSocket upgrades and preserve the external Host and
-Origin. Apply request-rate and connection limits at the proxy. Health/readiness
+Origin. The API limits hosted login flows, invitations, imports, generation and
+collaboration traffic; add per-client edge limits for larger deployments. Health/readiness
 remain unauthenticated and contain no private-world metadata. Vite forwards
 both API WebSockets and authentication routes for local development.
 
@@ -69,15 +75,19 @@ Legacy unscoped draft APIs are inaccessible in hosted mode.
 Invitation tokens are random and stored only as hashes. They expire after seven
 days and require the intended verified recipient. The app shows pending
 invitations and also accepts a pasted token. It does not send email. Membership,
-invitation and ownership changes produce audit records. Membership is checked on
+invitation and ownership changes produce audit records, visible to owners and
+administrators under History. Share lists pending invitations and supports
+cancellation; recipients can decline. Membership is checked on
 every request and collaboration message; removal closes active world sockets.
 Idle sockets recheck sessions and membership every two seconds.
 
 ## Migration and retention
 
-The additive `access_schema` migration adds identity, workspace, membership,
+The additive `access_schema` migrations add identity, workspace, membership,
 session, invitation, revision, comment and CRDT-update tables with foreign keys
-and indexes. Existing world and writer storage remains authoritative.
+and indexes. Version 2 adds account closure and per-user recent worlds.
+Existing world and writer storage remains authoritative. Run `kriemhild
+-migrate-only` during controlled deployment; startup also checks migrations.
 
 For hosted legacy migration, set `KRIEMHILD_LEGACY_OWNER_SUBJECT` to the intended
 Keycloak subject. That identity claims unowned records when it signs in and can
@@ -86,11 +96,21 @@ automatically become the legacy owner. For an installation with several existing
 owners, an operator must map ownership explicitly; a single blanket mapping is
 not appropriate. Remove the migration variable once assignments are complete.
 
-Application user records are retained for revision attribution. Deleting a user
-at the identity provider does not delete shared worlds; transfer ownership and
-revoke memberships/application sessions before account removal. Provider logout
-alone does not revoke other application sessions. There is no automatic
-retention/purge job or account-deletion UI in this release. World deletion is
+Your account shows active session counts and **Sign out everywhere**. **Close
+account** requires explicit confirmation and refuses while any world is owned;
+transfer ownership or explicitly delete those worlds first. Closure revokes all
+sessions, memberships, pending invitations and live connections, removes the
+display name/email and prevents automatic reactivation through OIDC. Immutable
+issuer/subject and user IDs remain to prevent accidental reactivation and preserve
+revision attribution. Shared manuscripts, comments and world content remain.
+Identity-provider deletion is a separate administrator action; deleting there
+alone does not revoke an already issued application session. Provider logout
+alone does not revoke other application sessions.
+
+Hourly maintenance deletes expired sessions, invitations expired for over 30
+days, and audit events older than 365 days. Content revisions are retained until
+explicit content deletion, and backups follow their separate retention policy.
+World deletion is
 owner-only and removes its world-scoped manuscripts and memberships. Shared
 immutable terrain/Library blobs remain in the database until a future garbage
 collection policy can prove that no retained snapshot references them.
@@ -104,6 +124,9 @@ are persisted before the API reports success. Local mode keeps explicit Save.
 Changed historical worlds invalidate stale map edits. World history includes
 actor IDs, names, timestamps and snapshots; restoring makes another revision.
 The header exposes presence and a refresh action when shared world changes arrive.
+History labels automatic recovery points and restorations and pages through older
+revisions. The hub filters owned/shared worlds and sorts recently opened worlds
+using account-specific visits without changing the shared world's revision.
 
 Tiptap uses Yjs for concurrent manuscript text. Go authenticates document rooms,
 persists binary updates before acknowledging them and broadcasts accepted
@@ -145,9 +168,15 @@ proxy rejections and backup age; verify restores before deployment. Protect
 database dumps because they contain private worlds and active session hashes.
 
 Limits: 12 live connections per user, 2 MiB per manuscript delta, 64 MiB of update
-history per scene, bounded send queues, and five-minute login flows. Log compaction,
-centralized monitoring, scheduled backup jobs, account lifecycle automation and
-multi-replica synchronization remain operator/future work. CRDT payloads are
+history per scene, bounded send queues, and five-minute login flows. Hosted
+token-bucket limits are 60 login requests/minute per direct peer, 20 invitation
+mutations/10 minutes per account, 10 imports/minute, 4 generation starts/minute,
+600 ordinary API requests/minute and 2,400 live messages/minute per account.
+Forwarded client-IP headers are not trusted by Go. Structured rejection logs
+include request class, method and status, without bodies, tokens or query strings.
+Monitor 401/403/409/429 rates and private readiness/Keycloak metrics.
+Log compaction, centralized alert delivery and multi-replica synchronization
+remain operator/future work. CRDT payloads are
 opaque to Go; named-version recovery and database backups are the recovery path
 for a damaged document. Do not claim hosted production certification from local
 tests alone.
@@ -158,4 +187,6 @@ tests alone.
 Tests cover OIDC+PKCE, CSRF, IDOR, roles, revocation, invitation recipient/reuse,
 stale map writes, attribution, legacy migration, SQLite backup/restore, portable
 writing state, two concurrent manuscript clients, offline replay and restart.
+Additional tests cover version-1 migration, account closure with shared content,
+session revocation, invitation cancellation/decline, retention and abuse limits.
 Container smoke checks require a running Docker daemon and Linux host networking.

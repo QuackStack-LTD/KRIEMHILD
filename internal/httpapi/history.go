@@ -64,6 +64,11 @@ func (s *Server) listHistories(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if s.auth != nil {
+		visits, e := s.projects.WorldVisits(r.Context())
+		if e != nil {
+			fail(w, 503, "Recent worlds unavailable")
+			return
+		}
 		visible := []map[string]any{}
 		for _, v := range list {
 			if role := s.role(r, v.ID); role != "" {
@@ -71,6 +76,7 @@ func (s *Server) listHistories(w http.ResponseWriter, r *http.Request) {
 				item := map[string]any{}
 				json.Unmarshal(raw, &item)
 				item["role"] = role
+				item["lastOpenedAt"] = visits[v.ID]
 				visible = append(visible, item)
 			}
 		}
@@ -91,7 +97,7 @@ func (s *Server) createHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	d := history.New(req.Name)
-	if err := s.projects.CreateHistory(r.Context(), d); err != nil {
+	if err := s.projects.CreateHistory(storage.WithOperation(r.Context(), "world-created"), d); err != nil {
 		fail(w, 400, err.Error())
 		return
 	}
@@ -117,7 +123,7 @@ func (s *Server) commandHistory(w http.ResponseWriter, r *http.Request) {
 		fail(w, 400, err.Error())
 		return
 	}
-	d, err := s.projects.UpdateHistory(r.Context(), r.PathValue("world"), req.Revision, func(d *history.Document) error { return d.Apply(req) })
+	d, err := s.projects.UpdateHistory(storage.WithOperation(r.Context(), req.Kind), r.PathValue("world"), req.Revision, func(d *history.Document) error { return d.Apply(req) })
 	if err != nil {
 		fail(w, 409, err.Error())
 		return

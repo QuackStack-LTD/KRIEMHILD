@@ -73,11 +73,12 @@ func run() error {
 	data := flag.String("data", env("KRIEMHILD_DATA_DIR", "data"), "Writable project database and cache directory")
 	check := flag.Bool("healthcheck", false, "Check the running server readiness and exit")
 	backup := flag.String("backup-sqlite", "", "Write a consistent SQLite backup to a new file and exit")
+	migrate := flag.Bool("migrate-only", false, "Apply versioned database migrations and exit")
 	flag.Parse()
 	if *check {
 		return healthcheck(*addr)
 	}
-	if _, err := os.Stat(filepath.Join(*dist, "index.html")); err != nil && *backup == "" {
+	if _, err := os.Stat(filepath.Join(*dist, "index.html")); err != nil && *backup == "" && !*migrate {
 		return errors.New("React build missing; run npm run build or configure KRIEMHILD_DIST")
 	}
 	dsn, err := databaseURL()
@@ -91,6 +92,9 @@ func run() error {
 		return err
 	}
 	defer store.Close()
+	if *migrate {
+		return nil
+	}
 	if *backup != "" {
 		return store.BackupSQLite(context.Background(), *backup)
 	}
@@ -108,6 +112,26 @@ func run() error {
 	server := &http.Server{Addr: *addr, Handler: app, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 2 * time.Minute, WriteTimeout: 5 * time.Minute, IdleTimeout: 60 * time.Second}
 	stop, release := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer release()
+	maintenance, stopMaintenance := context.WithCancel(stop)
+	maintenanceDone := make(chan struct{})
+	go func() {
+		defer close(maintenanceDone)
+		ticker := time.NewTicker(time.Hour)
+		defer ticker.Stop()
+		for {
+			ctx, cancel := context.WithTimeout(maintenance, 30*time.Second)
+			if err := store.MaintainAccounts(ctx, time.Now()); err != nil && maintenance.Err() == nil {
+				log.Print("Account retention maintenance failed")
+			}
+			cancel()
+			select {
+			case <-maintenance.Done():
+				return
+			case <-ticker.C:
+			}
+		}
+	}()
+	defer func() { stopMaintenance(); <-maintenanceDone }()
 	finished := make(chan struct{})
 	shutdownDone := make(chan struct{})
 	go func() {

@@ -57,6 +57,7 @@ type session struct {
 	composed        map[string][]byte
 }
 type Server struct {
+	limits      requestLimits
 	auth        *auth.Service
 	accessMu    sync.Mutex
 	liveMu      sync.Mutex
@@ -130,6 +131,7 @@ func NewWithOptions(dist string, options Options) *Server {
 	s.mux.HandleFunc("POST /api/projects/{id}/open", s.openStoredProject)
 	s.historyRoutes()
 	s.accessRoutes()
+	s.accountRoutes()
 	s.collaborationRoutes()
 	s.mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { fail(w, 404, "API route not found") })
 	s.mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -155,6 +157,11 @@ func NewWithOptions(dist string, options Options) *Server {
 	return s
 }
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if s.auth != nil && s.auth.Config.Mode == "oidc" {
+		observed := &observedResponse{ResponseWriter: w}
+		w = observed
+		defer observeRequest(observed, r)
+	}
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Referrer-Policy", "same-origin")
 	w.Header().Set("X-Frame-Options", "DENY")

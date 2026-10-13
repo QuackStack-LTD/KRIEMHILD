@@ -5,6 +5,8 @@ import {
 } from "./worldbuilding/ui/feedback.js";
 import Dialog from "./worldbuilding/ui/Dialog.jsx";
 import AccountControls from "./auth/AccountControls.jsx";
+import { useAuth } from "./auth/AuthProvider.jsx";
+import { accountRequest } from "./auth/api.js";
 import { lazy, Suspense } from "react";
 const LibraryPage = lazy(() => import("./worldbuilding/Library.jsx"));
 function Library(props) {
@@ -406,9 +408,11 @@ function AgeDialog({ doc, sourceAge, sourceYear, onClose, onSubmit, busy }) {
   );
 }
 export default function App() {
+  const auth = useAuth();
   const [path, setPath] = useState(location.pathname + location.search),
     [doc, setDoc] = useState(null),
     [worlds, setWorlds] = useState([]),
+    [worldFilter, setWorldFilter] = useState("all"),
     [legacy, setLegacy] = useState([]),
     [name, setName] = useState(""),
     [busy, setBusy] = useState(false),
@@ -464,6 +468,8 @@ export default function App() {
         if (!cancelled) {
           setDoc(d);
           setSelected(d.world.currentAge);
+          if (auth)
+            void accountRequest(`/api/worlds/${id}/visit`, {}).catch(() => {});
         }
       } else {
         const [w, l] = await Promise.all([
@@ -810,43 +816,77 @@ export default function App() {
             </button>
           </form>
           <h2>Continue World</h2>
+          <label className="hub-world-filter">
+            Show worlds
+            <select
+              value={worldFilter}
+              onChange={(e) => setWorldFilter(e.target.value)}
+            >
+              <option value="all">All my worlds</option>
+              <option value="owned">Owned by me</option>
+              <option value="shared">Shared with me</option>
+              <option value="recent">Recently opened</option>
+            </select>
+          </label>
           <div className="world-grid">
-            {worlds.map((w) => (
-              <article key={w.id}>
-                <span className="world-glyph">&#9678;</span>
-                <h3>{w.name}</h3>
-                <p>{w.description || "A world of unfolding histories"}</p>
-                {w.role && (
-                  <small>
-                    {w.role === "owner"
-                      ? "Owned by you"
-                      : `Shared with you · ${w.role}`}
-                  </small>
-                )}
-                <div>
-                  <button onClick={() => navigate(`/worlds/${w.id}`)}>
-                    Continue World
-                  </button>
-                  <button
-                    className="danger"
-                    disabled={w.role && w.role !== "owner"}
-                    onClick={async () => {
-                      if (
-                        await confirmAction(
-                          `Delete ${w.name}, all its Ages and maps?`,
+            {worlds
+              .filter(
+                (w) =>
+                  worldFilter === "all" ||
+                  (worldFilter === "owned"
+                    ? !w.role || w.role === "owner"
+                    : worldFilter === "shared"
+                      ? w.role && w.role !== "owner"
+                      : w.lastOpenedAt > 0),
+              )
+              .sort((a, b) =>
+                worldFilter === "recent" ? b.lastOpenedAt - a.lastOpenedAt : 0,
+              )
+              .map((w) => (
+                <article key={w.id}>
+                  <span className="world-glyph">&#9678;</span>
+                  <h3>{w.name}</h3>
+                  <p>{w.description || "A world of unfolding histories"}</p>
+                  {w.role && (
+                    <small>
+                      {w.role === "owner"
+                        ? "Owned by you"
+                        : `Shared with you · ${w.role}`}
+                    </small>
+                  )}
+                  {worldFilter === "recent" && (
+                    <small>
+                      Opened {new Date(w.lastOpenedAt).toLocaleString()}
+                    </small>
+                  )}
+                  <div>
+                    <button onClick={() => navigate(`/worlds/${w.id}`)}>
+                      Continue World
+                    </button>
+                    <button
+                      className="danger"
+                      disabled={w.role && w.role !== "owner"}
+                      onClick={async () => {
+                        if (
+                          await confirmAction(
+                            `Delete ${w.name}, all its Ages and maps?`,
+                          )
                         )
-                      )
-                        run(async () => {
-                          await historyRequest(`/${w.id}`, undefined, "DELETE");
-                          setWorlds(worlds.filter((x) => x.id !== w.id));
-                        });
-                    }}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </article>
-            ))}
+                          run(async () => {
+                            await historyRequest(
+                              `/${w.id}`,
+                              undefined,
+                              "DELETE",
+                            );
+                            setWorlds(worlds.filter((x) => x.id !== w.id));
+                          });
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </article>
+              ))}
           </div>
           {worlds.length === 0 && (
             <p className="empty-worlds">Create your first World above.</p>

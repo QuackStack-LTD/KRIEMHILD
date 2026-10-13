@@ -10,6 +10,8 @@ artifacts/
 data/
 *.sqlite*
 *.world.zip
+deploy/backups/
+deploy/*.env
 
 # Local credentials; keep the shareable configuration template
 .env
