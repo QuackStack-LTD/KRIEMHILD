@@ -126,11 +126,11 @@ func audit(p *model.Planet) {
 		pt := g.Point(i%g.Width, i/g.Width)
 		weight := math.Cos(pt[1])
 		total += weight
-		if b <= 0 {
+		if !p.Emerged(i) {
 			continue
 		}
 		land += weight
-		biome := Biome(g.Fields["temperature"][i], g.Fields["precipitation"][i], g.Fields["pet"][i], b, g.Fields["lake"][i] > b)
+		biome := BiomeAt(p, g.Point(i%g.Width, i/g.Width)[0], g.Point(i%g.Width, i/g.Width)[1], b, g.Fields["lake"][i] > 0 && g.Fields["lake"][i] > b)
 		p.Diagnostics.BiomeShares[biome] += weight
 		if seen[i] {
 			continue
@@ -143,7 +143,7 @@ func audit(p *model.Planet) {
 			pt := g.Point(j%g.Width, j/g.Width)
 			area += math.Cos(pt[1])
 			for _, k := range neighbors(j, g.Width, g.Height) {
-				if !seen[k] && g.Fields["bed"][k] > 0 {
+				if !seen[k] && p.Emerged(k) {
 					seen[k] = true
 					q = append(q, k)
 				}

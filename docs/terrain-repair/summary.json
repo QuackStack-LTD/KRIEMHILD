@@ -1,0 +1,222 @@
+{
+  "baseline": {
+    "seeds": 30,
+    "biomes": {
+      "alpine": {
+        "min": 0,
+        "median": 0.0006424501333597448,
+        "max": 0.00528492665514494
+      },
+      "desert": {
+        "min": 0.03910131271263074,
+        "median": 0.09526142570060855,
+        "max": 0.17562963792991038
+      },
+      "forest": {
+        "min": 0.048038557634947354,
+        "median": 0.10102837929798367,
+        "max": 0.15372178782602847
+      },
+      "grassland": {
+        "min": 0.1069832251686779,
+        "median": 0.15845670173719445,
+        "max": 0.19459096544069468
+      },
+      "ice": {
+        "min": 0.014857684970105806,
+        "median": 0.07527360323808024,
+        "max": 0.16211064434830713
+      },
+      "rainforest": {
+        "min": 0.08766141404010248,
+        "median": 0.15008966129824902,
+        "max": 0.3024454963744492
+      },
+      "savanna": {
+        "min": 0.015554809094668179,
+        "median": 0.0364989168580508,
+        "max": 0.06271893850833857
+      },
+      "steppe": {
+        "min": 0.14171305325039515,
+        "median": 0.19397542087324215,
+        "max": 0.2657426886022861
+      },
+      "taiga": {
+        "min": 0.0196891634259467,
+        "median": 0.04120785475957601,
+        "max": 0.055982480926534725
+      },
+      "tundra": {
+        "min": 0.024543996642651975,
+        "median": 0.08879643613422747,
+        "max": 0.1763964879389316
+      },
+      "water": {
+        "min": 0.014000138708999146,
+        "median": 0.03790035460661391,
+        "max": 0.0664684551100499
+      }
+    },
+    "steppeAlarm": [],
+    "drylandAlarm": [],
+    "rivers": {
+      "min": 248,
+      "median": 466,
+      "max": 698
+    },
+    "generationMs": {
+      "min": 3193.7690000000002,
+      "median": 3372.9285,
+      "max": 3914.514
+    },
+    "majorContinents": {
+      "min": 2,
+      "median": 4,
+      "max": 6
+    },
+    "moistureBudgetRelativeError": {
+      "min": 2.2177320450174353e-13,
+      "median": 3.3490604594731555e-13,
+      "max": 5.835299768528249e-13
+    },
+    "missingFields": [
+      "soil",
+      "aridity",
+      "rainShadow",
+      "exposure"
+    ]
+  },
+  "after": {
+    "seeds": 30,
+    "biomes": {
+      "alpine": {
+        "min": 0,
+        "median": 0.0010376450305922106,
+        "max": 0.01005839403778468
+      },
+      "desert": {
+        "min": 0.024330571304551005,
+        "median": 0.09522054390207757,
+        "max": 0.18527409199306102
+      },
+      "forest": {
+        "min": 0.027186421908959493,
+        "median": 0.03461040827332546,
+        "max": 0.05319951013968218
+      },
+      "grassland": {
+        "min": 0.03385973187993728,
+        "median": 0.05506053280435549,
+        "max": 0.08334877423160443
+      },
+      "ice": {
+        "min": 0.02661273508017461,
+        "median": 0.07900605642071942,
+        "max": 0.21040734266293398
+      },
+      "rainforest": {
+        "min": 0.046200556352940084,
+        "median": 0.10367910960924406,
+        "max": 0.1637590463086521
+      },
+      "savanna": {
+        "min": 0.02523758980918084,
+        "median": 0.06105808636480638,
+        "max": 0.10815649011580958
+      },
+      "shrubland": {
+        "min": 0.004056103809671001,
+        "median": 0.00829355191846506,
+        "max": 0.013396701813858125
+      },
+      "steppe": {
+        "min": 0.12871267432327127,
+        "median": 0.18075930194215173,
+        "max": 0.23228747588521526
+      },
+      "taiga": {
+        "min": 0.03419007331260704,
+        "median": 0.06667840393439754,
+        "max": 0.09572916121950784
+      },
+      "temperate-rainforest": {
+        "min": 0.027642801781727597,
+        "median": 0.04251193255409201,
+        "max": 0.07273770826974141
+      },
+      "tropical-woodland": {
+        "min": 0.02049577570552578,
+        "median": 0.04324453245847919,
+        "max": 0.08519249677430571
+      },
+      "tundra": {
+        "min": 0.051912344168466656,
+        "median": 0.09371404483582067,
+        "max": 0.16185990957996782
+      },
+      "water": {
+        "min": 0.04169319264665216,
+        "median": 0.06497033989078072,
+        "max": 0.102690871225937
+      },
+      "wetland": {
+        "min": 0.008870188373235109,
+        "median": 0.016996053419438537,
+        "max": 0.025249127755613707
+      },
+      "woodland": {
+        "min": 0.01536378559249633,
+        "median": 0.02182114668989759,
+        "max": 0.03531692732031124
+      }
+    },
+    "steppeAlarm": [],
+    "drylandAlarm": [],
+    "rivers": {
+      "min": 788,
+      "median": 1247,
+      "max": 1624
+    },
+    "generationMs": {
+      "min": 4669.182,
+      "median": 5116.164500000001,
+      "max": 7931.002
+    },
+    "majorContinents": {
+      "min": 3,
+      "median": 5,
+      "max": 6
+    },
+    "moistureBudgetRelativeError": {
+      "min": 1.665954223944851e-13,
+      "median": 3.553072930084799e-13,
+      "max": 5.665748156871464e-13
+    },
+    "missingFields": [],
+    "majorShapes": {
+      "count": 152,
+      "compactness": {
+        "min": 0.050864278303982886,
+        "median": 0.16198069200248855,
+        "max": 0.5261895785836699
+      },
+      "aspectRatio": {
+        "min": 1.0543205325386353,
+        "median": 1.6813902404215884,
+        "max": 8.277242690725148
+      },
+      "orientationDegrees": {
+        "min": -86.75890046166202,
+        "median": 12.51877549611792,
+        "max": 88.97140715592084
+      }
+    }
+  },
+  "notes": [
+    "Area weights use cos(latitude) on the 192×96 macro grid. Land includes inland lakes but excludes ocean.",
+    "Shape measurements are macro-grid estimates; they are not fine coastline/gulf/peninsula measurements.",
+    "Generation timings exclude tile rendering and run amid other test jobs; these are observed timings, not isolated benchmarks.",
+    "Baseline binary was built before repair; after images and metrics share seed/spec but landforms intentionally differ."
+  ]
+}

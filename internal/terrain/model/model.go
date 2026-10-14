@@ -8,7 +8,7 @@ import (
 	"math"
 )
 
-const Version = "continuous-1"
+const Version = "continuous-2"
 const Schema = 1
 const Tau = 2 * math.Pi
 
@@ -32,7 +32,7 @@ func DefaultSpec() Spec {
 	return Spec{Version: Version, Seed: "Kriemhild", Preset: "earthlike", RadiusKM: 6371, LandCoverage: .32, Continents: 5, Complexity: 1, Islands: 1, Relief: 1, Rainfall: 1, Tilt: 23.4, TileSize: 256}
 }
 func (s Spec) Validate() error {
-	if s.Version != Version {
+	if s.Version != Version && s.Version != "continuous-1" {
 		return fmt.Errorf("unsupported terrain generator %q", s.Version)
 	}
 	if len(s.Seed) == 0 || len(s.Seed) > 1200 || s.Continents < 1 || s.Continents > 12 || s.LayoutVariant < 0 || s.LayoutVariant > 1000000 {
@@ -71,6 +71,7 @@ type Mass struct {
 	Cuts     []Stroke `json:"cuts"`
 }
 type River struct {
+	Order       int       `json:"order,omitempty"`
 	ID          string    `json:"id"`
 	Destination string    `json:"destination"`
 	Path        []Point   `json:"path"`
@@ -114,6 +115,15 @@ type Planet struct {
 	Lakes       []Lake      `json:"lakes"`
 	Plates      []Plate     `json:"plates"`
 }
+
+// Emerged distinguishes inland depressions from the ocean. Version 1 used bed sign.
+func (p *Planet) Emerged(i int) bool {
+	if p.Spec.Version == "continuous-1" {
+		return p.Grid.Fields["bed"][i] > 0
+	}
+	return p.Grid.Fields["coast"][i] > 0
+}
+
 type Plate struct {
 	Center      [3]float64 `json:"center"`
 	Motion      [3]float64 `json:"motion"`

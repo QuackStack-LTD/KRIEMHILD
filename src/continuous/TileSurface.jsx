@@ -1,36 +1,62 @@
 import { useEffect, useRef, useState } from "react";
 import { visibleTiles } from "./camera.js";
+const sharedCache = new Map();
 export default function TileSurface({
   session,
+  identity = session,
   revision,
   invalidations = [],
   style,
   camera,
   width,
   onLoading,
+  enabled = true,
 }) {
-  const cache = useRef(new Map()),
+  const cache = useRef(sharedCache),
     [images, setImages] = useState([]);
-  useEffect(
-    () => () => {
-      for (const tile of cache.current.values()) URL.revokeObjectURL(tile.url);
-      cache.current.clear();
-    },
-    [session],
+  const baseRevision = useRef(revision);
+  const wanted = visibleTiles(
+    camera,
+    width,
+    Math.min(3, devicePixelRatio || 1),
   );
+  const signature = wanted
+    .map((t) => `${t.z}/${t.x}/${t.y}/${t.size}`)
+    .join(";");
   useEffect(() => {
-    if (!session) return;
+    if (!session || !enabled) {
+      onLoading?.(0);
+      return;
+    }
     const abort = new AbortController();
     let active = true;
-    const wanted = visibleTiles(
-      camera,
-      width,
-      Math.min(2, devicePixelRatio || 1),
+    const ordered = [...wanted].sort(
+      (a, b) =>
+        Math.hypot(
+          (a.x + 0.5) * a.span - camera.x - camera.w / 2,
+          (a.y + 0.5) * a.span - camera.y - camera.h / 2,
+        ) -
+        Math.hypot(
+          (b.x + 0.5) * b.span - camera.x - camera.w / 2,
+          (b.y + 0.5) * b.span - camera.y - camera.h / 2,
+        ),
     );
+    const parents = ordered
+      .filter((t) => t.z > 0)
+      .map((t) => ({
+        z: t.z - 1,
+        x: Math.floor(t.x / 2),
+        y: Math.floor(t.y / 2),
+        span: t.span * 2,
+        size: 256,
+      }));
     const queue = [
-      { z: 0, x: 0, y: 0, span: 1, size: 256 },
-      { z: 0, x: 1, y: 0, span: 1, size: 256 },
-      ...wanted,
+      ...new Map(
+        [...parents, ...ordered].map((t) => [
+          `${t.z}/${t.x}/${t.y}/${t.size}`,
+          t,
+        ]),
+      ).values(),
     ];
     const stamp = (t) =>
       invalidations.reduce(
@@ -44,16 +70,22 @@ export default function TileSurface({
         0,
       );
     const key = (t) =>
-      `${session}/${stamp(t)}/${style}/${t.z}/${t.x}/${t.y}/${t.size}`;
+      `${identity}/${baseRevision.current}/${stamp(t)}/${style}/${t.z}/${t.x}/${t.y}/${t.size}`;
     const publish = () => {
       if (!active) return;
       setImages(
         [...cache.current.values()]
           .filter(
             (t) =>
-              t.session === session &&
+              t.identity === identity &&
+              t.baseRevision === baseRevision.current &&
               t.style === style &&
-              t.stamp === stamp(t),
+              t.stamp === stamp(t) &&
+              t.z <= wanted[0]?.z &&
+              t.x * t.span < camera.x + camera.w + t.span &&
+              (t.x + 1) * t.span > camera.x - t.span &&
+              t.y * t.span < camera.y + camera.h + t.span &&
+              (t.y + 1) * t.span > camera.y - t.span,
           )
           .sort((a, b) => a.z - b.z),
       );
@@ -65,7 +97,12 @@ export default function TileSurface({
       while (queue.length && active) {
         const t = queue.shift(),
           k = key(t);
-        if (cache.current.has(k)) continue;
+        if (cache.current.has(k)) {
+          const t = cache.current.get(k);
+          cache.current.delete(k);
+          cache.current.set(k, t);
+          continue;
+        }
         try {
           const r = await fetch(
             `/api/sessions/${session}/terrain/tiles/${t.z}/${t.x}/${t.y}?style=${style}&revision=${revision}&size=${t.size}`,
@@ -78,6 +115,8 @@ export default function TileSurface({
             ...t,
             key: k,
             session,
+            identity,
+            baseRevision: baseRevision.current,
             revision,
             stamp: stamp(t),
             style,
@@ -97,24 +136,21 @@ export default function TileSurface({
       }
     };
     publish();
-    Promise.all([worker(), worker(), worker()]);
+    const timer = setTimeout(
+      () =>
+        Promise.all([worker(), worker(), worker()]).then(() => {
+          if (active) onLoading?.(failed ? -1 : 0);
+        }),
+      80,
+    );
     return () => {
       active = false;
+      clearTimeout(timer);
       abort.abort();
     };
-  }, [
-    session,
-    revision,
-    invalidations,
-    style,
-    camera.x,
-    camera.y,
-    camera.w,
-    camera.h,
-    width,
-  ]);
+  }, [session, revision, invalidations, style, signature, identity, enabled]);
   return (
-    <g aria-label="Continuous terrain tiles">
+    <g aria-label="Continuous terrain tiles" data-terrain-style={style}>
       {images.map((t) => (
         <image
           key={t.key}

@@ -8,9 +8,13 @@ import (
 )
 
 func Sample(p *model.Planet, lon, lat float64) model.Sample {
+	return sampleWith(p, lon, lat, func(lon, lat float64) (float64, float64, float64) { return landmass.Bed(p, lon, lat) })
+}
+func sampleWith(p *model.Planet, lon, lat float64, surface func(float64, float64) (float64, float64, float64)) model.Sample {
 	lon = model.Wrap(lon)
 	lat = model.Clamp(lat, -math.Pi/2, math.Pi/2)
-	bed, coast, rough := landmass.Bed(p, lon, lat)
+	bed, coast, rough := surface(lon, lat)
+	bed, coast = conditioned(p, lon, lat, bed, coast)
 	g := p.Grid
 	temp := g.At("temperature", lon, lat) - (bed-g.At("bed", lon, lat))*.0065
 	rain, pet := g.At("precipitation", lon, lat), g.At("pet", lon, lat)
@@ -34,6 +38,6 @@ func Sample(p *model.Planet, lon, lat float64) model.Sample {
 			}
 		}
 	}
-	s.Biome = generate.Biome(temp, rain, pet, bed, s.Water != "dry")
+	s.Biome = generate.BiomeAt(p, lon, lat, bed, s.Water != "dry")
 	return s
 }

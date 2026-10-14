@@ -7,6 +7,8 @@ import (
 
 // Cache bounds encoded texture memory. Eviction has no effect on terrain data.
 type Cache struct {
+	diskRoot    string
+	diskLimit   int64
 	mu          sync.Mutex
 	limit, used int
 	items       map[string]*list.Element
@@ -25,7 +27,7 @@ func (c *Cache) Get(key string) ([]byte, bool) {
 	defer c.mu.Unlock()
 	e := c.items[key]
 	if e == nil {
-		return nil, false
+		return c.readDisk(key)
 	}
 	c.lru.MoveToFront(e)
 	return e.Value.(entry).data, true
@@ -50,4 +52,5 @@ func (c *Cache) Put(key string, data []byte) {
 	}
 	c.items[key] = c.lru.PushFront(entry{key, data})
 	c.used += len(data)
+	c.writeDisk(key, data)
 }

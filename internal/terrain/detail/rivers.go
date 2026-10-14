@@ -1,6 +1,7 @@
 package detail
 
 import (
+	"kriemhild/internal/terrain/landmass"
 	"kriemhild/internal/terrain/model"
 	"math"
 )
@@ -13,12 +14,13 @@ type segment struct {
 // Sampler's spatial index is derived, disposable and never changes any sample.
 // Each request owns its index; there are no global mutable generation caches.
 type Sampler struct {
+	field  *landmass.Field
 	planet *model.Planet
 	bins   [128 * 64][]segment
 }
 
 func New(p *model.Planet) *Sampler {
-	s := &Sampler{planet: p}
+	s := &Sampler{planet: p, field: landmass.NewField(p)}
 	for _, r := range p.Rivers {
 		for i := 1; i < len(r.Path); i++ {
 			a, b := r.Path[i-1], r.Path[i]
@@ -47,7 +49,7 @@ func (s *Sampler) index(seg segment) {
 func (s *Sampler) Sample(lon, lat float64) model.Sample {
 	lon = model.Wrap(lon)
 	lat = model.Clamp(lat, -math.Pi/2, math.Pi/2)
-	a := Sample(s.planet, lon, lat)
+	a := sampleWith(s.planet, lon, lat, s.field.Bed)
 	x, y := int((lon+math.Pi)/model.Tau*128), int((.5-lat/math.Pi)*64)
 	c := math.Cos(lat)
 	scale := s.planet.Spec.RadiusKM * 1000

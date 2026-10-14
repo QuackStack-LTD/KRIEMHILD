@@ -4,11 +4,25 @@ import {
   useCallback,
   useEffect,
   useRef,
+  useMemo,
   useState,
 } from "react";
 import { request, defaults, presets } from "./api.js";
 import TileSurface from "./TileSurface.jsx";
 import { normalizeCamera, visibleTiles } from "./camera.js";
+import {
+  screenToMap,
+  viewport,
+  projectToMap,
+  mapToProject,
+  FeatureIndex,
+} from "./geometry.js";
+import { riverFeatures, riverWidth, riverVisible } from "./rivers.js";
+import { generationSpec } from "./seed.js";
+import { bounds as geometryBounds } from "./geometry.js";
+import { newIllustration, buildIllustration } from "./illustration.js";
+import IllustrationScene from "./IllustrationScene.jsx";
+import IllustrationPanel from "./IllustrationPanel.jsx";
 import "./studio.css";
 
 const uid = () => crypto.randomUUID().replaceAll("-", "");
@@ -39,7 +53,24 @@ export default function Studio({ initialState, onExit }) {
   const [show3D, setShow3D] = useState(false);
   const [exportWidth, setExportWidth] = useState(2048);
   const [state, setState] = useState(initialState || null),
-    [spec, setSpec] = useState(initialState?.continuous?.spec || defaults);
+    [spec, setSpec] = useState({
+      ...defaults,
+      ...initialState?.continuous?.spec,
+      version: defaults.version,
+      seed: "",
+    });
+  const [hillshade, setHillshade] = useState(
+      initialState?.projectUI?.continuousView?.hillshade ??
+        initialState?.project?.view?.hillshade ??
+        0.55,
+    ),
+    [legend, setLegend] = useState({}),
+    [riverSelection, setRiverSelection] = useState(null);
+  const [illustrating, setIllustrating] = useState(false),
+    [art, setArt] = useState(null),
+    [artSelected, setArtSelected] = useState(null),
+    [artTerrain, setArtTerrain] = useState(null);
+  const [worldContext, setWorldContext] = useState(null);
   const savedView =
     initialState?.projectUI?.continuousView ||
     initialState?.project?.view ||
@@ -86,6 +117,101 @@ export default function Studio({ initialState, onExit }) {
   active.current = state;
   const query = useRef(new URLSearchParams(location.search));
   const base = `sessions/${state?.id}`;
+  const displayStyle = illustrating ? "atlas" : style;
+  const artObjects = useMemo(
+    () =>
+      art && state
+        ? buildIllustration(art, entities, rivers, artTerrain, state)
+        : [],
+    [art, entities, rivers, artTerrain, state?.id],
+  );
+  useEffect(() => {
+    if (!art || !state) return;
+    const saved = state.project.illustrations?.[art.id];
+    if (saved) setArt(saved);
+    else {
+      setArt(null);
+      setArtSelected(null);
+      setIllustrating(false);
+    }
+  }, [state?.project?.revision]);
+  useEffect(() => {
+    if (!illustrating || !art || !state) return;
+    const abort = new AbortController(),
+      [x, y, w, h] = art.bounds;
+    setArtTerrain(null);
+    request(
+      `${base}/terrain/mesh?west=${Math.max(-180, x * 180 - 180)}&east=${Math.min(180, (x + w) * 180 - 180)}&north=${Math.min(90, 90 - y * 180)}&south=${Math.max(-90, 90 - (y + h) * 180)}`,
+      undefined,
+      "GET",
+      abort.signal,
+    )
+      .then(setArtTerrain)
+      .catch((e) => {
+        if (e.name !== "AbortError") setError(e.message);
+      });
+    return () => abort.abort();
+  }, [illustrating, art?.id, art?.bounds?.join(","), state?.id, invalidations]);
+  useEffect(() => {
+    const id = state?.historyWorldId || query.current.get("world");
+    if (!id) return;
+    const abort = new AbortController();
+    request(`worlds/${id}`, undefined, "GET", abort.signal)
+      .then(setWorldContext)
+      .catch((e) => {
+        if (e.name !== "AbortError") setError(e.message);
+      });
+    return () => abort.abort();
+  }, [state?.historyWorldId, state?.historicalMap?.ageId]);
+  function changeArt(next, commit = false) {
+    setArt(next);
+    if (commit)
+      void run(() => command({ kind: "illustration", illustration: next }));
+  }
+  function overrideArt(o, patch, commit) {
+    if (busy) return;
+    if (art.layers.find((l) => l.id === o.layer)?.locked) return;
+    const item = {
+      id: o.id,
+      source: o.source || "",
+      layer: o.layer,
+      kind: o.kind,
+      ...art.objects[o.id],
+      ...patch,
+    };
+    const next = { ...art, objects: { ...art.objects, [o.id]: item } };
+    setArtSelected({ ...o, ...patch });
+    changeArt(next, commit);
+  }
+  function artScope(scope, focus) {
+    let extent = scope === "world" ? initialCamera : camera;
+    if (focus) {
+      const b = geometryBounds(focus.points.map((p) => projectToMap(p, state))),
+        pad = Math.max(b.w, b.h) * 0.12 || 0.0002;
+      extent = {
+        x: b.x - pad,
+        y: b.y - pad,
+        w: Math.max(0.0001, b.w + pad * 2),
+        h: Math.max(0.0001, b.h + pad * 2),
+      };
+    }
+    const next = newIllustration(scope, extent, focus?.id || "");
+    const saved = state.project.illustrations?.[next.id];
+    changeArt(saved || next, !saved);
+    setCamera(
+      saved
+        ? {
+            x: saved.bounds[0],
+            y: saved.bounds[1],
+            w: saved.bounds[2],
+            h: saved.bounds[3],
+          }
+        : extent,
+    );
+    setArtSelected(null);
+    setIllustrating(true);
+    setTool("select");
+  }
   const run = async (work) => {
     setError("");
     setBusy(true);
@@ -99,8 +225,10 @@ export default function Studio({ initialState, onExit }) {
   };
   const refresh = useCallback(async (s = active.current) => {
     if (!s) return;
-    const result = await request(`sessions/${s.id}/world/entities?detail=8`);
-    setEntities(result.entities || []);
+    const result = await request(
+      `sessions/${s.id}/world/entities?detail=8&all=1`,
+    );
+    if (active.current?.id === s.id) setEntities(result.entities || []);
   }, []);
   useEffect(() => {
     if (!state?.id) return;
@@ -108,7 +236,10 @@ export default function Studio({ initialState, onExit }) {
     refresh(state).catch((e) => setError(e.message));
     request(`sessions/${state.id}/terrain/features`)
       .then((r) => {
-        if (alive) setRivers(r.rivers || []);
+        if (alive) {
+          setRivers(r.rivers || []);
+          setLegend(r.legend || {});
+        }
       })
       .catch((e) => setError(e.message));
     return () => {
@@ -179,7 +310,7 @@ export default function Studio({ initialState, onExit }) {
     await request(`sessions/${s.id}/world`, {
       kind: "view",
       revision: s.project.revision,
-      view: { camera, style, mode, showRivers },
+      view: { camera, style, mode, showRivers, hillshade },
     });
     const result = await request(`sessions/${s.id}/save`, {});
     setState((v) => ({
@@ -194,7 +325,9 @@ export default function Studio({ initialState, onExit }) {
       timer = setTimeout(
         () =>
           request(`sessions/${id}/view`, {
-            ui: { continuousView: { camera, style, mode, showRivers } },
+            ui: {
+              continuousView: { camera, style, mode, showRivers, hillshade },
+            },
             merge: true,
           })
             .then((result) => {
@@ -205,7 +338,7 @@ export default function Studio({ initialState, onExit }) {
         700,
       );
     return () => clearTimeout(timer);
-  }, [state?.id, camera, style, mode, showRivers]);
+  }, [state?.id, camera, style, mode, showRivers, hillshade]);
   useEffect(() => {
     if (!autoSave || !state?.historicalMap || !state.unsaved || busy) return;
     const timer = setTimeout(() => run(save), 30000);
@@ -215,6 +348,7 @@ export default function Studio({ initialState, onExit }) {
     const key = (e) => {
       if (e.target.matches("input,textarea,select")) return;
       if (e.key === "Escape") {
+        setArtSelected(null);
         setDraft([]);
         setSelected(null);
         setSettlement(null);
@@ -244,7 +378,9 @@ export default function Studio({ initialState, onExit }) {
         (active.current.historicalMap || entities.length)
       )
         await save();
-      const started = await request("terrain/generation-jobs", { spec });
+      const started = await request("terrain/generation-jobs", {
+        spec: generationSpec(spec),
+      });
       jobRef.current = started.id;
       while (!cancelled.current) {
         const progress = await request(`terrain/generation-jobs/${started.id}`);
@@ -309,11 +445,12 @@ export default function Studio({ initialState, onExit }) {
     setSettlement(null);
   }
   function position(e) {
-    const point = svg.current.createSVGPoint();
-    point.x = e.clientX;
-    point.y = e.clientY;
-    const p = point.matrixTransform(svg.current.getScreenCTM().inverse());
-    return [p.x, p.y];
+    return screenToMap(
+      e.clientX,
+      e.clientY,
+      svg.current.getBoundingClientRect(),
+      camera,
+    );
   }
   function toWorld(p) {
     return [
@@ -443,6 +580,37 @@ export default function Studio({ initialState, onExit }) {
   function down(e) {
     if (e.button !== 0) return;
     e.currentTarget.setPointerCapture(e.pointerId);
+    if (state && (tool === "select" || tool === "inspect")) {
+      const hits = featureIndex.pick(
+        position(e),
+        7 / viewport(svg.current.getBoundingClientRect(), camera).scale,
+      );
+      const hit = e.altKey
+        ? hits[(hits.findIndex((f) => f.id === selected?.id) + 1) % hits.length]
+        : hits[0];
+      if (hit?.river) {
+        setRiverSelection(hit.river);
+        setSelected(null);
+        return;
+      }
+      setRiverSelection(null);
+      if (hit) {
+        const entity = entities.find((f) => f.id === hit.id);
+        setSelected(entity);
+        if (
+          tool === "select" &&
+          !state.project.layers.find((l) => l.id === entity.layer)?.locked
+        ) {
+          drag.current = {
+            start: [e.clientX, e.clientY],
+            point: position(e),
+            entity,
+            moved: false,
+          };
+          return;
+        }
+      } else setSelected(null);
+    }
     drag.current = {
       start: [e.clientX, e.clientY],
       camera,
@@ -480,8 +648,12 @@ export default function Studio({ initialState, onExit }) {
     if (d.moved)
       setCamera({
         ...d.camera,
-        x: d.camera.x - (dx / width) * d.camera.w,
-        y: d.camera.y - (dy / width) * d.camera.w,
+        x:
+          d.camera.x -
+          dx / viewport(svg.current.getBoundingClientRect(), d.camera).scale,
+        y:
+          d.camera.y -
+          dy / viewport(svg.current.getBoundingClientRect(), d.camera).scale,
       });
   }
   function up(e) {
@@ -536,17 +708,20 @@ export default function Studio({ initialState, onExit }) {
     clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
     clone.setAttribute("width", String(exportWidth));
     clone.setAttribute("height", String((exportWidth * camera.h) / camera.w));
-    const terrain = clone.querySelector(
+    for (const selected of clone.querySelectorAll(
+      '[aria-label="Illustration selection"], [data-editor-handle]',
+    ))
+      selected.remove();
+    for (const terrain of clone.querySelectorAll(
       '[aria-label="Continuous terrain tiles"]',
-    );
-    if (terrain) {
+    )) {
       terrain.replaceChildren();
       const queue = visibleTiles(camera, exportWidth, 1);
       const worker = async () => {
         while (queue.length) {
           const t = queue.shift();
           const r = await fetch(
-            `/api/${base}/terrain/tiles/${t.z}/${t.x}/${t.y}?size=${t.size}&style=${style}&strict=1&revision=${state.project.revision}`,
+            `/api/${base}/terrain/tiles/${t.z}/${t.x}/${t.y}?size=${t.size}&style=${terrain.getAttribute("data-terrain-style") || displayStyle}&strict=1&revision=${state.project.revision}`,
           );
           if (!r.ok)
             throw Error(
@@ -632,11 +807,52 @@ export default function Studio({ initialState, onExit }) {
         state.project.layers.find((l) => l.id === e.layer)?.visible &&
         e.minDetail <= Math.max(0, Math.log2(2 / camera.w)),
     )
+    .filter((e) => {
+      const b = geometryBounds(e.points.map((p) => projectToMap(p, state)));
+      return (
+        b.x <= camera.x + camera.w &&
+        b.x + b.w >= camera.x &&
+        b.y <= camera.y + camera.h &&
+        b.y + b.h >= camera.y
+      );
+    })
     .sort(
       (a, b) =>
         state.project.layers.find((l) => l.id === a.layer).order -
         state.project.layers.find((l) => l.id === b.layer).order,
     );
+  const riverShapes = useMemo(() => riverFeatures(rivers), [rivers]);
+  const featureIndex = useMemo(
+    () =>
+      new FeatureIndex([
+        ...visibleEntities.map((e) => ({
+          ...e,
+          points: e.points.map((p) => projectToMap(p, state)),
+        })),
+        ...(showRivers
+          ? riverShapes.filter((f) =>
+              riverVisible(
+                f.river,
+                camera.w > 0.8
+                  ? "world"
+                  : camera.w > 0.15
+                    ? "continent"
+                    : "local",
+              ),
+            )
+          : []),
+      ]),
+    [
+      entities,
+      state?.project?.revision,
+      camera.x,
+      camera.y,
+      camera.w,
+      camera.h,
+      showRivers,
+      riverShapes,
+    ],
+  );
   function feature(e, preview = false) {
     const isSelected = selected?.id === e.id;
     const f = isSelected ? selected : e;
@@ -652,6 +868,7 @@ export default function Studio({ initialState, onExit }) {
               ? "#ceae6830"
               : "#bda67e25"
           : "none",
+      pointerEvents: "none",
       onPointerDown: (event) => {
         if (preview) return;
         event.stopPropagation();
@@ -721,7 +938,7 @@ export default function Studio({ initialState, onExit }) {
           {state?.project?.name || "A new natural world"}
           <small>
             {state?.historicalMap
-              ? "Accepted terrain · current Age"
+              ? `${worldContext?.world?.name || "World"} · ${worldContext?.ages?.find((a) => a.id === state.historicalMap.ageId)?.name || "Current Age"}`
               : "Generation preview"}
           </small>
         </span>
@@ -737,6 +954,7 @@ export default function Studio({ initialState, onExit }) {
               disabled={id !== "generate" && !state}
               onClick={() => {
                 setMode(id);
+                if (id === "generate") setIllustrating(false);
                 setTool(id === "settlement" ? "site" : "inspect");
                 setDraft([]);
               }}
@@ -758,8 +976,24 @@ export default function Studio({ initialState, onExit }) {
           Save
         </button>
         <button disabled={!state} onClick={() => setShow3D(true)}>
-          3D
+          3D Terrain
         </button>
+        {mode !== "generate" && (
+          <button
+            disabled={!state}
+            aria-pressed={illustrating}
+            onClick={() => {
+              if (illustrating) setIllustrating(false);
+              else
+                artScope(
+                  mode === "settlement" ? "city" : "world",
+                  mode === "settlement" && selected ? selected : undefined,
+                );
+            }}
+          >
+            {illustrating ? "Construction mode" : "Medieval Illustrator"}
+          </button>
+        )}
         <button
           aria-label="Toggle settings panel"
           onClick={() => setPanel(!panel)}
@@ -839,64 +1073,124 @@ export default function Studio({ initialState, onExit }) {
             {state && (
               <>
                 <TileSurface
+                  enabled={!show3D}
                   session={state.id}
                   revision={state.project.revision}
                   invalidations={invalidations}
-                  style={style}
+                  style={displayStyle}
+                  identity={state.worldId}
                   camera={camera}
                   width={width}
                   onLoading={setLoading}
                 />
-                {showRivers && (
+                {hillshade > 0 && !illustrating && (
+                  <g
+                    style={{ mixBlendMode: "multiply" }}
+                    opacity={hillshade}
+                    pointerEvents="none"
+                  >
+                    <TileSurface
+                      enabled={!show3D}
+                      session={state.id}
+                      revision={state.project.revision}
+                      invalidations={invalidations}
+                      style="hillshade"
+                      identity={state.worldId}
+                      camera={camera}
+                      width={width}
+                    />
+                  </g>
+                )}
+                {showRivers && !illustrating && (
                   <g
                     fill="none"
                     stroke="#71b7d3"
                     strokeOpacity=".7"
                     pointerEvents="none"
                   >
-                    {rivers.map((r) => (
-                      <path
-                        key={r.id}
-                        strokeWidth={Math.max(
-                          (camera.w / width) * 0.7,
-                          Math.min(
-                            (camera.w / width) * 3,
-                            (r.width?.at(-1) || 20) /
-                              (state.continuous.spec.radiusKm * 1000 * Math.PI),
-                          ),
-                        )}
-                        d={r.path
-                          .map(
-                            (p, i) =>
-                              `${i === 0 || Math.abs(p[0] - r.path[i - 1][0]) > Math.PI ? "M" : "L"}${(p[0] + Math.PI) / Math.PI},${0.5 - p[1] / Math.PI}`,
-                          )
-                          .join(" ")}
-                      />
-                    ))}
+                    {rivers
+                      .filter((r) =>
+                        riverVisible(
+                          r,
+                          camera.w > 0.8
+                            ? "world"
+                            : camera.w > 0.15
+                              ? "continent"
+                              : "local",
+                        ),
+                      )
+                      .map((r) => (
+                        <path
+                          key={r.id}
+                          strokeWidth={riverWidth(
+                            r,
+                            camera.w / width,
+                            state.continuous.spec.radiusKm,
+                          )}
+                          d={r.path
+                            .map(
+                              (p, i) =>
+                                `${i === 0 || Math.abs(p[0] - r.path[i - 1][0]) > Math.PI ? "M" : "L"}${(p[0] + Math.PI) / Math.PI},${0.5 - p[1] / Math.PI}`,
+                            )
+                            .join(" ")}
+                        />
+                      ))}
                   </g>
                 )}
-                {visibleEntities.map((e) => feature(e))}
-                {settlement?.entities.map((e) => feature(e, true))}
-                {selected?.points.map((p, i) => (
-                  <circle
-                    key={i}
-                    cx={toMap(p, state)[0]}
-                    cy={toMap(p, state)[1]}
-                    r={(camera.w / width) * 4}
-                    fill="#fff0a3"
-                    stroke="#473c28"
-                    strokeWidth={camera.w / width}
-                    onPointerDown={(e) => {
-                      e.stopPropagation();
-                      drag.current = {
-                        start: [e.clientX, e.clientY],
-                        vertex: i,
-                        moved: false,
-                      };
-                      svg.current.setPointerCapture(e.pointerId);
-                    }}
+                {!illustrating && visibleEntities.map((e) => feature(e))}
+                {illustrating && art && (
+                  <IllustrationScene
+                    config={art}
+                    objects={artObjects}
+                    selected={artSelected}
+                    onSelect={setArtSelected}
+                    onOverride={overrideArt}
+                    position={position}
+                    state={state}
+                    pixel={art.bounds[2] / 1200}
+                    relief={
+                      <g
+                        style={{ mixBlendMode: "multiply" }}
+                        opacity={hillshade}
+                        pointerEvents="none"
+                      >
+                        <TileSurface
+                          enabled={!show3D}
+                          session={state.id}
+                          revision={state.project.revision}
+                          invalidations={invalidations}
+                          style="hillshade"
+                          identity={state.worldId}
+                          camera={camera}
+                          width={width}
+                        />
+                      </g>
+                    }
                   />
-                ))}
+                )}
+                {settlement?.entities.map((e) => feature(e, true))}
+                {!illustrating &&
+                  selected?.points.map((p, i) => (
+                    <circle
+                      key={i}
+                      data-editor-handle="vertex"
+                      cx={toMap(p, state)[0]}
+                      cy={toMap(p, state)[1]}
+                      r={(camera.w / width) * 4}
+                      fill="#fff0a3"
+                      stroke="#473c28"
+                      strokeWidth={camera.w / width}
+                      onPointerDown={(e) => {
+                        e.stopPropagation();
+                        drag.current = {
+                          start: [e.clientX, e.clientY],
+                          vertex: i,
+                          moved: false,
+                        };
+                        svg.current.setPointerCapture(e.pointerId);
+                      }}
+                    />
+                  ))}
                 {draft.length > 0 && (
                   <polyline
                     points={pointsText(draft, state)}
@@ -964,6 +1258,37 @@ export default function Studio({ initialState, onExit }) {
         </main>
         {panel && (
           <aside className="studio-panel">
+            {illustrating && art && (
+              <IllustrationPanel
+                busy={busy}
+                config={art}
+                objects={artObjects}
+                onChange={changeArt}
+                onScope={artScope}
+                selected={artSelected}
+                onOverride={overrideArt}
+                entities={entities}
+                onSelect={setArtSelected}
+                onAdd={() => {
+                  const o = {
+                    id: uid(),
+                    kind: "text",
+                    layer: "annotations",
+                    text: "New annotation",
+                    position: [
+                      camera.x + camera.w / 2,
+                      camera.y + camera.h / 2,
+                    ],
+                    color: "#503d2a",
+                  };
+                  changeArt(
+                    { ...art, objects: { ...art.objects, [o.id]: o } },
+                    true,
+                  );
+                  setArtSelected(o);
+                }}
+              />
+            )}
             {mode === "generate" && (
               <>
                 <div className="studio-eyebrow">NATURAL WORLD</div>
@@ -990,24 +1315,45 @@ export default function Studio({ initialState, onExit }) {
                   </select>
                 </label>
                 <label>
-                  Seed
+                  Seed (optional)
                   <div className="studio-inline">
                     <input
+                      aria-label="Optional generation seed"
                       value={spec.seed}
                       onChange={(e) =>
                         setSpec({ ...spec, seed: e.target.value })
                       }
                     />
                     <button
-                      title="Choose a new seed"
-                      onClick={() =>
-                        setSpec({ ...spec, seed: uid().slice(0, 12) })
-                      }
+                      title="Leave blank for a fresh seed each time"
+                      onClick={() => setSpec({ ...spec, seed: "" })}
                     >
                       ↻
                     </button>
                   </div>
                 </label>
+                {state && (
+                  <p>
+                    Generated seed: <code>{state.continuous.spec.seed}</code>
+                    <br />
+                    <button
+                      onClick={() =>
+                        navigator.clipboard
+                          .writeText(state.continuous.spec.seed)
+                          .catch((e) => setError(e.message))
+                      }
+                    >
+                      Copy seed
+                    </button>
+                    <button
+                      onClick={() =>
+                        setSpec({ ...spec, seed: state.continuous.spec.seed })
+                      }
+                    >
+                      Reuse this seed
+                    </button>
+                  </p>
+                )}
                 {[
                   ["landCoverage", "Land preference", 0.03, 0.65, 0.01, "%"],
                   ["continents", "Major landmasses", 1, 10, 1, ""],
@@ -1101,7 +1447,7 @@ export default function Studio({ initialState, onExit }) {
                   </div>
                 )}
                 {diagnostics && (
-                  <details open>
+                  <details>
                     <summary>Geography diagnostics</summary>
                     <p>
                       {diagnostics.majorContinents} major continents ·{" "}
@@ -1132,7 +1478,7 @@ export default function Studio({ initialState, onExit }) {
                 )}
               </>
             )}
-            {mode === "map" && (
+            {mode === "map" && !illustrating && (
               <>
                 <div className="studio-eyebrow">MAP BUILDER</div>
                 <h2>Places & geography</h2>
@@ -1179,7 +1525,7 @@ export default function Studio({ initialState, onExit }) {
                 )}
               </>
             )}
-            {mode === "settlement" && (
+            {mode === "settlement" && !illustrating && (
               <>
                 <div className="studio-eyebrow">SETTLEMENT BUILDER</div>
                 <h2>A place to belong</h2>
@@ -1271,7 +1617,7 @@ export default function Studio({ initialState, onExit }) {
                 )}
               </>
             )}
-            {selected && (
+            {selected && !illustrating && (
               <section className="studio-inspector">
                 <h3>Object inspector</h3>
                 <label>
@@ -1389,6 +1735,38 @@ export default function Studio({ initialState, onExit }) {
             )}
             <section>
               <h3>Map appearance</h3>
+              <div className="studio-actions">
+                <button
+                  onClick={() => {
+                    setStyle("natural");
+                    setHillshade(0);
+                  }}
+                >
+                  Flat
+                </button>
+                <button
+                  onClick={() => {
+                    setStyle("elevation");
+                    setHillshade(0.65);
+                  }}
+                >
+                  Relief
+                </button>
+                <button disabled={!state} onClick={() => setShow3D(true)}>
+                  3D Terrain
+                </button>
+              </div>
+              <label>
+                Hillshade strength
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step=".05"
+                  value={hillshade}
+                  onChange={(e) => setHillshade(+e.target.value)}
+                />
+              </label>
               <label>
                 Style
                 <select
@@ -1405,11 +1783,36 @@ export default function Studio({ initialState, onExit }) {
                     "temperature",
                     "precipitation",
                     "moisture",
+                    "pet",
+                    "aridity",
+                    "soil",
+                    "seasonality",
+                    "rainShadow",
+                    "exposure",
+                    "slope",
+                    "contours",
                   ].map((v) => (
                     <option key={v}>{v}</option>
                   ))}
                 </select>
               </label>
+              {style === "biome" && (
+                <div aria-label="Biome legend">
+                  {Object.entries(legend).map(([name, rgb]) => (
+                    <div key={name}>
+                      <span
+                        style={{
+                          display: "inline-block",
+                          width: 12,
+                          height: 12,
+                          background: `rgb(${rgb.join(",")})`,
+                        }}
+                      />{" "}
+                      {name}
+                    </div>
+                  ))}
+                </div>
+              )}
               <label className="studio-check">
                 <input
                   type="checkbox"
@@ -1509,6 +1912,14 @@ export default function Studio({ initialState, onExit }) {
                   <dd>
                     {sample.biome} · {sample.water}
                   </dd>
+                  {sample.landmass && (
+                    <>
+                      <dt>Landmass</dt>
+                      <dd>
+                        {sample.landmass.id} · {sample.landmass.family}
+                      </dd>
+                    </>
+                  )}
                   <dt>Bed elevation</dt>
                   <dd>{sample.bed.toFixed(0)} m</dd>
                   <dt>Water depth</dt>
@@ -1519,7 +1930,38 @@ export default function Studio({ initialState, onExit }) {
                   <dd>{sample.precipitation.toFixed(0)} mm/year</dd>
                   <dt>Moisture</dt>
                   <dd>{(sample.moisture * 100).toFixed(0)}%</dd>
+                  <dt>Evaporative demand</dt>
+                  <dd>{sample.pet.toFixed(0)} mm/year</dd>
+                  {sample.climate?.soil != null && (
+                    <>
+                      <dt>Soil water</dt>
+                      <dd>{sample.climate.soil.toFixed(0)} mm</dd>
+                      <dt>Precipitation / PET</dt>
+                      <dd>{sample.climate.aridity.toFixed(2)}</dd>
+                      <dt>Dry months</dt>
+                      <dd>{sample.climate.dryMonths.toFixed(1)}</dd>
+                      <dt>Seasonality (CV)</dt>
+                      <dd>{sample.climate.seasonality.toFixed(2)}</dd>
+                    </>
+                  )}
                 </dl>
+              </section>
+            )}
+            {riverSelection && (
+              <section>
+                <h3>{riverSelection.name || riverSelection.id}</h3>
+                <p>
+                  Discharge {riverSelection.discharge?.at(-1)?.toFixed(1)} m³/s
+                  · width {riverSelection.width?.at(-1)?.toFixed(1)} m
+                </p>
+                <p>Outlet: {riverSelection.destination}</p>
+                {riverSelection.order > 0 && (
+                  <p>Stream order: {riverSelection.order}</p>
+                )}
+                <p>
+                  Source elevation {riverSelection.bed?.[0]?.toFixed(0)} m ·
+                  outlet elevation {riverSelection.bed?.at(-1)?.toFixed(0)} m
+                </p>
               </section>
             )}
             {state && (
@@ -1587,6 +2029,30 @@ export default function Studio({ initialState, onExit }) {
           <Terrain3D
             state={state}
             camera={camera}
+            onPick={(p, tolerance) => {
+              inspect(p);
+              const index = new FeatureIndex([
+                ...entities
+                  .filter(
+                    (e) =>
+                      !e.deleted &&
+                      state.project.layers.find((l) => l.id === e.layer)
+                        ?.visible,
+                  )
+                  .map((e) => ({
+                    ...e,
+                    points: e.points.map((q) => projectToMap(q, state)),
+                  })),
+                ...(showRivers ? riverShapes : []),
+              ]);
+              const hit = index.pick(p, tolerance)[0];
+              setRiverSelection(hit?.river || null);
+              setSelected(
+                hit && !hit.river
+                  ? entities.find((e) => e.id === hit.id)
+                  : null,
+              );
+            }}
             onClose={() => setShow3D(false)}
           />
         </Suspense>

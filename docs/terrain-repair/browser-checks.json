@@ -1,0 +1,20 @@
+{
+  "date": "2026-10-14T16:27:30.782Z",
+  "peakMetres": 7194.4056320298,
+  "camera": {
+    "x": 1.6714559748427673,
+    "y": 0.17819736842105263,
+    "w": 0.003,
+    "h": 0.0015
+  },
+  "errors": [],
+  "checks": [
+    "country, road, capital selection",
+    "selection after resize",
+    "annotation edit/drag/undo/redo/save/reopen",
+    "3D LOD refinement",
+    "regional physical relief at natural and exaggerated scales",
+    "shared illustrator city/country/continent/world scopes",
+    "SVG, PNG, PDF and World ZIP downloads"
+  ]
+}

@@ -34,6 +34,10 @@ func TestContinuousArchiveRoundTrip(t *testing.T) {
 	if _, err = v.authored().PutEntity(e); err != nil {
 		t.Fatal(err)
 	}
+	art := world.Illustration{Version: 1, ID: "medieval-world", Title: "World atlas", Scope: "world", Style: "medieval", Bounds: [4]float64{0, 0, 2, 1}, Layers: []world.IllustrationLayer{{ID: "labels", Name: "Labels", Visible: true, Opacity: 1}}, Objects: map[string]world.IllustrationObject{"label-town": {ID: "label-town", Source: "town", Kind: "text", Layer: "labels", Position: &[2]float64{.8, .4}}}}
+	if err := v.authored().PutIllustration(art); err != nil {
+		t.Fatal(err)
+	}
 	archive, err := encodeProject(v)
 	if err != nil {
 		t.Fatal(err)
@@ -63,6 +67,9 @@ func TestContinuousArchiveRoundTrip(t *testing.T) {
 	}
 	if restored.planet == nil || !reflect.DeepEqual(v.planet.Grid, restored.planet.Grid) || !reflect.DeepEqual(v.planet.Masses, restored.planet.Masses) || restored.world.Entities["town"].Name != "Old town" {
 		t.Fatal("archive lost terrain or authored identity")
+	}
+	if !reflect.DeepEqual(restored.world.Header.Illustrations[art.ID], art) {
+		t.Fatal("archive lost editable illustration")
 	}
 }
 

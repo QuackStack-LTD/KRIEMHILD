@@ -29,7 +29,7 @@ func legacyProjection(p *model.Planet) (*terrain.Solver, error) {
 	for _, k := range keys {
 		e.Fields[k] = make([]float64, n)
 	}
-	biomes := map[string]string{"grassland": "grass", "rainforest": "jungle", "alpine": "mountain", "water": "water", "steppe": "steppe", "ice": "snow"}
+	biomes := map[string]string{"grassland": "grass", "rainforest": "jungle", "alpine": "mountain", "water": "water", "steppe": "steppe", "ice": "snow", "tropical-woodland": "forest", "temperate-rainforest": "forest", "woodland": "forest", "shrubland": "scrub", "wetland": "marsh"}
 	calendar := []terrain.ClimateSeason{{Name: "Annual cycle", Start: 0, Months: 12}}
 	climate := &terrain.ClimateState{Version: terrain.ClimateModelVersion, Source: model.Version, Parameters: terrain.ClimateParameters{Mode: "automatic", MinSeasons: 1, MaxSeasons: 6, AxialTilt: p.Spec.Tilt, OrbitalDays: 365.25, Circulation: 1}, Scale: terrain.ClimateScale{WidthPX: float64(w), HeightPX: float64(h), PixelsPerCell: 1, GridWidth: w, GridHeight: h, CellCount: n, RadiusKM: p.Spec.RadiusKM, LatitudeNorth: 90, LatitudeSouth: -90, LongitudeWest: -180, LongitudeEast: 180, NorthSouthKM: math.Pi * p.Spec.RadiusKM / float64(h-1), EquatorialEastWestKM: model.Tau * p.Spec.RadiusKM / float64(w-1), Coverage: "planet", Approximate: true}, Calendar: calendar, FinalCount: 1, Cells: make([]terrain.ClimateCell, n)}
 	zones := map[string]int{}

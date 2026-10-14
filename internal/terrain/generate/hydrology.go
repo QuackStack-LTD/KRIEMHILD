@@ -32,8 +32,14 @@ func drainage(ctx context.Context, p *model.Planet) error {
 	seen := make([]bool, n)
 	q := &floodQueue{}
 	order := make([]int, 0, n)
-	for i, b := range bed {
-		if b <= 0 {
+	ocean := func(i int) bool {
+		if p.Spec.Version == "continuous-1" {
+			return bed[i] <= 0
+		}
+		return g.Fields["coast"][i] <= 0
+	}
+	for i := range bed {
+		if ocean(i) {
 			seen[i] = true
 			level[i] = 0
 			heap.Push(q, floodNode{i, 0})
@@ -65,10 +71,10 @@ func drainage(ctx context.Context, p *model.Planet) error {
 		pt := g.Point(i%g.Width, i/g.Width)
 		area := model.Tau / float64(g.Width) * math.Pi / float64(g.Height) * math.Cos(pt[1]) * p.Spec.RadiusKM * p.Spec.RadiusKM * 1e6
 		runoff := math.Max(0, g.Fields["precipitation"][i]-g.Fields["pet"][i]*.55)
-		if b > 0 {
+		if !ocean(i) {
 			discharge[i] = runoff / 1000 * area / (365.25 * 86400)
 		}
-		if b > 0 && level[i]-b > 20 && g.Fields["moisture"][i] > .35 {
+		if !ocean(i) && level[i]-b > 20 && g.Fields["moisture"][i] > .35 {
 			g.Fields["lake"][i] = level[i]
 		}
 	}
@@ -108,18 +114,43 @@ func drainage(ctx context.Context, p *model.Planet) error {
 		p.Lakes = append(p.Lakes, model.Lake{Center: center, Radius: math.Min(.035, .009*math.Sqrt(float64(len(cells)))), Level: level[low]})
 	}
 	threshold := 1800.
+	if p.Spec.Version != "continuous-1" {
+		threshold = 300
+	}
 	upstream := make([]int, n)
+	streamOrder, maximumUpstream, sameOrder := make([]int, n), make([]int, n), make([]int, n)
+	for k := len(order) - 1; k >= 0; k-- {
+		i := order[k]
+		if ocean(i) || discharge[i] < threshold {
+			continue
+		}
+		streamOrder[i] = max(1, maximumUpstream[i])
+		if sameOrder[i] >= 2 {
+			streamOrder[i]++
+		}
+		if j := int(flow[i]); j >= 0 {
+			if streamOrder[i] > maximumUpstream[j] {
+				maximumUpstream[j] = streamOrder[i]
+				sameOrder[j] = 1
+			} else if streamOrder[i] == maximumUpstream[j] {
+				sameOrder[j]++
+			}
+		}
+	}
 	for i, f := range flow {
 		j := int(f)
-		if j >= 0 && discharge[i] >= threshold && bed[i] > 0 {
+		if j >= 0 && discharge[i] >= threshold && !ocean(i) {
 			upstream[j]++
 		}
 	}
-	for i, b := range bed {
-		if b <= 0 || discharge[i] < threshold || upstream[i] == 1 {
+	for i := range bed {
+		if ocean(i) || discharge[i] < threshold || upstream[i] == 1 {
 			continue
 		}
 		river := model.River{ID: fmt.Sprintf("river-%d", i), Destination: "ocean"}
+		if p.Spec.Version != "continuous-1" {
+			river.Order = streamOrder[i]
+		}
 		for j, steps := i, 0; steps < n; steps++ {
 			pt := g.Point(j%g.Width, j/g.Width)
 			river.Path = append(river.Path, pt)
@@ -127,7 +158,7 @@ func drainage(ctx context.Context, p *model.Planet) error {
 			river.Bed = append(river.Bed, level[j]-math.Max(1, math.Pow(discharge[j], .3)*.3))
 			river.Discharge = append(river.Discharge, discharge[j])
 			river.Width = append(river.Width, math.Max(4, math.Sqrt(discharge[j])*2.4))
-			if bed[j] <= 0 {
+			if ocean(j) {
 				break
 			}
 			next := int(flow[j])
@@ -142,6 +173,9 @@ func drainage(ctx context.Context, p *model.Planet) error {
 			j = next
 		}
 		if len(river.Path) >= 2 {
+			if p.Spec.Version != "continuous-1" {
+				river = refineRiver(p, river)
+			}
 			p.Rivers = append(p.Rivers, river)
 		}
 	}

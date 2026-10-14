@@ -9,11 +9,13 @@ import (
 	"kriemhild/internal/storage"
 	"kriemhild/internal/terrain/detail"
 	"kriemhild/internal/terrain/generate"
+	"kriemhild/internal/terrain/landmass"
 	"kriemhild/internal/terrain/model"
 	"kriemhild/internal/terrain/tiles"
 	"kriemhild/internal/world"
 	"math"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"sync"
 	"time"
@@ -33,7 +35,7 @@ type terrainJob struct {
 
 func (s *Server) continuousRoutes() {
 	s.terrainJobs = map[string]*terrainJob{}
-	s.terrainTileCache = tiles.NewCache(64 << 20)
+	s.terrainTileCache = tiles.NewPersistentCache(64<<20, filepath.Join(s.cacheRoot, "continuous-tiles-v2"), 512<<20)
 	s.mux.HandleFunc("POST /api/terrain/generation-jobs", s.startTerrainJob)
 	s.mux.HandleFunc("GET /api/terrain/generation-jobs/{job}", s.terrainJobState)
 	s.mux.HandleFunc("DELETE /api/terrain/generation-jobs/{job}", s.terrainJobState)
@@ -45,12 +47,17 @@ func (s *Server) continuousRoutes() {
 	s.mux.HandleFunc("POST /api/sessions/{id}/settlements", s.acceptSettlement)
 }
 func (s *Server) startTerrainJob(w http.ResponseWriter, r *http.Request) {
+	defaults := model.DefaultSpec()
+	defaults.Seed = ""
 	req := struct {
 		Spec model.Spec `json:"spec"`
-	}{Spec: model.DefaultSpec()}
+	}{Spec: defaults}
 	if err := decode(w, r, &req); err != nil {
 		fail(w, 400, err.Error())
 		return
+	}
+	if req.Spec.Seed == "" {
+		req.Spec.Seed = token()
 	}
 	if err := req.Spec.Validate(); err != nil {
 		fail(w, 400, err.Error())
@@ -223,14 +230,23 @@ func (s *Server) continuousTile(w http.ResponseWriter, r *http.Request) {
 	box := world.Bounds{X: (lon0 + math.Pi) / model.Tau * float64(v.solver.W-1), Y: (.5 - lat0/math.Pi) * float64(v.solver.H-1), Width: (lon1 - lon0) / model.Tau * float64(v.solver.W-1), Height: (lat0 - lat1) / math.Pi * float64(v.solver.H-1)}
 	ops := append([]world.Operation(nil), v.authored().Ops(box.Expand(.1))...)
 	if v.tileIdentity == "" {
-		v.tileIdentity = token()
+		meta, fields, err := p.Encode()
+		if err != nil {
+			v.mu.Unlock()
+			fail(w, 500, err.Error())
+			return
+		}
+		h := sha256.New()
+		h.Write(meta)
+		h.Write(fields)
+		v.tileIdentity = fmt.Sprintf("%x", h.Sum(nil))
 	}
 	opBytes, _ := json.Marshal(ops)
 	key := fmt.Sprintf("%s/%d/%d/%d/%d/%s/%x", v.tileIdentity, a[0], a[1], a[2], size, style, sha256.Sum256(opBytes))
 	transform := continuousTransform(ops, v.solver.W, v.solver.H)
 	v.mu.Unlock()
 	w.Header().Set("Content-Type", "image/png")
-	w.Header().Set("X-Terrain-Version", model.Version)
+	w.Header().Set("X-Terrain-Version", p.Spec.Version)
 	w.Header().Set("X-Terrain-Revision", fmt.Sprint(revision))
 	if data, ok := s.terrainTileCache.Get(key); ok {
 		w.Header().Set("X-Terrain-Cache", "hit")
@@ -243,6 +259,12 @@ func (s *Server) continuousTile(w http.ResponseWriter, r *http.Request) {
 	case <-r.Context().Done():
 		return
 	}
+	if data, ok := s.terrainTileCache.Get(key); ok {
+		w.Header().Set("X-Terrain-Cache", "hit")
+		w.Write(data)
+		return
+	}
+	start := time.Now()
 	data, err := tiles.Render(r.Context(), p, a[0], a[1], a[2], size, style, transform)
 	if err != nil {
 		if r.Context().Err() == nil {
@@ -251,9 +273,10 @@ func (s *Server) continuousTile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.terrainTileCache.Put(key, data)
+	w.Header().Set("Server-Timing", fmt.Sprintf("terrain;dur=%.2f", float64(time.Since(start).Microseconds())/1000))
 	w.Header().Set("X-Terrain-Cache", "miss")
 	w.Header().Set("Content-Type", "image/png")
-	w.Header().Set("X-Terrain-Version", model.Version)
+	w.Header().Set("X-Terrain-Version", p.Spec.Version)
 	w.Header().Set("X-Terrain-Revision", fmt.Sprint(revision))
 	w.Write(data)
 }
@@ -280,7 +303,26 @@ func (s *Server) continuousSample(w http.ResponseWriter, r *http.Request) {
 	if f := continuousTransform(v.authored().Ops(world.Bounds{X: x, Y: y}), v.solver.W, v.solver.H); f != nil {
 		a = f(a, lon, lat)
 	}
-	respond(w, 200, a)
+	var mass any
+	if a.Water == "dry" {
+		if m := landmass.Identity(v.planet, lon, lat); m != nil {
+			mass = map[string]any{"id": m.ID, "family": m.Family, "center": m.Center, "extent": m.Extent}
+		}
+	}
+	respond(w, 200, struct {
+		model.Sample
+		Landmass any                `json:"landmass,omitempty"`
+		Climate  map[string]float64 `json:"climate"`
+	}{a, mass, sampleClimate(v.planet, lon, lat)})
+}
+func sampleClimate(p *model.Planet, lon, lat float64) map[string]float64 {
+	fields := map[string]float64{}
+	for _, key := range []string{"soil", "aridity", "seasonality", "dryMonths", "rainShadow", "exposure", "slope", "windX", "windY"} {
+		if len(p.Grid.Fields[key]) > 0 {
+			fields[key] = p.Grid.At(key, lon, lat)
+		}
+	}
+	return fields
 }
 func (s *Server) continuousFeatures(w http.ResponseWriter, r *http.Request) {
 	v := s.worldSession(w, r)
@@ -292,5 +334,5 @@ func (s *Server) continuousFeatures(w http.ResponseWriter, r *http.Request) {
 		fail(w, 409, "Legacy terrain")
 		return
 	}
-	respond(w, 200, map[string]any{"rivers": v.planet.Rivers, "revision": v.authored().Header.Revision, "units": "radians; elevations and widths in metres; discharge in m3/s"})
+	respond(w, 200, map[string]any{"rivers": v.planet.Rivers, "legend": tiles.BiomeColors, "masses": v.planet.Masses, "revision": v.authored().Header.Revision, "units": "radians; elevations and widths in metres; discharge in m3/s"})
 }

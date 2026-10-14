@@ -67,18 +67,51 @@ func strokeDistance(s model.Stroke, x, y float64) float64 {
 // Potential uses azimuthal-equidistant local coordinates. At the poles longitude
 // is immaterial; all deformation is sampled on the 3D unit sphere.
 func Potential(p *model.Planet, lon, lat float64) float64 {
+	return potential(p, lon, lat, nil)
+}
+
+type massAngles struct{ sinLat, cosLat, sinRotation, cosRotation, limit float64 }
+
+// Field prepares constants once per sampling request. It is immutable and its
+// evaluation is bit-identical to the unprepared path used during generation.
+type Field struct {
+	planet *model.Planet
+	angles []massAngles
+}
+
+func NewField(p *model.Planet) *Field {
+	f := &Field{planet: p, angles: make([]massAngles, len(p.Masses))}
+	for i, m := range p.Masses {
+		a := &f.angles[i]
+		a.sinLat, a.cosLat = math.Sincos(m.Center[1])
+		a.sinRotation, a.cosRotation = math.Sincos(m.Rotation)
+		a.limit = math.Cos(m.Extent + .15)
+	}
+	return f
+}
+func (f *Field) Bed(lon, lat float64) (float64, float64, float64) {
+	return bedAt(f.planet, lon, lat, potential(f.planet, lon, lat, f.angles))
+}
+func potential(p *model.Planet, lon, lat float64, prepared []massAngles) float64 {
 	lon = model.Wrap(lon)
 	lat = model.Clamp(lat, -math.Pi/2, math.Pi/2)
 	sl, cl := math.Sincos(lat)
 	warpX := Noise(p.Seed+1, lon, lat, 5) * .045 * p.Spec.Complexity
 	warpY := Noise(p.Seed+2, lon, lat, 7) * .035 * p.Spec.Complexity
 	land, cut := -10., -10.
-	for _, m := range p.Masses {
+	for i, m := range p.Masses {
 		dlon := model.Wrap(lon - m.Center[0])
-		s0, c0 := math.Sincos(m.Center[1])
+		var s0, c0, sn, cs, limit float64
+		if prepared != nil {
+			a := prepared[i]
+			s0, c0, sn, cs, limit = a.sinLat, a.cosLat, a.sinRotation, a.cosRotation, a.limit
+		} else {
+			s0, c0 = math.Sincos(m.Center[1])
+			limit = math.Cos(m.Extent + .15)
+		}
 		sd, cd := math.Sincos(dlon)
 		dot := model.Clamp(s0*sl+c0*cl*cd, -1, 1)
-		if dot < math.Cos(m.Extent+.15) {
+		if dot < limit {
 			continue
 		}
 		angle := math.Acos(dot)
@@ -87,7 +120,9 @@ func Potential(p *model.Planet, lon, lat float64) float64 {
 			k = angle / math.Sin(angle)
 		}
 		xx, yy := k*cl*sd, k*(c0*sl-s0*cl*cd)
-		sn, cs := math.Sincos(m.Rotation)
+		if prepared == nil {
+			sn, cs = math.Sincos(m.Rotation)
+		}
 		x, y := xx*cs+yy*sn+warpX, -xx*sn+yy*cs+warpY
 		for _, s := range m.Strokes {
 			land = math.Max(land, strokeDistance(s, x, y))
@@ -110,12 +145,17 @@ func Potential(p *model.Planet, lon, lat float64) float64 {
 }
 
 func Bed(p *model.Planet, lon, lat float64) (bed, coast, rough float64) {
-	coast = Potential(p, lon, lat)
+	return bedAt(p, lon, lat, Potential(p, lon, lat))
+}
+func bedAt(p *model.Planet, lon, lat, coast float64) (bed, distance, rough float64) {
 	rough = math.Abs(Noise(p.Seed+301, lon, lat, 9))
 	plate := tectonics.At(p, lon, lat)
 	if coast <= 0 {
 		d := -coast * p.Spec.RadiusKM
 		shelf := -30 - d*1.8
+		if p.Spec.Version != "continuous-1" {
+			shelf = -d * 1.8
+		}
 		deep := -4200 - 1000*Noise(p.Seed+303, lon, lat, 6) - 2800*plate.Convergence + 2200*plate.Divergence
 		t := model.Clamp((d-100)/190, 0, 1)
 		t = t * t * (3 - 2*t)
@@ -131,5 +171,16 @@ func Bed(p *model.Planet, lon, lat float64) (bed, coast, rough float64) {
 		amplitude *= .48
 	}
 	bed = (base + ridge*(2100+1700*rough) + local) * p.Spec.Relief * model.Clamp(coast*300, 0, 1)
+	if p.Spec.Version != "continuous-1" {
+		// Broad plateaus and rift basins are structural. Smaller ridges/gullies
+		// follow roughness and distance inland; all frequencies have world addresses.
+		plateau := model.Clamp((Noise(p.Seed+900, lon, lat, 5)-.12)*5, 0, 1)
+		plateau = plateau * plateau * (3 - 2*plateau)
+		basin := math.Pow(model.Clamp((Noise(p.Seed+901, lon, lat, 7)-.25)*3, 0, 1), 2)
+		interior := model.Clamp(coast*18, 0, 1)
+		bed += (plateau*1200 - basin*1500) * interior * p.Spec.Relief
+		bed -= math.Pow(1-math.Abs(Noise(p.Seed+902, lon, lat, 110)), 8) * 100 * rough * interior
+		return bed, coast, rough
+	}
 	return math.Max(1, bed), coast, rough
 }

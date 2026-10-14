@@ -61,17 +61,18 @@ type Change struct {
 	Bounds *Bounds         `json:"bounds,omitempty"`
 }
 type Header struct {
-	MapID        string          `json:"mapId,omitempty"`
-	Version      int             `json:"version"`
-	Name         string          `json:"name"`
-	Description  string          `json:"description"`
-	CreatedAt    int64           `json:"createdAt"`
-	Revision     int             `json:"revision"`
-	Layers       []Layer         `json:"layers"`
-	History      []Change        `json:"history"`
-	Cursor       int             `json:"cursor"`
-	NextSequence int             `json:"nextSequence"`
-	View         json.RawMessage `json:"view"`
+	Illustrations map[string]Illustration `json:"illustrations,omitempty"`
+	MapID         string                  `json:"mapId,omitempty"`
+	Version       int                     `json:"version"`
+	Name          string                  `json:"name"`
+	Description   string                  `json:"description"`
+	CreatedAt     int64                   `json:"createdAt"`
+	Revision      int                     `json:"revision"`
+	Layers        []Layer                 `json:"layers"`
+	History       []Change                `json:"history"`
+	Cursor        int                     `json:"cursor"`
+	NextSequence  int                     `json:"nextSequence"`
+	View          json.RawMessage         `json:"view"`
 }
 type State struct {
 	Artworks                    map[string]Artwork   `json:"artworks,omitempty"`
@@ -299,7 +300,19 @@ func (s *State) record(c Change) {
 	s.Header.Revision++
 }
 func (s *State) apply(key string, data json.RawMessage) {
-	if key == "entities" {
+	if strings.HasPrefix(key, "illustration/") {
+		if s.Header.Illustrations == nil {
+			s.Header.Illustrations = map[string]Illustration{}
+		}
+		id := strings.TrimPrefix(key, "illustration/")
+		if string(data) == "null" {
+			delete(s.Header.Illustrations, id)
+		} else {
+			var a Illustration
+			json.Unmarshal(data, &a)
+			s.Header.Illustrations[id] = a
+		}
+	} else if key == "entities" {
 		var entities []Entity
 		json.Unmarshal(data, &entities)
 		for _, e := range entities {
@@ -479,7 +492,10 @@ func (s *State) Undo(redo bool) (*Bounds, error) {
 	return c.Bounds, nil
 }
 func (s *State) Query(b Bounds, detail float64) ([]Entity, bool) {
-	ids, more := s.entityIndex.QueryWhere(b, detail, 2000, func(id string) bool { return s.visible(s.Entities[id].Layer) })
+	return s.QueryLimit(b, detail, 2000)
+}
+func (s *State) QueryLimit(b Bounds, detail float64, limit int) ([]Entity, bool) {
+	ids, more := s.entityIndex.QueryWhere(b, detail, limit, func(id string) bool { return s.visible(s.Entities[id].Layer) })
 	out := []Entity{}
 	for _, id := range ids {
 		e := s.Entities[id]
@@ -552,6 +568,17 @@ func (s *State) Parts(all bool) map[string]any {
 }
 func (s *State) Saved() { s.dirty = map[string]bool{} }
 func (s *State) Validate(w, h int) error {
+	if len(s.Header.Illustrations) > 32 {
+		return fmt.Errorf("too many illustrations")
+	}
+	for id, a := range s.Header.Illustrations {
+		if id != a.ID {
+			return fmt.Errorf("illustration identity mismatch")
+		}
+		if err := a.Validate(); err != nil {
+			return err
+		}
+	}
 	if (s.Header.Version != 1 && s.Header.Version != 2) || len(s.Header.Name) > 160 || strings.TrimSpace(s.Header.Name) == "" || len(s.Header.Description) > 8192 || s.Header.Revision < 0 || s.Header.NextSequence < 0 || s.Header.Cursor < 0 || s.Header.Cursor > len(s.Header.History) || len(s.Header.History) > 100 {
 		return fmt.Errorf("invalid world metadata")
 	}
@@ -627,6 +654,13 @@ func (s *State) Validate(w, h int) error {
 					seen[e.ID] = true
 					if _, ok := s.Entities[e.ID]; !ok {
 						return fmt.Errorf("batch references missing entity")
+					}
+				}
+			} else if strings.HasPrefix(c.Key, "illustration/") {
+				if string(data) != "null" {
+					var a Illustration
+					if json.Unmarshal(data, &a) != nil || a.Validate() != nil || c.Key != "illustration/"+a.ID {
+						return fmt.Errorf("invalid illustration history")
 					}
 				}
 			} else if c.Key == "layers" {

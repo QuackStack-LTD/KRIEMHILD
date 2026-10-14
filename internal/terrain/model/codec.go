@@ -34,7 +34,9 @@ func (p *Planet) Encode() ([]byte, []byte, error) {
 }
 func Decode(meta, fields []byte) (*Planet, error) {
 	var p Planet
-	if len(meta) > 4<<20 || json.Unmarshal(meta, &p) != nil {
+	// Refined river vertices on the largest supported wet planets can exceed
+	// the former 4 MiB envelope. Keep a bounded budget and validate every reach.
+	if len(meta) > 16<<20 || json.Unmarshal(meta, &p) != nil {
 		return nil, fmt.Errorf("invalid continuous terrain metadata")
 	}
 	if p.Schema != Schema {
@@ -125,6 +127,13 @@ func Decode(meta, fields []byte) (*Planet, error) {
 	}
 	if r.Len() != 0 {
 		return nil, fmt.Errorf("extra terrain field data")
+	}
+	if p.Spec.Version != "continuous-1" {
+		for _, key := range []string{"soil", "aridity", "rainShadow", "exposure", "seasonality", "dryMonths", "warmDry", "coldRain", "slope"} {
+			if len(p.Grid.Fields[key]) != n {
+				return nil, fmt.Errorf("missing climate field %s", key)
+			}
+		}
 	}
 	for _, key := range []string{"bed", "coast", "roughness", "temperature", "precipitation", "pet", "moisture", "flow", "discharge", "drainage", "lake", "windX", "windY"} {
 		if len(p.Grid.Fields[key]) != n {

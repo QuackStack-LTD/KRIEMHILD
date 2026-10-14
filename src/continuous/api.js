@@ -22,8 +22,8 @@ export async function request(
   return result;
 }
 export const defaults = {
-  version: "continuous-1",
-  seed: "Kriemhild",
+  version: "continuous-2",
+  seed: "",
   preset: "earthlike",
   radiusKm: 6371,
   landCoverage: 0.32,

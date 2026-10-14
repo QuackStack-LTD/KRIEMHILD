@@ -1,0 +1,359 @@
+[
+  {
+    "seed": "0a8625207b214513854f40cc54a1613b",
+    "samples": [
+      {
+        "bed": 278.57882407509004,
+        "waterSurface": 0,
+        "waterDepth": 0,
+        "water": "dry",
+        "coastDistanceKm": 34.56111821598259,
+        "temperature": 26.780523418011757,
+        "precipitation": 1609.7525601615612,
+        "pet": 1934.3289755349397,
+        "moisture": 0.4993212366215162,
+        "roughness": 0,
+        "biome": "rainforest",
+        "landmass": {
+          "center": [
+            0.809929823414286,
+            0.4761434493799271
+          ],
+          "extent": 1.0605949271995072,
+          "family": "hook",
+          "id": "continent-1"
+        },
+        "climate": {
+          "aridity": 0.8199235725987375,
+          "dryMonths": 1,
+          "exposure": 0.09068463354668059,
+          "rainShadow": 0.19185360992512598,
+          "seasonality": 0.26475457176023337,
+          "slope": 0.001355342745559967,
+          "soil": 60.82291325811717,
+          "windX": -0.9994560708056206,
+          "windY": 1.9500972885111434e-10
+        }
+      },
+      {
+        "bed": -3350.839836905967,
+        "waterSurface": 0,
+        "waterDepth": 3350.839836905967,
+        "water": "ocean",
+        "coastDistanceKm": -246.03415247046135,
+        "temperature": 29.101227913073945,
+        "precipitation": 1419.674988893533,
+        "pet": 1728.5873888181293,
+        "moisture": 0.49277519831873606,
+        "roughness": 0.44434981931527157,
+        "biome": "water",
+        "climate": {
+          "aridity": 0.823641098315913,
+          "dryMonths": 5.833333333333367,
+          "exposure": 0.06275097520959086,
+          "rainShadow": 1.738495987102975,
+          "seasonality": 1.0997350701188473,
+          "slope": 0.009179813274928178,
+          "soil": 80,
+          "windX": -0.7891229290307279,
+          "windY": -0.36420402736867574
+        }
+      },
+      {
+        "bed": 615.3724794795718,
+        "waterSurface": 0,
+        "waterDepth": 0,
+        "water": "dry",
+        "coastDistanceKm": 288.55741951976916,
+        "temperature": 5.1662934034120545,
+        "precipitation": 681.3118675839854,
+        "pet": 766.3065807577523,
+        "moisture": 0.5334511418995873,
+        "roughness": 0.04740818242609336,
+        "biome": "taiga",
+        "landmass": {
+          "center": [
+            -0.9035933722852372,
+            -0.4897819715946507
+          ],
+          "extent": 1.069771559793949,
+          "family": "ribbon",
+          "id": "continent-0"
+        },
+        "climate": {
+          "aridity": 0.8952172190041209,
+          "dryMonths": 1.6666666666666665,
+          "exposure": 0.37343707180277275,
+          "rainShadow": 0.006965128985561711,
+          "seasonality": 0.19854368176928935,
+          "slope": 0.002381067955973601,
+          "soil": 97.83041470492576,
+          "windX": 0.8095371172759955,
+          "windY": 0.2719830985335836
+        }
+      }
+    ],
+    "rivers": 1245
+  },
+  {
+    "seed": "1bf1b4239a1dcf07cafbccae029c5c1d",
+    "samples": [
+      {
+        "bed": -4199.998718122838,
+        "waterSurface": 0,
+        "waterDepth": 4199.998718122838,
+        "water": "ocean",
+        "coastDistanceKm": -716.5051841433591,
+        "temperature": 29.063366202471947,
+        "precipitation": 5081.521824619713,
+        "pet": 2033.449128023514,
+        "moisture": 1,
+        "roughness": 0,
+        "biome": "water",
+        "climate": {
+          "aridity": 2.498966782394446,
+          "dryMonths": 0,
+          "exposure": 0.2271351070588376,
+          "rainShadow": 0,
+          "seasonality": 0.3033232069427839,
+          "slope": 0.0010895725684119668,
+          "soil": 80,
+          "windX": -0.9994560708056206,
+          "windY": 0.00006827655044869957
+        }
+      },
+      {
+        "bed": 1700.2534948335458,
+        "waterSurface": 0,
+        "waterDepth": 0,
+        "water": "dry",
+        "coastDistanceKm": 504.10445994517863,
+        "temperature": 12.328017641628037,
+        "precipitation": 1589.17724762254,
+        "pet": 1176.874553979743,
+        "moisture": 0.8102021964440709,
+        "roughness": 0.459933917900217,
+        "biome": "forest",
+        "landmass": {
+          "center": [
+            0.49059455526116924,
+            0.4575923473327199
+          ],
+          "extent": 0.827237085886806,
+          "family": "hook",
+          "id": "continent-2"
+        },
+        "climate": {
+          "aridity": 1.3545522155004441,
+          "dryMonths": 5.83333333333335,
+          "exposure": 0.16534580970379004,
+          "rainShadow": 0.298905703171101,
+          "seasonality": 1.006873353686399,
+          "slope": 0.0023754139808769914,
+          "soil": 88.10270472755087,
+          "windX": -0.7891229290307279,
+          "windY": -0.34480836233758977
+        }
+      },
+      {
+        "bed": -5248.407827771821,
+        "waterSurface": 0,
+        "waterDepth": 5248.407827771821,
+        "water": "ocean",
+        "coastDistanceKm": -1831.7688251450932,
+        "temperature": 9.342132198804793,
+        "precipitation": 987.3427044683162,
+        "pet": 973.0530879984761,
+        "moisture": 0.6088112046379092,
+        "roughness": 0.41637443670499197,
+        "biome": "water",
+        "climate": {
+          "aridity": 1.0165813904618903,
+          "dryMonths": 3.333333333333343,
+          "exposure": 0.022853267741424477,
+          "rainShadow": 0.04915307889364704,
+          "seasonality": 0.5561666671701228,
+          "slope": 0.00045097042279362,
+          "soil": 80,
+          "windX": 0.8095371172759955,
+          "windY": 0.3694396951849309
+        }
+      }
+    ],
+    "rivers": 1700
+  },
+  {
+    "seed": "  001 λ ",
+    "samples": [
+      {
+        "bed": -4198.864096262621,
+        "waterSurface": 0,
+        "waterDepth": 4198.864096262621,
+        "water": "ocean",
+        "coastDistanceKm": -2228.024647419675,
+        "temperature": 28.978838849338533,
+        "precipitation": 4423.690942037372,
+        "pet": 2033.449128023514,
+        "moisture": 1,
+        "roughness": 0,
+        "biome": "water",
+        "climate": {
+          "aridity": 2.175461820545834,
+          "dryMonths": 0,
+          "exposure": 0.006921192915242045,
+          "rainShadow": 0,
+          "seasonality": 0.3797402835838266,
+          "slope": 0.000033201128785351133,
+          "soil": 80,
+          "windX": -0.9994560708056206,
+          "windY": 0.00015172628524066228
+        }
+      },
+      {
+        "bed": 160.08191081266662,
+        "waterSurface": 0,
+        "waterDepth": 0,
+        "water": "dry",
+        "coastDistanceKm": 36.60848573865172,
+        "temperature": 22.161860374248324,
+        "precipitation": 818.941298441157,
+        "pet": 1656.752971635212,
+        "moisture": 0.2965830075317252,
+        "roughness": 0.5478574601572314,
+        "biome": "steppe",
+        "landmass": {
+          "center": [
+            1.0548642309436893,
+            -0.2882620883327637
+          ],
+          "extent": 0.9821305782356937,
+          "family": "hook",
+          "id": "continent-2"
+        },
+        "climate": {
+          "aridity": 0.49423553304986056,
+          "dryMonths": 7,
+          "exposure": 0,
+          "rainShadow": 0.1797411343439888,
+          "seasonality": 1.1242979590492366,
+          "slope": 0.0009192178055273332,
+          "soil": 40.971977381701976,
+          "windX": -0.7891229290307279,
+          "windY": -0.30906387525020934
+        }
+      },
+      {
+        "bed": -3724.549098358745,
+        "waterSurface": 0,
+        "waterDepth": 3724.549098358745,
+        "water": "ocean",
+        "coastDistanceKm": -585.2171838750668,
+        "temperature": 8.938394399929507,
+        "precipitation": 968.3937770346911,
+        "pet": 973.0530879984761,
+        "moisture": 0.5971269948035194,
+        "roughness": 0.39319496262082804,
+        "biome": "water",
+        "climate": {
+          "aridity": 0.9973366672859146,
+          "dryMonths": 3.333333333333343,
+          "exposure": 0.03390282036235062,
+          "rainShadow": 0.0694425298086302,
+          "seasonality": 0.5488970156640955,
+          "slope": 0.0006475902669384174,
+          "soil": 80,
+          "windX": 0.8095371172759955,
+          "windY": 0.3434422014358326
+        }
+      }
+    ],
+    "rivers": 1379
+  },
+  {
+    "seed": "  001 λ ",
+    "samples": [
+      {
+        "bed": -4198.864096262621,
+        "waterSurface": 0,
+        "waterDepth": 4198.864096262621,
+        "water": "ocean",
+        "coastDistanceKm": -2228.024647419675,
+        "temperature": 28.978838849338533,
+        "precipitation": 4423.690942037372,
+        "pet": 2033.449128023514,
+        "moisture": 1,
+        "roughness": 0,
+        "biome": "water",
+        "climate": {
+          "aridity": 2.175461820545834,
+          "dryMonths": 0,
+          "exposure": 0.006921192915242045,
+          "rainShadow": 0,
+          "seasonality": 0.3797402835838266,
+          "slope": 0.000033201128785351133,
+          "soil": 80,
+          "windX": -0.9994560708056206,
+          "windY": 0.00015172628524066228
+        }
+      },
+      {
+        "bed": 160.08191081266662,
+        "waterSurface": 0,
+        "waterDepth": 0,
+        "water": "dry",
+        "coastDistanceKm": 36.60848573865172,
+        "temperature": 22.161860374248324,
+        "precipitation": 818.941298441157,
+        "pet": 1656.752971635212,
+        "moisture": 0.2965830075317252,
+        "roughness": 0.5478574601572314,
+        "biome": "steppe",
+        "landmass": {
+          "center": [
+            1.0548642309436893,
+            -0.2882620883327637
+          ],
+          "extent": 0.9821305782356937,
+          "family": "hook",
+          "id": "continent-2"
+        },
+        "climate": {
+          "aridity": 0.49423553304986056,
+          "dryMonths": 7,
+          "exposure": 0,
+          "rainShadow": 0.1797411343439888,
+          "seasonality": 1.1242979590492366,
+          "slope": 0.0009192178055273332,
+          "soil": 40.971977381701976,
+          "windX": -0.7891229290307279,
+          "windY": -0.30906387525020934
+        }
+      },
+      {
+        "bed": -3724.549098358745,
+        "waterSurface": 0,
+        "waterDepth": 3724.549098358745,
+        "water": "ocean",
+        "coastDistanceKm": -585.2171838750668,
+        "temperature": 8.938394399929507,
+        "precipitation": 968.3937770346911,
+        "pet": 973.0530879984761,
+        "moisture": 0.5971269948035194,
+        "roughness": 0.39319496262082804,
+        "biome": "water",
+        "climate": {
+          "aridity": 0.9973366672859146,
+          "dryMonths": 3.333333333333343,
+          "exposure": 0.03390282036235062,
+          "rainShadow": 0.0694425298086302,
+          "seasonality": 0.5488970156640955,
+          "slope": 0.0006475902669384174,
+          "soil": 80,
+          "windX": 0.8095371172759955,
+          "windY": 0.3434422014358326
+        }
+      }
+    ],
+    "rivers": 1379
+  }
+]

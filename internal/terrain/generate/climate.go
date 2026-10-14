@@ -14,6 +14,9 @@ import (
 func climate(ctx context.Context, p *model.Planet) error {
 	g := &p.Grid
 	n := g.Width * g.Height
+	for _, key := range []string{"soil", "aridity", "rainShadow", "exposure", "seasonality", "dryMonths", "warmDry", "coldRain", "slope"} {
+		g.Fields[key] = make([]float64, n)
+	}
 	area := make([]float64, n)
 	soil := make([]float64, n)
 	for i := range area {
@@ -38,7 +41,12 @@ func climate(ctx context.Context, p *model.Planet) error {
 			latitude := lat - decl*.35
 			wx := math.Tanh((math.Abs(latitude)-.52)*10) * -math.Tanh((math.Abs(latitude)-1.15)*10)
 			wy := -.4*math.Sin(3*latitude) + .08*landmass.Noise(p.Seed+412, pt[0], lat, 4)
-			g.Fields["windX"][i], g.Fields["windY"][i] = wx, wy
+			if p.Spec.Version == "continuous-1" {
+				g.Fields["windX"][i], g.Fields["windY"][i] = wx, wy
+			} else {
+				g.Fields["windX"][i] += wx / 12
+				g.Fields["windY"][i] += wy / 12
+			}
 			dx, dy := 1, -1 // y increases southward, windY northward
 			if wx < 0 {
 				dx = -1
@@ -52,6 +60,9 @@ func climate(ctx context.Context, p *model.Planet) error {
 			fluxY[i] = .28 * math.Abs(wy)
 			upwind := y*g.Width + (x-dx+g.Width)%g.Width
 			uplift := math.Max(0, bed-g.Fields["bed"][upwind])
+			g.Fields["exposure"][i] += uplift / 12000
+			g.Fields["rainShadow"][i] += math.Max(0, g.Fields["bed"][upwind]-bed) / 12000
+			g.Fields["slope"][i] = math.Max(g.Fields["slope"][i], math.Abs(bed-g.Fields["bed"][upwind])/(p.Spec.RadiusKM*1000*model.Tau/float64(g.Width)*math.Max(.1, math.Cos(lat))))
 			convection := math.Exp(-math.Pow((lat-decl*.6)/.19, 2))
 			storm := math.Exp(-math.Pow((math.Abs(latitude)-.88)/.23, 2))
 			subsidence := math.Exp(-math.Pow((math.Abs(latitude)-.49)/.18, 2))
@@ -83,7 +94,7 @@ func climate(ctx context.Context, p *model.Planet) error {
 			for i := range vapor {
 				q := next[i] / area[i]
 				evap := 0.
-				if g.Fields["bed"][i] <= 0 {
+				if g.Fields["bed"][i] <= 0 && (p.Spec.Version == "continuous-1" || g.Fields["coast"][i] <= 0) {
 					evap = math.Max(0, capacity[i]-q) * .18
 				} else if ts[i] > 0 {
 					// Soil-limited transpiration returns part of prior rain to
@@ -93,7 +104,7 @@ func climate(ctx context.Context, p *model.Planet) error {
 				}
 				q += evap
 				rain := math.Max(q*condensation[i], q-capacity[i])
-				if g.Fields["bed"][i] > 0 {
+				if g.Fields["bed"][i] > 0 || (p.Spec.Version != "continuous-1" && g.Fields["coast"][i] > 0) {
 					soil[i] = math.Min(200, soil[i]+rain*.7)
 				}
 				vapor[i] = (q - rain) * area[i]
@@ -111,6 +122,16 @@ func climate(ctx context.Context, p *model.Planet) error {
 		residual := math.Abs(initial+added-removed-remaining) / math.Max(1, initial+added)
 		p.Diagnostics.MoistureBudgetError = math.Max(p.Diagnostics.MoistureBudgetError, residual)
 		for i := range ts {
+			g.Fields["soil"][i] += soil[i] / 12
+			if rs[i] < es[i]*.5 {
+				g.Fields["dryMonths"][i]++
+				if ts[i] > 15 {
+					g.Fields["warmDry"][i]++
+				}
+			}
+			if ts[i] < 15 {
+				g.Fields["coldRain"][i] += rs[i]
+			}
 			g.Fields["temperature"][i] += ts[i] / 12
 			g.Fields["precipitation"][i] += rs[i]
 			g.Fields["pet"][i] += es[i]
@@ -121,6 +142,14 @@ func climate(ctx context.Context, p *model.Planet) error {
 	}
 	for i := range g.Fields["moisture"] {
 		g.Fields["moisture"][i] = model.Clamp(g.Fields["precipitation"][i]/math.Max(100, g.Fields["pet"][i])*0.6, 0, 1)
+		g.Fields["aridity"][i] = g.Fields["precipitation"][i] / math.Max(100, g.Fields["pet"][i])
+		mean := g.Fields["precipitation"][i] / 12
+		variance := 0.
+		for month := 0; month < 12; month++ {
+			v := g.Fields[fmt.Sprintf("rainfall-%02d", month)][i] - mean
+			variance += v * v / 12
+		}
+		g.Fields["seasonality"][i] = math.Sqrt(variance) / math.Max(1, mean)
 	}
 	return nil
 }

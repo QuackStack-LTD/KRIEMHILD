@@ -8,7 +8,6 @@ import (
 	"image"
 	"image/color"
 	"image/png"
-	"kriemhild/internal/terrain/detail"
 	"kriemhild/internal/terrain/model"
 	"math"
 )
@@ -22,24 +21,33 @@ func Coordinate(z, x, y, size, i, j int) (float64, float64) {
 	return -math.Pi + model.Tau*(float64(x*size+i)+.5)/float64((2<<z)*size), math.Pi/2 - math.Pi*(float64(y*size+j)+.5)/float64((1<<z)*size)
 }
 func Render(ctx context.Context, p *model.Planet, z, x, y, size int, style string, transform Transform) ([]byte, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if !Valid(z, x, y, size) {
 		return nil, fmt.Errorf("invalid tile address")
 	}
 	switch style {
-	case "natural", "elevation", "biome", "mask", "coastline", "bathymetry", "temperature", "precipitation", "moisture", "atlas":
+	case "natural", "elevation", "biome", "mask", "coastline", "bathymetry", "temperature", "precipitation", "moisture", "atlas", "hillshade", "pet", "aridity", "soil", "seasonality", "rainShadow", "exposure", "slope", "contours":
 	default:
 		return nil, fmt.Errorf("unknown terrain style")
 	}
 	stride := size + 2
-	sampler := detail.New(p)
-	samples := make([]model.Sample, stride*stride)
-	for j := -1; j <= size; j++ {
+	base, err := physicalSamples(ctx, p, z, x, y, size)
+	if err != nil {
+		return nil, err
+	}
+	samples := base
+	if transform != nil {
+		samples = append([]model.Sample(nil), base...)
+	}
+	for j := -1; transform != nil && j <= size; j++ {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
 		for i := -1; i <= size; i++ {
 			lon, lat := Coordinate(z, x, y, size, i, j)
-			s := sampler.Sample(lon, lat)
+			s := base[(j+1)*stride+i+1]
 			if transform != nil {
 				s = transform(s, lon, lat)
 			}
@@ -60,6 +68,17 @@ func Render(ctx context.Context, p *model.Planet, z, x, y, size int, style strin
 			dy *= 5
 			shade := model.Clamp((.72 + (-dx*.45-dy*.55)/math.Sqrt(1+dx*dx+dy*dy)), .32, 1.18)
 			c := palette(s, style, shade)
+			if style == "pet" || style == "aridity" || style == "soil" || style == "seasonality" || style == "rainShadow" || style == "exposure" || style == "slope" {
+				maximum := map[string]float64{"pet": 2200, "aridity": 2, "soil": 200, "seasonality": 1.5, "rainShadow": .3, "exposure": .3, "slope": .1}[style]
+				v := model.Clamp(p.Grid.At(style, lon, lat)/maximum, 0, 1)
+				c = color.NRGBA{uint8(210 - 175*v), uint8(160 - 30*v), uint8(90 + 85*v), 255}
+			}
+			if style == "contours" && s.Water == "dry" {
+				interval := math.Max(20, math.Pow(2, math.Ceil(math.Log2(metres))))
+				if math.Mod(math.Abs(s.Bed), interval) < math.Max(1, metres*.04) {
+					c = color.NRGBA{70, 55, 40, 255}
+				}
+			}
 			if style != "coastline" && style != "mask" && math.Abs(s.CoastDistance*1000) < metres*.8 && (s.Water == "dry" || s.Water == "ocean") {
 				wet, dry := s, s
 				wet.Water = "ocean"
@@ -84,7 +103,7 @@ func Render(ctx context.Context, p *model.Planet, z, x, y, size int, style strin
 		}
 	}
 	var b bytes.Buffer
-	err := png.Encode(&b, img)
+	err = png.Encode(&b, img)
 	return b.Bytes(), err
 }
 func palette(s model.Sample, style string, shade float64) color.NRGBA {
@@ -130,7 +149,21 @@ func palette(s model.Sample, style string, shade float64) color.NRGBA {
 		c = mix([3]float64{192, 139, 79}, [3]float64{48, 130, 105}, s.Moisture)
 		shade = 1
 	case "biome":
-		shade = .9
+		if rgb, ok := BiomeColors[s.Biome]; ok {
+			c = [3]float64{float64(rgb[0]), float64(rgb[1]), float64(rgb[2])}
+		} else {
+			c = [3]float64{255, 0, 255}
+		}
+		shade = 1
+	case "hillshade":
+		c = [3]float64{255, 255, 255}
+	case "natural":
+		if s.Water == "dry" {
+			if rgb, ok := BiomeColors[s.Biome]; ok {
+				c = mix(c, [3]float64{float64(rgb[0]), float64(rgb[1]), float64(rgb[2])}, .45)
+			}
+		}
+		shade = 1
 	case "atlas":
 		if s.Water == "dry" {
 			c = mix([3]float64{220, 206, 165}, [3]float64{139, 155, 113}, s.Moisture*.7)

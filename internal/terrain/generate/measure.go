@@ -19,14 +19,14 @@ func measure(p *model.Planet) {
 	land, lakes := 0., 0.
 	dlon, dlat := model.Tau/float64(g.Width), math.Pi/float64(g.Height)
 	for i, b := range g.Fields["bed"] {
-		if b <= 0 {
+		if !p.Emerged(i) {
 			continue
 		}
 		x, y := i%g.Width, i/g.Width
 		lat := g.Point(x, y)[1]
 		area := dlon * dlat * math.Cos(lat) * p.Spec.RadiusKM * p.Spec.RadiusKM
 		land += area
-		if g.Fields["lake"][i] > b {
+		if g.Fields["lake"][i] > 0 && g.Fields["lake"][i] > b {
 			lakes += area
 		}
 		band := "temperate"
@@ -38,11 +38,11 @@ func measure(p *model.Planet) {
 		if d.LatitudeBiomes[band] == nil {
 			d.LatitudeBiomes[band] = map[string]float64{}
 		}
-		biome := Biome(g.Fields["temperature"][i], g.Fields["precipitation"][i], g.Fields["pet"][i], b, g.Fields["lake"][i] > b)
+		biome := BiomeAt(p, g.Point(i%g.Width, i/g.Width)[0], g.Point(i%g.Width, i/g.Width)[1], b, g.Fields["lake"][i] > 0 && g.Fields["lake"][i] > b)
 		d.LatitudeBiomes[band][biome] += area
 		bandAreas[band] += area
 		for _, j := range neighbors(i, g.Width, g.Height) {
-			if g.Fields["bed"][j] > 0 {
+			if p.Emerged(j) {
 				continue
 			}
 			edge := dlat * p.Spec.RadiusKM
@@ -54,7 +54,7 @@ func measure(p *model.Planet) {
 		outlet := i
 		for step := 0; step < len(g.Fields["bed"]); step++ {
 			j := int(g.Fields["flow"][outlet])
-			if j < 0 || g.Fields["bed"][j] <= 0 {
+			if j < 0 || !p.Emerged(j) {
 				break
 			}
 			outlet = j

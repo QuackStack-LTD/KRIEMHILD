@@ -115,19 +115,23 @@ func (s *Server) worldEntities(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	entities, more := v.authored().Query(box, detail)
+	if r.URL.Query().Get("all") == "1" {
+		entities, more = v.authored().QueryLimit(box, detail, len(v.authored().Entities)+1)
+	}
 	respond(w, 200, map[string]any{"entities": entities, "truncated": more, "revision": v.world.Header.Revision})
 }
 func (s *Server) worldCommand(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Kind        string          `json:"kind"`
-		Revision    int             `json:"revision"`
-		Entity      world.Entity    `json:"entity"`
-		Operation   world.Operation `json:"operation"`
-		Layers      []world.Layer   `json:"layers"`
-		Name        string          `json:"name"`
-		Description string          `json:"description"`
-		View        json.RawMessage `json:"view"`
-		Delta       [2]float64      `json:"delta"`
+		Kind         string             `json:"kind"`
+		Revision     int                `json:"revision"`
+		Entity       world.Entity       `json:"entity"`
+		Operation    world.Operation    `json:"operation"`
+		Layers       []world.Layer      `json:"layers"`
+		Name         string             `json:"name"`
+		Description  string             `json:"description"`
+		View         json.RawMessage    `json:"view"`
+		Delta        [2]float64         `json:"delta"`
+		Illustration world.Illustration `json:"illustration"`
 	}
 	if err := decode(w, r, &req); err != nil {
 		fail(w, 400, err.Error())
@@ -158,6 +162,8 @@ func (s *Server) worldCommand(w http.ResponseWriter, r *http.Request) {
 	}
 	previousView := append(json.RawMessage(nil), model.Header.View...)
 	switch req.Kind {
+	case "illustration":
+		err = model.PutIllustration(req.Illustration)
 	case "move-family":
 		if v.planet == nil {
 			err = fmt.Errorf("family moves require continuous terrain")

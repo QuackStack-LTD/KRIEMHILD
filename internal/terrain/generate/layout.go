@@ -29,7 +29,13 @@ func layout(p *model.Planet) {
 		scale = 1.35
 	}
 	families := []string{"shield", "hook", "ribbon", "branch", "fractured", "crescent", "accreted"}
+	if p.Spec.Version != "continuous-1" {
+		families = []string{"broad-shield", "hook", "ribbon", "branch", "fractured", "crescent", "compact", "island-heavy", "indented", "split"}
+	}
 	for i := 0; i < count; i++ {
+		if p.Spec.Version != "continuous-1" {
+			shape = stream(p.Spec, fmt.Sprintf("morphology/%d", i))
+		}
 		center := model.Point{r.Float64()*model.Tau - math.Pi, math.Asin(r.Float64()*1.65 - .825)}
 		radius := (.34 + shape.Float64()*.19) * scale
 		// Rejection prevents accidental total overlap, without farthest-point spacing.
@@ -52,8 +58,15 @@ func layout(p *model.Planet) {
 		}
 		family := families[(i+int(shape.Uint64()%uint64(len(families))))%len(families)]
 		m := model.Mass{ID: fmt.Sprintf("continent-%d", i), Family: family, Center: center, Rotation: shape.Float64() * model.Tau}
+		stretchX, stretchY, shear := 1., 1., 0.
+		if p.Spec.Version != "continuous-1" {
+			stretchX = .7 + shape.Float64()*.7
+			stretchY = .7 + shape.Float64()*.7
+			shear = (shape.Float64() - .5) * .7
+		}
 		add := func(cut bool, ks ...model.Knot) {
 			for j := range ks {
+				ks[j][0], ks[j][1] = ks[j][0]*stretchX+ks[j][1]*shear, ks[j][1]*stretchY
 				for k := range ks[j] {
 					ks[j][k] *= radius
 				}
@@ -67,6 +80,29 @@ func layout(p *model.Planet) {
 			}
 		}
 		switch family {
+		case "compact":
+			add(false, model.Knot{-.6, -.3, .65}, model.Knot{.45, .2, .8}, model.Knot{.1, .65, .4})
+			add(true, model.Knot{-1.3, .6, .27}, model.Knot{-.5, .25, .13})
+		case "split":
+			add(false, model.Knot{-.55, -.5, .68}, model.Knot{.5, .4, .7}, model.Knot{.65, 1, .3})
+			add(true, model.Knot{.9, -1.1, .3}, model.Knot{.15, -.2, .23}, model.Knot{-.45, .35, .17})
+		case "island-heavy":
+			add(false, model.Knot{-.6, -.2, .55}, model.Knot{.15, .4, .55}, model.Knot{.65, .2, .25})
+			for j := 0; j < 9; j++ {
+				a := float64(j) * .65
+				d := .9 + shape.Float64()*.35
+				add(false, model.Knot{math.Cos(a) * d, math.Sin(a) * d, .07 + shape.Float64()*.12})
+			}
+		case "indented":
+			add(false, model.Knot{-.4, -.7, .5}, model.Knot{.2, .1, .75}, model.Knot{-.1, .8, .6})
+			for j := 0; j < 8; j++ {
+				a := float64(j) * model.Tau / 8
+				add(true, model.Knot{math.Cos(a) * 1.4, math.Sin(a) * 1.4, .12}, model.Knot{math.Cos(a+.15) * .55, math.Sin(a+.15) * .55, .025})
+			}
+		case "broad-shield":
+			add(false, model.Knot{-.65, .4, .65}, model.Knot{.55, .45, .75}, model.Knot{.2, -.5, .65})
+			add(true, model.Knot{0, 1.6, .38}, model.Knot{-.15, .65, .19})
+			add(true, model.Knot{1.6, -.5, .3}, model.Knot{.55, -.3, .16})
 		case "hook", "crescent":
 			add(false, model.Knot{-.55, -.8, .35}, model.Knot{-.9, -.1, .6}, model.Knot{-.45, .8, .65}, model.Knot{.4, 1.1, .35}, model.Knot{1, .55, .17}, model.Knot{.65, .15, .04})
 			add(true, model.Knot{.1, -1.2, .28}, model.Knot{.25, -.1, .32}, model.Knot{.25, .5, .15})

@@ -1,0 +1,37 @@
+[
+  {
+    "label": "cold-tile",
+    "milliseconds": 1412.2220000000002,
+    "bytes": 1902,
+    "cache": "miss",
+    "serverTiming": "terrain;dur=1404.61"
+  },
+  {
+    "label": "warm-tile",
+    "milliseconds": 2.1257000000000517,
+    "bytes": 1902,
+    "cache": "hit",
+    "serverTiming": null
+  },
+  {
+    "label": "palette-change",
+    "milliseconds": 24.72829999999999,
+    "bytes": 1247,
+    "cache": "miss",
+    "serverTiming": "terrain;dur=22.14"
+  },
+  {
+    "label": "cold-mesh",
+    "milliseconds": 450.8000999999997,
+    "bytes": 411277,
+    "cache": "miss",
+    "serverTiming": null
+  },
+  {
+    "label": "warm-mesh",
+    "milliseconds": 3.667000000000371,
+    "bytes": 411277,
+    "cache": "hit",
+    "serverTiming": null
+  }
+]
