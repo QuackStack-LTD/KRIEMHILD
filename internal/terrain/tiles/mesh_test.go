@@ -11,7 +11,9 @@ import (
 )
 
 func TestMeshUsesSameBedAndWaterSampler(t *testing.T) {
-	p, err := generate.Generate(context.Background(), model.DefaultSpec(), nil)
+	spec := model.DefaultSpec()
+	spec.SurfaceWidth = 1024
+	p, err := generate.Generate(context.Background(), spec, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

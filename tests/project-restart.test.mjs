@@ -71,10 +71,10 @@ test("World ZIP survives deletion of the original session and a Go server proces
     await launch();
     const { defaults } = await import("../src/continuous/api.js");
     const job = await json("terrain/generation-jobs", {
-      spec: { ...defaults, seed: "cold-process-project" },
+      spec: { ...defaults, surfaceWidth: 1024, seed: "cold-process-project" },
     });
     let result;
-    for (let n = 0; n < 300; n++) {
+    for (let n = 0; n < 1800; n++) {
       result = await fetch(
         origin + "/api/terrain/generation-jobs/" + job.id,
       ).then((r) => r.json());

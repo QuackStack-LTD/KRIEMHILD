@@ -42,8 +42,8 @@ export default function IllustrationPanel({
         </select>
       </label>
       <p>
-        Drag labels and symbols. Select a country or settlement below to focus
-        its map. Alt-click in construction mode cycles overlapping features.
+        Drag labels and annotations. Linked borders and settlements follow Map
+        Builder. Select a country or settlement below to focus its map.
       </p>
       <select
         aria-label="Focus geographical feature"

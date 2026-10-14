@@ -84,6 +84,7 @@ export default function Studio({ initialState, onExit }) {
     [width, setWidth] = useState(1000);
   const [entities, setEntities] = useState([]),
     [rivers, setRivers] = useState([]),
+    [coasts, setCoasts] = useState(null),
     [selected, setSelected] = useState(null);
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
@@ -121,9 +122,9 @@ export default function Studio({ initialState, onExit }) {
   const artObjects = useMemo(
     () =>
       art && state
-        ? buildIllustration(art, entities, rivers, artTerrain, state)
+        ? buildIllustration(art, entities, rivers, artTerrain, state, coasts)
         : [],
-    [art, entities, rivers, artTerrain, state?.id],
+    [art, entities, rivers, artTerrain, state?.id, coasts],
   );
   useEffect(() => {
     if (!art || !state) return;
@@ -197,9 +198,11 @@ export default function Studio({ initialState, onExit }) {
     }
     const next = newIllustration(scope, extent, focus?.id || "");
     const saved = state.project.illustrations?.[next.id];
-    changeArt(saved || next, !saved);
+    const current =
+      saved && focus ? { ...saved, bounds: next.bounds } : saved || next;
+    changeArt(current, !saved || !!focus);
     setCamera(
-      saved
+      saved && !focus
         ? {
             x: saved.bounds[0],
             y: saved.bounds[1],
@@ -238,6 +241,7 @@ export default function Studio({ initialState, onExit }) {
       .then((r) => {
         if (alive) {
           setRivers(r.rivers || []);
+          setCoasts(r.coasts);
           setLegend(r.legend || {});
         }
       })
@@ -1078,7 +1082,7 @@ export default function Studio({ initialState, onExit }) {
                   revision={state.project.revision}
                   invalidations={invalidations}
                   style={displayStyle}
-                  identity={state.worldId}
+                  identity={`${state.worldId}:${state.id}`}
                   camera={camera}
                   width={width}
                   onLoading={setLoading}
@@ -1095,7 +1099,7 @@ export default function Studio({ initialState, onExit }) {
                       revision={state.project.revision}
                       invalidations={invalidations}
                       style="hillshade"
-                      identity={state.worldId}
+                      identity={`${state.worldId}:${state.id}`}
                       camera={camera}
                       width={width}
                     />
@@ -1109,19 +1113,37 @@ export default function Studio({ initialState, onExit }) {
                     pointerEvents="none"
                   >
                     {rivers
-                      .filter((r) =>
-                        riverVisible(
-                          r,
-                          camera.w > 0.8
-                            ? "world"
-                            : camera.w > 0.15
-                              ? "continent"
-                              : "local",
-                        ),
+                      .filter(
+                        (r) =>
+                          style === "river-network" ||
+                          riverVisible(
+                            r,
+                            camera.w > 0.8
+                              ? "world"
+                              : camera.w > 0.15
+                                ? "continent"
+                                : "local",
+                          ),
                       )
                       .map((r) => (
                         <path
                           key={r.id}
+                          stroke={
+                            style === "river-network"
+                              ? {
+                                  major: "#17488c",
+                                  regional: "#328bd3",
+                                  stream: "#6fcce4",
+                                  ephemeral: "#9b7345",
+                                  distributary: "#36aaaa",
+                                }[r.class] || "#71b7d3"
+                              : undefined
+                          }
+                          strokeDasharray={
+                            r.class === "ephemeral"
+                              ? `${(camera.w / width) * 3} ${(camera.w / width) * 2}`
+                              : undefined
+                          }
                           strokeWidth={riverWidth(
                             r,
                             camera.w / width,
@@ -1148,6 +1170,20 @@ export default function Studio({ initialState, onExit }) {
                     position={position}
                     state={state}
                     pixel={art.bounds[2] / 1200}
+                    coastOverlay={
+                      state.continuous.analysisStale ? (
+                        <TileSurface
+                          enabled={!show3D}
+                          session={state.id}
+                          revision={state.project.revision}
+                          invalidations={invalidations}
+                          style="shore-ink"
+                          identity={`${state.worldId}:${state.id}`}
+                          camera={camera}
+                          width={width}
+                        />
+                      ) : null
+                    }
                     relief={
                       <g
                         style={{ mixBlendMode: "multiply" }}
@@ -1160,7 +1196,7 @@ export default function Studio({ initialState, onExit }) {
                           revision={state.project.revision}
                           invalidations={invalidations}
                           style="hillshade"
-                          identity={state.worldId}
+                          identity={`${state.worldId}:${state.id}`}
                           camera={camera}
                           width={width}
                         />
@@ -1379,6 +1415,28 @@ export default function Studio({ initialState, onExit }) {
                     />
                   </label>
                 ))}
+                <label>
+                  Terrain detail
+                  <select
+                    value={spec.surfaceWidth || 4096}
+                    onChange={(e) =>
+                      setSpec({ ...spec, surfaceWidth: +e.target.value })
+                    }
+                  >
+                    <option value={1024}>Standard: 1024 x 512</option>
+                    <option value={2048}>Fine: 2048 x 1024</option>
+                    <option value={4096}>Detailed: 4096 x 2048</option>
+                  </select>
+                  <small>
+                    All terrain is built before opening. Zoom inspects the saved
+                    surface; it does not add detail. At the equator, samples are{" "}
+                    {(
+                      (Math.PI * 2 * spec.radiusKm) /
+                      (spec.surfaceWidth || 4096)
+                    ).toFixed(1)}{" "}
+                    km apart.
+                  </small>
+                </label>
                 <details>
                   <summary>Climate & scale</summary>
                   <label>
@@ -1457,6 +1515,37 @@ export default function Studio({ initialState, onExit }) {
                       Largest landmass:{" "}
                       {(diagnostics.largestShare * 100).toFixed(0)}% of land
                     </p>
+                    {diagnostics.hydrology && (
+                      <>
+                        <p>
+                          {diagnostics.hydrology.basins} drainage basins /{" "}
+                          {diagnostics.hydrology.lakes} lakes /{" "}
+                          {diagnostics.hydrology.wetlands} wetland complexes /{" "}
+                          {diagnostics.hydrology.springs} springs
+                        </p>
+                        {Object.entries(diagnostics.hydrology.classes).map(
+                          ([name, value]) => (
+                            <p key={name}>
+                              {name}: {value.count} rivers / reaches,{" "}
+                              {Math.round(value.lengthKm).toLocaleString()} km
+                            </p>
+                          ),
+                        )}
+                        <p>
+                          {(
+                            diagnostics.hydrology.networkCoverage * 100
+                          ).toFixed(1)}
+                          % of land in channel-bearing drainage cells /{" "}
+                          {diagnostics.hydrology.invalidTerminations} invalid
+                          terminations
+                        </p>
+                        <p>
+                          {diagnostics.hydrology.lowlandHeadwaters} lowland
+                          headwaters / {diagnostics.hydrology.distributaries}{" "}
+                          distributary splits
+                        </p>
+                      </>
+                    )}
                     {diagnostics.warnings?.map((w) => (
                       <p className="studio-warning" key={w}>
                         {w}
@@ -1791,6 +1880,10 @@ export default function Studio({ initialState, onExit }) {
                     "exposure",
                     "slope",
                     "contours",
+                    "watersheds",
+                    "flow-accumulation",
+                    "river-network",
+                    "wetlands",
                   ].map((v) => (
                     <option key={v}>{v}</option>
                   ))}

@@ -11,6 +11,7 @@ import (
 func TestMonthlyClimateBudgetAndFields(t *testing.T) {
 	for _, seed := range []string{"Kriemhild", "gallery-001", "gallery-002"} {
 		spec := model.DefaultSpec()
+		spec.SurfaceWidth = 1024
 		spec.Seed = seed
 		p, err := Generate(context.Background(), spec, nil)
 		if err != nil {

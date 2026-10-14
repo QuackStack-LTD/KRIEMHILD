@@ -59,6 +59,8 @@ func (s *Server) startTerrainJob(w http.ResponseWriter, r *http.Request) {
 	if req.Spec.Seed == "" {
 		req.Spec.Seed = token()
 	}
+	// Old versions remain readable; all new jobs use the fully materialized path.
+	req.Spec.Version = model.Version
 	if err := req.Spec.Validate(); err != nil {
 		fail(w, 400, err.Error())
 		return
@@ -69,7 +71,7 @@ func (s *Server) startTerrainJob(w http.ResponseWriter, r *http.Request) {
 		fail(w, 429, "Generation is busy; try again shortly.")
 		return
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	job := &terrainJob{actor: storage.Actor(r.Context()), cancel: cancel, created: time.Now(), Stage: "queued", Status: "running"}
 	id := token()
 	s.mu.Lock()
@@ -92,6 +94,7 @@ func (s *Server) startTerrainJob(w http.ResponseWriter, r *http.Request) {
 		defer func() { <-s.slots; cancel() }()
 		p, err := generate.Generate(ctx, req.Spec, func(stage string, f float64) { job.mu.Lock(); job.Stage, job.Progress = stage, f*.9; job.mu.Unlock() })
 		var solver *terrain.Solver
+		var identity string
 		if err == nil {
 			job.mu.Lock()
 			job.Stage, job.Progress = "project integration", .95
@@ -99,6 +102,13 @@ func (s *Server) startTerrainJob(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
 			solver, err = legacyProjection(p)
 			p.Diagnostics.Timings["platform projection"] = float64(time.Since(start).Microseconds()) / 1000
+			if err == nil {
+				var meta, fields []byte
+				meta, fields, err = p.Encode()
+				if err == nil {
+					identity = terrainSourceIdentity(meta, fields)
+				}
+			}
 		}
 		job.mu.Lock()
 		defer job.mu.Unlock()
@@ -114,12 +124,20 @@ func (s *Server) startTerrainJob(w http.ResponseWriter, r *http.Request) {
 		sid := token()
 		gen, _ := json.Marshal(req)
 		v := &session{planet: p, solver: solver, last: time.Now(), undo: map[string]terrain.Snapshot{}, generation: gen, cacheRoot: s.cacheRoot, worldID: token(), creatorID: job.actor, actorID: job.actor, dirty: true, unsaved: true}
+		v.tileIdentity = identity
 		s.mu.Lock()
 		s.sessions[sid] = v
 		s.mu.Unlock()
 		job.Status, job.Stage, job.Progress, job.Session = "ready", "ready", 1, sid
 	}()
 	respond(w, 202, map[string]string{"id": id, "status": "running"})
+}
+
+func terrainSourceIdentity(meta, fields []byte) string {
+	h := sha256.New()
+	h.Write(meta)
+	h.Write(fields)
+	return fmt.Sprintf("%x", h.Sum(nil))
 }
 func (s *Server) terrainJobState(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
@@ -334,5 +352,9 @@ func (s *Server) continuousFeatures(w http.ResponseWriter, r *http.Request) {
 		fail(w, 409, "Legacy terrain")
 		return
 	}
-	respond(w, 200, map[string]any{"rivers": v.planet.Rivers, "legend": tiles.BiomeColors, "masses": v.planet.Masses, "revision": v.authored().Header.Revision, "units": "radians; elevations and widths in metres; discharge in m3/s"})
+	var coasts [][]model.Point
+	if v.planet.Surface != nil {
+		coasts = v.planet.Surface.Coasts
+	}
+	respond(w, 200, map[string]any{"rivers": v.planet.Rivers, "coasts": coasts, "legend": tiles.BiomeColors, "masses": v.planet.Masses, "revision": v.authored().Header.Revision, "units": "radians; elevations and widths in metres; discharge in m3/s"})
 }

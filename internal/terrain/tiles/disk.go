@@ -21,7 +21,7 @@ func NewPersistentCache(memoryLimit int, root string, diskLimit int64) *Cache {
 	return c
 }
 func (c *Cache) diskPath(key string) string {
-	return filepath.Join(c.diskRoot, fmt.Sprintf("%x.tile", sha256.Sum256([]byte("terrain-render-4/"+key))))
+	return filepath.Join(c.diskRoot, fmt.Sprintf("%x.tile", sha256.Sum256([]byte("terrain-render-5/"+key))))
 }
 func (c *Cache) readDisk(key string) ([]byte, bool) {
 	if c.diskRoot == "" {

@@ -8,7 +8,7 @@ import (
 	"math"
 )
 
-const Version = "continuous-2"
+const Version = "continuous-3"
 const Schema = 1
 const Tau = 2 * math.Pi
 
@@ -26,13 +26,14 @@ type Spec struct {
 	Tilt          float64 `json:"tilt"`
 	LayoutVariant int     `json:"layoutVariant"`
 	TileSize      int     `json:"tileSize"`
+	SurfaceWidth  int     `json:"surfaceWidth,omitempty"`
 }
 
 func DefaultSpec() Spec {
-	return Spec{Version: Version, Seed: "Kriemhild", Preset: "earthlike", RadiusKM: 6371, LandCoverage: .32, Continents: 5, Complexity: 1, Islands: 1, Relief: 1, Rainfall: 1, Tilt: 23.4, TileSize: 256}
+	return Spec{Version: Version, Seed: "Kriemhild", Preset: "earthlike", RadiusKM: 6371, LandCoverage: .32, Continents: 5, Complexity: 1, Islands: 1, Relief: .8, Rainfall: 1.65, Tilt: 23.4, TileSize: 256, SurfaceWidth: 4096}
 }
 func (s Spec) Validate() error {
-	if s.Version != Version && s.Version != "continuous-1" {
+	if s.Version != Version && s.Version != "continuous-1" && s.Version != "continuous-2" {
 		return fmt.Errorf("unsupported terrain generator %q", s.Version)
 	}
 	if len(s.Seed) == 0 || len(s.Seed) > 1200 || s.Continents < 1 || s.Continents > 12 || s.LayoutVariant < 0 || s.LayoutVariant > 1000000 {
@@ -50,6 +51,9 @@ func (s Spec) Validate() error {
 	}
 	if s.TileSize != 256 && s.TileSize != 512 {
 		return fmt.Errorf("tile size must be 256 or 512")
+	}
+	if s.SurfaceWidth != 0 && s.SurfaceWidth != 1024 && s.SurfaceWidth != 2048 && s.SurfaceWidth != 4096 {
+		return fmt.Errorf("surface width must be 1024, 2048 or 4096")
 	}
 	return nil
 }
@@ -71,14 +75,19 @@ type Mass struct {
 	Cuts     []Stroke `json:"cuts"`
 }
 type River struct {
-	Order       int       `json:"order,omitempty"`
-	ID          string    `json:"id"`
-	Destination string    `json:"destination"`
-	Path        []Point   `json:"path"`
-	Bed         []float64 `json:"bed"`
-	Surface     []float64 `json:"surface"`
-	Discharge   []float64 `json:"discharge"`
-	Width       []float64 `json:"width"`
+	Class        string    `json:"class,omitempty"`
+	CatchmentKM2 float64   `json:"catchmentKm2,omitempty"`
+	LengthKM     float64   `json:"lengthKm,omitempty"`
+	Basin        int       `json:"basin,omitempty"`
+	Parent       string    `json:"parent,omitempty"`
+	Order        int       `json:"order,omitempty"`
+	ID           string    `json:"id"`
+	Destination  string    `json:"destination"`
+	Path         []Point   `json:"path"`
+	Bed          []float64 `json:"bed"`
+	Surface      []float64 `json:"surface"`
+	Discharge    []float64 `json:"discharge"`
+	Width        []float64 `json:"width"`
 }
 type Grid struct {
 	Width  int                  `json:"width"`
@@ -86,6 +95,7 @@ type Grid struct {
 	Fields map[string][]float64 `json:"-"`
 }
 type Diagnostics struct {
+	Hydrology           *HydrologyDiagnostics         `json:"hydrology,omitempty"`
 	CoastLengthKM       float64                       `json:"macroCoastLengthKm"`
 	Compactness         float64                       `json:"macroSilhouetteCompactness"`
 	CoverageDeviation   float64                       `json:"coverageDeviation"`
@@ -104,6 +114,7 @@ type Diagnostics struct {
 	Timings             map[string]float64            `json:"timingsMs"`
 }
 type Planet struct {
+	Surface     *Surface    `json:"surface,omitempty"`
 	Schema      int         `json:"schema"`
 	Spec        Spec        `json:"spec"`
 	Seed        uint64      `json:"noiseSeed"`
@@ -130,6 +141,9 @@ type Plate struct {
 	Continental bool       `json:"continental"`
 }
 type Lake struct {
+	Path   []Point `json:"path,omitempty"`
+	Width  float64 `json:"width,omitempty"`
+	Kind   string  `json:"kind,omitempty"`
 	Center Point   `json:"center"`
 	Radius float64 `json:"radius"`
 	Level  float64 `json:"level"`

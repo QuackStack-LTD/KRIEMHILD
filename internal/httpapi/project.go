@@ -24,7 +24,7 @@ import (
 )
 
 const projectSchema = 4
-const continuousProjectSchema = 5
+const continuousProjectSchema = 6
 const projectFieldEncoding = "float64 little-endian, field-major then row-major; edge chunks clipped to dimensions"
 const maxProjectBytes = 256 << 20
 const maxExpandedBytes = 1 << 30
@@ -44,6 +44,7 @@ type projectRegion struct {
 	File   string `json:"file"`
 }
 type projectManifest struct {
+	ContinuousParts []string        `json:"continuousParts,omitempty"`
 	Continuous      string          `json:"continuousTerrain,omitempty"`
 	Climate         *climateArchive `json:"climate,omitempty"`
 	AuthoredClimate *climateArchive `json:"authoredClimate,omitempty"`
@@ -245,8 +246,12 @@ func encodeProject(v *session) ([]byte, error) {
 		if err = add(m.Continuous, meta); err != nil {
 			return nil, err
 		}
-		if err = add("terrain/fields.bin", fields); err != nil {
-			return nil, err
+		for offset := 0; offset < len(fields); offset += 8 << 20 {
+			name := fmt.Sprintf("terrain/fields-%04d.bin", len(m.ContinuousParts))
+			m.ContinuousParts = append(m.ContinuousParts, name)
+			if err = add(name, fields[offset:min(offset+(8<<20), len(fields))]); err != nil {
+				return nil, err
+			}
 		}
 	}
 	copySolver := *s
@@ -603,7 +608,20 @@ func decodeProject(files map[string][]byte, cacheRoot ...string) (*session, erro
 			return nil, fmt.Errorf("invalid continuous terrain reference")
 		}
 		var err error
-		v.planet, err = terrainmodel.Decode(data[m.Continuous], data["terrain/fields.bin"])
+		fields := data["terrain/fields.bin"]
+		if len(m.ContinuousParts) > 0 {
+			if m.Schema < 6 || len(m.ContinuousParts) > 64 || fields != nil {
+				return nil, fmt.Errorf("invalid continuous terrain chunks")
+			}
+			for i, name := range m.ContinuousParts {
+				if name != fmt.Sprintf("terrain/fields-%04d.bin", i) || len(data[name]) == 0 || len(data[name]) > 8<<20 {
+					return nil, fmt.Errorf("missing or invalid terrain chunk")
+				}
+				fields = append(fields, data[name]...)
+			}
+		}
+		v.planet, err = terrainmodel.Decode(data[m.Continuous], fields)
+		v.tileIdentity = terrainSourceIdentity(data[m.Continuous], fields)
 		if err != nil {
 			return nil, err
 		}

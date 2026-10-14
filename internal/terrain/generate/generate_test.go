@@ -12,6 +12,7 @@ import (
 
 func TestDeterminismPersistenceAndSampling(t *testing.T) {
 	spec := model.DefaultSpec()
+	spec.SurfaceWidth = 1024 // Functional checks use the smallest complete surface.
 	p, err := generate.Generate(context.Background(), spec, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -65,7 +66,9 @@ func TestCancelledGeneration(t *testing.T) {
 	}
 }
 func TestMalformedArchive(t *testing.T) {
-	p, err := generate.Generate(context.Background(), model.DefaultSpec(), nil)
+	spec := model.DefaultSpec()
+	spec.SurfaceWidth = 1024
+	p, err := generate.Generate(context.Background(), spec, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

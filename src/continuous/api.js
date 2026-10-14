@@ -22,7 +22,7 @@ export async function request(
   return result;
 }
 export const defaults = {
-  version: "continuous-2",
+  version: "continuous-3",
   seed: "",
   preset: "earthlike",
   radiusKm: 6371,
@@ -30,19 +30,20 @@ export const defaults = {
   continents: 5,
   complexity: 1,
   islands: 1,
-  relief: 1,
-  rainfall: 1,
+  relief: 0.8,
+  rainfall: 1.65,
   tilt: 23.4,
   layoutVariant: 0,
   tileSize: 256,
+  surfaceWidth: 4096,
 };
 export const presets = {
   earthlike: {
     landCoverage: 0.32,
     continents: 5,
     islands: 1,
-    relief: 1,
-    rainfall: 1,
+    relief: 0.8,
+    rainfall: 1.65,
   },
   archipelago: {
     landCoverage: 0.18,

@@ -9,6 +9,7 @@ import (
 
 func TestLargeWetPlanetArchiveBudget(t *testing.T) {
 	spec := model.DefaultSpec()
+	spec.SurfaceWidth = 1024 // Functional checks use the smallest complete surface.
 	spec.Seed = "large-wet-archive"
 	spec.RadiusKM = 100000
 	spec.Continents = 12

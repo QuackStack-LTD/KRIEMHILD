@@ -30,6 +30,12 @@ export function riverWidth(r, pixel, radius) {
   );
 }
 export function riverVisible(r, scope) {
+  if (r.class)
+    return scope === "world"
+      ? ["major", "distributary"].includes(r.class)
+      : scope === "continent"
+        ? ["major", "regional", "distributary"].includes(r.class)
+        : true;
   const q = r.discharge?.[0] || 0;
   return scope === "world"
     ? q >= 5000 && (!r.order || r.order >= 3)

@@ -26,7 +26,9 @@ func Generate(ctx context.Context, s model.Spec, progress Progress) (*model.Plan
 		{"tectonic framework", func() error { plates(p); return nil }},
 		{"relief and bathymetry", func() error { return surface(ctx, p) }},
 		{"seasonal climate", func() error { return climate(ctx, p) }},
+		{"complete terrain surface", func() error { return materialize(ctx, p) }},
 		{"drainage and rivers", func() error { return drainage(ctx, p) }},
+		{"saved shorelines", func() error { return shorelines(ctx, p) }},
 		{"ecology and topology", func() error { audit(p); measure(p); return nil }},
 	}
 	for i, stage := range stages {

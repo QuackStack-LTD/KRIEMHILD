@@ -30,13 +30,24 @@ func (p *Planet) Encode() ([]byte, []byte, error) {
 		b.WriteString(k)
 		binary.Write(&b, binary.LittleEndian, p.Grid.Fields[k])
 	}
+	if p.Surface != nil {
+		b.WriteString("KTS1")
+		for _, a := range [][]float32{p.Surface.Bed, p.Surface.Coast, p.Surface.Roughness, p.Surface.LakeLevel} {
+			if len(a) != p.Surface.Width*p.Surface.Height {
+				return nil, nil, fmt.Errorf("incomplete terrain surface")
+			}
+			if err := binary.Write(&b, binary.LittleEndian, a); err != nil {
+				return nil, nil, err
+			}
+		}
+	}
 	return meta, b.Bytes(), nil
 }
 func Decode(meta, fields []byte) (*Planet, error) {
 	var p Planet
 	// Refined river vertices on the largest supported wet planets can exceed
 	// the former 4 MiB envelope. Keep a bounded budget and validate every reach.
-	if len(meta) > 16<<20 || json.Unmarshal(meta, &p) != nil {
+	if len(meta) > 64<<20 || json.Unmarshal(meta, &p) != nil {
 		return nil, fmt.Errorf("invalid continuous terrain metadata")
 	}
 	if p.Schema != Schema {
@@ -45,7 +56,11 @@ func Decode(meta, fields []byte) (*Planet, error) {
 	if err := p.Spec.Validate(); err != nil {
 		return nil, err
 	}
-	if p.Grid.Width != 192 || p.Grid.Height != 96 || len(p.Masses) > 1000 || len(p.Rivers) > 20000 || !Finite(p.SeaOffset) || p.SeaOffset < -.02 || p.SeaOffset > .02 {
+	validGrid := p.Grid.Width == 192 && p.Grid.Height == 96
+	if p.Spec.Version == Version {
+		validGrid = p.Grid.Width == 512 && p.Grid.Height == 256
+	}
+	if !validGrid || len(p.Masses) > 1000 || len(p.Rivers) > 100000 || !Finite(p.SeaOffset) || p.SeaOffset < -.02 || p.SeaOffset > .02 {
 		return nil, fmt.Errorf("invalid continuous terrain dimensions")
 	}
 	for _, m := range p.Masses {
@@ -90,6 +105,14 @@ func Decode(meta, fields []byte) (*Planet, error) {
 		if !Finite(l.Center[0]) || !Finite(l.Center[1]) || math.Abs(l.Center[1]) > math.Pi/2 || !Finite(l.Radius) || l.Radius <= 0 || l.Radius > .2 || !Finite(l.Level) || l.Level < 0 || l.Level > 20000 {
 			return nil, fmt.Errorf("invalid lake basin")
 		}
+		if len(l.Path) > 1000 || !Finite(l.Width) || l.Width < 0 || l.Width > 10000 || len(l.Path) > 0 && l.Width == 0 {
+			return nil, fmt.Errorf("invalid lake channel")
+		}
+		for _, pt := range l.Path {
+			if !Finite(pt[0]) || !Finite(pt[1]) || math.Abs(pt[1]) > math.Pi/2 {
+				return nil, fmt.Errorf("invalid lake channel point")
+			}
+		}
 	}
 	r := bytes.NewReader(fields)
 	magic := make([]byte, 4)
@@ -124,6 +147,38 @@ func Decode(meta, fields []byte) (*Planet, error) {
 			}
 		}
 		p.Grid.Fields[key] = a
+	}
+	if p.Spec.Version == Version && p.Surface == nil {
+		return nil, fmt.Errorf("missing completed terrain surface")
+	}
+	if p.Surface != nil {
+		s := p.Surface
+		if (s.Width != 1024 && s.Width != 2048 && s.Width != 4096) || s.Height != s.Width/2 {
+			return nil, fmt.Errorf("invalid surface dimensions")
+		}
+		if _, err := io.ReadFull(r, magic); err != nil || string(magic) != "KTS1" {
+			return nil, fmt.Errorf("missing surface data")
+		}
+		for _, a := range []*[]float32{&s.Bed, &s.Coast, &s.Roughness, &s.LakeLevel} {
+			*a = make([]float32, s.Width*s.Height)
+			if err := binary.Read(r, binary.LittleEndian, *a); err != nil {
+				return nil, err
+			}
+			for _, v := range *a {
+				if !Finite(float64(v)) {
+					return nil, fmt.Errorf("invalid surface sample")
+				}
+			}
+		}
+		vertices := 0
+		for _, coast := range s.Coasts {
+			for _, pt := range coast {
+				vertices++
+				if vertices > 2000000 || !Finite(pt[0]) || !Finite(pt[1]) || math.Abs(pt[1]) > math.Pi/2 {
+					return nil, fmt.Errorf("invalid saved shoreline")
+				}
+			}
+		}
 	}
 	if r.Len() != 0 {
 		return nil, fmt.Errorf("extra terrain field data")

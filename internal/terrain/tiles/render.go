@@ -28,7 +28,7 @@ func Render(ctx context.Context, p *model.Planet, z, x, y, size int, style strin
 		return nil, fmt.Errorf("invalid tile address")
 	}
 	switch style {
-	case "natural", "elevation", "biome", "mask", "coastline", "bathymetry", "temperature", "precipitation", "moisture", "atlas", "hillshade", "pet", "aridity", "soil", "seasonality", "rainShadow", "exposure", "slope", "contours":
+	case "natural", "elevation", "biome", "mask", "coastline", "bathymetry", "temperature", "precipitation", "moisture", "atlas", "hillshade", "pet", "aridity", "soil", "seasonality", "rainShadow", "exposure", "slope", "contours", "watersheds", "flow-accumulation", "river-network", "wetlands", "shore-ink":
 	default:
 		return nil, fmt.Errorf("unknown terrain style")
 	}
@@ -68,6 +68,27 @@ func Render(ctx context.Context, p *model.Planet, z, x, y, size int, style strin
 			dy *= 5
 			shade := model.Clamp((.72 + (-dx*.45-dy*.55)/math.Sqrt(1+dx*dx+dy*dy)), .32, 1.18)
 			c := palette(s, style, shade)
+			if s.Water != "ocean" {
+				switch style {
+				case "watersheds":
+					g := p.Grid
+					x := int((model.Wrap(lon)+math.Pi)/model.Tau*float64(g.Width)+.5) % g.Width
+					y := int(model.Clamp((.5-lat/math.Pi)*float64(g.Height), 0, float64(g.Height-1)))
+					if ids := g.Fields["basin"]; len(ids) > 0 {
+						id := uint32(ids[y*g.Width+x]) * 2654435761
+						c = color.NRGBA{uint8(60 + id%160), uint8(60 + (id>>8)%160), uint8(60 + (id>>16)%160), 255}
+					}
+				case "flow-accumulation":
+					v := model.Clamp(math.Log1p(p.Grid.At("discharge", lon, lat))/12, 0, 1)
+					c = color.NRGBA{uint8(220 - 200*v), uint8(220 - 100*v), uint8(190 + 60*v), 255}
+				case "river-network":
+					v := p.Grid.At("network", lon, lat)
+					c = color.NRGBA{uint8(225 - 200*v), uint8(220 - 110*v), uint8(195 + 50*v), 255}
+				case "wetlands":
+					v := p.Grid.At("wetland", lon, lat)
+					c = color.NRGBA{uint8(220 - 180*v), uint8(210 - 50*v), uint8(180 - 60*v), 255}
+				}
+			}
 			if style == "pet" || style == "aridity" || style == "soil" || style == "seasonality" || style == "rainShadow" || style == "exposure" || style == "slope" {
 				maximum := map[string]float64{"pet": 2200, "aridity": 2, "soil": 200, "seasonality": 1.5, "rainShadow": .3, "exposure": .3, "slope": .1}[style]
 				v := model.Clamp(p.Grid.At(style, lon, lat)/maximum, 0, 1)
@@ -79,7 +100,7 @@ func Render(ctx context.Context, p *model.Planet, z, x, y, size int, style strin
 					c = color.NRGBA{70, 55, 40, 255}
 				}
 			}
-			if style != "coastline" && style != "mask" && math.Abs(s.CoastDistance*1000) < metres*.8 && (s.Water == "dry" || s.Water == "ocean") {
+			if p.Surface == nil && style != "coastline" && style != "mask" && style != "hillshade" && math.Abs(s.CoastDistance*1000) < metres*.8 && (s.Water == "dry" || s.Water == "ocean") {
 				wet, dry := s, s
 				wet.Water = "ocean"
 				wet.WaterDepth = 30
@@ -89,12 +110,18 @@ func Render(ctx context.Context, p *model.Planet, z, x, y, size int, style strin
 				f := model.Clamp(.5+s.CoastDistance*1000/(metres*1.6), 0, 1)
 				c = color.NRGBA{uint8(float64(a.R)*(1-f) + float64(b.R)*f), uint8(float64(a.G)*(1-f) + float64(b.G)*f), uint8(float64(a.B)*(1-f) + float64(b.B)*f), 255}
 			}
-			if style == "coastline" {
+			if style == "coastline" || style == "shore-ink" {
 				c = color.NRGBA{16, 28, 43, 255}
+				if style == "shore-ink" {
+					c = color.NRGBA{}
+				}
 				wet := s.Water != "dry"
 				for _, offset := range []int{-1, 1, -stride, stride} {
 					if (samples[at+offset].Water != "dry") != wet {
 						c = color.NRGBA{216, 232, 218, 255}
+						if style == "shore-ink" {
+							c = color.NRGBA{80, 61, 42, 255}
+						}
 						break
 					}
 				}

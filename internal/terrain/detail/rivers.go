@@ -4,9 +4,11 @@ import (
 	"kriemhild/internal/terrain/landmass"
 	"kriemhild/internal/terrain/model"
 	"math"
+	"sync"
 )
 
 type segment struct {
+	water                                          string
 	a, b                                           model.Point
 	bedA, bedB, surfaceA, surfaceB, widthA, widthB float64
 }
@@ -19,13 +21,54 @@ type Sampler struct {
 	bins   [128 * 64][]segment
 }
 
+var indexes struct {
+	sync.Mutex
+	entries []*Sampler
+}
+
 func New(p *model.Planet) *Sampler {
+	if p.Surface == nil {
+		return newSampler(p)
+	}
+	indexes.Lock()
+	defer indexes.Unlock()
+	for i, s := range indexes.entries {
+		if s.planet == p {
+			indexes.entries = append(append(indexes.entries[:i:i], indexes.entries[i+1:]...), s)
+			return s
+		}
+	}
+	s := newSampler(p)
+	indexes.entries = append(indexes.entries, s)
+	if len(indexes.entries) > 2 {
+		indexes.entries = indexes.entries[1:]
+	}
+	return s
+}
+func newSampler(p *model.Planet) *Sampler {
 	s := &Sampler{planet: p, field: landmass.NewField(p)}
-	for _, r := range p.Rivers {
+	rivers := append([]model.River(nil), p.Rivers...)
+	for _, lake := range p.Lakes {
+		if len(lake.Path) < 2 {
+			continue
+		}
+		r := model.River{ID: "oxbow", Path: lake.Path}
+		for range lake.Path {
+			r.Bed = append(r.Bed, lake.Level-2)
+			r.Surface = append(r.Surface, lake.Level)
+			r.Width = append(r.Width, lake.Width)
+		}
+		rivers = append(rivers, r)
+	}
+	for _, r := range rivers {
+		water := "river"
+		if r.ID == "oxbow" {
+			water = "lake"
+		}
 		for i := 1; i < len(r.Path); i++ {
 			a, b := r.Path[i-1], r.Path[i]
 			b[0] = a[0] + model.Wrap(b[0]-a[0])
-			seg := segment{a, b, r.Bed[i-1], r.Bed[i], r.Surface[i-1], r.Surface[i], r.Width[i-1], r.Width[i]}
+			seg := segment{water, a, b, r.Bed[i-1], r.Bed[i], r.Surface[i-1], r.Surface[i], r.Width[i-1], r.Width[i]}
 			for _, offset := range []float64{-model.Tau, 0, model.Tau} {
 				copy := seg
 				copy.a[0] += offset
@@ -68,7 +111,7 @@ func (s *Sampler) Sample(lon, lat float64) model.Sample {
 		f = f * f * (3 - 2*f)
 		a.Bed += (math.Min(a.Bed, bed) - a.Bed) * f
 		if distance < width*.5 && a.Water == "dry" && level > a.Bed {
-			a.Water = "river"
+			a.Water = seg.water
 			a.WaterSurface = level
 			a.WaterDepth = level - a.Bed
 			a.Moisture = 1
@@ -76,6 +119,7 @@ func (s *Sampler) Sample(lon, lat float64) model.Sample {
 	}
 	if a.Water != "dry" {
 		a.WaterDepth = math.Max(0, a.WaterSurface-a.Bed)
+		a.Biome = "water"
 	}
 	return a
 }

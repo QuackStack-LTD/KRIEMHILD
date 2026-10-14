@@ -87,7 +87,14 @@ export function scopeEntities(entities, state, config) {
     return true;
   });
 }
-export function buildIllustration(config, entities, rivers, mesh, state) {
+export function buildIllustration(
+  config,
+  entities,
+  rivers,
+  mesh,
+  state,
+  coasts = null,
+) {
   const [x, y, w, h] = config.bounds,
     pixel = w / 1200,
     objects = [],
@@ -99,8 +106,16 @@ export function buildIllustration(config, entities, rivers, mesh, state) {
     objects.push({
       ...o,
       ...saved,
-      points: saved?.points?.length ? saved.points : o.points,
-      position: saved?.position || o.position,
+      points:
+        o.source && o.kind !== "text"
+          ? o.points
+          : saved?.points?.length
+            ? saved.points
+            : o.points,
+      position:
+        o.source && o.kind !== "text"
+          ? o.position
+          : saved?.position || o.position,
       text: saved?.text ?? o.text,
     });
   };
@@ -171,6 +186,34 @@ export function buildIllustration(config, entities, rivers, mesh, state) {
         color: "#426e7c",
       });
   }
+  if (coasts) {
+    let id = 0;
+    for (const coast of coasts) {
+      let part = [];
+      const emit = () => {
+        if (part.length > 1) {
+          const b = bounds(part);
+          if (b.x <= x + w && b.x + b.w >= x && b.y <= y + h && b.y + b.h >= y)
+            push({
+              id: `shore-${id}`,
+              kind: "line",
+              geometry: "line",
+              layer: "coasts",
+              points: part,
+              color: ink,
+            });
+        }
+        id++;
+        part = [];
+      };
+      for (const pt of coast) {
+        const p = [pt[0] / Math.PI + 1, 0.5 - pt[1] / Math.PI];
+        if (part.length && Math.abs(p[0] - part.at(-1)[0]) > 1) emit();
+        part.push(p);
+      }
+      emit();
+    }
+  }
   if (mesh) {
     const [west, south, east, north] = mesh.bounds;
     const pt = (i) => [
@@ -182,36 +225,37 @@ export function buildIllustration(config, entities, rivers, mesh, state) {
           ((north - south) * Math.floor(i / mesh.columns)) / (mesh.rows - 1)) /
           Math.PI,
     ];
-    for (let j = 0; j + 1 < mesh.rows; j++)
-      for (let i = 0; i + 1 < mesh.columns; i++) {
-        const a = j * mesh.columns + i,
-          ids = [a, a + 1, a + 1 + mesh.columns, a + mesh.columns],
-          edges = [];
-        for (let k = 0; k < 4; k++) {
-          const u = ids[k],
-            v = ids[(k + 1) % 4];
-          if (mesh.wet[u] !== mesh.wet[v]) {
-            const p = pt(u),
-              q = pt(v),
-              ratio =
-                Math.abs(mesh.bed[u]) /
-                (Math.abs(mesh.bed[u]) + Math.abs(mesh.bed[v]) || 1);
-            edges.push([
-              p[0] + (q[0] - p[0]) * ratio,
-              p[1] + (q[1] - p[1]) * ratio,
-            ]);
+    if (!coasts)
+      for (let j = 0; j + 1 < mesh.rows; j++)
+        for (let i = 0; i + 1 < mesh.columns; i++) {
+          const a = j * mesh.columns + i,
+            ids = [a, a + 1, a + 1 + mesh.columns, a + mesh.columns],
+            edges = [];
+          for (let k = 0; k < 4; k++) {
+            const u = ids[k],
+              v = ids[(k + 1) % 4];
+            if (mesh.wet[u] !== mesh.wet[v]) {
+              const p = pt(u),
+                q = pt(v),
+                ratio =
+                  Math.abs(mesh.bed[u]) /
+                  (Math.abs(mesh.bed[u]) + Math.abs(mesh.bed[v]) || 1);
+              edges.push([
+                p[0] + (q[0] - p[0]) * ratio,
+                p[1] + (q[1] - p[1]) * ratio,
+              ]);
+            }
           }
+          for (let k = 0; k + 1 < edges.length; k += 2)
+            push({
+              id: `coast-${a}-${k}`,
+              kind: "line",
+              geometry: "line",
+              layer: "coasts",
+              points: [edges[k], edges[k + 1]],
+              color: ink,
+            });
         }
-        for (let k = 0; k + 1 < edges.length; k += 2)
-          push({
-            id: `coast-${a}-${k}`,
-            kind: "line",
-            geometry: "line",
-            layer: "coasts",
-            points: [edges[k], edges[k + 1]],
-            color: ink,
-          });
-      }
     if (config.style === "medieval")
       for (let i = 0; i < mesh.bed.length; i++) {
         if (mesh.wet[i]) continue;

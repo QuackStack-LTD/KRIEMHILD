@@ -202,6 +202,7 @@ func restoreCheckpoint(id string, parts map[string][]byte, cacheRoot string) (v 
 	v = &session{solver: solver, generation: c.Generation, base: c.Base, edits: c.Edits, undo: c.Undo, order: c.Order, worldID: id, cacheRoot: cacheRoot, last: time.Now(), persisted: true, savedTiles: map[string]bool{}}
 	if meta := parts["continuous/metadata"]; meta != nil {
 		v.planet, err = terrainmodel.Decode(meta, parts["continuous/fields"])
+		v.tileIdentity = terrainSourceIdentity(meta, parts["continuous/fields"])
 		if err != nil {
 			return nil, err
 		}

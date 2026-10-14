@@ -21,7 +21,9 @@ import (
 )
 
 func TestContinuousArchiveRoundTrip(t *testing.T) {
-	p, err := generate.Generate(context.Background(), model.DefaultSpec(), nil)
+	spec := model.DefaultSpec()
+	spec.SurfaceWidth = 1024
+	p, err := generate.Generate(context.Background(), spec, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,7 +82,9 @@ func TestContinuousAgeIsolationAndColdRestart(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Close()
-	p, err := generate.Generate(ctx, model.DefaultSpec(), nil)
+	spec := model.DefaultSpec()
+	spec.SurfaceWidth = 1024
+	p, err := generate.Generate(ctx, spec, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

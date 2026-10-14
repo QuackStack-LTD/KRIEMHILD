@@ -26,12 +26,14 @@ func main() {
 	out := flag.String("out", "docs/terrain-repair/baseline", "output")
 	pictures := flag.Bool("images", false, "render world and coast tiles")
 	preset := flag.String("preset", "earthlike", "preset for the ensemble")
+	resolution := flag.Int("surface-width", 4096, "complete surface width (1024, 2048 or 4096)")
 	flag.Parse()
 	must(os.MkdirAll(*out, 0755))
 	results := []any{}
 	html := "<!doctype html><meta charset=utf-8><title>Terrain repair audit</title><style>body{background:#15202a;color:#eee;font:16px system-ui}img{width:256px}section{display:flex;flex-wrap:wrap}figure{margin:8px}h2{width:100%}</style><h1>Deterministic terrain audit</h1>"
 	for seed := 0; seed < *count; seed++ {
 		spec := model.DefaultSpec()
+		spec.SurfaceWidth = *resolution
 		spec.Preset = *preset
 		switch *preset {
 		case "archipelago":
@@ -44,16 +46,19 @@ func main() {
 			spec.LandCoverage = .35
 			spec.Islands = 1.2
 			spec.Relief = 1.6
+			spec.Rainfall = 1
 		case "supercontinent":
 			spec.LandCoverage = .4
 			spec.Continents = 3
 			spec.Islands = .7
 			spec.Relief = 1.2
+			spec.Rainfall = 1
 		case "ocean":
 			spec.LandCoverage = .12
 			spec.Continents = 4
 			spec.Islands = 1.7
 			spec.Relief = .8
+			spec.Rainfall = 1
 		case "arid":
 			spec.LandCoverage = .35
 			spec.Islands = .5

@@ -14,6 +14,9 @@ func BiomeAt(p *model.Planet, lon, lat, bed float64, wet bool) string {
 	}
 	ratio := rain / max(100, pet)
 	dry := g.At("dryMonths", lon, lat)
+	if p.Surface != nil && g.At("wetland", lon, lat) > .5 {
+		return "wetland"
+	}
 	if bed < 180 && g.At("soil", lon, lat) > 130 && g.At("slope", lon, lat) < .015 {
 		return "wetland"
 	}

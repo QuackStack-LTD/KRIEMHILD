@@ -11,6 +11,7 @@ export default function IllustrationScene({
   state,
   pixel,
   relief,
+  coastOverlay,
 }) {
   const drag = useRef(null),
     [x, y, w, h] = config.bounds;
@@ -19,7 +20,11 @@ export default function IllustrationScene({
       onPointerDown: (e) => {
         e.stopPropagation();
         onSelect(o);
-        if (config.layers.find((l) => l.id === o.layer)?.locked) return;
+        if (
+          config.layers.find((l) => l.id === o.layer)?.locked ||
+          (o.source && o.kind !== "text")
+        )
+          return;
         e.currentTarget.setPointerCapture(e.pointerId);
         drag.current = { o, vertex, start: position(e) };
       },
@@ -169,6 +174,7 @@ export default function IllustrationScene({
         .map((l) => (
           <g key={l.id} data-illustration-layer={l.id} opacity={l.opacity}>
             {l.id === "relief" && relief}
+            {l.id === "coasts" && coastOverlay}
             {l.id === "paper" && (
               <g pointerEvents="none">
                 <rect
@@ -190,7 +196,12 @@ export default function IllustrationScene({
               </g>
             )}
             {objects
-              .filter((o) => o.layer === l.id && !o.hidden)
+              .filter(
+                (o) =>
+                  o.layer === l.id &&
+                  !o.hidden &&
+                  !(l.id === "coasts" && coastOverlay),
+              )
               .map((o) => (
                 <g
                   key={o.id}
@@ -286,19 +297,20 @@ export default function IllustrationScene({
           )}
         </g>
       )}
-      {selected?.points?.map((p, i) => (
-        <circle
-          key={i}
-          data-editor-handle="illustration-vertex"
-          {...handlers(selected, i)}
-          cx={p[0]}
-          cy={p[1]}
-          r={pixel * 4}
-          fill="#fff1a6"
-          stroke="#3e3022"
-          strokeWidth={pixel}
-        />
-      ))}
+      {!selected?.source &&
+        selected?.points?.map((p, i) => (
+          <circle
+            key={i}
+            data-editor-handle="illustration-vertex"
+            {...handlers(selected, i)}
+            cx={p[0]}
+            cy={p[1]}
+            r={pixel * 4}
+            fill="#fff1a6"
+            stroke="#3e3022"
+            strokeWidth={pixel}
+          />
+        ))}
     </g>
   );
 }
