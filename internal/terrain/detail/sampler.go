@@ -14,7 +14,7 @@ func Sample(p *model.Planet, lon, lat float64) model.Sample {
 	g := p.Grid
 	temp := g.At("temperature", lon, lat) - (bed-g.At("bed", lon, lat))*.0065
 	rain, pet := g.At("precipitation", lon, lat), g.At("pet", lon, lat)
-	s := model.Sample{Bed: bed, CoastDistance: coast * p.Spec.RadiusKM, Temperature: temp, Precipitation: rain, Moisture: model.Clamp(rain/math.Max(100, pet)*.6, 0, 1), Roughness: rough, Water: "dry"}
+	s := model.Sample{Bed: bed, CoastDistance: coast * p.Spec.RadiusKM, Temperature: temp, Precipitation: rain, PET: pet, Moisture: model.Clamp(rain/math.Max(100, pet)*.6, 0, 1), Roughness: rough, Water: "dry"}
 	if coast <= 0 {
 		s.Water = "ocean"
 		s.WaterSurface = 0

@@ -8,70 +8,109 @@ import (
 	"math"
 )
 
-// A reduced moisture budget: ocean replenishment, conservative upwind transport,
-// bounded orographic condensation, storm rainfall, and monthly PET. It is not a GCM.
+// Reduced circulation, not a GCM. Transport conserves water mass on spherical
+// cells; evaporation adds it and condensation removes the recorded precipitation.
+// No biome shares enter the moisture calculation.
 func climate(ctx context.Context, p *model.Planet) error {
 	g := &p.Grid
 	n := g.Width * g.Height
+	area := make([]float64, n)
+	soil := make([]float64, n)
+	for i := range area {
+		area[i] = math.Cos(g.Point(i%g.Width, i/g.Width)[1])
+		soil[i] = 80
+	}
 	for month := 0; month < 12; month++ {
-		if err := ctx.Err(); err != nil {
-			return err
-		}
 		ts, rs, es := make([]float64, n), make([]float64, n), make([]float64, n)
 		vapor, next := make([]float64, n), make([]float64, n)
+		capacity, condensation := make([]float64, n), make([]float64, n)
+		toX, toY := make([]int, n), make([]int, n)
+		fluxX, fluxY := make([]float64, n), make([]float64, n)
 		decl := p.Spec.Tilt * math.Pi / 180 * math.Sin(model.Tau*(float64(month)-2)/12)
 		for i := range ts {
-			pt := g.Point(i%g.Width, i/g.Width)
-			lat := pt[1]
-			coast := g.Fields["coast"][i]
-			bed := g.Fields["bed"][i]
-			continental := 1 - math.Exp(-math.Max(0, coast)/700)
+			x, y := i%g.Width, i/g.Width
+			pt := g.Point(x, y)
+			lat, bed := pt[1], g.Fields["bed"][i]
+			continental := 1 - math.Exp(-math.Max(0, g.Fields["coast"][i])/700)
 			ts[i] = 29 - 48*math.Pow(math.Sin(lat), 2) - math.Max(0, bed)*.0065 + decl*math.Sin(lat)*(12+26*continental)
-			g.Fields["windX"][i] = math.Tanh((math.Abs(lat-decl*.4)-.53)*8) * math.Cos(lat)
-			g.Fields["windY"][i] = .25*math.Sin(3*(lat-decl)) + .12*landmass.Noise(p.Seed+412, pt[0], lat, 4)
-			vapor[i] = .5
+			// Trade winds, midlatitude westerlies and polar easterlies.
+			// Meridional transport converges on the moving tropical rain belt.
+			latitude := lat - decl*.35
+			wx := math.Tanh((math.Abs(latitude)-.52)*10) * -math.Tanh((math.Abs(latitude)-1.15)*10)
+			wy := -.4*math.Sin(3*latitude) + .08*landmass.Noise(p.Seed+412, pt[0], lat, 4)
+			g.Fields["windX"][i], g.Fields["windY"][i] = wx, wy
+			dx, dy := 1, -1 // y increases southward, windY northward
+			if wx < 0 {
+				dx = -1
+			}
+			if wy < 0 {
+				dy = 1
+			}
+			toX[i] = y*g.Width + (x+dx+g.Width)%g.Width
+			toY[i] = max(0, min(g.Height-1, y+dy))*g.Width + x
+			fluxX[i] = .52 * math.Abs(wx)
+			fluxY[i] = .28 * math.Abs(wy)
+			upwind := y*g.Width + (x-dx+g.Width)%g.Width
+			uplift := math.Max(0, bed-g.Fields["bed"][upwind])
+			convection := math.Exp(-math.Pow((lat-decl*.6)/.19, 2))
+			storm := math.Exp(-math.Pow((math.Abs(latitude)-.88)/.23, 2))
+			subsidence := math.Exp(-math.Pow((math.Abs(latitude)-.49)/.18, 2))
+			condensation[i] = model.Clamp(.009+.11*convection+.065*storm-.018*subsidence+uplift/18000, .001, .5)
+			capacity[i] = 40 * math.Exp(model.Clamp(ts[i]*.045-.9, -3, 1)) * p.Spec.Rainfall
+			vapor[i] = capacity[i] * .5 * area[i]
+			es[i] = math.Max(4, 38+ts[i]*3.8) * (1 + .15*math.Cos(lat-decl))
 		}
-		for pass := 0; pass < 64; pass++ {
-			if pass%8 == 0 {
+		// Six-hour steps: spin up the circulation, then record 30 days. Scattering
+		// mass preserves it across the seam and unequal latitude cell areas.
+		initial, added, removed := 0., 0., 0.
+		for step := 0; step < 216; step++ {
+			if step%8 == 0 {
 				if err := ctx.Err(); err != nil {
 					return err
 				}
 			}
-			for i := range vapor {
-				x, y := i%g.Width, i/g.Width
-				wx := g.Fields["windX"][i]
-				wy := g.Fields["windY"][i]
-				dx := 1
-				if wx > 0 {
-					dx = -1
+			if step == 96 {
+				for _, v := range vapor {
+					initial += v
 				}
-				dy := 1
-				if wy > 0 {
-					dy = -1
-				}
-				ix := y*g.Width + (x+dx+g.Width)%g.Width
-				iy := max(0, min(g.Height-1, y+dy))*g.Width + x
-				incoming := vapor[ix]*.7 + vapor[iy]*.15 + vapor[i]*.15
-				if g.Fields["bed"][i] <= 0 {
-					next[i] = .96
-					continue
-				}
-				uplift := math.Max(0, g.Fields["bed"][i]-g.Fields["bed"][ix])
-				loss := model.Clamp(.025+uplift/12000, .025, .32)
-				next[i] = incoming * (1 - loss)
 			}
-			vapor, next = next, vapor
+			clear(next)
+			for i, v := range vapor {
+				next[i] += v * (1 - fluxX[i] - fluxY[i])
+				next[toX[i]] += v * fluxX[i]
+				next[toY[i]] += v * fluxY[i]
+			}
+			for i := range vapor {
+				q := next[i] / area[i]
+				evap := 0.
+				if g.Fields["bed"][i] <= 0 {
+					evap = math.Max(0, capacity[i]-q) * .18
+				} else if ts[i] > 0 {
+					// Soil-limited transpiration returns part of prior rain to
+					// the air. Dry ground cannot manufacture inland moisture.
+					evap = math.Min(soil[i], es[i]/120*model.Clamp(soil[i]/100, 0, 1))
+					soil[i] -= evap
+				}
+				q += evap
+				rain := math.Max(q*condensation[i], q-capacity[i])
+				if g.Fields["bed"][i] > 0 {
+					soil[i] = math.Min(200, soil[i]+rain*.7)
+				}
+				vapor[i] = (q - rain) * area[i]
+				if step >= 96 {
+					rs[i] += rain
+					added += evap * area[i]
+					removed += rain * area[i]
+				}
+			}
 		}
+		remaining := 0.
+		for _, v := range vapor {
+			remaining += v
+		}
+		residual := math.Abs(initial+added-removed-remaining) / math.Max(1, initial+added)
+		p.Diagnostics.MoistureBudgetError = math.Max(p.Diagnostics.MoistureBudgetError, residual)
 		for i := range ts {
-			pt := g.Point(i%g.Width, i/g.Width)
-			lat := pt[1]
-			coast := g.Fields["coast"][i]
-			convection := math.Exp(-math.Pow((lat-decl)/.27, 2))
-			storm := math.Exp(-math.Pow((math.Abs(lat)-.85)/.3, 2))
-			monsoon := .2 + .8*math.Max(0, math.Sin(pt[0]*2+decl*3))*math.Exp(-math.Pow((math.Abs(lat)-.4)/.35, 2))
-			supply := vapor[i] * (.42 + .9*convection + .7*storm + .4*monsoon)
-			rs[i] = math.Max(0, (150*supply+12*math.Exp(-math.Max(0, coast)/250))*p.Spec.Rainfall)
-			es[i] = math.Max(4, 38+ts[i]*3.8) * (1 + .15*math.Cos(lat-decl))
 			g.Fields["temperature"][i] += ts[i] / 12
 			g.Fields["precipitation"][i] += rs[i]
 			g.Fields["pet"][i] += es[i]

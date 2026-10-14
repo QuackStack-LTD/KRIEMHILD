@@ -101,7 +101,7 @@ func Potential(p *model.Planet, lon, lat float64) float64 {
 	}
 	coast := 0.
 	amp := .018 * p.Spec.Complexity
-	for oct := 0; oct < 7; oct++ {
+	for oct := 0; oct < 14; oct++ {
 		coast += Noise(p.Seed+uint64(80+oct), lon, lat, 18*math.Pow(2.15, float64(oct))) * amp
 		amp *= .46
 	}
@@ -126,7 +126,7 @@ func Bed(p *model.Planet, lon, lat float64) (bed, coast, rough float64) {
 	ridge *= model.Clamp(coast*45, 0, 1)
 	local := 0.
 	amplitude := 220.
-	for o := 0; o < 7; o++ {
+	for o := 0; o < 14; o++ {
 		local += Noise(p.Seed+uint64(310+o), lon, lat, 35*math.Pow(2, float64(o))) * amplitude
 		amplitude *= .48
 	}

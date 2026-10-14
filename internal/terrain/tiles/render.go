@@ -26,7 +26,7 @@ func Render(ctx context.Context, p *model.Planet, z, x, y, size int, style strin
 		return nil, fmt.Errorf("invalid tile address")
 	}
 	switch style {
-	case "natural", "elevation", "biome", "mask", "bathymetry", "temperature", "precipitation", "moisture", "atlas":
+	case "natural", "elevation", "biome", "mask", "coastline", "bathymetry", "temperature", "precipitation", "moisture", "atlas":
 	default:
 		return nil, fmt.Errorf("unknown terrain style")
 	}
@@ -60,6 +60,26 @@ func Render(ctx context.Context, p *model.Planet, z, x, y, size int, style strin
 			dy *= 5
 			shade := model.Clamp((.72 + (-dx*.45-dy*.55)/math.Sqrt(1+dx*dx+dy*dy)), .32, 1.18)
 			c := palette(s, style, shade)
+			if style != "coastline" && style != "mask" && math.Abs(s.CoastDistance*1000) < metres*.8 && (s.Water == "dry" || s.Water == "ocean") {
+				wet, dry := s, s
+				wet.Water = "ocean"
+				wet.WaterDepth = 30
+				dry.Water = "dry"
+				dry.WaterDepth = 0
+				a, b := palette(wet, style, 1), palette(dry, style, shade)
+				f := model.Clamp(.5+s.CoastDistance*1000/(metres*1.6), 0, 1)
+				c = color.NRGBA{uint8(float64(a.R)*(1-f) + float64(b.R)*f), uint8(float64(a.G)*(1-f) + float64(b.G)*f), uint8(float64(a.B)*(1-f) + float64(b.B)*f), 255}
+			}
+			if style == "coastline" {
+				c = color.NRGBA{16, 28, 43, 255}
+				wet := s.Water != "dry"
+				for _, offset := range []int{-1, 1, -stride, stride} {
+					if (samples[at+offset].Water != "dry") != wet {
+						c = color.NRGBA{216, 232, 218, 255}
+						break
+					}
+				}
+			}
 			img.SetNRGBA(i, j, c)
 		}
 	}

@@ -85,13 +85,22 @@ type Grid struct {
 	Fields map[string][]float64 `json:"-"`
 }
 type Diagnostics struct {
-	LandCoverage    float64            `json:"landCoverage"`
-	MajorContinents int                `json:"majorContinents"`
-	LargestShare    float64            `json:"largestShare"`
-	IslandAreas     []float64          `json:"islandAreasKm2"`
-	BiomeShares     map[string]float64 `json:"biomeShares"`
-	Warnings        []string           `json:"warnings"`
-	Timings         map[string]float64 `json:"timingsMs"`
+	CoastLengthKM       float64                       `json:"macroCoastLengthKm"`
+	Compactness         float64                       `json:"macroSilhouetteCompactness"`
+	CoverageDeviation   float64                       `json:"coverageDeviation"`
+	LakeCoverage        float64                       `json:"lakeCoverage"`
+	LongestRiverKM      float64                       `json:"longestRiverKm"`
+	RiverDestinations   map[string]int                `json:"riverDestinations"`
+	CatchmentAreas      []float64                     `json:"catchmentAreasKm2"`
+	LatitudeBiomes      map[string]map[string]float64 `json:"latitudeBiomeShares"`
+	MoistureBudgetError float64                       `json:"moistureBudgetRelativeError"`
+	LandCoverage        float64                       `json:"landCoverage"`
+	MajorContinents     int                           `json:"majorContinents"`
+	LargestShare        float64                       `json:"largestShare"`
+	IslandAreas         []float64                     `json:"islandAreasKm2"`
+	BiomeShares         map[string]float64            `json:"biomeShares"`
+	Warnings            []string                      `json:"warnings"`
+	Timings             map[string]float64            `json:"timingsMs"`
 }
 type Planet struct {
 	Schema      int         `json:"schema"`
@@ -123,6 +132,7 @@ type Sample struct {
 	CoastDistance float64 `json:"coastDistanceKm"`
 	Temperature   float64 `json:"temperature"`
 	Precipitation float64 `json:"precipitation"`
+	PET           float64 `json:"pet"`
 	Moisture      float64 `json:"moisture"`
 	Roughness     float64 `json:"roughness"`
 	Biome         string  `json:"biome"`

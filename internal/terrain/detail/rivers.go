@@ -22,20 +22,27 @@ func New(p *model.Planet) *Sampler {
 	for _, r := range p.Rivers {
 		for i := 1; i < len(r.Path); i++ {
 			a, b := r.Path[i-1], r.Path[i]
-			if math.Abs(a[0]-b[0]) > math.Pi {
-				continue
-			}
+			b[0] = a[0] + model.Wrap(b[0]-a[0])
 			seg := segment{a, b, r.Bed[i-1], r.Bed[i], r.Surface[i-1], r.Surface[i], r.Width[i-1], r.Width[i]}
-			bx := func(lon float64) int { return int((lon + math.Pi) / model.Tau * 128) }
-			by := func(lat float64) int { return int((.5 - lat/math.Pi) * 64) }
-			for y := max(0, min(by(a[1]), by(b[1]))-1); y <= min(63, max(by(a[1]), by(b[1]))+1); y++ {
-				for x := max(0, min(bx(a[0]), bx(b[0]))-1); x <= min(127, max(bx(a[0]), bx(b[0]))+1); x++ {
-					s.bins[y*128+x] = append(s.bins[y*128+x], seg)
-				}
+			for _, offset := range []float64{-model.Tau, 0, model.Tau} {
+				copy := seg
+				copy.a[0] += offset
+				copy.b[0] += offset
+				s.index(copy)
 			}
 		}
 	}
 	return s
+}
+func (s *Sampler) index(seg segment) {
+	a, b := seg.a, seg.b
+	bx := func(lon float64) int { return int((lon + math.Pi) / model.Tau * 128) }
+	by := func(lat float64) int { return int((.5 - lat/math.Pi) * 64) }
+	for y := max(0, min(by(a[1]), by(b[1]))-1); y <= min(63, max(by(a[1]), by(b[1]))+1); y++ {
+		for x := max(0, min(bx(a[0]), bx(b[0]))-1); x <= min(127, max(bx(a[0]), bx(b[0]))+1); x++ {
+			s.bins[y*128+x] = append(s.bins[y*128+x], seg)
+		}
+	}
 }
 func (s *Sampler) Sample(lon, lat float64) model.Sample {
 	lon = model.Wrap(lon)

@@ -27,7 +27,7 @@ func Generate(ctx context.Context, s model.Spec, progress Progress) (*model.Plan
 		{"relief and bathymetry", func() error { return surface(ctx, p) }},
 		{"seasonal climate", func() error { return climate(ctx, p) }},
 		{"drainage and rivers", func() error { return drainage(ctx, p) }},
-		{"ecology and topology", func() error { audit(p); return nil }},
+		{"ecology and topology", func() error { audit(p); measure(p); return nil }},
 	}
 	for i, stage := range stages {
 		if err := ctx.Err(); err != nil {
