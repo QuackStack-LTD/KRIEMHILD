@@ -374,3 +374,29 @@
     display: none;
   }
 }
+.studio-3d {
+  position: fixed;
+  inset: 32px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  background: #101e29;
+  border: 1px solid #587080;
+  box-shadow: 0 0 0 50vmax #0009;
+}
+.studio-3d header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+}
+.studio-3d header strong {
+  margin-right: auto;
+}
+.studio-3d-canvas {
+  flex: 1;
+  min-height: 0;
+}
+.studio-3d p {
+  margin: 12px 20px;
+}

@@ -127,6 +127,7 @@ func (s *Server) worldCommand(w http.ResponseWriter, r *http.Request) {
 		Name        string          `json:"name"`
 		Description string          `json:"description"`
 		View        json.RawMessage `json:"view"`
+		Delta       [2]float64      `json:"delta"`
 	}
 	if err := decode(w, r, &req); err != nil {
 		fail(w, 400, err.Error())
@@ -157,6 +158,12 @@ func (s *Server) worldCommand(w http.ResponseWriter, r *http.Request) {
 	}
 	previousView := append(json.RawMessage(nil), model.Header.View...)
 	switch req.Kind {
+	case "move-family":
+		if v.planet == nil {
+			err = fmt.Errorf("family moves require continuous terrain")
+		} else {
+			err = model.MoveFamily(req.Entity.ID, req.Delta[0], req.Delta[1])
+		}
 	case "entity":
 		if v.historical != nil && v.historical.Kind == "settlement" && req.Entity.Layer == "natural-features" {
 			err = fmt.Errorf("geographical features are edited in the Map Builder")

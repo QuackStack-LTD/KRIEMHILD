@@ -39,6 +39,7 @@ func (s *Server) continuousRoutes() {
 	s.mux.HandleFunc("DELETE /api/terrain/generation-jobs/{job}", s.terrainJobState)
 	s.mux.HandleFunc("GET /api/sessions/{id}/terrain/tiles/{z}/{x}/{y}", s.continuousTile)
 	s.mux.HandleFunc("GET /api/sessions/{id}/terrain/sample", s.continuousSample)
+	s.mux.HandleFunc("GET /api/sessions/{id}/terrain/mesh", s.continuousMesh)
 	s.mux.HandleFunc("GET /api/sessions/{id}/terrain/features", s.continuousFeatures)
 	s.mux.HandleFunc("POST /api/sessions/{id}/settlements/preview", s.previewSettlement)
 	s.mux.HandleFunc("POST /api/sessions/{id}/settlements", s.acceptSettlement)
@@ -212,6 +213,11 @@ func (s *Server) continuousTile(w http.ResponseWriter, r *http.Request) {
 	}
 	p := v.planet
 	revision := v.authored().Header.Revision
+	if r.URL.Query().Get("strict") == "1" && r.URL.Query().Get("revision") != strconv.Itoa(revision) {
+		v.mu.Unlock()
+		fail(w, 409, "Terrain changed during export")
+		return
+	}
 	lon0, lat0 := tiles.Coordinate(a[0], a[1], a[2], size, -1, -1)
 	lon1, lat1 := tiles.Coordinate(a[0], a[1], a[2], size, size, size)
 	box := world.Bounds{X: (lon0 + math.Pi) / model.Tau * float64(v.solver.W-1), Y: (.5 - lat0/math.Pi) * float64(v.solver.H-1), Width: (lon1 - lon0) / model.Tau * float64(v.solver.W-1), Height: (lat0 - lat1) / math.Pi * float64(v.solver.H-1)}

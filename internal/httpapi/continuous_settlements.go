@@ -84,11 +84,9 @@ func (s *Server) acceptSettlement(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	next.Reindex(v.solver.W, v.solver.H)
-	for _, e := range draft.Entities {
-		if _, err := next.PutEntity(e); err != nil {
-			fail(w, 400, err.Error())
-			return
-		}
+	if err := next.PutEntities(draft.Entities); err != nil {
+		fail(w, 400, err.Error())
+		return
 	}
 	v.world = &next
 	v.settlement = nil

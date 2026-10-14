@@ -60,6 +60,7 @@ export default function TileSurface({
     };
     let remaining = queue.filter((t) => !cache.current.has(key(t))).length;
     onLoading?.(remaining);
+    let failed = false;
     const worker = async () => {
       while (queue.length && active) {
         const t = queue.shift(),
@@ -89,9 +90,9 @@ export default function TileSurface({
           }
           publish();
         } catch (e) {
-          if (e.name !== "AbortError" && active) onLoading?.(-1);
+          if (e.name !== "AbortError" && active) failed = true;
         } finally {
-          if (active) onLoading?.(--remaining);
+          if (active) onLoading?.(failed ? -1 : --remaining);
         }
       }
     };

@@ -299,7 +299,13 @@ func (s *State) record(c Change) {
 	s.Header.Revision++
 }
 func (s *State) apply(key string, data json.RawMessage) {
-	if strings.HasPrefix(key, "entity/") {
+	if key == "entities" {
+		var entities []Entity
+		json.Unmarshal(data, &entities)
+		for _, e := range entities {
+			s.apply("entity/"+e.ID, raw(e))
+		}
+	} else if strings.HasPrefix(key, "entity/") {
 		var e Entity
 		json.Unmarshal(data, &e)
 		s.Entities[e.ID] = e
@@ -425,6 +431,15 @@ func (s *State) Undo(redo bool) (*Bounds, error) {
 	data := c.Before
 	if redo {
 		data = c.After
+	}
+	if c.Key == "entities" {
+		var entities []Entity
+		if json.Unmarshal(data, &entities) != nil {
+			return nil, fmt.Errorf("invalid entity batch history")
+		}
+		if err := s.validateBatch(entities); err != nil {
+			return nil, err
+		}
 	}
 	if strings.HasPrefix(c.Key, "operation/") {
 		var o Operation
@@ -597,6 +612,22 @@ func (s *State) Validate(w, h int) error {
 				current, ok := s.Operations[o.ID]
 				if !ok || current.Sequence != o.Sequence || c.Bounds == nil || *c.Bounds != o.Bounds() {
 					return fmt.Errorf("operation history disagrees with world")
+				}
+			} else if c.Key == "entities" && s.Header.Version == 2 {
+				var entities []Entity
+				if json.Unmarshal(data, &entities) != nil || len(entities) == 0 || len(entities) > 5000 {
+					return fmt.Errorf("invalid entity batch history")
+				}
+				seen := map[string]bool{}
+				for _, e := range entities {
+					e.ParentID = ""
+					if seen[e.ID] || s.ValidateEntity(e) != nil {
+						return fmt.Errorf("invalid entity batch geometry")
+					}
+					seen[e.ID] = true
+					if _, ok := s.Entities[e.ID]; !ok {
+						return fmt.Errorf("batch references missing entity")
+					}
 				}
 			} else if c.Key == "layers" {
 				var l []Layer

@@ -1,7 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { request, defaults, presets } from "./api.js";
 import TileSurface from "./TileSurface.jsx";
-import { normalizeCamera } from "./camera.js";
+import { normalizeCamera, visibleTiles } from "./camera.js";
 import "./studio.css";
 
 const uid = () => crypto.randomUUID().replaceAll("-", "");
@@ -15,6 +22,7 @@ const layerFor = (kind) =>
     country: "countries",
   })[kind] || "settlements";
 const initialCamera = { x: 0, y: 0, w: 2, h: 1 };
+const Terrain3D = lazy(() => import("./Terrain3D.jsx"));
 function download(blob, name) {
   const url = URL.createObjectURL(blob),
     a = document.createElement("a");
@@ -28,6 +36,8 @@ const pointsText = (points, state) =>
   points.map((p) => toMap(p, state).join(",")).join(" ");
 
 export default function Studio({ initialState, onExit }) {
+  const [show3D, setShow3D] = useState(false);
+  const [exportWidth, setExportWidth] = useState(2048);
   const [state, setState] = useState(initialState || null),
     [spec, setSpec] = useState(initialState?.continuous?.spec || defaults);
   const savedView =
@@ -479,7 +489,20 @@ export default function Studio({ initialState, onExit }) {
     drag.current = null;
     if (!d) return;
     if ((d.vertex != null || d.entity) && d.moved) {
-      run(() => command({ kind: "entity", entity: selected }));
+      run(() =>
+        command(
+          d.entity
+            ? {
+                kind: "move-family",
+                entity: { id: d.entity.id },
+                delta: [
+                  selected.points[0][0] - d.entity.points[0][0],
+                  selected.points[0][1] - d.entity.points[0][1],
+                ],
+              }
+            : { kind: "entity", entity: selected },
+        ),
+      );
       return;
     }
     if (!d.moved && !d.entity && d.vertex == null) void clickMap(position(e));
@@ -507,10 +530,52 @@ export default function Studio({ initialState, onExit }) {
   }, [camera, width]);
   async function exportMap(format) {
     if (!svg.current) return;
+    if ((exportWidth * exportWidth * camera.h) / camera.w > 16777216)
+      throw Error("Choose a smaller export width for this tall view.");
     const clone = svg.current.cloneNode(true);
     clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-    clone.setAttribute("width", "2048");
-    clone.setAttribute("height", String((2048 * camera.h) / camera.w));
+    clone.setAttribute("width", String(exportWidth));
+    clone.setAttribute("height", String((exportWidth * camera.h) / camera.w));
+    const terrain = clone.querySelector(
+      '[aria-label="Continuous terrain tiles"]',
+    );
+    if (terrain) {
+      terrain.replaceChildren();
+      const queue = visibleTiles(camera, exportWidth, 1);
+      const worker = async () => {
+        while (queue.length) {
+          const t = queue.shift();
+          const r = await fetch(
+            `/api/${base}/terrain/tiles/${t.z}/${t.x}/${t.y}?size=${t.size}&style=${style}&strict=1&revision=${state.project.revision}`,
+          );
+          if (!r.ok)
+            throw Error(
+              "Export terrain changed or could not be sampled; retry the export.",
+            );
+          const blob = await r.blob();
+          const uri = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+          });
+          const img = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "image",
+          );
+          for (const [k, v] of Object.entries({
+            href: uri,
+            x: t.x * t.span,
+            y: t.y * t.span,
+            width: t.span,
+            height: t.span,
+            preserveAspectRatio: "none",
+          }))
+            img.setAttribute(k, String(v));
+          terrain.appendChild(img);
+        }
+      };
+      await Promise.all([worker(), worker(), worker()]);
+    }
     for (const img of clone.querySelectorAll("image")) {
       const blob = await (await fetch(img.getAttribute("href"))).blob();
       const uri = await new Promise((resolve) => {
@@ -536,8 +601,8 @@ export default function Studio({ initialState, onExit }) {
         img.src = url;
       });
       const c = document.createElement("canvas");
-      c.width = 2048;
-      c.height = Math.round((2048 * camera.h) / camera.w);
+      c.width = exportWidth;
+      c.height = Math.round((exportWidth * camera.h) / camera.w);
       c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
       const png = await new Promise((resolve) =>
         c.toBlob(resolve, "image/png"),
@@ -560,12 +625,18 @@ export default function Studio({ initialState, onExit }) {
     }
   }
   const diagnostics = state?.continuous?.diagnostics;
-  const visibleEntities = entities.filter(
-    (e) =>
-      !e.deleted &&
-      state.project.layers.find((l) => l.id === e.layer)?.visible &&
-      e.minDetail <= Math.max(0, Math.log2(2 / camera.w)),
-  );
+  const visibleEntities = entities
+    .filter(
+      (e) =>
+        !e.deleted &&
+        state.project.layers.find((l) => l.id === e.layer)?.visible &&
+        e.minDetail <= Math.max(0, Math.log2(2 / camera.w)),
+    )
+    .sort(
+      (a, b) =>
+        state.project.layers.find((l) => l.id === a.layer).order -
+        state.project.layers.find((l) => l.id === b.layer).order,
+    );
   function feature(e, preview = false) {
     const isSelected = selected?.id === e.id;
     const f = isSelected ? selected : e;
@@ -686,6 +757,9 @@ export default function Studio({ initialState, onExit }) {
         <button disabled={!state || busy} onClick={() => run(save)}>
           Save
         </button>
+        <button disabled={!state} onClick={() => setShow3D(true)}>
+          3D
+        </button>
         <button
           aria-label="Toggle settings panel"
           onClick={() => setPanel(!panel)}
@@ -781,7 +855,7 @@ export default function Studio({ initialState, onExit }) {
                     pointerEvents="none"
                   >
                     {rivers.map((r) => (
-                      <polyline
+                      <path
                         key={r.id}
                         strokeWidth={Math.max(
                           (camera.w / width) * 0.7,
@@ -791,12 +865,10 @@ export default function Studio({ initialState, onExit }) {
                               (state.continuous.spec.radiusKm * 1000 * Math.PI),
                           ),
                         )}
-                        points={r.path
-                          .map((p) =>
-                            [
-                              (p[0] + Math.PI) / Math.PI,
-                              0.5 - p[1] / Math.PI,
-                            ].join(","),
+                        d={r.path
+                          .map(
+                            (p, i) =>
+                              `${i === 0 || Math.abs(p[0] - r.path[i - 1][0]) > Math.PI ? "M" : "L"}${(p[0] + Math.PI) / Math.PI},${0.5 - p[1] / Math.PI}`,
                           )
                           .join(" ")}
                       />
@@ -1221,6 +1293,44 @@ export default function Studio({ initialState, onExit }) {
                   />
                 </label>
                 <label>
+                  Color
+                  <input
+                    type="color"
+                    value={selected.color}
+                    onChange={(e) =>
+                      setSelected({ ...selected, color: e.target.value })
+                    }
+                  />
+                </label>
+                <label>
+                  Created in year
+                  <input
+                    type="number"
+                    value={selected.created ?? ""}
+                    onChange={(e) =>
+                      setSelected({
+                        ...selected,
+                        created:
+                          e.target.value === "" ? null : Number(e.target.value),
+                      })
+                    }
+                  />
+                </label>
+                <label>
+                  Destroyed in year
+                  <input
+                    type="number"
+                    value={selected.destroyed ?? ""}
+                    onChange={(e) =>
+                      setSelected({
+                        ...selected,
+                        destroyed:
+                          e.target.value === "" ? null : Number(e.target.value),
+                      })
+                    }
+                  />
+                </label>
+                <label>
                   Parent
                   <select
                     value={selected.parentId || ""}
@@ -1315,44 +1425,66 @@ export default function Studio({ initialState, onExit }) {
             {state && (
               <details>
                 <summary>Layers & objects</summary>
-                {state.project.layers.map((l, i) => (
-                  <div className="studio-layer" key={l.id}>
-                    <input
-                      type="checkbox"
-                      aria-label={`${l.name} visible`}
-                      checked={l.visible}
-                      onChange={(e) =>
-                        run(() =>
-                          command({
-                            kind: "layers",
-                            layers: state.project.layers.map((x) =>
-                              x.id === l.id
-                                ? { ...x, visible: e.target.checked }
-                                : x,
-                            ),
-                          }),
-                        )
-                      }
-                    />
-                    <span>{l.name}</span>
-                    <button
-                      aria-label={`${l.name} lock`}
-                      aria-pressed={l.locked}
-                      onClick={() =>
-                        run(() =>
-                          command({
-                            kind: "layers",
-                            layers: state.project.layers.map((x) =>
-                              x.id === l.id ? { ...x, locked: !x.locked } : x,
-                            ),
-                          }),
-                        )
-                      }
-                    >
-                      {l.locked ? "Locked" : "Lock"}
-                    </button>
-                  </div>
-                ))}
+                {[...state.project.layers]
+                  .sort((a, b) => a.order - b.order)
+                  .map((l, i) => (
+                    <div className="studio-layer" key={l.id}>
+                      <input
+                        type="checkbox"
+                        aria-label={`${l.name} visible`}
+                        checked={l.visible}
+                        onChange={(e) =>
+                          run(() =>
+                            command({
+                              kind: "layers",
+                              layers: state.project.layers.map((x) =>
+                                x.id === l.id
+                                  ? { ...x, visible: e.target.checked }
+                                  : x,
+                              ),
+                            }),
+                          )
+                        }
+                      />
+                      <span>{l.name}</span>
+                      <button
+                        aria-label={`Move ${l.name} up`}
+                        disabled={l.order === 0}
+                        onClick={() =>
+                          run(() =>
+                            command({
+                              kind: "layers",
+                              layers: state.project.layers.map((x) =>
+                                x.id === l.id
+                                  ? { ...x, order: x.order - 1 }
+                                  : x.order === l.order - 1
+                                    ? { ...x, order: x.order + 1 }
+                                    : x,
+                              ),
+                            }),
+                          )
+                        }
+                      >
+                        ↑
+                      </button>
+                      <button
+                        aria-label={`${l.name} lock`}
+                        aria-pressed={l.locked}
+                        onClick={() =>
+                          run(() =>
+                            command({
+                              kind: "layers",
+                              layers: state.project.layers.map((x) =>
+                                x.id === l.id ? { ...x, locked: !x.locked } : x,
+                              ),
+                            }),
+                          )
+                        }
+                      >
+                        {l.locked ? "Locked" : "Lock"}
+                      </button>
+                    </div>
+                  ))}
                 <label>
                   Find an object
                   <input
@@ -1393,6 +1525,19 @@ export default function Studio({ initialState, onExit }) {
             {state && (
               <section>
                 <h3>Save & export</h3>
+                <label>
+                  Export width
+                  <select
+                    value={exportWidth}
+                    onChange={(e) => setExportWidth(Number(e.target.value))}
+                  >
+                    {[1024, 2048, 4096].map((n) => (
+                      <option key={n} value={n}>
+                        {n} pixels
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <label className="studio-check">
                   <input
                     type="checkbox"
@@ -1437,6 +1582,15 @@ export default function Studio({ initialState, onExit }) {
           </aside>
         )}
       </div>
+      {show3D && state && (
+        <Suspense fallback={<div role="status">Loading 3D view…</div>}>
+          <Terrain3D
+            state={state}
+            camera={camera}
+            onClose={() => setShow3D(false)}
+          />
+        </Suspense>
+      )}
       <footer className="studio-status">
         <span>
           Equirectangular · {state?.continuous.spec.radiusKm || spec.radiusKm}{" "}
