@@ -9,6 +9,7 @@ import (
 	"io"
 	"kriemhild/internal/storage"
 	"kriemhild/internal/terrain"
+	terrainmodel "kriemhild/internal/terrain/model"
 	"kriemhild/internal/world"
 	"net/http"
 	"os"
@@ -75,6 +76,13 @@ func (s *Server) saveWorld(v *session, changed bool) error {
 		v.worldID = token()
 	}
 	parts := map[string][]byte{}
+	if v.planet != nil && !v.persisted {
+		meta, fields, err := v.planet.Encode()
+		if err != nil {
+			return err
+		}
+		parts["continuous/metadata"], parts["continuous/fields"] = meta, fields
+	}
 	add := func(name string, value any) error {
 		b, err := compressJSON(value)
 		if err == nil {
@@ -192,6 +200,14 @@ func restoreCheckpoint(id string, parts map[string][]byte, cacheRoot string) (v 
 		return nil, err
 	}
 	v = &session{solver: solver, generation: c.Generation, base: c.Base, edits: c.Edits, undo: c.Undo, order: c.Order, worldID: id, cacheRoot: cacheRoot, last: time.Now(), persisted: true, savedTiles: map[string]bool{}}
+	if meta := parts["continuous/metadata"]; meta != nil {
+		v.planet, err = terrainmodel.Decode(meta, parts["continuous/fields"])
+		if err != nil {
+			return nil, err
+		}
+	} else if parts["continuous/fields"] != nil {
+		return nil, fmt.Errorf("missing continuous terrain metadata")
+	}
 	if v.undo == nil {
 		v.undo = map[string]terrain.Snapshot{}
 	}

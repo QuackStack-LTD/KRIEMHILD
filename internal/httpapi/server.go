@@ -11,6 +11,8 @@ import (
 	"kriemhild/internal/history"
 	"kriemhild/internal/storage"
 	"kriemhild/internal/terrain"
+	terrainmodel "kriemhild/internal/terrain/model"
+	terraintiles "kriemhild/internal/terrain/tiles"
 	"kriemhild/internal/world"
 	"net/http"
 	"os"
@@ -22,6 +24,9 @@ import (
 )
 
 type session struct {
+	tileIdentity    string
+	planet          *terrainmodel.Planet
+	settlement      *settlementDraft
 	creatorID       string
 	actorID         string
 	collabRevision  int
@@ -57,19 +62,21 @@ type session struct {
 	composed        map[string][]byte
 }
 type Server struct {
-	limits      requestLimits
-	auth        *auth.Service
-	accessMu    sync.Mutex
-	liveMu      sync.Mutex
-	live        map[*liveClient]bool
-	mu          sync.Mutex
-	sessions    map[string]*session
-	mux         *http.ServeMux
-	slots       chan struct{}
-	openMu      sync.Mutex
-	detailSlots chan struct{}
-	projects    *storage.Store
-	cacheRoot   string
+	terrainTileCache *terraintiles.Cache
+	terrainJobs      map[string]*terrainJob
+	limits           requestLimits
+	auth             *auth.Service
+	accessMu         sync.Mutex
+	liveMu           sync.Mutex
+	live             map[*liveClient]bool
+	mu               sync.Mutex
+	sessions         map[string]*session
+	mux              *http.ServeMux
+	slots            chan struct{}
+	openMu           sync.Mutex
+	detailSlots      chan struct{}
+	projects         *storage.Store
+	cacheRoot        string
 }
 
 type Options struct {
@@ -109,6 +116,7 @@ func NewWithOptions(dist string, options Options) *Server {
 		w.Write(terrain.Defaults)
 	})
 	s.mux.HandleFunc("POST /api/sessions", s.create)
+	s.continuousRoutes()
 	s.mux.HandleFunc("DELETE /api/sessions/{id}", s.remove)
 	s.mux.HandleFunc("POST /api/sessions/{id}/{action}", s.action)
 	s.mux.HandleFunc("GET /api/sessions/{id}/detail/{level}/{x}/{y}", s.detailTile)
@@ -369,6 +377,10 @@ func (s *Server) detailTile(w http.ResponseWriter, r *http.Request) {
 		fail(w, 400, "Continuous detail requires Physical environment")
 		return
 	}
+	if v.planet != nil {
+		fail(w, 409, "Use the continuous terrain tile API for this world.")
+		return
+	}
 	v.last = time.Now()
 	// Abandoned view requests must not create extra detail after an explicit Save.
 	if r.Context().Err() != nil {
@@ -412,6 +424,10 @@ func (s *Server) action(w http.ResponseWriter, r *http.Request) {
 	}
 	v.last = time.Now()
 	solver := v.solver
+	if v.planet != nil {
+		fail(w, 409, "The generated base is immutable; use authored world operations.")
+		return
+	}
 	out := map[string]any{}
 	start := time.Now()
 	switch r.PathValue("action") {

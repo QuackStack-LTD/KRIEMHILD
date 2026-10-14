@@ -39,6 +39,9 @@ func (v *session) climateLayer() *terrain.ClimateState {
 	if base == nil || base.Climate == nil {
 		return nil
 	}
+	if v.planet != nil {
+		return base.Climate
+	} // Local edits mark analysis stale; never invoke legacy global climate generation.
 	if len(v.authored().Operations) == 0 {
 		return base.Climate
 	}

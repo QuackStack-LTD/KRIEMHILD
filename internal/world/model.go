@@ -241,7 +241,11 @@ func (s *State) ValidateEntity(e Entity) error {
 	return nil
 }
 func (s *State) ValidateOperation(o Operation) error {
-	if !validID(o.ID) || !s.validPoint(o.Center) || !finite(o.Radius) || o.Radius < .01 || o.Radius > math.Max(s.W, s.H) || !finite(o.Amount) || math.Abs(o.Amount) > 12000 || !finite(o.Target) || math.Abs(o.Target) > 20000 || len(o.Path) > 2048 {
+	minimumRadius := .01
+	if s.Header.Version == 2 {
+		minimumRadius = .000001
+	}
+	if !validID(o.ID) || !s.validPoint(o.Center) || !finite(o.Radius) || o.Radius < minimumRadius || o.Radius > math.Max(s.W, s.H) || !finite(o.Amount) || math.Abs(o.Amount) > 12000 || !finite(o.Target) || math.Abs(o.Target) > 20000 || len(o.Path) > 2048 {
 		return fmt.Errorf("invalid landscape operation")
 	}
 	layer := "elevation"
@@ -281,7 +285,7 @@ func (s *State) ValidateOperation(o Operation) error {
 }
 func raw(v any) json.RawMessage { b, _ := json.Marshal(v); return b }
 func (s *State) record(c Change) {
-	if !strings.HasPrefix(c.Key, "entity/") {
+	if s.Header.Version == 1 && !strings.HasPrefix(c.Key, "entity/") {
 		s.apply(c.Key, c.After)
 		s.Header.Revision++
 		return
@@ -422,6 +426,15 @@ func (s *State) Undo(redo bool) (*Bounds, error) {
 	if redo {
 		data = c.After
 	}
+	if strings.HasPrefix(c.Key, "operation/") {
+		var o Operation
+		if json.Unmarshal(data, &o) != nil {
+			return nil, fmt.Errorf("invalid landscape history")
+		}
+		if err := s.editable(o.Layer); err != nil {
+			return nil, err
+		}
+	}
 	if strings.HasPrefix(c.Key, "entity/") {
 		var e Entity
 		json.Unmarshal(data, &e)
@@ -524,7 +537,7 @@ func (s *State) Parts(all bool) map[string]any {
 }
 func (s *State) Saved() { s.dirty = map[string]bool{} }
 func (s *State) Validate(w, h int) error {
-	if s.Header.Version != 1 || len(s.Header.Name) > 160 || strings.TrimSpace(s.Header.Name) == "" || len(s.Header.Description) > 8192 || s.Header.Revision < 0 || s.Header.NextSequence < 0 || s.Header.Cursor < 0 || s.Header.Cursor > len(s.Header.History) || len(s.Header.History) > 100 {
+	if (s.Header.Version != 1 && s.Header.Version != 2) || len(s.Header.Name) > 160 || strings.TrimSpace(s.Header.Name) == "" || len(s.Header.Description) > 8192 || s.Header.Revision < 0 || s.Header.NextSequence < 0 || s.Header.Cursor < 0 || s.Header.Cursor > len(s.Header.History) || len(s.Header.History) > 100 {
 		return fmt.Errorf("invalid world metadata")
 	}
 	s.Reindex(w, h)
@@ -618,7 +631,7 @@ func (s *State) Validate(w, h int) error {
 	filtered := []Change{}
 	cursor := 0
 	for i, c := range s.Header.History {
-		if strings.HasPrefix(c.Key, "entity/") {
+		if s.Header.Version == 2 || strings.HasPrefix(c.Key, "entity/") {
 			filtered = append(filtered, c)
 			if i < s.Header.Cursor {
 				cursor++

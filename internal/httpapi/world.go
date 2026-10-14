@@ -30,12 +30,18 @@ func validWorldRoute(path string) bool {
 func (v *session) authored() *world.State {
 	if v.world == nil {
 		v.world = world.New(v.solver.W, v.solver.H)
+		if v.planet != nil {
+			v.world.Header.Version = 2
+		}
 	}
 	v.world.PrepareLegacyRivers(v.solver.Environment)
 	return v.world
 }
 func sessionState(v *session) map[string]any {
 	out := view(v.solver, true)
+	if v.planet != nil {
+		out["continuous"] = map[string]any{"schema": v.planet.Schema, "spec": v.planet.Spec, "diagnostics": v.planet.Diagnostics, "analysisStale": len(v.authored().Operations) > 0}
+	}
 	e := v.authored().Environment(v.solver.Environment)
 	if e != nil {
 		composed := *e
@@ -189,6 +195,9 @@ func (s *Server) worldCommand(w http.ResponseWriter, r *http.Request) {
 		}
 		if err = model.ValidateOperation(req.Operation); err == nil {
 			model.Prepare(&req.Operation, v.solver.Environment)
+			if v.planet != nil {
+				v.prepareContinuousOperation(&req.Operation)
+			}
 			dirty, err = model.AddOperation(req.Operation)
 		}
 	case "layers":

@@ -56,7 +56,7 @@ import Organizations, {
   OrganizationProfile,
 } from "./worldbuilding/Organizations.jsx";
 import { useEffect, useState } from "react";
-const TerrainApp = lazy(() => import("./TerrainApp.jsx"));
+const TerrainApp = lazy(() => import("./continuous/TerrainRouter.jsx"));
 import {
   historyRequest,
   graphLayout,
