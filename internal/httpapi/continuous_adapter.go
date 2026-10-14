@@ -2,7 +2,7 @@ package httpapi
 
 import (
 	"fmt"
-	"kriemhild/internal/terrain"
+	"kriemhild/internal/legacyterrain"
 	"kriemhild/internal/terrain/detail"
 	"kriemhild/internal/terrain/model"
 	"kriemhild/internal/terrain/tectonics"

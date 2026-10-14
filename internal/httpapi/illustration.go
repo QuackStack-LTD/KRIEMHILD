@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"kriemhild/internal/history"
-	"kriemhild/internal/terrain"
+	"kriemhild/internal/legacyterrain"
 	"kriemhild/internal/world"
 	"math"
 	"net/http"
@@ -60,9 +60,6 @@ func (s *Server) illustrationData(w http.ResponseWriter, r *http.Request) {
 	samples := make([][4]float64, cols*rows)
 	level := max(0, min(terrain.DetailLevels, int(math.Floor(math.Log2(float64(cols-1)/b.Width)))))
 	tiles := map[string]*terrain.DetailTile{}
-	if env != nil && v.detail == nil {
-		v.detail = terrain.NewDetailModel(env)
-	}
 	if v.detail != nil {
 		features = append(features, v.detail.Features...)
 	}
@@ -81,6 +78,31 @@ func (s *Server) illustrationData(w http.ResponseWriter, r *http.Request) {
 			ty = max(0, ty-1)
 		}
 		key := detailKey(level, tx, ty)
+		if !v.tiles[key] {
+			// Archives without this tile use their saved macro fields. Export must
+			// never synthesize terrain through the retired detail generator.
+			field := func(name string) float64 {
+				values := env.Fields[name]
+				if len(values) != v.solver.W*v.solver.H {
+					return 0
+				}
+				x = math.Max(0, math.Min(float64(v.solver.W-1), x))
+				y = math.Max(0, math.Min(float64(v.solver.H-1), y))
+				ix, iy := int(x), int(y)
+				a, c := x-float64(ix), y-float64(iy)
+				jx, jy := min(ix+1, v.solver.W-1), min(iy+1, v.solver.H-1)
+				return values[iy*v.solver.W+ix]*(1-a)*(1-c) + values[iy*v.solver.W+jx]*a*(1-c) + values[jy*v.solver.W+ix]*(1-a)*c + values[jy*v.solver.W+jx]*a*c
+			}
+			p := terrain.DetailPoint{Elevation: field("elevation"), Vegetation: field("vegetation"), Rock: field("mountainCore"), WaterLevel: field("waterLevel"), WaterDepth: field("waterDepth")}
+			if p.WaterDepth > 0 {
+				p.WaterBody = 1
+			}
+			p = world.Apply(p, x, y, exportState.Ops(world.Bounds{X: x, Y: y}))
+			if p.WaterBody > 0 {
+				p.Shore = 1
+			}
+			return p, nil
+		}
 		tile := tiles[key]
 		if tile == nil {
 			raw, err := v.storedDetail(level, tx, ty)

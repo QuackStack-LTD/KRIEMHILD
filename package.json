@@ -8,8 +8,8 @@
     "build": "vite build",
     "test": "node --test tests/*.test.mjs",
     "start": "node scripts/start.mjs",
-    "format:ui": "prettier --write \"src/**/*.css\" \"src/worldbuilding/**/*.jsx\" \"src/worldbuilding/ui/*.js\" src/App.jsx src/TerrainApp.jsx src/main.jsx src/builder/IllustratedMapDialog.jsx tests/ui.test.mjs scripts/check-ui.mjs playwright.config.mjs tests/ui.browser.spec.mjs",
-    "check:ui": "prettier --check \"src/**/*.css\" \"src/worldbuilding/**/*.jsx\" \"src/worldbuilding/ui/*.js\" src/App.jsx src/TerrainApp.jsx src/main.jsx src/builder/IllustratedMapDialog.jsx tests/ui.test.mjs scripts/check-ui.mjs playwright.config.mjs tests/ui.browser.spec.mjs && node scripts/check-ui.mjs",
+    "format:ui": "prettier --write \"src/**/*.css\" \"src/worldbuilding/**/*.jsx\" \"src/worldbuilding/ui/*.js\" src/App.jsx \"src/continuous/**/*.jsx\" src/main.jsx tests/ui.test.mjs scripts/check-ui.mjs playwright.config.mjs tests/ui.browser.spec.mjs",
+    "check:ui": "prettier --check \"src/**/*.css\" \"src/worldbuilding/**/*.jsx\" \"src/worldbuilding/ui/*.js\" src/App.jsx \"src/continuous/**/*.jsx\" src/main.jsx tests/ui.test.mjs scripts/check-ui.mjs playwright.config.mjs tests/ui.browser.spec.mjs && node scripts/check-ui.mjs",
     "test:ui:browser": "playwright test"
   },
   "dependencies": {

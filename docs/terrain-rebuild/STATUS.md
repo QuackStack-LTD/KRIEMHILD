@@ -1,8 +1,9 @@
 # Continuous terrain rebuild — working milestone, not final acceptance
 
 The complete 13-phase brief is **not finished**. This branch now contains an integrated,
-running replacement path for new terrain, with the legacy reader/editor retained until
-the remaining scientific, rendering and migration acceptance gates are satisfied.
+running replacement path for new terrain. The old editors have now been retired;
+remaining scientific, rendering and migration acceptance gates are still outstanding.
+See [retirement scope and subsequent validation](RETIREMENT.md).
 
 ## Implemented
 
@@ -53,17 +54,18 @@ the remaining scientific, rendering and migration acceptance gates are satisfied
 
 ## Retained deliberately
 
-No legacy algorithm files or user data were deleted. The old solver currently remains
-as a compatibility DTO for shared storage/query callers, and its reader/editor remains
-available for existing worlds. The new generator does not invoke WFC, quota growth,
-old continental placement or old detail synthesis. Full production retirement is still
-outstanding; keeping compatibility code is not counted as completing Phase 0 cleanup.
+The new continuous workspace is the only active terrain generator and map/settlement
+editor. The old frontend implementations and pre-existing terrain repair changes have
+been removed. The backend compatibility package has moved to `internal/legacyterrain`;
+it retains archive DTOs, validation, queries and historical fixture algorithms, but
+production routes no longer invoke its terrain or detail generators. Old projects open
+in a read-only archive viewer.
 
 The World/Age graph, histories, writing, library, biosphere, entities, authentication,
 collaboration and storage remain in their existing packages. Pre-existing uncommitted
-terrain repairs were backed up and left untouched by the rebuild commits.
+terrain repairs were backed up outside the repository before removal.
 
-## Validation and evidence
+## Validation and evidence before retirement
 
 * Baseline JavaScript: 134 passed. Baseline production build passed.
 * Final JavaScript: **136 passed**; final production build passed. All tests in

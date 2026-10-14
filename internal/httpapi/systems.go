@@ -3,7 +3,7 @@ package httpapi
 import (
 	"fmt"
 	"kriemhild/internal/history"
-	"kriemhild/internal/terrain"
+	"kriemhild/internal/legacyterrain"
 	"math"
 	"net/http"
 	"slices"

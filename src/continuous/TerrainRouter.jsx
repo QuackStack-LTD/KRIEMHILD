@@ -1,32 +1,27 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { request } from "./api.js";
-const LegacyTerrain = lazy(() => import("../TerrainApp.jsx"));
 const Studio = lazy(() => import("./Studio.jsx"));
+const ArchivedTerrain = lazy(() => import("./ArchivedTerrain.jsx"));
+
 export default function TerrainRouter(props) {
   const [entry, setEntry] = useState(null),
     [error, setError] = useState("");
   useEffect(() => {
     const abort = new AbortController();
     if (new URLSearchParams(location.search).has("legacyImport")) {
-      setEntry({ legacy: true });
-      return;
-    }
-    if (location.pathname === "/world/new") {
+      setEntry({ archive: true });
+    } else if (location.pathname === "/world/new") {
       setEntry({});
-      return;
+    } else {
+      const id = location.pathname.match(/^\/world\/([a-f0-9]{32})\//)?.[1];
+      if (!id) setError("Map address not found");
+      else
+        request(`projects/${id}/open`, {}, "POST", abort.signal)
+          .then((state) => setEntry({ state, archive: !state.continuous }))
+          .catch((e) => {
+            if (e.name !== "AbortError") setError(e.message);
+          });
     }
-    const id = location.pathname.match(/^\/world\/([a-f0-9]{32})\//)?.[1];
-    if (!id) {
-      setEntry({ legacy: true });
-      return;
-    }
-    request(`projects/${id}/open`, {}, "POST", abort.signal)
-      .then((state) =>
-        setEntry(state.continuous ? { state } : { legacy: true }),
-      )
-      .catch((e) => {
-        if (e.name !== "AbortError") setError(e.message);
-      });
     return () => abort.abort();
   }, []);
   if (error)
@@ -44,16 +39,19 @@ export default function TerrainRouter(props) {
         </main>
       }
     >
-      {entry ? (
-        entry.legacy ? (
-          <LegacyTerrain {...props} />
-        ) : (
-          <Studio {...props} initialState={entry.state} />
-        )
-      ) : (
+      {!entry ? (
         <main className="world-page" role="status">
           Reading saved terrain…
         </main>
+      ) : entry.archive ? (
+        <ArchivedTerrain
+          key={entry.state?.id || "archives"}
+          {...props}
+          initialState={entry.state}
+          onOpen={(state) => setEntry({ state, archive: !state.continuous })}
+        />
+      ) : (
+        <Studio {...props} initialState={entry.state} />
       )}
     </Suspense>
   );

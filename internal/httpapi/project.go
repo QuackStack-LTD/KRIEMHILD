@@ -9,8 +9,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"kriemhild/internal/legacyterrain"
 	"kriemhild/internal/storage"
-	"kriemhild/internal/terrain"
 	terrainmodel "kriemhild/internal/terrain/model"
 	"kriemhild/internal/world"
 	"math"
@@ -111,38 +111,7 @@ func (v *session) storedDetail(l, x, y int) ([]byte, error) {
 	if v.tiles[key] {
 		return os.ReadFile(filepath.Join(v.dir, filepath.FromSlash(key+".json")))
 	}
-	if v.detail == nil {
-		v.detail = terrain.NewDetailModel(v.solver.Environment)
-	}
-	// Persist ancestors as well, so every region reference resolves in the file.
-	if l > 0 {
-		if _, err := v.storedDetail(l-1, x/2, y/2); err != nil {
-			return nil, err
-		}
-	}
-	tile, err := v.detail.Tile(l, x, y)
-	if err != nil {
-		return nil, err
-	}
-	if l > 0 {
-		parentBytes, err := v.storedDetail(l-1, x/2, y/2)
-		if err != nil {
-			return nil, err
-		}
-		var parent terrain.DetailTile
-		if err = json.Unmarshal(parentBytes, &parent); err != nil {
-			return nil, err
-		}
-		inheritStoredParent(&tile, parent)
-	}
-	data, err := json.Marshal(tile)
-	if err != nil {
-		return nil, err
-	}
-	if err = v.putDetail(key, data); err != nil {
-		return nil, err
-	}
-	return data, nil
+	return nil, fmt.Errorf("legacy detail generation has been retired; only saved tiles can be read")
 }
 
 // When a previously stored parent differs from the procedural model, missing
@@ -361,9 +330,6 @@ func encodeProject(v *session) ([]byte, error) {
 				}
 				m.Regions = append(m.Regions, projectRegion{ID: fmt.Sprintf("base/%d/%d", x/32, y/32), Parent: "world", Layer: "base", Level: 0, X: x / 32, Y: y / 32, File: file})
 			}
-		}
-		if v.detail == nil && v.planet == nil {
-			v.detail = terrain.NewDetailModel(s.Environment)
 		}
 		if v.detail != nil {
 			if err := addJSON("detail/model.json", v.detail.ProjectState()); err != nil {

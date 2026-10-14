@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"kriemhild/internal/terrain"
+	"kriemhild/internal/legacyterrain"
 	"net/http"
 )
 

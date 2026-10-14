@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"kriemhild/internal/terrain"
+	"kriemhild/internal/legacyterrain"
 	"kriemhild/internal/world"
 	"math"
 	"net/http"

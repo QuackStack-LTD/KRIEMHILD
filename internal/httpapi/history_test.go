@@ -29,7 +29,7 @@ func TestHistoricalHierarchySurvivesRestartAndPortableArchive(t *testing.T) {
 		t.Fatal(err)
 	}
 	first := d.World.CurrentAge
-	tile, err := v.storedDetail(3, 2, 1)
+	tile, err := v.fixtureDetail(3, 2, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -182,7 +182,7 @@ func TestHistoricalHierarchySurvivesRestartAndPortableArchive(t *testing.T) {
 	restoredMap := imported.Map(first, m.ID)
 	opened = autoRequest(t, server, "POST", "/api/projects/"+restoredMap.ProjectID+"/open", `{}`)
 	restored := server.sessions[opened["id"].(string)]
-	got, err := restored.storedDetail(3, 2, 1)
+	got, err := restored.fixtureDetail(3, 2, 1)
 	if err != nil || !bytes.Equal(tile, got) {
 		t.Fatal("explored terrain changed after import", err)
 	}

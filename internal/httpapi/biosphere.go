@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"kriemhild/internal/biosphere"
 	"kriemhild/internal/history"
-	"kriemhild/internal/terrain"
+	"kriemhild/internal/legacyterrain"
 	"kriemhild/internal/world"
 	"math/bits"
 	"net/http"

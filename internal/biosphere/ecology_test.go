@@ -2,7 +2,7 @@ package biosphere
 
 import (
 	"encoding/json"
-	"kriemhild/internal/terrain"
+	"kriemhild/internal/legacyterrain"
 	"reflect"
 	"slices"
 	"testing"

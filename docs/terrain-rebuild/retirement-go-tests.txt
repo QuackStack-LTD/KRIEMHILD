@@ -1,0 +1,13 @@
+ok  	kriemhild/internal/httpapi	110.374s
+ok  	kriemhild/internal/world	(cached)
+ok  	kriemhild/internal/history	(cached)
+ok  	kriemhild/internal/storage	(cached)
+ok  	kriemhild/internal/biosphere	(cached)
+ok  	kriemhild/internal/auth	(cached)
+ok  	kriemhild/internal/terrain/detail	(cached)
+ok  	kriemhild/internal/terrain/generate	(cached)
+?   	kriemhild/internal/terrain/landmass	[no test files]
+?   	kriemhild/internal/terrain/model	[no test files]
+?   	kriemhild/internal/terrain/tectonics	[no test files]
+ok  	kriemhild/internal/terrain/tiles	(cached)
+ok  	kriemhild/internal/settlements	(cached)

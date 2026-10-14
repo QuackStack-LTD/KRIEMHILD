@@ -1,7 +1,7 @@
 package world
 
 import (
-	"kriemhild/internal/terrain"
+	"kriemhild/internal/legacyterrain"
 	"math"
 )
 
