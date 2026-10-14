@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"kriemhild/internal/terrain"
+	"kriemhild/internal/legacyterrain"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -57,7 +57,7 @@ func unzipProject(t *testing.T, archive []byte) map[string][]byte {
 
 func TestWorldProjectColdRestartRestoresStoredWorldAndDetail(t *testing.T) {
 	v := projectFixture(t)
-	first, err := v.storedDetail(5, 12, 10)
+	first, err := v.fixtureDetail(5, 12, 10)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -70,7 +70,7 @@ func TestWorldProjectColdRestartRestoresStoredWorldAndDetail(t *testing.T) {
 	if err = v.putDetail("5/12/10", stored); err != nil {
 		t.Fatal(err)
 	}
-	if _, err = v.storedDetail(4, 18, 9); err != nil {
+	if _, err = v.fixtureDetail(4, 18, 9); err != nil {
 		t.Fatal(err)
 	} // another previously visited area
 	original := v.solver.Snapshot()
@@ -139,12 +139,12 @@ func TestWorldProjectColdRestartRestoresStoredWorldAndDetail(t *testing.T) {
 	// Prove existing detail can be served with the detail generator unavailable.
 	model := loaded.detail
 	loaded.detail = nil
-	got, err := loaded.storedDetail(5, 12, 10)
+	got, err := loaded.fixtureDetail(5, 12, 10)
 	if err != nil || !bytes.Equal(got, stored) {
 		t.Fatal("explored detail regenerated instead of loading stored bytes", err)
 	}
 	loaded.detail = model
-	descendant, err := loaded.storedDetail(6, 25, 21)
+	descendant, err := loaded.fixtureDetail(6, 25, 21)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -154,7 +154,7 @@ func TestWorldProjectColdRestartRestoresStoredWorldAndDetail(t *testing.T) {
 		t.Fatal("new descendant replaced stored parent detail")
 	}
 	// New areas still derive from the stored physical model, not old server data.
-	a, err := loaded.storedDetail(4, 3, 2)
+	a, err := loaded.fixtureDetail(4, 3, 2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -173,7 +173,7 @@ func TestWorldProjectColdRestartRestoresStoredWorldAndDetail(t *testing.T) {
 
 func TestWorldProjectFolderAndZIPUseSameHierarchy(t *testing.T) {
 	v := projectFixture(t)
-	v.storedDetail(3, 2, 1)
+	v.fixtureDetail(3, 2, 1)
 	archive, err := encodeProject(v)
 	if err != nil {
 		t.Fatal(err)
@@ -210,7 +210,7 @@ func TestWorldProjectFolderAndZIPUseSameHierarchy(t *testing.T) {
 
 func TestWorldProjectRejectsCorruptionMissingDataAndBadHierarchy(t *testing.T) {
 	v := projectFixture(t)
-	v.storedDetail(3, 2, 1)
+	v.fixtureDetail(3, 2, 1)
 	archive, err := encodeProject(v)
 	if err != nil {
 		t.Fatal(err)
@@ -247,7 +247,7 @@ func TestWorldProjectRejectsCorruptionMissingDataAndBadHierarchy(t *testing.T) {
 
 func TestStoredDetailEndpointReturnsArchiveBytes(t *testing.T) {
 	v := projectFixture(t)
-	original, err := v.storedDetail(2, 1, 1)
+	original, err := v.fixtureDetail(2, 1, 1)
 	if err != nil {
 		t.Fatal(err)
 	}

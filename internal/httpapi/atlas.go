@@ -4,7 +4,7 @@ import (
 	"image"
 	"image/color"
 	"image/png"
-	"kriemhild/internal/terrain"
+	"kriemhild/internal/legacyterrain"
 	"math"
 	"net/http"
 )

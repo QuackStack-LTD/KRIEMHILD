@@ -3,7 +3,7 @@ package biosphere
 import (
 	"encoding/json"
 	"fmt"
-	"kriemhild/internal/terrain"
+	"kriemhild/internal/legacyterrain"
 	"math"
 	"slices"
 	"sort"

@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"kriemhild/internal/history"
+	"kriemhild/internal/legacyterrain"
 	"kriemhild/internal/storage"
-	"kriemhild/internal/terrain"
 	"kriemhild/internal/world"
 	"math"
 	"net/http"
@@ -30,12 +30,18 @@ func validWorldRoute(path string) bool {
 func (v *session) authored() *world.State {
 	if v.world == nil {
 		v.world = world.New(v.solver.W, v.solver.H)
+		if v.planet != nil {
+			v.world.Header.Version = 2
+		}
 	}
 	v.world.PrepareLegacyRivers(v.solver.Environment)
 	return v.world
 }
 func sessionState(v *session) map[string]any {
 	out := view(v.solver, true)
+	if v.planet != nil {
+		out["continuous"] = map[string]any{"schema": v.planet.Schema, "spec": v.planet.Spec, "diagnostics": v.planet.Diagnostics, "analysisStale": len(v.authored().Operations) > 0}
+	}
 	e := v.authored().Environment(v.solver.Environment)
 	if e != nil {
 		composed := *e
@@ -109,18 +115,23 @@ func (s *Server) worldEntities(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	entities, more := v.authored().Query(box, detail)
+	if r.URL.Query().Get("all") == "1" {
+		entities, more = v.authored().QueryLimit(box, detail, len(v.authored().Entities)+1)
+	}
 	respond(w, 200, map[string]any{"entities": entities, "truncated": more, "revision": v.world.Header.Revision})
 }
 func (s *Server) worldCommand(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Kind        string          `json:"kind"`
-		Revision    int             `json:"revision"`
-		Entity      world.Entity    `json:"entity"`
-		Operation   world.Operation `json:"operation"`
-		Layers      []world.Layer   `json:"layers"`
-		Name        string          `json:"name"`
-		Description string          `json:"description"`
-		View        json.RawMessage `json:"view"`
+		Kind         string             `json:"kind"`
+		Revision     int                `json:"revision"`
+		Entity       world.Entity       `json:"entity"`
+		Operation    world.Operation    `json:"operation"`
+		Layers       []world.Layer      `json:"layers"`
+		Name         string             `json:"name"`
+		Description  string             `json:"description"`
+		View         json.RawMessage    `json:"view"`
+		Delta        [2]float64         `json:"delta"`
+		Illustration world.Illustration `json:"illustration"`
 	}
 	if err := decode(w, r, &req); err != nil {
 		fail(w, 400, err.Error())
@@ -151,6 +162,14 @@ func (s *Server) worldCommand(w http.ResponseWriter, r *http.Request) {
 	}
 	previousView := append(json.RawMessage(nil), model.Header.View...)
 	switch req.Kind {
+	case "illustration":
+		err = model.PutIllustration(req.Illustration)
+	case "move-family":
+		if v.planet == nil {
+			err = fmt.Errorf("family moves require continuous terrain")
+		} else {
+			err = model.MoveFamily(req.Entity.ID, req.Delta[0], req.Delta[1])
+		}
 	case "entity":
 		if v.historical != nil && v.historical.Kind == "settlement" && req.Entity.Layer == "natural-features" {
 			err = fmt.Errorf("geographical features are edited in the Map Builder")
@@ -189,6 +208,9 @@ func (s *Server) worldCommand(w http.ResponseWriter, r *http.Request) {
 		}
 		if err = model.ValidateOperation(req.Operation); err == nil {
 			model.Prepare(&req.Operation, v.solver.Environment)
+			if v.planet != nil {
+				v.prepareContinuousOperation(&req.Operation)
+			}
 			dirty, err = model.AddOperation(req.Operation)
 		}
 	case "layers":

@@ -1,0 +1,57 @@
+?   	kriemhild/cmd/biosphere-audit	[no test files]
+?   	kriemhild/cmd/kriemhild	[no test files]
+?   	kriemhild/cmd/landshape-gallery	[no test files]
+?   	kriemhild/cmd/terrain-profile	[no test files]
+ok  	kriemhild/internal/auth	8.932s
+ok  	kriemhild/internal/biosphere	7.809s
+ok  	kriemhild/internal/history	2.440s
+ok  	kriemhild/internal/httpapi	138.546s
+ok  	kriemhild/internal/storage	14.135s
+panic: test timed out after 10m0s
+	running tests:
+		TestArchipelagoProcessesDensityAndDeterminism (16s)
+
+goroutine 84 [running]:
+testing.(*M).startAlarm.func1()
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2959 +0x34a
+created by time.goFunc
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/time/sleep.go:182 +0x2d
+
+goroutine 1 [chan receive]:
+testing.(*T).Run(0x1088fc91e000, {0x7ff6a985b373?, 0x1088fc855aa8?}, 0x7ff6a9aa4f90)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2266 +0x4d2
+testing.runTests.func1(0x1088fc91e000)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2742 +0x37
+testing.tRunner(0x1088fc91e000, 0x1088fc855bc8)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2193 +0xc3
+testing.runTests({0x7ff6a984879a, 0x9}, {0x7ff6a9851218, 0x1a}, 0x1088fc914000, {0x7ff6a9acda98, 0x65, 0x65}, {0xc2abfc2dae243ff0, 0x8bb30d1469, ...})
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2740 +0x505
+testing.(*M).Run(0x1088fc88c320)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2600 +0x6af
+main.main()
+	_testmain.go:246 +0x9b
+
+goroutine 76 [runnable]:
+kriemhild/internal/terrain.clamp(0x3fe0e8e5fec0a34f?, 0x0?, 0x3ff0000000000000)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/internal/terrain/rules.go:274 +0x88
+kriemhild/internal/terrain.(*Environment).climateMonthsWithOrbit(_, _, {{0x0, 0x0, 0x0}, {0x7ff6a98488e7, 0x9}, 0x0, 0x1, 0x6, ...}, ...)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/internal/terrain/climate_simulation.go:153 +0x1e35
+kriemhild/internal/terrain.(*Environment).simulateClimate(0x1088fcb6e2c8, {{0x0, 0x0, 0x0}, {0x7ff6a98488e7, 0x9}, 0x0, 0x1, 0x6, 0x4035a8f8d1740000, ...}, ...)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/internal/terrain/climate_simulation.go:260 +0xb1e
+kriemhild/internal/terrain.(*Environment).buildClimate(...)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/internal/terrain/climate_simulation.go:229
+kriemhild/internal/terrain.(*Environment).BuildClimate(0x1088fcb6e2c8)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/internal/terrain/climate_simulation.go:225 +0x5e5
+kriemhild/internal/terrain.BuildEnvironmentObserved({0x0, 0x0, {0x7ff6a98482fa, 0x8}, 0x0, 0x1088fcab6360, 0x0, 0x0, 0x0, 0x3ff0000000000000, ...}, ...)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/internal/terrain/environment.go:402 +0x25f5
+kriemhild/internal/terrain.BuildEnvironment(...)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/internal/terrain/environment.go:203
+kriemhild/internal/terrain.TestArchipelagoProcessesDensityAndDeterminism(0x1088fcfd7200)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/internal/terrain/islands_test.go:51 +0x88c
+testing.tRunner(0x1088fcfd7200, 0x7ff6a9aa4f90)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2193 +0xc3
+created by testing.(*T).Run in goroutine 1
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2258 +0x4b4
+FAIL	kriemhild/internal/terrain	601.129s
+ok  	kriemhild/internal/world	1.698s
+FAIL

@@ -17,7 +17,7 @@ func TestDatabaseProjectReopensWithoutSessionOrTileCache(t *testing.T) {
 		t.Fatal(err)
 	}
 	v := projectFixture(t)
-	tile, err := v.storedDetail(3, 2, 1)
+	tile, err := v.fixtureDetail(3, 2, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -62,7 +62,7 @@ func TestDatabaseProjectReopensWithoutSessionOrTileCache(t *testing.T) {
 	if !bytes.Equal(expectedShapes, loadedShapes) || !bytes.Equal(expectedIslands, loadedIslands) {
 		t.Fatal("database restore regenerated continental or island shapes")
 	}
-	got, err := fresh.sessions[state.ID].storedDetail(3, 2, 1)
+	got, err := fresh.sessions[state.ID].fixtureDetail(3, 2, 1)
 	if err != nil || !bytes.Equal(got, tile) {
 		t.Fatal("database restore lost explored geography", err)
 	}

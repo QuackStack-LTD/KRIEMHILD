@@ -1,0 +1,7 @@
+ok  	kriemhild/internal/terrain/detail	(cached)
+ok  	kriemhild/internal/terrain/generate	(cached)
+ok  	kriemhild/internal/terrain/landmass	(cached)
+?   	kriemhild/internal/terrain/model	[no test files]
+?   	kriemhild/internal/terrain/tectonics	[no test files]
+ok  	kriemhild/internal/terrain/tiles	17.397s
+ok  	kriemhild/internal/world	(cached)

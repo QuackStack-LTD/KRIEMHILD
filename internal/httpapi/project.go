@@ -9,8 +9,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"kriemhild/internal/legacyterrain"
 	"kriemhild/internal/storage"
-	"kriemhild/internal/terrain"
+	terrainmodel "kriemhild/internal/terrain/model"
 	"kriemhild/internal/world"
 	"math"
 	"net/http"
@@ -23,6 +24,7 @@ import (
 )
 
 const projectSchema = 4
+const continuousProjectSchema = 6
 const projectFieldEncoding = "float64 little-endian, field-major then row-major; edge chunks clipped to dimensions"
 const maxProjectBytes = 256 << 20
 const maxExpandedBytes = 1 << 30
@@ -42,6 +44,8 @@ type projectRegion struct {
 	File   string `json:"file"`
 }
 type projectManifest struct {
+	ContinuousParts []string        `json:"continuousParts,omitempty"`
+	Continuous      string          `json:"continuousTerrain,omitempty"`
 	Climate         *climateArchive `json:"climate,omitempty"`
 	AuthoredClimate *climateArchive `json:"authoredClimate,omitempty"`
 	GeologyFile     string          `json:"geologyFile,omitempty"`
@@ -108,38 +112,7 @@ func (v *session) storedDetail(l, x, y int) ([]byte, error) {
 	if v.tiles[key] {
 		return os.ReadFile(filepath.Join(v.dir, filepath.FromSlash(key+".json")))
 	}
-	if v.detail == nil {
-		v.detail = terrain.NewDetailModel(v.solver.Environment)
-	}
-	// Persist ancestors as well, so every region reference resolves in the file.
-	if l > 0 {
-		if _, err := v.storedDetail(l-1, x/2, y/2); err != nil {
-			return nil, err
-		}
-	}
-	tile, err := v.detail.Tile(l, x, y)
-	if err != nil {
-		return nil, err
-	}
-	if l > 0 {
-		parentBytes, err := v.storedDetail(l-1, x/2, y/2)
-		if err != nil {
-			return nil, err
-		}
-		var parent terrain.DetailTile
-		if err = json.Unmarshal(parentBytes, &parent); err != nil {
-			return nil, err
-		}
-		inheritStoredParent(&tile, parent)
-	}
-	data, err := json.Marshal(tile)
-	if err != nil {
-		return nil, err
-	}
-	if err = v.putDetail(key, data); err != nil {
-		return nil, err
-	}
-	return data, nil
+	return nil, fmt.Errorf("legacy detail generation has been retired; only saved tiles can be read")
 }
 
 // When a previously stored parent differs from the procedural model, missing
@@ -235,6 +208,11 @@ func encodeProject(v *session) ([]byte, error) {
 		v.worldID = token()
 	}
 	m := projectManifest{Format: "KRIEMHILD World Project", Schema: projectSchema, Engine: terrain.DetailEngineVersion, ID: v.worldID, Width: s.W, Height: s.H, WrapX: s.WrapX, Coordinates: "parent-grid x east, y south; globe longitude=360*x/(width-1), colatitude=180*y/(height-1)", ElevationUnits: "metres; local water surfaces stored explicitly", FieldEncoding: projectFieldEncoding, Generation: v.generation, ChunkSize: 32, Files: []projectFile{}, Regions: []projectRegion{}}
+	if v.planet == nil {
+		m.Schema = 4
+	} else {
+		m.Schema = continuousProjectSchema
+	}
 	var archive bytes.Buffer
 	z := zip.NewWriter(&archive)
 	expanded := 0
@@ -258,6 +236,23 @@ func encodeProject(v *session) ([]byte, error) {
 			return err
 		}
 		return add(name, data)
+	}
+	if v.planet != nil {
+		meta, fields, err := v.planet.Encode()
+		if err != nil {
+			return nil, err
+		}
+		m.Continuous = "terrain/continuous.json"
+		if err = add(m.Continuous, meta); err != nil {
+			return nil, err
+		}
+		for offset := 0; offset < len(fields); offset += 8 << 20 {
+			name := fmt.Sprintf("terrain/fields-%04d.bin", len(m.ContinuousParts))
+			m.ContinuousParts = append(m.ContinuousParts, name)
+			if err = add(name, fields[offset:min(offset+(8<<20), len(fields))]); err != nil {
+				return nil, err
+			}
+		}
 	}
 	copySolver := *s
 	copySolver.Rules = nil
@@ -341,11 +336,10 @@ func encodeProject(v *session) ([]byte, error) {
 				m.Regions = append(m.Regions, projectRegion{ID: fmt.Sprintf("base/%d/%d", x/32, y/32), Parent: "world", Layer: "base", Level: 0, X: x / 32, Y: y / 32, File: file})
 			}
 		}
-		if v.detail == nil {
-			v.detail = terrain.NewDetailModel(s.Environment)
-		}
-		if err := addJSON("detail/model.json", v.detail.ProjectState()); err != nil {
-			return nil, err
+		if v.detail != nil {
+			if err := addJSON("detail/model.json", v.detail.ProjectState()); err != nil {
+				return nil, err
+			}
 		}
 		keys := []string{}
 		for k := range v.tiles {
@@ -489,7 +483,7 @@ func decodeProject(files map[string][]byte, cacheRoot ...string) (*session, erro
 	if err := json.Unmarshal(files[manifest], &m); err != nil {
 		return nil, err
 	}
-	if m.Format != "KRIEMHILD World Project" || (m.Schema < 1 || m.Schema > projectSchema) || m.Engine != terrain.DetailEngineVersion || m.ChunkSize != 32 || m.FieldEncoding != projectFieldEncoding || m.ID == "" {
+	if m.Format != "KRIEMHILD World Project" || (m.Schema < 1 || m.Schema > continuousProjectSchema) || m.Engine != terrain.DetailEngineVersion || m.ChunkSize != 32 || m.FieldEncoding != projectFieldEncoding || m.ID == "" {
 		return nil, fmt.Errorf("unsupported project schema or detail engine version")
 	}
 	prefix := strings.TrimSuffix(manifest, "manifest.json")
@@ -609,6 +603,31 @@ func decodeProject(files map[string][]byte, cacheRoot ...string) (*session, erro
 		return nil, err
 	}
 	v := &session{solver: &solver, base: &base, edits: edits.Operations, generation: m.Generation, projectUI: data["view/builder.json"], worldID: m.ID, last: time.Now(), undo: map[string]terrain.Snapshot{}}
+	if m.Continuous != "" {
+		if m.Schema < 5 || m.Continuous != "terrain/continuous.json" {
+			return nil, fmt.Errorf("invalid continuous terrain reference")
+		}
+		var err error
+		fields := data["terrain/fields.bin"]
+		if len(m.ContinuousParts) > 0 {
+			if m.Schema < 6 || len(m.ContinuousParts) > 64 || fields != nil {
+				return nil, fmt.Errorf("invalid continuous terrain chunks")
+			}
+			for i, name := range m.ContinuousParts {
+				if name != fmt.Sprintf("terrain/fields-%04d.bin", i) || len(data[name]) == 0 || len(data[name]) > 8<<20 {
+					return nil, fmt.Errorf("missing or invalid terrain chunk")
+				}
+				fields = append(fields, data[name]...)
+			}
+		}
+		v.planet, err = terrainmodel.Decode(data[m.Continuous], fields)
+		v.tileIdentity = terrainSourceIdentity(data[m.Continuous], fields)
+		if err != nil {
+			return nil, err
+		}
+	} else if data["terrain/continuous.json"] != nil || data["terrain/fields.bin"] != nil {
+		return nil, fmt.Errorf("unreferenced continuous terrain data")
+	}
 	if b := data["world/project.json"]; b != nil {
 		v.world = &world.State{}
 		if err := json.Unmarshal(b, v.world); err != nil {
@@ -639,7 +658,7 @@ func decodeProject(files map[string][]byte, cacheRoot ...string) (*session, erro
 	if len(v.projectUI) == 0 || !json.Valid(v.projectUI) {
 		return nil, fmt.Errorf("invalid builder metadata")
 	}
-	if env != nil {
+	if env != nil && v.planet == nil {
 		var state terrain.DetailState
 		if err := decode("detail/model.json", &state); err != nil {
 			return nil, err

@@ -1,0 +1,52 @@
+2026/10/14 16:01:41 WARN request_rejected class=api method=GET status=401
+2026/10/14 16:01:41 WARN request_rejected class=api method=GET status=401
+2026/10/14 16:01:41 WARN request_rejected class=api method=GET status=401
+2026/10/14 16:01:41 WARN request_rejected class=api method=GET status=404
+2026/10/14 16:01:41 WARN request_rejected class=api method=POST status=401
+2026/10/14 16:01:41 WARN request_rejected class=api method=POST status=404
+2026/10/14 16:01:41 WARN request_rejected class=api method=DELETE status=401
+2026/10/14 16:01:41 WARN request_rejected class=api method=DELETE status=404
+2026/10/14 16:01:41 WARN request_rejected class=api method=GET status=401
+2026/10/14 16:01:41 WARN request_rejected class=api method=GET status=404
+2026/10/14 16:01:41 WARN request_rejected class=api method=GET status=401
+2026/10/14 16:01:41 WARN request_rejected class=api method=GET status=404
+2026/10/14 16:01:41 WARN request_rejected class=api method=GET status=401
+2026/10/14 16:01:41 WARN request_rejected class=api method=GET status=404
+2026/10/14 16:01:41 WARN request_rejected class=api method=GET status=401
+2026/10/14 16:01:41 WARN request_rejected class=api method=GET status=404
+2026/10/14 16:01:41 WARN request_rejected class=api method=POST status=401
+2026/10/14 16:01:41 WARN request_rejected class=api method=POST status=404
+2026/10/14 16:01:41 WARN request_rejected class=api method=GET status=401
+2026/10/14 16:01:41 WARN request_rejected class=api method=GET status=404
+2026/10/14 16:01:41 WARN request_rejected class=api method=DELETE status=401
+2026/10/14 16:01:41 WARN request_rejected class=api method=DELETE status=404
+2026/10/14 16:01:41 WARN request_rejected class=api method=GET status=401
+2026/10/14 16:01:41 WARN request_rejected class=api method=GET status=404
+2026/10/14 16:01:41 WARN request_rejected class=api method=POST status=403
+2026/10/14 16:01:41 WARN request_rejected class=api method=POST status=404
+2026/10/14 16:01:41 WARN request_rejected class=api method=POST status=403
+2026/10/14 16:01:41 WARN request_rejected class=api method=POST status=403
+2026/10/14 16:01:41 WARN request_rejected class=generation method=POST status=403
+2026/10/14 16:01:41 WARN request_rejected class=invitations method=POST status=403
+2026/10/14 16:01:41 WARN request_rejected class=api method=POST status=409
+2026/10/14 16:01:41 WARN request_rejected class=api method=DELETE status=403
+2026/10/14 16:01:41 WARN request_rejected class=api method=GET status=404
+2026/10/14 16:01:42 WARN request_rejected class=api method=POST status=409
+2026/10/14 16:01:42 WARN request_rejected class=api method=GET status=401
+2026/10/14 16:01:42 WARN request_rejected class=api method=GET status=401
+2026/10/14 16:01:42 WARN request_rejected class=invitations method=GET status=401
+2026/10/14 16:01:42 WARN request_rejected class=api method=GET status=403
+2026/10/14 16:01:42 WARN request_rejected class=invitations method=GET status=403
+2026/10/14 16:01:42 WARN request_rejected class=api method=DELETE status=409
+2026/10/14 16:01:42 WARN request_rejected class=api method=GET status=401
+2026/10/14 16:01:42 WARN request_rejected class=invitations method=POST status=400
+2026/10/14 16:01:42 WARN request_rejected class=api method=POST status=401
+--- FAIL: TestClimateArchiveDatabaseAndAuthoredRestoration (1.59s)
+    climate_test.go:63: climate chunk hierarchy missing &{climate/base/metadata.json [{0 0 climate/base/cells/0/0.json} {1 0 climate/base/cells/1/0.json}] }
+FAIL
+FAIL	kriemhild/internal/httpapi	117.761s
+ok  	kriemhild/internal/storage	6.001s
+ok  	kriemhild/internal/history	2.251s
+ok  	kriemhild/internal/auth	4.007s
+ok  	kriemhild/internal/biosphere	4.747s
+FAIL

@@ -3,7 +3,7 @@ package world
 import (
 	"encoding/json"
 	"fmt"
-	"kriemhild/internal/terrain"
+	"kriemhild/internal/legacyterrain"
 	"math"
 	"reflect"
 	"testing"

@@ -80,7 +80,7 @@ func (s *Server) authorize(w http.ResponseWriter, r *http.Request) bool {
 		return false
 	}
 	switch p[1] {
-	case "me", "account", "workspaces", "invitations", "defaults", "biosphere":
+	case "me", "account", "workspaces", "invitations", "defaults", "biosphere", "terrain":
 		return true
 	case "worlds":
 		if len(p) == 2 || len(p) == 3 && p[2] == "import" {

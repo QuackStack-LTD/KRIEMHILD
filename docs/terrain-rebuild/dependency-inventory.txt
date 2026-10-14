@@ -1,0 +1,380 @@
+internal\world\surface.go:4:	"kriemhild/internal/terrain"
+internal\world\surface.go:32:func Apply(p terrain.DetailPoint, x, y float64, ops []Operation) terrain.DetailPoint {
+internal\world\surface.go:97:func (s *State) Elevation(e *terrain.Environment, x, y float64) float64 {
+internal\world\surface.go:99:	return Apply(terrain.DetailPoint{Elevation: base}, x, y, s.Ops(Bounds{x, y, 0, 0})).Elevation
+internal\world\surface.go:103:func (s *State) Prepare(o *Operation, e *terrain.Environment) {
+internal\world\surface.go:122:func (s *State) ApplyTile(tile *terrain.DetailTile, parent *terrain.DetailTile) {
+internal\world\surface.go:129:	original := append([]terrain.DetailPoint(nil), tile.Points...)
+internal\world\surface.go:183:func (s *State) Environment(base *terrain.Environment) *terrain.Environment {
+internal\world\surface.go:220:		p := Apply(terrain.DetailPoint{Biome: base.BiomeAt(i), Elevation: base.Fields["elevation"][i], WaterBody: int(base.Fields["waterBody"][i]), WaterLevel: base.Fields["waterLevel"][i], WaterDepth: base.Fields["waterDepth"][i], Vegetation: e.Fields["vegetation"][i]}, x, y, ops)
+internal\world\surface.go:222:			for index, biome := range terrain.Biomes {
+internal\world\rivers_test.go:5:	"kriemhild/internal/terrain"
+internal\world\rivers_test.go:11:func riverWorld() *terrain.Environment {
+internal\world\rivers_test.go:12:	e := &terrain.Environment{Options: terrain.EnvironmentOptions{Columns: 65, Rows: 65}, Fields: map[string][]float64{}}
+internal\world\rivers_test.go:39:	r := terrain.SampleChannel(*f, at[0], at[1])
+internal\world\rivers_test.go:40:	target, _ := terrain.ChannelBed(r)
+internal\world\rivers_test.go:41:	p := terrain.DetailPoint{Elevation: 500 - at[0]*3, Vegetation: .6}
+internal\world\rivers_test.go:55:		tile := terrain.DetailTile{Level: 0, X: tx, Y: 0, Size: 33, Step: 1, Points: make([]terrain.DetailPoint, 33*33)}
+internal\world\rivers_test.go:110:	e.Geography = &terrain.GeographicScale{Radius: 6371, North: 60, South: -60, West: -180, East: 180}
+internal\world\rivers.go:6:	"kriemhild/internal/terrain"
+internal\world\rivers.go:18:func (s *State) PrepareEntityRiver(entity *Entity, e *terrain.Environment) {
+internal\world\rivers.go:64:func (s *State) prepareRiver(o *Operation, e *terrain.Environment) {
+internal\world\rivers.go:69:		p := terrain.DetailPoint{Elevation: sampleGrid(e.Fields["elevation"], e.Options.Columns, e.Options.Rows, x, y)}
+internal\world\rivers.go:90:	f := &terrain.DetailFeature{ID: "authored/" + o.ID, Kind: "river", Width: width, Discharge: q, Level: clamp(6-math.Log2(1+q)*1.1, 0, 6), Depth: math.Abs(o.Amount), Regime: "perennial"}
+internal\world\rivers.go:173:func applyRiver(p terrain.DetailPoint, x, y float64, f terrain.DetailFeature) terrain.DetailPoint {
+internal\world\rivers.go:174:	r := terrain.SampleChannel(f, x, y)
+internal\world\rivers.go:178:	target, influence := terrain.ChannelBed(r)
+internal\world\rivers.go:194:func (s *State) PrepareLegacyRivers(e *terrain.Environment) {
+internal\world\rivers.go:224:func (s *State) riverFeatures(tile *terrain.DetailTile, bounds Bounds, ops []Operation) {
+internal\world\model_test.go:6:	"kriemhild/internal/terrain"
+internal\world\model_test.go:114:	p := terrain.DetailPoint{Elevation: 100, Vegetation: 1}
+internal\world\model_test.go:150:	makeTile := func(l, x int, step float64) *terrain.DetailTile {
+internal\world\model_test.go:151:		tile := &terrain.DetailTile{Level: l, X: x, Y: 0, Step: step, Points: make([]terrain.DetailPoint, 1089)}
+internal\world\model.go:8:	"kriemhild/internal/terrain"
+internal\world\model.go:25:	River     *terrain.DetailFeature `json:"river,omitempty"`
+internal\world\model.go:43:	River    *terrain.DetailFeature `json:"river,omitempty"`
+internal\world\biome_test.go:4:	"kriemhild/internal/terrain"
+internal\world\biome_test.go:9:	o, err := terrain.DecodeEnvironment([]byte(`{"columns":16,"rows":16,"seed":"authored-cover","realism":true}`))
+internal\world\biome_test.go:13:	base := terrain.BuildEnvironment(o)
+internal\world\biome_test.go:22:	for index, b := range terrain.Biomes {
+internal\world\biome_test.go:38:	p := Apply(terrain.DetailPoint{Biome: "forest", Vegetation: 1}, float64(i%16), float64(i/16), []Operation{op})
+internal\terrain\natural_geology.go:323:	// remain separate from the terrain/hydrology inputs they were derived from.
+internal\terrain\mountains_test.go:9:	// Measure actual generated summits, including their supporting terrain.
+src\worldbuilding\ui\feedback.js:1:// Async, application-owned feedback. Works from React and the terrain controller.
+internal\terrain\coastal_detail.go:136:	// Preserve every coarse anchor, including edited terrain. The field is
+internal\terrain\climate_simulation.go:424:	e.Climate.Source += "; recalculated from authored terrain and water surfaces"
+internal\storage\history_test.go:21:	parts := map[string][]byte{"terrain.json": []byte("immutable terrain"), "detail/0.json": []byte("explored detail")}
+src\worldbuilding\Biosphere.jsx:496:              ? "A saved ecological foundation for this terrain."
+src\worldbuilding\Biosphere.jsx:497:              : "Habitats are derived from the complete saved terrain. Generate and accept a community to save the first biosphere."}
+src\worldbuilding\Biosphere.jsx:1221:            Identity is independent of any terrain. Define its range after its
+src\views\RiverThicknessControl.jsx:2:import {getRiverThickness,setRiverThickness,subscribeRiverThickness} from '../terrain/river-display.js';
+src\views\ProjectHub.jsx:2:import {RemoteSolver} from '../terrain/api.js';
+src\views\ProjectHub.jsx:9: {active?.solver.unsaved&&<section className="working-world"><h2>Current unsaved world</h2><p>{active.project?.name||'Unnamed World'} - click Save in the top bar to keep this world and its explored terrain.</p><button disabled={busy} onClick={()=>onOpen(active.solver.worldId,'generate')}>Resume generation</button><button disabled={busy} onClick={()=>onOpen(active.solver.worldId,'build')}>Resume building</button><button className="danger" disabled={busy} onClick={()=>onDelete({id:active.solver.worldId,name:active.project?.name})}>Delete world</button></section>}
+internal\httpapi\world_test.go:8:	"kriemhild/internal/terrain"
+internal\httpapi\world_test.go:38:		return autoRequest(t, s, "POST", "/api/sessions/map/world", string(b))
+internal\httpapi\world_test.go:51:	var a, b terrain.DetailTile
+internal\httpapi\world_test.go:77:	s.ServeHTTP(rec, httptest.NewRequest("POST", "/api/sessions/map/world", bytes.NewBufferString(`{"kind":"metadata","revision":0,"name":"stale"}`)))
+internal\httpapi\world_test.go:85:	autoRequest(t, s, "DELETE", "/api/sessions/map", "")
+internal\httpapi\world_test.go:141:		s.ServeHTTP(rec, httptest.NewRequest("GET", "/api/sessions/map/world/entities?"+q, nil))
+src\views\GeneratorView.jsx:3:import { mountTerrain } from '../terrain/controller.js';
+internal\httpapi\worldbuilding_test.go:164:		autoRequest(t, s, "POST", "/api/sessions/terrain/world", string(b))
+internal\httpapi\worldbuilding_test.go:209:	autoRequest(t, s, "POST", "/api/sessions/terrain/save", `{}`)
+internal\httpapi\worldbuilding_test.go:242:	autoRequest(t, fresh, "POST", "/api/sessions/"+opened["id"].(string)+"/world", string(body))
+internal\httpapi\world.go:9:	"kriemhild/internal/terrain"
+internal\httpapi\world.go:295:	var tile terrain.DetailTile
+internal\httpapi\world.go:299:	var parent *terrain.DetailTile
+internal\httpapi\world.go:305:		parent = &terrain.DetailTile{}
+internal\httpapi\systems_test.go:9:	"kriemhild/internal/terrain"
+internal\httpapi\systems_test.go:191:	if !sourceInPlace(d, age, "town", "terrain", 10, terrain.NaturalGeometry{Cells: []int{33}}) {
+internal\httpapi\systems_test.go:194:	if sourceInPlace(d, age, "town", "other-planet", 10, terrain.NaturalGeometry{Cells: []int{33}}) {
+internal\httpapi\systems_test.go:197:	if !sourceInPlace(d, age, "town", "terrain", 10, terrain.NaturalGeometry{Path: [][2]float64{{0, 3}, {6, 3}}}) {
+internal\httpapi\systems_test.go:201:	if !sourceInPlace(d, age, "town", "terrain", 10, terrain.NaturalGeometry{Cells: []int{33}}) {
+internal\httpapi\systems_test.go:204:	if sourceInPlace(d, age, "town", "terrain", 10, terrain.NaturalGeometry{Cells: []int{88}}) {
+src\views\BuilderView.jsx:2:import {formatMapLocation,terrainInspection} from '../terrain/terrain-inspection.js';
+src\views\BuilderView.jsx:4:import {createNaturalHover} from '../terrain/natural-hover.js';
+src\views\BuilderView.jsx:7:import {createBuilderViewport} from '../builder/viewport.js';
+src\views\BuilderView.jsx:8:import {AutosaveQueue} from '../terrain/autosave.js';
+src\views\BuilderView.jsx:9:import {allowedGeometry} from '../builder/geometry.js';
+src\views\BuilderView.jsx:10:import {builderPreferences} from '../builder/preferences.js';
+src\views\BuilderView.jsx:11:import IllustratedMapDialog from '../builder/IllustratedMapDialog.jsx';
+src\views\BuilderView.jsx:12:import {hydrologyReportRows} from '../terrain/hydrology-report.js';
+src\views\BuilderView.jsx:31: async function fetchEntities(bounds=lastBounds.current,refreshSelection=false){if(!bounds)return;lastBounds.current=bounds;query.current?.abort();const abort=new AbortController();query.current=abort;try{const r=await fetch(`/api/sessions/${solver.id}/world/entities?${new URLSearchParams(bounds)}`,{signal:abort.signal}),data=await r.json();if(!r.ok)throw Error(data.error);if(abort.signal.aborted)return;setEntities(data.entities);setMore(data.truncated);map.current?.setEntities(data.entities);if(refreshSelection){const next=data.entities.find(e=>e.id===selectedRef.current?.id)||null;setSelected(next);setDraftEntity(next);}}catch(e){if(e.name!=='AbortError')setError(e.message);}}
+src\views\BuilderView.jsx:68: <aside className="builder-inspector">{solver.historicalMap&&<section className="settlement-tools">{childMap&&<><button onClick={openParent}>Back to parent Map Builder</button>{solver.historicalMap?.entityId&&<button onClick={returnToProfile}>Back to place profile</button>}</>}<button onClick={()=>{const b=lastBounds.current;if(b)openDetail(['settlements','countries','borders'].includes(selected?.layer)?selected:null,b)}}>Explore {['settlements','countries','borders'].includes(selected?.layer)?selected.name:'this area'} in detail</button><small>Opening a detailed map saves the current map first.</small></section>}<div ref={naturalHost}/>{!childMap&&spot&&solver.environment&&<form className="geography-naming" onSubmit={async e=>{e.preventDefault();try{await chain.current;const response=await fetch(`/api/sessions/${solver.id}/name-geography`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({x:spot.x,y:spot.y,name:geoName,kind:geoKind,revision:projectRef.current.revision})}),data=await response.json();if(!response.ok)throw Error(data.error);projectRef.current=data.project;changedRef.current(data.project,null);solver.setSaveState(data);await fetchEntities();setGeoName('')}catch(e){setError(e.message)}}}><strong>Name geography at this pin</strong><select aria-label="Geographical feature type" value={geoKind} onChange={e=>setGeoKind(e.target.value)}>{['river','mountain','island','continent','lake','sea','ocean','forest','grassland','desert','glacier'].map(k=><option key={k}>{k}</option>)}</select><input aria-label="Geographical name" required maxLength={160} placeholder="Name this place" value={geoName} onChange={e=>setGeoName(e.target.value)}/><button>Name feature</button><small>Save commits this logical feature and its spatial relationships.</small></form>}{solver.environment?.hydrology?.statistics&&<details className="hydrology-report"><summary>Hydrology report</summary><dl>{hydrologyReportRows(solver.environment).map(([label,value],i)=><div key={i}><dt>{label}</dt><dd>{value}</dd></div>)}</dl></details>}<h2>Inspector</h2>{draftEntity?<form onSubmit={e=>{e.preventDefault();updateEntity();}}><p className="muted">{draftEntity.kind} · {draftEntity.geometry}</p><label className="builder-field">Name<input placeholder="Unnamed house" value={draftEntity.name} onChange={e=>entityField('name',e.target.value)} onBlur={()=>updateEntity()}/></label><label className="builder-field">Map label<input list="entity-name-variants" value={draftEntity.labelName||''} placeholder={draftEntity.name} onChange={e=>entityField('labelName',e.target.value)} onBlur={()=>updateEntity()}/><datalist id="entity-name-variants">{nameVariants.map((n,i)=><option key={i} value={n.name}>{n.language||n.type}</option>)}</datalist><small>Optional local or alternate name; preserves the entity identity.</small></label><label className="builder-field">Parent<select value={draftEntity.parentId||''} onChange={e=>{const next={...draftEntity,parentId:e.target.value};setDraftEntity(next);updateEntity(next);}}><option value="">No parent</option>{entities.filter(e=>e.id!==draftEntity.id).map(e=><option key={e.id} value={e.id}>{e.name}</option>)}{draftEntity.parentId&&!entities.some(e=>e.id===draftEntity.parentId)&&<option value={draftEntity.parentId}>{draftEntity.parentId}</option>}</select></label><label className="builder-field">Color<input type="color" value={draftEntity.color} onChange={e=>entityField('color',e.target.value)} onBlur={()=>updateEntity()}/></label><label className="builder-field">Created in year<input type="number" value={draftEntity.created??''} onChange={e=>entityField('created',e.target.value===''?undefined:Number(e.target.value))} onBlur={()=>updateEntity()}/></label><label className="builder-field">Destroyed in year<input type="number" value={draftEntity.destroyed??''} onChange={e=>entityField('destroyed',e.target.value===''?undefined:Number(e.target.value))} onBlur={()=>updateEntity()}/></label><label className="builder-field">Visible from detail level<input type="number" min="0" max="8" value={draftEntity.minDetail} onChange={e=>entityField('minDetail',Number(e.target.value))} onBlur={()=>updateEntity()}/></label><label className="builder-field">Notes<textarea rows="4" value={draftEntity.notes||''} onChange={e=>entityField('notes',e.target.value)} onBlur={()=>updateEntity()}/></label><button type="submit" disabled={pending}>Apply entity</button><button type="button" className="danger" onClick={()=>updateEntity({...draftEntity,deleted:true})}>Delete entity</button><p className="entity-id">ID: {draftEntity.id}</p></form>:<p className="muted">Select an object on the map or in the viewport list. Drag selected objects to move them.</p>}<section><h2>In this viewport</h2>{more&&<p>Showing the first 2,000 objects. Zoom in to inspect a smaller area.</p>}{entities.length===0&&<p className="muted">No authored objects here yet.</p>}<div className="entity-list">{entities.slice(0,100).map(e=><button key={e.id} aria-pressed={selected?.id===e.id} onClick={()=>{setSelected(e);setDraftEntity({...e});map.current?.select(e.id);}}><span style={{color:e.color}}>●</span> {e.name||'Unnamed house'}<small>{e.kind}{e.parentId?' · child entity':''}</small></button>)}</div></section></aside>{illustrating&&<IllustratedMapDialog solver={solver} flush={flush} onClose={()=>setIllustrating(false)}/>}</main>;
+internal\httpapi\systems.go:6:	"kriemhild/internal/terrain"
+internal\httpapi\systems.go:16:func (s *Server) systemEnvironment(r *http.Request, d *history.Document, age, id string) (*terrain.Environment, error) {
+internal\httpapi\systems.go:23:			var e *terrain.Environment
+internal\httpapi\systems.go:140:	environments := map[string]*terrain.Environment{}
+internal\httpapi\systems.go:142:	env := func(id string) *terrain.Environment {
+internal\httpapi\systems.go:236:											local = local || sourceInPlace(d, age, place.Destination, state.TerrainID, state.Width, terrain.NaturalGeometry{Kind: "cells", Cells: hab.Cells})
+internal\httpapi\systems.go:248:										local = local || sourceInPlace(d, age, place.Destination, m.TerrainID, 0, terrain.NaturalGeometry{Path: rep.Shape.Points})
+internal\httpapi\systems.go:278:func sourceInPlace(d *history.Document, age, place, terrainID string, width int, g terrain.NaturalGeometry) bool {
+src\TerrainApp.jsx:8:import { RemoteSolver } from "./terrain/api.js";
+src\TerrainApp.jsx:492:            saved explored terrain. Unsaved changes will also be discarded.
+internal\httpapi\server.go:13:	"kriemhild/internal/terrain"
+internal\httpapi\server.go:31:	natural         *terrain.NaturalIndex
+internal\httpapi\server.go:33:	solver          *terrain.Solver
+internal\httpapi\server.go:35:	undo            map[string]terrain.Snapshot
+internal\httpapi\server.go:37:	detail          *terrain.DetailModel
+internal\httpapi\server.go:44:	base            *terrain.Snapshot
+internal\httpapi\server.go:109:		w.Write(terrain.Defaults)
+internal\httpapi\server.go:111:	s.mux.HandleFunc("POST /api/sessions", s.create)
+internal\httpapi\server.go:112:	s.mux.HandleFunc("DELETE /api/sessions/{id}", s.remove)
+internal\httpapi\server.go:113:	s.mux.HandleFunc("POST /api/sessions/{id}/{action}", s.action)
+internal\httpapi\server.go:114:	s.mux.HandleFunc("GET /api/sessions/{id}/detail/{level}/{x}/{y}", s.detailTile)
+internal\httpapi\server.go:115:	s.mux.HandleFunc("POST /api/sessions/{id}/project", s.saveProject)
+internal\httpapi\server.go:116:	s.mux.HandleFunc("POST /api/sessions/{id}/autosave", s.saveView) // Legacy endpoint stages view only.
+internal\httpapi\server.go:117:	s.mux.HandleFunc("POST /api/sessions/{id}/view", s.saveView)
+internal\httpapi\server.go:118:	s.mux.HandleFunc("POST /api/sessions/{id}/save", s.commitWorld)
+internal\httpapi\server.go:120:	s.mux.HandleFunc("GET /api/sessions/{id}/world", s.worldInfo)
+internal\httpapi\server.go:121:	s.mux.HandleFunc("GET /api/sessions/{id}/world/state", s.worldState)
+internal\httpapi\server.go:122:	s.mux.HandleFunc("GET /api/sessions/{id}/world/entities", s.worldEntities)
+internal\httpapi\server.go:123:	s.mux.HandleFunc("POST /api/sessions/{id}/world/illustration", s.illustrationData)
+internal\httpapi\server.go:124:	s.mux.HandleFunc("GET /api/sessions/{id}/world/artworks", s.listArtworks)
+internal\httpapi\server.go:125:	s.mux.HandleFunc("POST /api/sessions/{id}/world/artworks", s.saveArtwork)
+internal\httpapi\server.go:126:	s.mux.HandleFunc("GET /api/sessions/{id}/world/natural", s.worldNatural)
+internal\httpapi\server.go:127:	s.mux.HandleFunc("GET /api/sessions/{id}/world/climate", s.worldClimateOverlay)
+internal\httpapi\server.go:128:	s.mux.HandleFunc("POST /api/sessions/{id}/world", s.worldCommand)
+internal\httpapi\server.go:221:	Options     terrain.Options `json:"options"`
+internal\httpapi\server.go:241:		raw = terrain.Defaults
+internal\httpapi\server.go:243:	config, err := terrain.DecodeConfig(raw)
+internal\httpapi\server.go:248:	rules, err := terrain.Compile(config)
+internal\httpapi\server.go:253:	var solver *terrain.Solver
+internal\httpapi\server.go:255:		opts, e := terrain.DecodeEnvironment(req.Environment)
+internal\httpapi\server.go:260:		solver, err = terrain.PrepareEnvironment(opts, config)
+internal\httpapi\server.go:284:		solver = terrain.NewSolver(rules, o, nil)
+internal\httpapi\server.go:306:	v := &session{solver: solver, last: time.Now(), undo: map[string]terrain.Snapshot{}, generation: gen, cacheRoot: s.cacheRoot, worldID: token()}
+internal\httpapi\server.go:499:func view(s *terrain.Solver, initial bool) map[string]any {
+internal\httpapi\project_test.go:7:	"kriemhild/internal/terrain"
+internal\httpapi\project_test.go:20:	c, err := terrain.DecodeConfig(terrain.Defaults)
+internal\httpapi\project_test.go:24:	opts, err := terrain.DecodeEnvironment([]byte(`{"columns":48,"rows":32,"realism":true,"seed":"portable-world"}`))
+internal\httpapi\project_test.go:28:	s, err := terrain.PrepareEnvironment(opts, c)
+internal\httpapi\project_test.go:38:	v := &session{solver: s, last: time.Now(), undo: map[string]terrain.Snapshot{}, generation: json.RawMessage(`{"seed":"portable-world"}`), projectUI: json.RawMessage(`{"seedUsed":42,"camera2d":{"center":{"x":12.5,"y":11.25},"scale":300}}`)}
+internal\httpapi\project_test.go:39:	v.detail = terrain.NewDetailModel(s.Environment)
+internal\httpapi\project_test.go:66:	var tile terrain.DetailTile
+internal\httpapi\project_test.go:151:	var child terrain.DetailTile
+internal\httpapi\project_test.go:256:	r := httptest.NewRequest(http.MethodGet, "/api/sessions/test/detail/2/1/1", nil)
+internal\httpapi\project_test.go:287:	c, err := terrain.DecodeConfig(terrain.Defaults)
+internal\httpapi\project_test.go:291:	rules, err := terrain.Compile(c)
+internal\httpapi\project_test.go:295:	solver := terrain.NewSolver(rules, terrain.Options{Width: 24, Height: 16, Radius2: 1, Seed: 71}, nil)
+internal\httpapi\project.go:13:	"kriemhild/internal/terrain"
+internal\httpapi\project.go:66:	Current    terrain.Snapshot  `json:"current"`
+internal\httpapi\project.go:104:	if l < 0 || l > terrain.DetailLevels || x < 0 || y < 0 || float64(x)*32/math.Exp2(float64(l)) >= float64(v.solver.W-1) || float64(y)*32/math.Exp2(float64(l)) >= float64(v.solver.H-1) {
+internal\httpapi\project.go:112:		v.detail = terrain.NewDetailModel(v.solver.Environment)
+internal\httpapi\project.go:129:		var parent terrain.DetailTile
+internal\httpapi\project.go:148:func inheritStoredParent(tile *terrain.DetailTile, parent terrain.DetailTile) {
+internal\httpapi\project.go:237:	m := projectManifest{Format: "KRIEMHILD World Project", Schema: projectSchema, Engine: terrain.DetailEngineVersion, ID: v.worldID, Width: s.W, Height: s.H, WrapX: s.WrapX, Coordinates: "parent-grid x east, y south; globe longitude=360*x/(width-1), colatitude=180*y/(height-1)", ElevationUnits: "metres; local water surfaces stored explicitly", FieldEncoding: projectFieldEncoding, Generation: v.generation, ChunkSize: 32, Files: []projectFile{}, Regions: []projectRegion{}}
+internal\httpapi\project.go:345:			v.detail = terrain.NewDetailModel(s.Environment)
+internal\httpapi\project.go:492:	if m.Format != "KRIEMHILD World Project" || (m.Schema < 1 || m.Schema > projectSchema) || m.Engine != terrain.DetailEngineVersion || m.ChunkSize != 32 || m.FieldEncoding != projectFieldEncoding || m.ID == "" {
+internal\httpapi\project.go:521:	var solver terrain.Solver
+internal\httpapi\project.go:525:	var config terrain.Config
+internal\httpapi\project.go:540:	var env *terrain.Environment
+internal\httpapi\project.go:545:		env = &terrain.Environment{}
+internal\httpapi\project.go:556:			env.Geology = &terrain.GeologicalState{}
+internal\httpapi\project.go:557:			env.Resources = &terrain.ResourceState{}
+internal\httpapi\project.go:608:	if err := terrain.RestoreProjectSolver(&solver, config, env, edits.Current); err != nil {
+internal\httpapi\project.go:611:	v := &session{solver: &solver, base: &base, edits: edits.Operations, generation: m.Generation, projectUI: data["view/builder.json"], worldID: m.ID, last: time.Now(), undo: map[string]terrain.Snapshot{}}
+internal\httpapi\project.go:643:		var state terrain.DetailState
+internal\httpapi\project.go:647:		model, err := terrain.RestoreDetailModel(env, state)
+internal\httpapi\project.go:655:	decodedTiles := map[string]terrain.DetailTile{}
+internal\httpapi\project.go:681:		var tile terrain.DetailTile
+internal\httpapi\project.go:688:		if err := terrain.ValidateDetailTile(tile, env); err != nil {
+internal\httpapi\natural_test.go:9:	"kriemhild/internal/terrain"
+internal\httpapi\natural_test.go:75:	beforeQuery := autoRequest(t, server, "GET", "/api/sessions/"+imported.ID+"/world/natural?x=20&y=15&radius=3", "")
+internal\httpapi\natural_test.go:79:	autoRequest(t, server, "POST", "/api/sessions/"+imported.ID+"/save", `{}`)
+internal\httpapi\natural_test.go:81:	autoRequest(t, server, "DELETE", "/api/sessions/"+imported.ID, "")
+internal\httpapi\natural_test.go:92:	afterQuery := autoRequest(t, fresh, "GET", "/api/sessions/"+opened["id"].(string)+"/world/natural?x=20&y=15&radius=3", "")
+internal\httpapi\natural_test.go:136:		s.ServeHTTP(r, httptest.NewRequest("GET", "/api/sessions/natural-test/world/natural?"+query, nil))
+internal\httpapi\natural_test.go:156:	result := autoRequest(t, s, "GET", fmt.Sprintf("/api/sessions/natural-test/world/natural?x=%d&y=%d&radius=0", 20, 15), "")
+internal\httpapi\natural_test.go:166:	path := "/api/sessions/metric-query/world/natural?x=20&y=15&radiusKm=500"
+internal\httpapi\natural_test.go:173:		s.ServeHTTP(r, httptest.NewRequest("GET", "/api/sessions/metric-query/world/natural?x=20&y=15&radiusKm="+raw, nil))
+internal\httpapi\natural_test.go:187:	options, err := terrain.DecodeEnvironment([]byte(`{"columns":192,"rows":128,"realism":true,"seed":"maximum-resources"}`))
+internal\httpapi\natural_test.go:191:	config, err := terrain.DecodeConfig(terrain.Defaults)
+internal\httpapi\natural_test.go:195:	solver, err := terrain.PrepareEnvironment(options, config)
+internal\httpapi\natural.go:8:	"kriemhild/internal/terrain"
+internal\httpapi\natural.go:40:		v.natural = terrain.NewNaturalIndex(v.solver.Environment)
+internal\httpapi\natural.go:42:	var result terrain.NaturalQuery
+internal\httpapi\natural.go:59:		terrain.NaturalQuery
+internal\httpapi\natural.go:67:func renderEnvironment(e *terrain.Environment) *terrain.Environment {
+internal\httpapi\manual_save_test.go:18:	created := autoRequest(t, s, "POST", "/api/sessions", `{"options":{"width":24,"height":24,"radius2":2,"seed":12}}`)
+internal\httpapi\manual_save_test.go:21:	autoRequest(t, s, "POST", "/api/sessions/"+id+"/step", `{"count":3}`)
+internal\httpapi\manual_save_test.go:22:	autoRequest(t, s, "POST", "/api/sessions/"+id+"/view", `{"ui":{"paused":true}}`)
+internal\httpapi\manual_save_test.go:23:	autoRequest(t, s, "POST", "/api/sessions/"+id+"/world", `{"kind":"metadata","revision":0,"name":"Explicit save","description":""}`)
+internal\httpapi\manual_save_test.go:28:	autoRequest(t, s, "POST", "/api/sessions/"+id+"/save", `{}`)
+internal\httpapi\manual_save_test.go:30:	autoRequest(t, s, "POST", "/api/sessions/"+id+"/step", `{"count":3}`)
+internal\httpapi\manual_save_test.go:52:	s.ServeHTTP(res, httptest.NewRequest("POST", "/api/sessions/"+id+"/save", nil))
+internal\httpapi\manual_save_test.go:67:	autoRequest(t, s, "GET", "/api/sessions/map/detail/3/2/1", "")
+internal\httpapi\manual_save_test.go:69:	s.ServeHTTP(res, httptest.NewRequest("POST", "/api/sessions/map/project", bytes.NewBufferString(`{"ui":{}}`)))
+internal\httpapi\manual_save_test.go:82:	autoRequest(t, s, "POST", "/api/sessions/"+imported["id"].(string)+"/save", `{}`)
+internal\httpapi\manual_save_test.go:96:	autoRequest(t, s, "POST", "/api/sessions/"+again["id"].(string)+"/save", `{}`)
+internal\httpapi\limits.go:62:	if p == "/api/sessions" && r.Method == "POST" || strings.HasSuffix(p, "/child") {
+src\terrain\natural-hover.js:2:import {formatMapLocation,terrainInspection} from './terrain-inspection.js';
+src\terrain\natural-hover.js:65:   const response=await fetch(`/api/sessions/${solver.id}/world/natural?${params}`,{signal:controller.signal});
+internal\httpapi\illustration_test.go:80:	data := autoRequest(t, s, "POST", "/api/sessions/art/world/illustration", `{}`)
+internal\httpapi\illustration_test.go:90:	result := autoRequest(t, s, "POST", "/api/sessions/art/world/artworks", string(b))
+internal\httpapi\illustration_test.go:117:	s.ServeHTTP(request, httptest.NewRequest("POST", "/api/sessions/art/world/artworks", bytes.NewReader(b)))
+internal\httpapi\illustration_test.go:148:	result := autoRequest(t, s, "POST", "/api/sessions/art/world/artworks", string(payload))
+internal\httpapi\illustration_test.go:170:	data := autoRequest(t, s, "POST", "/api/sessions/"+opened["id"].(string)+"/world/illustration", `{}`)
+internal\httpapi\illustration.go:7:	"kriemhild/internal/terrain"
+internal\httpapi\illustration.go:51:	features := []terrain.DetailFeature{}
+internal\httpapi\illustration.go:61:	level := max(0, min(terrain.DetailLevels, int(math.Floor(math.Log2(float64(cols-1)/b.Width)))))
+internal\httpapi\illustration.go:62:	tiles := map[string]*terrain.DetailTile{}
+internal\httpapi\illustration.go:64:		v.detail = terrain.NewDetailModel(env)
+internal\httpapi\illustration.go:74:	sample := func(x, y float64) (terrain.DetailPoint, error) {
+internal\httpapi\illustration.go:88:				return terrain.DetailPoint{}, err
+internal\httpapi\illustration.go:90:			tile = &terrain.DetailTile{}
+internal\httpapi\illustration.go:92:				return terrain.DetailPoint{}, err
+internal\httpapi\illustration.go:100:		p := terrain.DetailPoint{}
+cmd\terrain-profile\main.go:9:	"kriemhild/internal/terrain"
+cmd\terrain-profile\main.go:32:		o, err := terrain.DecodeEnvironment([]byte(fmt.Sprintf(`{"columns":%d,"rows":%d,"seed":"KRIEMHILD","realism":true,"landPercent":42}`, size[0], size[1])))
+cmd\terrain-profile\main.go:38:		e := terrain.BuildEnvironmentObserved(o, func(name string) { now := time.Now(); phases[name] = now.Sub(last).Seconds(); last = now })
+internal\httpapi\history.go:38:	s.mux.HandleFunc("POST /api/sessions/{id}/name-geography", s.nameGeography)
+tests\world-project.test.mjs:4:import {builderPreferences} from '../src/builder/preferences.js';
+tests\world-project.test.mjs:5:import {allowedGeometry,drapeSegment} from '../src/builder/geometry.js';
+tests\world-project.test.mjs:6:import {meshSurface} from '../src/terrain/mesh-surface.js';
+src\terrain\explorer.js:6:import {renderedRiverAt,sampleTerrainTile} from './terrain-inspection.js';
+internal\httpapi\geography_test.go:22:		return autoRequest(t, s, "POST", "/api/sessions/terrain/name-geography", string(payload))
+tests\water-surface.test.mjs:3:import {waterSurfacePositions} from '../src/terrain/water-surface.js';
+tests\water-surface.test.mjs:4:import {reliefShades} from '../src/terrain/relief.js';
+internal\httpapi\geography.go:7:	"kriemhild/internal/terrain"
+internal\httpapi\geography.go:73:func geographyShape(solver *terrain.Solver, kind string, x, y float64) (world.Entity, error) {
+internal\httpapi\database_test.go:26:	req := httptest.NewRequest("POST", "/api/sessions/original/project", bytes.NewBufferString(`{"ui":{"seedUsed":42}}`))
+internal\httpapi\database_test.go:32:	autoRequest(t, first, "POST", "/api/sessions/original/save", `{}`)
+internal\httpapi\database_test.go:36:	first.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("DELETE", "/api/sessions/original", nil))
+internal\httpapi\database_test.go:92:	s.ServeHTTP(res, httptest.NewRequest("POST", "/api/sessions/world/save", bytes.NewBufferString(`{"ui":{}}`)))
+tests\ui.browser.spec.mjs:216:    test.skip(!map, "The audit world needs an accepted terrain.");
+src\terrain\detail-tiles.js:53:      fetch(`/api/sessions/${this.solver.id}/detail/${task.key}`,{signal:controller.signal}).then(async r=>{const data=await r.json();if(!r.ok){const error=new Error(data.error||`Detail request failed (${r.status})`);error.status=r.status;throw error;}if(r.headers.get('X-World-Unsaved')==='true')this.solver.setSaveState?.({unsaved:true});return data;}).then(tile=>{
+tests\terrain-repair.browser.mjs:15:  const session=await post('/api/sessions',{environment:{columns:160,rows:100,seed:'1',realism:true,landPercent:42}});
+tests\terrain-repair.browser.mjs:16:  await post(`/api/sessions/${session.id}/step`,{count:10000});
+tests\terrain-repair.browser.mjs:17:  return (await post(`/api/sessions/${session.id}/save`,{})).worldId;
+src\terrain\detail-scene.js:1:import {sampleTerrainTile,renderedRiverAt} from './terrain-inspection.js';
+tests\terrain-inspection.test.mjs:3:import {biomeName,biomeColor,naturalMaterials} from '../src/terrain/biome-material.js';
+tests\terrain-inspection.test.mjs:4:import {geographicLocation,formatMapLocation,terrainInspection,renderedRiverAt,sampleTerrainTile} from '../src/terrain/terrain-inspection.js';
+internal\httpapi\climate_test.go:104:	q := autoRequest(t, s, "GET", "/api/sessions/climate/world/natural?x=0&y=0&radius=0", "")
+internal\httpapi\climate_test.go:108:	overlay := autoRequest(t, s, "GET", "/api/sessions/climate/world/climate", "")
+internal\httpapi\climate_test.go:127:	// Clear all new climate data to model an older terrain. Loading must not
+internal\httpapi\climate.go:7:	"kriemhild/internal/terrain"
+internal\httpapi\climate.go:13:	State     *terrain.ClimateState `json:"state"`
+internal\httpapi\climate.go:37:func (v *session) climateLayer() *terrain.ClimateState {
+internal\httpapi\climate.go:66:func writeClimateArchive(state *terrain.ClimateState, prefix string, add func(string, any) error) (*climateArchive, error) {
+internal\httpapi\climate.go:82:			cells := []terrain.ClimateCell{}
+internal\httpapi\climate.go:96:func readClimateArchive(a *climateArchive, prefix string, w, h int, data map[string][]byte, used map[string]bool) (*terrain.ClimateState, error) {
+internal\httpapi\climate.go:103:	var c terrain.ClimateState
+internal\httpapi\climate.go:111:	c.Cells = make([]terrain.ClimateCell, w*h)
+internal\httpapi\climate.go:118:		var cells []terrain.ClimateCell
+tests\run-terrain-browser-audit.mjs:14:  await page.evaluate(async()=>{const r=await fetch('/api/sessions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({environment:{columns:32,rows:24,seed:'browser-audit',realism:true}})});if(!r.ok)throw new Error(await r.text());const state=await r.json();for(const action of ['step','save']){const saved=await fetch(`/api/sessions/${state.id}/${action}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(action==='step'?{count:10000}:{})});if(!saved.ok)throw new Error(await saved.text());}});
+cmd\landshape-gallery\measurements.go:6:	"kriemhild/internal/terrain"
+cmd\landshape-gallery\measurements.go:11:func writeMeasurements(out string, names []string, shapes map[string]terrain.LandShapeReport, climates map[string]terrain.ClimateDistribution) {
+tests\river-width.test.mjs:3:import {riverWidthPixels} from '../src/terrain/river-width.js';
+tests\river-width.test.mjs:4:import {getRiverThickness,setRiverThickness,subscribeRiverThickness,normalizeRiverThickness,riverThicknessKey} from '../src/terrain/river-display.js';
+cmd\landshape-gallery\main.go:1:// Generate a reproducible visual/metric audit from the full terrain pipeline.
+cmd\landshape-gallery\main.go:12:	"kriemhild/internal/terrain"
+cmd\landshape-gallery\main.go:28:	reports := map[string]terrain.LandShapeReport{}
+cmd\landshape-gallery\main.go:29:	climates := map[string]terrain.ClimateDistribution{}
+cmd\landshape-gallery\main.go:38:		raw, _ := json.Marshal(map[string]any{"columns": *width, "rows": *height, "seed": seed, "realism": true, "landPercent": 42, "landShape": terrain.LandShapeOptions{Large: 1, Medium: 1, Small: 1}})
+cmd\landshape-gallery\main.go:39:		o, err := terrain.DecodeEnvironment(raw)
+cmd\landshape-gallery\main.go:43:		e := terrain.BuildEnvironment(o)
+cmd\landshape-gallery\climate.go:7:	"kriemhild/internal/terrain"
+cmd\landshape-gallery\climate.go:13:func writeClimateGallery(out string, k int, e *terrain.Environment, page *strings.Builder) {
+cmd\landshape-gallery\climate.go:16:	for _, b := range terrain.Biomes {
+cmd\landshape-gallery\climate.go:21:	defaults, _ := terrain.DecodeConfig(terrain.Defaults)
+cmd\landshape-gallery\climate.go:30:	model := terrain.NewDetailModel(e)
+src\terrain\controller.js:2:import {terrainInspection,formatMapLocation} from './terrain-inspection.js';
+src\terrain\controller.js:1547:    if ($('realism').checked) $('modeHint').textContent = 'Real-world rules enabled: climate, geology and water constrain terrain. Rivers, dunes, volcanoes and settlements follow the environmental fields. Inspect them in View.';
+internal\httpapi\biosphere.go:7:	"kriemhild/internal/terrain"
+internal\httpapi\biosphere.go:37:	var e *terrain.Environment
+internal\httpapi\biosphere.go:60:					for index, biome := range terrain.Biomes {
+internal\httpapi\autosave_test.go:38:	created := autoRequest(t, s, "POST", "/api/sessions", `{"options":{"width":24,"height":24,"radius2":2,"seed":12345}}`)
+internal\httpapi\autosave_test.go:41:	autoRequest(t, s, "POST", "/api/sessions/"+id+"/step", `{"count":3}`)
+internal\httpapi\autosave_test.go:45:	autoRequest(t, s, "POST", "/api/sessions/"+id+"/autosave", `{"ui":{"camera2d":{"scale":90},"paused":true},"client":"test","sequence":2}`)
+internal\httpapi\autosave_test.go:47:	autoRequest(t, s, "POST", "/api/sessions/"+id+"/autosave", `{"ui":{"camera2d":{"scale":1}},"client":"test","sequence":1}`)
+internal\httpapi\autosave_test.go:48:	autoRequest(t, s, "POST", "/api/sessions/"+id+"/save", `{}`)
+internal\httpapi\autosave_test.go:51:	autoRequest(t, s, "DELETE", "/api/sessions/"+id, "")
+internal\httpapi\autosave_test.go:87:	autoRequest(t, s, "POST", "/api/sessions/map/cleanup", `{"count":1}`)
+internal\httpapi\autosave_test.go:89:	autoRequest(t, s, "POST", "/api/sessions/map/paint", fmt.Sprintf(`{"cells":[0],"type":%d}`, typeIndex))
+internal\httpapi\autosave_test.go:91:		autoRequest(t, s, "POST", "/api/sessions/map/step", `{"count":10000}`)
+internal\httpapi\autosave_test.go:93:	autoRequest(t, s, "GET", "/api/sessions/map/detail/3/2/1", "")
+internal\httpapi\autosave_test.go:98:	autoRequest(t, s, "POST", "/api/sessions/map/save", `{}`)
+internal\httpapi\autosave_test.go:103:	autoRequest(t, s, "POST", "/api/sessions/map/autosave", `{"ui":{"camera2d":{"scale":140},"offsets":[1,2]}}`)
+internal\httpapi\autosave_test.go:104:	autoRequest(t, s, "POST", "/api/sessions/map/autosave", `{"ui":{"camera2d":{"scale":160}},"merge":true}`)
+internal\httpapi\autosave_test.go:105:	autoRequest(t, s, "POST", "/api/sessions/map/save", `{}`)
+internal\httpapi\autosave_test.go:114:	autoRequest(t, s, "DELETE", "/api/sessions/map", "")
+internal\httpapi\autosave_test.go:165:	created := autoRequest(t, s, "POST", "/api/sessions", `{"options":{"width":24,"height":24,"radius2":2,"seed":12}}`)
+internal\httpapi\autosave_test.go:168:	autoRequest(t, s, "POST", "/api/sessions/"+id+"/save", `{}`)
+internal\httpapi\autosave_test.go:171:	result := autoRequest(t, s, "POST", "/api/sessions/"+id+"/step", `{"count":3}`)
+internal\httpapi\autosave_test.go:173:	s.ServeHTTP(failed, httptest.NewRequest("POST", "/api/sessions/"+id+"/save", bytes.NewBufferString(`{}`)))
+internal\httpapi\autosave_test.go:190:	autoRequest(t, s, "POST", "/api/sessions/"+id+"/view", `{"ui":{}}`)
+internal\httpapi\autosave_test.go:191:	autoRequest(t, s, "POST", "/api/sessions/"+id+"/save", `{}`)
+src\terrain\climate-ui.js:13: if(!data?.available){section.append(element('p',data?.summary||'No stored seasonal climate layer in this terrain.'));return section;}
+internal\httpapi\autosave.go:11:	"kriemhild/internal/terrain"
+internal\httpapi\autosave.go:25:	Solver     terrain.Solver              `json:"solver"`
+internal\httpapi\autosave.go:26:	Config     terrain.Config              `json:"config"`
+internal\httpapi\autosave.go:28:	Base       *terrain.Snapshot           `json:"base"`
+internal\httpapi\autosave.go:30:	Undo       map[string]terrain.Snapshot `json:"undo"`
+internal\httpapi\autosave.go:99:		if err := add("checkpoint", checkpoint{1, terrain.DetailEngineVersion, solver, v.solver.Rules.Config, v.generation, v.base, v.edits, v.undo, v.order}); err != nil {
+internal\httpapi\autosave.go:177:	if c.Version != 1 || c.Engine != terrain.DetailEngineVersion {
+internal\httpapi\autosave.go:184:	solver.Rules, err = terrain.Compile(c.Config)
+internal\httpapi\autosave.go:196:		v.undo = map[string]terrain.Snapshot{}
+internal\httpapi\autosave.go:263:		var state terrain.DetailState
+internal\httpapi\autosave.go:267:		v.detail, err = terrain.RestoreDetailModel(solver.Environment, state)
+internal\httpapi\autosave.go:278:		var tile terrain.DetailTile
+internal\httpapi\autosave.go:285:		if err = terrain.ValidateDetailTile(tile, solver.Environment); err != nil {
+src\terrain\biome-material.js:1:import biomeCatalog from '../../internal/terrain/biomes.json' with {type:'json'};
+internal\httpapi\atlas.go:7:	"kriemhild/internal/terrain"
+internal\httpapi\atlas.go:38:	var env *terrain.Environment
+cmd\biosphere-audit\main.go:9:	"kriemhild/internal/terrain"
+cmd\biosphere-audit\main.go:46:		options, err := terrain.DecodeEnvironment(raw)
+cmd\biosphere-audit\main.go:50:		e := terrain.BuildEnvironment(options)
+internal\httpapi\accounts_test.go:97:		r := httptest.NewRequest(http.MethodPost, "/api/sessions", nil)
+src\terrain\api.js:50:    const response=await fetch(`/api/sessions/${this.id}/project`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ui})});
+internal\httpapi\access_test.go:79:	paths := []struct{ method, path string }{{"GET", "/api/worlds"}, {"GET", "/api/projects"}, {"GET", "/api/worlds/" + d.World.ID}, {"POST", "/api/worlds/" + d.World.ID}, {"DELETE", "/api/worlds/" + d.World.ID}, {"GET", "/api/worlds/" + d.World.ID + "/export"}, {"GET", "/api/worlds/" + d.World.ID + "/members"}, {"GET", "/api/worlds/" + d.World.ID + "/revisions"}, {"GET", "/api/writer/projects/private-writer"}, {"POST", "/api/writer/projects/private-writer/nodes"}, {"GET", "/api/sessions/private-session/world"}, {"DELETE", "/api/sessions/private-session"}, {"GET", "/api/map-context/" + d.World.ID}}
+internal\httpapi\access_test.go:208:	path := "/api/sessions/map/world"
+tests\hydrology-report.test.mjs:3:import {hydrologyReportRows} from '../src/terrain/hydrology-report.js';
+tests\hydrology-report.test.mjs:4:import {fieldColor,overlayLegend} from '../src/terrain/environment-view.js';
+tests\hydrology-report.test.mjs:5:import {drawDetailFeatures} from '../src/terrain/detail-render.js';
+tests\hydrology-report.test.mjs:6:import {builderPreferences} from '../src/builder/preferences.js';
+internal\httpapi\access.go:244:			if r.URL.Path == "/api/sessions/"+id+"/world/state" {
+internal\httpapi\access.go:316:	if strings.HasPrefix(r.URL.Path, "/api/sessions/") && mutating(r) && r.Method != "DELETE" {
+src\project.js:5: const r=await fetch(`/api/sessions/${id}/world${suffix}`,{method:body===undefined?'GET':'POST',headers:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});
+tests\detail-camera.test.mjs:3:import {MapCamera,detailAtScale,smooth} from '../src/terrain/map-camera.js';
+tests\detail-camera.test.mjs:4:import {visibleTiles} from '../src/terrain/detail-tiles.js';
+tests\detail-browser-audit.js:8:  window.fetch=async(...args)=>{const response=await original.fetch.apply(window,args);if(String(args[0])==='/api/sessions')generation++;return response;};
+src\builder\view3d.js:1:import {bindInspectionClick} from '../terrain/inspection-pin.js';
+src\builder\view3d.js:2:import {entityStyle,entityColor} from '../terrain/feature-style.js';
+src\builder\view3d.js:7:import {createView} from '../terrain/view3d.js';
+src\builder\view3d.js:9:import {detailName} from '../terrain/map-camera.js';
+src\builder\preferences.js:1:import {entityStyle} from '../terrain/feature-style.js';
+internal\history\biosphere.go:120:		return fmt.Errorf("habitats are generated from saved terrain; use generation to refresh them")
+internal\history\biosphere.go:163:// lifeforms always win over a regeneration, including one from another terrain.
+src\builder\map.js:1:import {sampleTerrainTile,renderedRiverAt} from '../terrain/terrain-inspection.js';
+src\builder\map.js:2:import {subscribeRiverThickness} from '../terrain/river-display.js';
+src\builder\map.js:3:import {createInspectionPin,bindInspectionClick} from '../terrain/inspection-pin.js';
+src\builder\map.js:4:import {entityStyle,entityColor} from '../terrain/feature-style.js';
+src\builder\map.js:5:import {MapCamera,detailAtScale,detailName} from '../terrain/map-camera.js';
+src\builder\map.js:6:import {DetailTiles} from '../terrain/detail-tiles.js';
+src\builder\map.js:7:import {makeDetailPalette,tileImage,drawDetailFeatures} from '../terrain/detail-render.js';
+src\builder\map.js:8:import {reliefShades} from '../terrain/relief.js';
+internal\biosphere\habitats.go:6:	"kriemhild/internal/terrain"
+internal\biosphere\habitats.go:15:func Habitats(e *terrain.Environment, categories []string, terrainID string) ([]Habitat, string, error) {
+internal\biosphere\habitats.go:25:		E *terrain.Environment
+internal\biosphere\habitats.go:128:		if cover := int(get("authoredCover", i, 0)) - 1; cover >= 0 && cover < len(terrain.Biomes) {
+internal\biosphere\habitats.go:129:			tile = terrain.Biomes[cover].ID
+internal\biosphere\generate_test.go:5:	"kriemhild/internal/terrain"
+internal\biosphere\generate_test.go:11:func fixture() *terrain.Environment {
+internal\biosphere\generate_test.go:13:	e := &terrain.Environment{Options: terrain.EnvironmentOptions{Columns: w, Rows: h, Seed: "biosphere-test"}, Fields: map[string][]float64{}, Mask: make([]int, w*h)}
+internal\biosphere\ecology_test.go:5:	"kriemhild/internal/terrain"
+internal\biosphere\ecology_test.go:53:		for i, b := range terrain.Biomes {
+internal\biosphere\ecology_test.go:244:	e := &terrain.Environment{Options: terrain.EnvironmentOptions{Columns: 5, Rows: 3}, Mask: make([]int, 15), Fields: map[string][]float64{}}
+internal\biosphere\ecology.go:11:// Surface category names come from terrain's append-only biome catalogue. The
+tests\biome-material.test.mjs:3:import {biomeCatalog,biomeColor,biomeName,renderMaterial,coarseMaterial,naturalMaterials} from '../src/terrain/biome-material.js';
+tests\biome-material.test.mjs:4:import {sampleTerrainTile,terrainInspection} from '../src/terrain/terrain-inspection.js';
+tests\biome-material.test.mjs:5:import {DetailTiles} from '../src/terrain/detail-tiles.js';
+tests\biome-browser-audit.js:9: window.fetch=async(...args)=>{const response=await original.apply(window,args);if(String(args[0])==='/api/sessions')state=await response.clone().json();return response};
+tests\biome-browser-audit.js:32:   const response=await original(`/api/sessions/${state.id}/detail/2/${Math.floor(x/8)}/${Math.floor(y/8)}`);
+tests\autosave.test.mjs:3:import {AutosaveQueue} from '../src/terrain/autosave.js';
+tests\auth-fetch.test.mjs:19:      if (input === "/api/sessions")
+tests\auth-fetch.test.mjs:40:    await window.fetch("/api/sessions", { method: "POST" });
+tests\auth-fetch.test.mjs:43:        window.fetch("/api/sessions/map/" + path, { method: "POST" }),
+tests\auth-fetch.test.mjs:50:    const conflict = await window.fetch("/api/sessions/map/paint", {
+tests\builder-browser-audit.js:9: window.fetch=async(...args)=>{if(String(args[0])==='/api/sessions')generations++;const response=await original.fetch(...args);if(String(args[0])==='/api/projects/import'&&response.ok)imported=await response.clone().json();return response;};
+tests\builder-browser-audit.js:14:  const entities=await original.fetch(`/api/sessions/${state.id}/world/entities`).then(r=>r.json());
+tests\builder-browser-audit.js:15:  const tile=state.environment?await original.fetch(`/api/sessions/${state.id}/detail/3/0/0`).then(r=>r.text()):null;
+tests\builder-browser-audit.js:19:  await original.fetch(`/api/sessions/${state.id}`,{method:'DELETE'});
+tests\builder-browser-audit.js:23:  const replay=await original.fetch(`/api/sessions/${imported.id}/world/entities`).then(r=>r.json());
+tests\builder-browser-audit.js:26:  if(tile){const restored=await original.fetch(`/api/sessions/${imported.id}/detail/3/0/0`).then(r=>r.text());assert(tile===restored,'Edited explored tile is identical after deleting the original session');}
+tests\browser-audit.js:17:    if (String(url) === '/api/sessions' && options?.method === 'POST') {
+src\auth\api.js:49:        (url.pathname === "/api/sessions" ||
+tests\climate.test.mjs:3:import {climateSettings,renderClimateDescription,geographicSettings,riverSettings,erosionSettings} from '../src/terrain/climate-ui.js';
+tests\parity.test.mjs:206:  const malformed = await fetch(base + '/api/sessions', { method: 'POST', body: '{' });
+tests\natural-hover.test.mjs:4:import {createNaturalHover,naturalGoodLabel,uniqueGoods} from '../src/terrain/natural-hover.js';
+tests\medieval-map.test.mjs:3:import {renderMedievalMap,riverMetrics,waterGeometry,featureAnchor,wrapPlaceName,illustrationEntities} from '../src/builder/medieval-map-export.js';
+tests\inspection-pin.test.mjs:3:import {bindInspectionClick} from '../src/terrain/inspection-pin.js';
+tests\realism-browser-audit.js:16:  window.fetch=async(...args)=>{const response=await original.fetch.apply(window,args);if(String(args[0])==='/api/sessions')calls.push(await response.clone().json());return response};
+tests\project-restart.test.mjs:26:    const tilePath='/detail/5/12/10';const tile=await fetch(origin+`/api/sessions/${initial.id}`+tilePath).then(r=>r.text());
+tests\project-restart.test.mjs:39:    assert.equal(await fetch(origin+`/api/sessions/${stored.id}`+tilePath).then(r=>r.text()),tile);
+tests\project-restart.test.mjs:41:    const saved=await fetch(origin+`/api/sessions/${initial.id}/project`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ui:{seedUsed:123,camera2d:{center:{x:12,y:10},scale:200}}})});
+tests\project-restart.test.mjs:44:    await fetch(origin+`/api/sessions/${initial.id}`,{method:'DELETE'});await stop();fs.rmSync(databaseDir,{recursive:true,force:true});await launch();
+tests\project-restart.test.mjs:49:    const restoredTile=await fetch(origin+`/api/sessions/${restored.id}`+tilePath).then(r=>r.text());assert.equal(restoredTile,tile);
+tests\project-restart.test.mjs:50:    const missing=await fetch(origin+`/api/sessions/${restored.id}/detail/4/2/2`);assert.equal(missing.status,200);
+tests\project-restart.test.mjs:52:    await fetch(origin+`/api/sessions/${restored.id}`,{method:'DELETE'});
+tests\project-browser-audit.js:8: window.fetch=async(...args)=>{const response=await old.fetch(...args),url=String(args[0]);if(url==='/api/sessions'){created=await response.clone().json();creates++;}if(url==='/api/projects/import')restored=await response.clone().json();return response;};
+tests\project-browser-audit.js:27:  await old.fetch('/api/sessions/'+created.id,{method:'DELETE'});

@@ -1,15 +1,17 @@
 # KRIEMHILD
 
-React frontend and native Go backend for a shared worldbuilding project, preserving the **TerrainGenOnSteroids** generation engine. This project is self-contained; the neighboring source directory is not needed to build or run it.
+React frontend and native Go backend for a shared worldbuilding project. New worlds use the versioned continuous terrain workspace. Older projects open in a read-only archive viewer; the previous editors and generator endpoints have been retired. This project is self-contained; the neighboring source directory is not needed to build or run it.
 
-The opening page is a **Project Hub** with named recent worlds and ZIP/folder import. **World Generation** contains the existing natural-world engine. **World Builder** edits the same world with settlements, roads, buildings, countries, parent/child entities, layers, undo/redo and local non-destructive landscape tools. Switching editors never regenerates the map. See [application architecture and Builder controls](docs/APPLICATION_ARCHITECTURE.md).
+The continuous terrain rebuild is an **in-progress replacement**, with working generation, tiled maps, local authoring and settlement previews. See [implementation and acceptance status](docs/terrain-rebuild/STATUS.md), the [seed gallery](docs/terrain-rebuild/gallery/index.html), and [coast/detail views](docs/terrain-rebuild/gallery/detail.html). The older engine documentation below describes compatibility behavior; it does not imply that every legacy feature has migrated to the new workspace.
+
+The opening page is a **Project Hub** with named recent worlds and ZIP/folder import. Fresh terrain opens the new Generator, Map Builder and Settlement Builder workspace. Existing continuous maps open in the new editor; older maps open in the archive viewer. Switching editors never regenerates the map. See [retirement scope](docs/terrain-rebuild/RETIREMENT.md). Older terrain documentation describes historical formats, not current UI controls.
 
 ## Run
 
-Physical worlds use terrain- and climate-driven drainage, lake water budgets,
+Legacy physical worlds use terrain- and climate-driven drainage, lake water budgets,
 groundwater springs and narrow, blended shore materials. See the
 [hydrology model, validation and compatibility notes](docs/HYDROLOGY.md).
-New physical worlds also infer layered lithology and geological history, then generate causal natural resources. Hover over terrain in either editor to inspect geological context and local or nearby goods. These invisible layers persist in database saves and world ZIPs. See [natural resources and hover queries](docs/NATURAL_RESOURCES.md).
+The legacy engine also stores layered lithology, geological history and natural resources. These records remain available when opening legacy projects; their full continuous-terrain replacement is outstanding. See [natural resources and hover queries](docs/NATURAL_RESOURCES.md) for the legacy contracts.
 
 Install Node.js 22.12+ and Go 1.26+, then run from this folder:
 
@@ -40,33 +42,15 @@ go build -o bin/kriemhild ./cmd/kriemhild
 
 On Windows, use `bin/kriemhild.exe`. Ship the binary with `dist/`; Node.js is only needed for building the frontend. Three.js and Delaunator are bundled locally, so 3D viewing and SVG export work without a CDN.
 
-## Preserved behavior
+## Active implementation
 
-- Dark layout, explorable map canvas, terrain inspection readout, and World / Terrain / Generator / View tabs.
-- Seeded WFC with random/entropy cell selection, neighborhood radii, weights, neighbor boosts, propagation, backtracking, local repairs, stability, and cleanup.
-- Continental kinds, latitude climate bands, editable terrain palettes, presets, browser persistence, JSON import/export.
-- Physical environment: continuous terrain, tectonics, temperature, wind, precipitation, rain shadows, priority-flood drainage, geological and biome suitability, and numerical overlays.
-- Cursor inspection and pinned descriptions, animation, pause/resume, and single stepping.
-- Voronoi/square rendering, terrain textures, landscape/globe 3D, PNG and SVG export.
-- Shortcuts: **G** generate, **Space** pause/resume, **S** step, **C** cleanup, **Ctrl/Cmd+Z** undo.
+Terrain Generator, Map Builder and Settlement Builder use `src/continuous/` and the new
+`internal/terrain` subpackages. The old frontend editors have been removed. The old backend
+package is isolated in `internal/legacyterrain` for saved archive types, validation, queries
+and historical fixture tests. Production terrain and detail generation use only the new pipeline.
 
-New worlds initially use the original terrain-rule engine. Presets compose with both Physical environment and Real-world geology & climate: selecting a preset keeps the switches enabled, and enabling physics keeps the preset selected. Each preset supplies land coverage, latitude, temperature, rainfall, plate activity and relief appropriate to its theme. Terrain weights, neighbor boosts, radius, stability and point count remain effective within environmental constraints. Turning physics off restores the named preset's original palette. Physical mode uses environmental masks instead of legacy adjacency/climate-band weights. Its Points control distributes land/ocean regions; higher counts generally produce smaller landmasses. High land coverage may still join them into a supercontinent.
-
-Physical worlds also generate volcanic arcs, spreading chains, hotspot trails, flooded continental fragments and shelf island clusters. **World / Map / Island groups** controls frequency; **Coastal share** balances coastal and open-ocean groups. The Islands preset produces more archipelagos. See [geological islands and controls](docs/ARCHIPELAGOS.md).
-
-Physical elevation builds broad continental shelves, coastal lowlands, highlands and mountain systems before adding valleys, ridges and individual peaks. Mountain belts vary in width and height, with foothills and supporting terrain around their summits. Active margins and volcanic edifices explicitly permit steeper slopes. Reef development is restricted to coherent suitable regions rather than covering every warm coastline; the same seed reproduces these structures. Extreme elevations use a gradual height limit to avoid identical flat summits. The map shades elevation slopes; 3D uses the numerical elevations directly without the smoothing applied to discrete WFC tiles. **Relief %** adjusts mountain prominence.
-
-Physical lowlands, plateaus and valleys also have continuous elevation. Water is a separate layer: ocean connectivity and basin water balance determine coverage, allowing enclosed dry land below sea level. Lakes have local surface levels and varied bed depths; oceans have shelves, slopes, trenches and submerged peaks. Reef habitat produces fringing, barrier, patch and atoll patterns. The 3D water mesh covers only wet cells. See [continuous terrain and water](docs/CONTINUOUS_TERRAIN.md) for fields, generation and validation.
-
-Physical worlds have a 24,576-cell limit; rules-only worlds allow dimensions up to 256 × 256. All four borders retain the source's ocean constraint, including sphere mode. These are procedural approximations, not a scientific climate simulator. A custom physical palette must retain the required biomes; renaming one preserves its `environmentType` mapping.
-
-## Architecture
-
-Enable **World → Map → Real-world geology & climate** for derived climate zones, explicit rivers, sediment-driven dunes, tectonic volcanoes, and water/fertility-dependent farms and villages. View exposes every underlying field, including wind arrows and climate categories. The switch is saved; switching it off keeps the earlier physical model available. See [the guide audit and implementation](docs/GEOSPATIAL_REALISM.md) for the causal rules, calibration tests and model limits.
-
-`src/App.jsx` supplies routing and shared world context. `src/views/` contains the Project Hub, World Generation and World Builder. `src/terrain/controller.js` mounts and disposes the original generator interactions; `src/builder/` renders the authored world. Rendering stays in the browser; generation and world mutations execute in Go. Client solver helpers only compile palette/display data and calculate hover probabilities; there is no browser generation fallback.
-
-`internal/terrain/` contains the native Go algorithms and embedded default palette. `internal/world/` owns authored entities, spatial indexes, layers, local terrain operations and persistent history. `internal/httpapi/` owns isolated, serialized map sessions and validates API inputs. `internal/storage/` stores complete world projects using embedded SQLite or PostgreSQL. `cmd/kriemhild/` serves the API and built frontend. The backend uses pure-Go database drivers and needs no JavaScript runtime.
+Library, Characters, Writing, Biosphere, Magic & Technology, histories, relationships,
+authentication, collaboration and storage retain their existing implementations.
 
 ## Docker and project database
 
@@ -91,34 +75,17 @@ npm test
 npm run build
 ```
 
-`npm test` builds a separate Go test server. WFC retains exact domain/statistic comparisons against the JavaScript reference; physical generation is checked for determinism, consistent water surfaces and preset composition. Go tests check landmass distribution, mountains, lowland/depth variation, dry/wet basins, drainage and reef habitats. Browser audits exercise modes, presets, overlays, editing and persistence. See [the migration analysis](docs/TERRAINGEN_ANALYSIS.md) for compatibility details.
+`npm test` includes a real Go process restart and continuous ZIP round trip. Go integration
+tests cover both archive formats, World/Age persistence, artwork, API retirement and the
+continuous terrain/settlement pipeline. The historical `internal/legacyterrain` test suite
+is separate; its baseline full run timed out, as recorded in the rebuild status.
 
+Terrain archives imports ZIP files or folders. Continuous maps open in the new editor;
+older maps show saved cells and authored objects. Original terrain fields, explored tiles
+and artwork remain in exported archives. Old WFC controls and the previous illustrated-map
+dialog have been removed.
 
-Physical maps now support hierarchical exploration in 2D and 3D: scroll toward the cursor to reveal deterministic detail, drag to navigate, and use World view to return. Eight refinement bands preserve parent elevations, water bodies and drainage, with World through Maximum detail labels. See [Hierarchical terrain exploration](docs/HIERARCHICAL_DETAIL.md) for the model, controls, API and current limits.
-
-See [Historical Worlds](docs/HISTORICAL_WORLDS.md) for the World/Age hierarchy, timelines, map inheritance, Settlement Builder, and portable historical archives.
-
-Physical terrains also store a seasonal climate layer. Open **World > Map > Climate, seasons & planetary scale** for automatic or custom seasons, optional names and planetary parameters. Pin a map point for its annual summary and seasonal conditions. Climate zones and local season counts are available as overlays. Saved climate profiles survive database restarts, historical Age inheritance and ZIP import without regeneration; see [portable climate data](docs/WORLD_PROJECTS.md#seasonal-climate-model).
-
-Both builders provide **Generate Illustrated Map** for a white-paper medieval illustration. This explicit action saves the complete source map first. The preview offers **Save to World**, **Export SVG**, and **Export PNG** (up to 8,192 pixels). Saved artwork is an independent snapshot included in map and historical World ZIPs; see [illustrated maps](docs/ILLUSTRATED_MAPS.md).
-
-
-New physical worlds use `organic-spines-1`: seeded curved and branching variable-width crustal spines, rift cuts, shelf fragments, hooked peninsulas, crescents and enclosed basins. Plate settings guide formation and orientation; separate large, medium and fine domain warps deform entire structures. **World > Map > Continental and island shapes** exposes each deformation strength (0-3). Relative spine distance retains narrow cores during land-coverage adjustment, while resolved submerged sutures separate overlapping crustal bodies. Existing shelf, elevation, erosion and hydrology stages build the actual terrain and decide whether enclosed depressions contain water. This is a procedural geological approximation, not a tectonic time simulation.
-
-The model records source plate provenance, original and placed coordinates, spines/cuts, deformation parameters and stable IDs. New island foundations carry their own shapes. Database and ZIP restores load that geometry and the final elevation unchanged; older worlds without the optional records remain supported. Generate a new terrain to use the new shapes.
-
-[Open the nine-seed silhouette gallery](docs/landshape-gallery/index.html) and [shape diagnostics](docs/landshape-gallery/metrics.json). Reproduce it with `go run ./cmd/landshape-gallery`; use `-out`, `-seeds`, `-width` and `-height` for another comparison. All panels run the full terrain/hydrology pipeline at identical settings. Tests measure aspect ratio, hull concavity, coastline complexity, bay depth, component sizes, zero-noise structural topology, determinism and cold database/ZIP restoration. Diagnostics are in simulation cells; they do not imply equal physical cell sizes across latitudes.
-
-River routing favors established downhill collecting valleys, and channel selection completes supplied tributaries before adding independent coastal streams. Delta and braid eligibility accounts for geographic distance, so a gentle planetary floodplain is not mistaken for a steep slope merely because its grid cells are large. Significant tributaries remain visible with their continental trunk; saved braided channels appear when their separation becomes resolvable. Continental shape generation is unchanged.
-
-New river networks store narrow physical source widths and widen through their first catchment and downstream confluences. Geological width variation is shared within each watershed, and receiving channels accommodate their combined tributaries. The same saved profiles drive terrain channels, map rendering and illustrated export. Existing saved worlds retain their stored river networks and explored detail; generate a new terrain for these generation changes. Regression coverage includes organic-continent network length and junctions, downhill flow, split/rejoin budgets, physical width profiles, and database/ZIP restoration.
-
-Generator inspection uses the same physical material classification as terrain rendering, including refined tiles and visible river channels. Geographic coordinates and nearby-resource distances use the saved planetary radius and geographic extent, accounting for latitude and longitude wrapping; search radii are in kilometers. Unscaled legacy maps explicitly retain cell units. Click to pin a description, then move outside the map to read it.
-
-The Time Graph inspector can delete its selected Age, including that Age's maps and logical entities. Other Ages retain their independent snapshots. Linear neighbors reconnect, empty timelines disappear, and a World always retains at least one Age. Deletion is persisted and respected by portable World exports.
-
-New terrain uses the seasonal climate water balance to determine deserts: annual rainfall below one quarter of modeled evaporative demand, excluding polar/tundra climates. Rendering, hover inspection, terrain selection and inland dune eligibility consume the same persisted suitability field. Noise does not independently create desert patches. Lake-generating depressions use kilometer-scale radii, and open-water evaporation responds to dry air and wind; lake water levels, footprints and outlets still follow terrain and catchment supply. Existing saved terrain is restored without regenerating its basins.
-
+See [Historical Worlds](docs/HISTORICAL_WORLDS.md) for the retained World/Age hierarchy.
 
 Biosphere provides habitat-based ecological generation and editing, with guided previews,
 reference and fictional lifeforms, biological rules, Age-independent histories and World

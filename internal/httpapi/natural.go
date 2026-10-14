@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"kriemhild/internal/terrain"
+	"kriemhild/internal/legacyterrain"
 )
 
 func (s *Server) worldNatural(w http.ResponseWriter, r *http.Request) {

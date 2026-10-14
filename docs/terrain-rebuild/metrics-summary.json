@@ -1,0 +1,16 @@
+{
+  "seeds": 50,
+  "images": 450,
+  "defaultSeeds": 35,
+  "threeOrMore": 33,
+  "medianLand": 0.2551744305893074,
+  "medianDesert": 0.10467020694760316,
+  "medianSteppe": 0.19512619922607066,
+  "medianGenerationMs": 3552.3925,
+  "minimumContinents": 2,
+  "maximumContinents": 6,
+  "maximumMoistureBudgetRelativeError": 6.939098105501594e-13,
+  "medianLongestRiverKm": 3188.363271691734,
+  "medianMacroCoastLengthKm": 291635.42359163583,
+  "medianLakeCoverage": 0.036999608559001106
+}

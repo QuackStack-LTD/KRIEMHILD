@@ -3,7 +3,7 @@ package world
 import (
 	"bytes"
 	"fmt"
-	"kriemhild/internal/terrain"
+	"kriemhild/internal/legacyterrain"
 	"math"
 	"sort"
 )

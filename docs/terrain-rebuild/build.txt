@@ -1,0 +1,42 @@
+
+> kriemhild@1.0.0 build
+> vite build
+
+vite v7.3.7 building client environment for production...
+transforming...
+✓ 439 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                 0.52 kB │ gzip:   0.31 kB
+dist/assets/TerrainApp-BYnAC0no.css             1.02 kB │ gzip:   0.45 kB
+dist/assets/SystemDesigner-D4yhqrXK.css         2.94 kB │ gzip:   1.01 kB
+dist/assets/Library-u0dlh4IA.css                3.55 kB │ gzip:   1.18 kB
+dist/assets/biosphere-CGEx-e_9.css              3.55 kB │ gzip:   1.19 kB
+dist/assets/Studio-Bj6FgjXd.css                 5.68 kB │ gzip:   1.89 kB
+dist/assets/Writing-9O-dAFPg.css                8.76 kB │ gzip:   2.30 kB
+dist/assets/index-B0HzkUOh.css                 59.38 kB │ gzip:  13.31 kB
+dist/assets/vendor-runtime-CqkleIqs.js          0.12 kB │ gzip:   0.13 kB
+dist/assets/svgexport-DnKMc0YR.js               2.21 kB │ gzip:   1.29 kB
+dist/assets/TerrainRouter-D7IxXw4E.js           2.67 kB │ gzip:   1.31 kB
+dist/assets/Terrain3D-CuD-hIvf.js               3.70 kB │ gzip:   2.00 kB
+dist/assets/view3d-Bz30-5HM.js                  5.88 kB │ gzip:   2.83 kB
+dist/assets/vendor-geometry-BF5EMCuN.js         7.52 kB │ gzip:   2.97 kB
+dist/assets/vendor-archives-D_J1AtNE.js        12.50 kB │ gzip:   6.12 kB
+dist/assets/LifeformProfile-jsSL7A1J.js        12.98 kB │ gzip:   3.81 kB
+dist/assets/view3d-B5s-grii.js                 15.10 kB │ gzip:   6.57 kB
+dist/assets/biosphere-CihU0eXp.js              15.34 kB │ gzip:   4.88 kB
+dist/assets/Biosphere-CDwFZPwG.js              21.74 kB │ gzip:   7.25 kB
+dist/assets/SystemDesigner-Dix_VtTf.js         26.34 kB │ gzip:   8.45 kB
+dist/assets/Studio-D0SPYi4l.js                 29.57 kB │ gzip:  10.31 kB
+dist/assets/Library-H12g55Tb.js                41.93 kB │ gzip:  13.23 kB
+dist/assets/Writing-CcAMcsvq.js                54.98 kB │ gzip:  17.72 kB
+dist/assets/vendor-collaboration-Cj4tj27j.js  110.01 kB │ gzip:  34.76 kB
+dist/assets/index-DG2T0i3O.js                 188.43 kB │ gzip:  51.27 kB
+dist/assets/vendor-react-F7BGGuOQ.js          194.38 kB │ gzip:  61.13 kB
+dist/assets/vendor-prosemirror-CK_HP5vy.js    218.10 kB │ gzip:  67.58 kB
+dist/assets/TerrainApp-BWAqPyDo.js            218.99 kB │ gzip:  76.07 kB
+dist/assets/vendor-editor-2PmefJOZ.js         246.93 kB │ gzip:  80.35 kB
+dist/assets/vendor-pdf-z3ZsLBKw.js            437.87 kB │ gzip: 181.22 kB
+dist/assets/vendor-spreadsheets-YQ4lDkt_.js   499.54 kB │ gzip: 162.96 kB
+dist/assets/vendor-three-DHuaC8rY.js          515.35 kB │ gzip: 129.87 kB
+✓ built in 11.16s

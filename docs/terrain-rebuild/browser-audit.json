@@ -1,0 +1,28 @@
+{
+  "date": "2026-10-14",
+  "tool": "T3 Code collaborative preview",
+  "finalServer": "http://127.0.0.1:8137",
+  "database": ".tools/rebuild-release-audit",
+  "checks": {
+    "generatePreview": "passed",
+    "acceptIntoWorldAge": "passed",
+    "saveAndReopen": "passed",
+    "globeAndRegionalCanvas": "1214x631; no reported WebGL errors",
+    "svgExport": "1024 pixels wide, parsed XML, 8 embedded terrain images, 448424 bytes",
+    "pngExport": "decoded 1024x512, 421444 bytes",
+    "pdfExport": "%PDF- header, 306617 bytes; not independently rasterized",
+    "applicationErrors": [],
+    "screenshots": "unverified: T3 preview_snapshot automation error"
+  },
+  "earlierBrowserChecks": {
+    "settlementAcceptance": "111 stable entities saved",
+    "localRaiseAndUndo": "300m bed change and exact reversal",
+    "tileCache": "985.5ms cold; 3.1ms warm, measured during gallery work"
+  },
+  "limits": [
+    "Not a complete keyboard, failure or accessibility audit",
+    "No successful application screenshot capture",
+    "Not tested against PostgreSQL",
+    "No like-for-like performance comparison with the legacy engine"
+  ]
+}

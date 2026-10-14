@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"kriemhild/internal/legacyterrain"
 	"kriemhild/internal/storage"
-	"kriemhild/internal/terrain"
 	"kriemhild/internal/world"
 	"net/http/httptest"
 	"reflect"
@@ -26,7 +26,7 @@ func TestBuilderPersistenceLocalInvalidationAndPortableArchive(t *testing.T) {
 		t.Fatal(err)
 	}
 	before, _ := json.Marshal(v.solver)
-	base, err := v.storedDetail(2, 1, 1)
+	base, err := v.fixtureDetail(2, 1, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,6 +55,9 @@ func TestBuilderPersistenceLocalInvalidationAndPortableArchive(t *testing.T) {
 	if b.Points[at].Elevation >= a.Points[at].Elevation-99 {
 		t.Fatal("crater not excavated")
 	}
+	if _, err := v.fixtureDetail(2, 5, 3); err != nil {
+		t.Fatal(err)
+	}
 	far, err := v.composedDetail(2, 5, 3)
 	if err != nil {
 		t.Fatal(err)
@@ -63,7 +66,7 @@ func TestBuilderPersistenceLocalInvalidationAndPortableArchive(t *testing.T) {
 	if v.composed["2/1/1"] != nil || !bytes.Equal(v.composed["2/5/3"], far) {
 		t.Fatal("local edit invalidated incorrect tiles")
 	}
-	unchanged, _ := v.storedDetail(2, 1, 1)
+	unchanged, _ := v.fixtureDetail(2, 1, 1)
 	after, _ := json.Marshal(v.solver)
 	if !bytes.Equal(base, unchanged) || !bytes.Equal(before, after) {
 		t.Fatal("Builder mutated generated base/solver")

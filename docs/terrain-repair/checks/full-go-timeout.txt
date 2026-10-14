@@ -1,0 +1,63 @@
+?   	kriemhild/cmd/biosphere-audit	[no test files]
+?   	kriemhild/cmd/continuous-gallery	[no test files]
+?   	kriemhild/cmd/continuous-zoom-gallery	[no test files]
+?   	kriemhild/cmd/kriemhild	[no test files]
+?   	kriemhild/cmd/terrain-audit	[no test files]
+ok  	kriemhild/internal/auth	3.920s
+ok  	kriemhild/internal/biosphere	13.521s
+ok  	kriemhild/internal/history	1.593s
+ok  	kriemhild/internal/httpapi	154.831s
+panic: test timed out after 10m0s
+	running tests:
+		TestPhysicalMountainRanges (2s)
+
+goroutine 107 [running]:
+testing.(*M).startAlarm.func1()
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2959 +0x34a
+created by time.goFunc
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/time/sleep.go:182 +0x2d
+
+goroutine 1 [chan receive]:
+testing.(*T).Run(0x38395cb3e000, {0x7ff6fc47e1f8?, 0x38395c9bfaa8?}, 0x7ff6fc6d14d8)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2266 +0x4d2
+testing.runTests.func1(0x38395cb3e000)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2742 +0x37
+testing.tRunner(0x38395cb3e000, 0x38395c9bfbc8)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2193 +0xc3
+testing.runTests({0x7ff6fc47579e, 0x9}, {0x7ff6fc4815d4, 0x20}, 0x38395cb08030, {0x7ff6fc6fa150, 0x63, 0x63}, {0xc2ac07acf55fff34, 0x8bb66ee53d, ...})
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2740 +0x505
+testing.(*M).Run(0x38395cb32000)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2600 +0x6af
+main.main()
+	_testmain.go:242 +0x9b
+
+goroutine 106 [runnable]:
+kriemhild/internal/legacyterrain.(*Environment).simulateHydrology.func4(0x1165)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/internal/legacyterrain/hydrology_routing.go:266 +0x85
+kriemhild/internal/legacyterrain.(*Environment).routeWatersheds(0x38395d9f0dc8, {0x38395e590000, 0x3e80, 0x3e80}, 0x38395c9bf538)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/internal/legacyterrain/hydrology_mfd.go:76 +0xafd
+kriemhild/internal/legacyterrain.(*Environment).simulateHydrology(0x38395d9f0dc8)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/internal/legacyterrain/hydrology_routing.go:266 +0x3148
+kriemhild/internal/legacyterrain.(*Environment).hydrology(...)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/internal/legacyterrain/environment.go:410
+kriemhild/internal/legacyterrain.BuildEnvironmentObserved({0x0, 0x0, {0x7ff6fc4752fe, 0x8}, 0x0, 0x38395d9792c0, 0x0, 0x0, 0x0, 0x3ff0000000000000, ...}, ...)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/internal/legacyterrain/environment.go:387 +0x24cd
+kriemhild/internal/legacyterrain.BuildEnvironment(...)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/internal/legacyterrain/environment.go:203
+kriemhild/internal/legacyterrain.TestPhysicalMountainRanges(0x38395da1c000)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/internal/legacyterrain/mountains_test.go:55 +0x35a
+testing.tRunner(0x38395da1c000, 0x7ff6fc6d14d8)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2193 +0xc3
+created by testing.(*T).Run in goroutine 1
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2258 +0x4b4
+FAIL	kriemhild/internal/legacyterrain	601.497s
+ok  	kriemhild/internal/settlements	7.495s
+ok  	kriemhild/internal/storage	6.397s
+ok  	kriemhild/internal/terrain/detail	0.665s
+ok  	kriemhild/internal/terrain/generate	40.891s
+?   	kriemhild/internal/terrain/landmass	[no test files]
+?   	kriemhild/internal/terrain/model	[no test files]
+?   	kriemhild/internal/terrain/tectonics	[no test files]
+ok  	kriemhild/internal/terrain/tiles	18.277s
+ok  	kriemhild/internal/world	1.319s
+FAIL

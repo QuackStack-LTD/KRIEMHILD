@@ -1,0 +1,37 @@
+
+> kriemhild@1.0.0 build
+> vite build
+
+vite v7.3.7 building client environment for production...
+transforming...
+✓ 386 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                 0.52 kB │ gzip:   0.31 kB
+dist/assets/SystemDesigner-D4yhqrXK.css         2.94 kB │ gzip:   1.01 kB
+dist/assets/Library-u0dlh4IA.css                3.55 kB │ gzip:   1.18 kB
+dist/assets/biosphere-CGEx-e_9.css              3.55 kB │ gzip:   1.19 kB
+dist/assets/Studio-Bj6FgjXd.css                 5.68 kB │ gzip:   1.89 kB
+dist/assets/Writing-9O-dAFPg.css                8.76 kB │ gzip:   2.30 kB
+dist/assets/index-C3nbivlp.css                 44.96 kB │ gzip:  10.85 kB
+dist/assets/vendor-runtime-CqkleIqs.js          0.12 kB │ gzip:   0.13 kB
+dist/assets/TerrainRouter-DhRzpiP6.js           2.72 kB │ gzip:   1.34 kB
+dist/assets/Terrain3D-CXvORLrk.js               3.70 kB │ gzip:   2.00 kB
+dist/assets/ArchivedTerrain-BiVLFewW.js         4.81 kB │ gzip:   2.19 kB
+dist/assets/vendor-archives-D_J1AtNE.js        12.50 kB │ gzip:   6.12 kB
+dist/assets/LifeformProfile-DPO_1Lfj.js        12.98 kB │ gzip:   3.81 kB
+dist/assets/biosphere-BEeRiKB_.js              15.34 kB │ gzip:   4.88 kB
+dist/assets/Biosphere-SiRO2q82.js              21.74 kB │ gzip:   7.24 kB
+dist/assets/SystemDesigner-BTgo3sca.js         26.34 kB │ gzip:   8.45 kB
+dist/assets/Studio-BNJysmGf.js                 29.57 kB │ gzip:  10.30 kB
+dist/assets/Library-BVW7eNRg.js                41.93 kB │ gzip:  13.23 kB
+dist/assets/Writing-Cb44Or2y.js                54.98 kB │ gzip:  17.72 kB
+dist/assets/vendor-collaboration-Cj4tj27j.js  110.01 kB │ gzip:  34.76 kB
+dist/assets/index-ChLr1Fkr.js                 188.43 kB │ gzip:  51.27 kB
+dist/assets/vendor-react-F7BGGuOQ.js          194.38 kB │ gzip:  61.13 kB
+dist/assets/vendor-prosemirror-CK_HP5vy.js    218.10 kB │ gzip:  67.58 kB
+dist/assets/vendor-editor-2PmefJOZ.js         246.93 kB │ gzip:  80.35 kB
+dist/assets/vendor-pdf-z3ZsLBKw.js            437.87 kB │ gzip: 181.22 kB
+dist/assets/vendor-three-BM7gQpiw.js          484.65 kB │ gzip: 121.12 kB
+dist/assets/vendor-spreadsheets-YQ4lDkt_.js   499.54 kB │ gzip: 162.96 kB
+✓ built in 13.40s

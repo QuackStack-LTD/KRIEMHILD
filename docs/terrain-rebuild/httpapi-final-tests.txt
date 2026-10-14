@@ -1,0 +1,50 @@
+2026/10/14 16:09:16 WARN request_rejected class=api method=GET status=401
+2026/10/14 16:09:16 WARN request_rejected class=api method=GET status=401
+2026/10/14 16:09:16 WARN request_rejected class=api method=GET status=401
+2026/10/14 16:09:16 WARN request_rejected class=api method=GET status=404
+2026/10/14 16:09:16 WARN request_rejected class=api method=POST status=401
+2026/10/14 16:09:16 WARN request_rejected class=api method=POST status=404
+2026/10/14 16:09:16 WARN request_rejected class=api method=DELETE status=401
+2026/10/14 16:09:16 WARN request_rejected class=api method=DELETE status=404
+2026/10/14 16:09:16 WARN request_rejected class=api method=GET status=401
+2026/10/14 16:09:16 WARN request_rejected class=api method=GET status=404
+2026/10/14 16:09:16 WARN request_rejected class=api method=GET status=401
+2026/10/14 16:09:16 WARN request_rejected class=api method=GET status=404
+2026/10/14 16:09:16 WARN request_rejected class=api method=GET status=401
+2026/10/14 16:09:16 WARN request_rejected class=api method=GET status=404
+2026/10/14 16:09:16 WARN request_rejected class=api method=GET status=401
+2026/10/14 16:09:16 WARN request_rejected class=api method=GET status=404
+2026/10/14 16:09:16 WARN request_rejected class=api method=POST status=401
+2026/10/14 16:09:16 WARN request_rejected class=api method=POST status=404
+2026/10/14 16:09:16 WARN request_rejected class=api method=GET status=401
+2026/10/14 16:09:16 WARN request_rejected class=api method=GET status=404
+2026/10/14 16:09:16 WARN request_rejected class=api method=DELETE status=401
+2026/10/14 16:09:16 WARN request_rejected class=api method=DELETE status=404
+2026/10/14 16:09:16 WARN request_rejected class=api method=GET status=401
+2026/10/14 16:09:16 WARN request_rejected class=api method=GET status=404
+2026/10/14 16:09:16 WARN request_rejected class=api method=POST status=403
+2026/10/14 16:09:16 WARN request_rejected class=api method=POST status=404
+2026/10/14 16:09:17 WARN request_rejected class=api method=POST status=403
+2026/10/14 16:09:17 WARN request_rejected class=api method=POST status=403
+2026/10/14 16:09:17 WARN request_rejected class=generation method=POST status=403
+2026/10/14 16:09:17 WARN request_rejected class=invitations method=POST status=403
+2026/10/14 16:09:17 WARN request_rejected class=api method=POST status=409
+2026/10/14 16:09:17 WARN request_rejected class=api method=DELETE status=403
+2026/10/14 16:09:17 WARN request_rejected class=api method=GET status=404
+2026/10/14 16:09:17 WARN request_rejected class=api method=POST status=409
+2026/10/14 16:09:18 WARN request_rejected class=api method=GET status=401
+2026/10/14 16:09:18 WARN request_rejected class=api method=GET status=401
+2026/10/14 16:09:18 WARN request_rejected class=invitations method=GET status=401
+2026/10/14 16:09:18 WARN request_rejected class=api method=GET status=403
+2026/10/14 16:09:18 WARN request_rejected class=invitations method=GET status=403
+2026/10/14 16:09:18 WARN request_rejected class=api method=DELETE status=409
+2026/10/14 16:09:18 WARN request_rejected class=api method=GET status=401
+2026/10/14 16:09:18 WARN request_rejected class=invitations method=POST status=400
+2026/10/14 16:09:18 WARN request_rejected class=api method=POST status=401
+--- FAIL: TestNaturalLayersZIPAndDatabaseColdRestoration (0.95s)
+    natural_test.go:37: missing versioned layer references { 0x3b35bd4a4000 <nil> natural/geology.json natural/resources.json KRIEMHILD World Project 4 kriemhild-detail-2 42d772ff87d662b0999b287d587ea0f4 48 32 true parent-grid x east, y south; globe longitude=360*x/(width-1), colatitude=180*y/(height-1) metres; local water surfaces stored explicitly float64 little-endian, field-major then row-major; edge chunks clipped to dimensions {
+            "seed": "portable-world"
+          } [accumulation annualPET aridity aridityIndex ash baseflow basin bathymetry beach biome boundary caprock catchmentArea catchmentKM2 channelWidthFactor clarity climate climateActualET climateDryYield climateSnowmelt climateWaterYield coastType coastalSediment continentalOwner continentalShape convergence crustAge crustThickness crustType cultivated current currentX currentY deposition desert dischargeM3s drainageBreach drainageDistance drainageDistanceKM drainageElevation droughtMonths dryDischarge dryRunoff dune duneField duneOrientation elevation erosion evapotranspiration extension farmland fertility flow fluvialDeposition fluvialIncision freshwaterDistance geology geothermal glacier glacierMelt groundFlow groundwater growingMonths growingSeason highland hillslopeAreaKM2 hillslopeRunoff hotspot hydroLoss islandGroup lake landform latitude lava layering light lithology mesa moisture moistureRecycling moistureSupply mountainCore oasis ocean oceanDistance oceanReserve paleochannel permeability plate precipitation rainShadow rainfallPotential recharge reef reefType river riverClass riverSystem rockType runoff salinity sandSupply sandTransport seamount sediment sedimentTransport settlement shelf slope snow snowBalance snowmelt soilWater spring steppe streamOrder substrate summer summerRain tectonicStress temperature terminalBasin valleyWidthKM vegetation vent village volcano waterBody waterDepth waterLevel waterTableDepth watershed wetland windStrength windX windY winter winterRain] 32 [{base/solver.json 7e397e590b1fd67267a06e362c70d2b53b1ad3ed8f3f019c982645f9b19cc5ff 31131} {base/config.json 4daefd2dc7294254f39bc4e88d04f8180d864918f8f14cb054063b40ef29fa4a 10438} {edits/world.json fb793280cbf674943a8271d82ae1576251c0801da0067335a50e5d465151db5b 11475} {world/project.json f27912067c061a92d561609fddd2e1bd4be3d07bff59c9b57b0a73de1769ece5 1049} {view/builder.json 5640b560e336b96a0786ae65e3ad41f04bb16e21196a8e9ef0be8e645e364b39 70} {climate/base/metadata.json ec82b49fb2d6b53770995f73fb1bbb502e7eb93dfbbd0c7622656cf741d9360a 17296} {climate/base/cells/0/0.json 542e32af118ae57465941f9ddc1483a571cc661b96634ee3422a5d85c163c9eb 3719544} {climate/base/cells/1/0.json ffb7dc1dc28dcf9a06575d4c3ddf15334da75fb30cde263697bf6f0d6eb52117 1854660} {natural/geology.json d3d4e06e06027c19e40096cba8358aaa1a89e81e9df28fd69c020ac0889a93ff 548552} {natural/resources.json 1ffb4f50336c296d7eb2b8d48fc3e59ac8a37853738ff28683a039af0484b58e 1612391} {base/environment.json fd3e506635dab999330ac1bd63cb7a217974ade874c496f725ba0f917eb4f5ab 200682} {base/fields/0/0.f64 5db693e0e3625ca9d081782777aac02395f3d6a78e5959bd0da22108bc5259ac 1130496} {base/fields/1/0.f64 20c03e0fa1b1bd95902fd385f2c4e0f93fe6bc6e66847bc795c982cd7824c561 565248} {detail/model.json 8d5d72c4b52b13cf12f3f54922166eea382cd5d84a8e15339f27b9ad36c2caf8 156421}] [{base/0/0 world base 0 0 0 base/fields/0/0.f64} {base/1/0 world base 0 1 0 base/fields/1/0.f64}]}
+FAIL
+FAIL	kriemhild/internal/httpapi	110.963s
+FAIL

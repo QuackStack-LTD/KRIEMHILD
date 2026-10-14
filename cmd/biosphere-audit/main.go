@@ -6,7 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"kriemhild/internal/biosphere"
-	"kriemhild/internal/terrain"
+	"kriemhild/internal/legacyterrain"
 	"os"
 	"path/filepath"
 	"strings"

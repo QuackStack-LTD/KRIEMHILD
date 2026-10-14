@@ -35,20 +35,20 @@ func TestExplicitSaveResumesExactUnfinishedSolverAfterRestart(t *testing.T) {
 		t.Fatal(err)
 	}
 	s := NewWithOptions(t.TempDir(), Options{Projects: db, CacheDir: t.TempDir()})
-	created := autoRequest(t, s, "POST", "/api/sessions", `{"options":{"width":24,"height":24,"radius2":2,"seed":12345}}`)
+	created := legacyFixtureRequest(t, s, "POST", "/api/sessions", `{"options":{"width":24,"height":24,"radius2":2,"seed":12345}}`)
 	id := created["id"].(string)
 	v := s.sessions[id]
-	autoRequest(t, s, "POST", "/api/sessions/"+id+"/step", `{"count":3}`)
+	legacyFixtureRequest(t, s, "POST", "/api/sessions/"+id+"/step", `{"count":3}`)
 	if v.solver.Status != "running" {
 		t.Fatal("fixture must be unfinished")
 	}
-	autoRequest(t, s, "POST", "/api/sessions/"+id+"/autosave", `{"ui":{"camera2d":{"scale":90},"paused":true},"client":"test","sequence":2}`)
+	legacyFixtureRequest(t, s, "POST", "/api/sessions/"+id+"/autosave", `{"ui":{"camera2d":{"scale":90},"paused":true},"client":"test","sequence":2}`)
 	// A delayed page request must not overwrite the last camera state.
-	autoRequest(t, s, "POST", "/api/sessions/"+id+"/autosave", `{"ui":{"camera2d":{"scale":1}},"client":"test","sequence":1}`)
-	autoRequest(t, s, "POST", "/api/sessions/"+id+"/save", `{}`)
+	legacyFixtureRequest(t, s, "POST", "/api/sessions/"+id+"/autosave", `{"ui":{"camera2d":{"scale":1}},"client":"test","sequence":1}`)
+	legacyFixtureRequest(t, s, "POST", "/api/sessions/"+id+"/save", `{}`)
 	before, _ := json.Marshal(v.solver)
 	world := v.worldID
-	autoRequest(t, s, "DELETE", "/api/sessions/"+id, "")
+	legacyFixtureRequest(t, s, "DELETE", "/api/sessions/"+id, "")
 	db.Close()
 	db, err = storage.Open(context.Background(), dir, "")
 	if err != nil {
@@ -56,7 +56,7 @@ func TestExplicitSaveResumesExactUnfinishedSolverAfterRestart(t *testing.T) {
 	}
 	defer db.Close()
 	fresh := NewWithOptions(t.TempDir(), Options{Projects: db, CacheDir: t.TempDir()})
-	opened := autoRequest(t, fresh, "POST", "/api/projects/"+world+"/open", `{}`)
+	opened := legacyFixtureRequest(t, fresh, "POST", "/api/projects/"+world+"/open", `{}`)
 	restored := fresh.sessions[opened["id"].(string)]
 	after, _ := json.Marshal(restored.solver)
 	if !bytes.Equal(before, after) {
@@ -84,25 +84,25 @@ func TestExplicitSaveExplorationAndEditsWithoutExport(t *testing.T) {
 	v := projectFixture(t)
 	s.sessions["map"] = v
 	// The fixture predates the database; first action establishes its checkpoint.
-	autoRequest(t, s, "POST", "/api/sessions/map/cleanup", `{"count":1}`)
+	legacyFixtureRequest(t, s, "POST", "/api/sessions/map/cleanup", `{"count":1}`)
 	typeIndex := v.solver.TypeAt(0)
-	autoRequest(t, s, "POST", "/api/sessions/map/paint", fmt.Sprintf(`{"cells":[0],"type":%d}`, typeIndex))
+	legacyFixtureRequest(t, s, "POST", "/api/sessions/map/paint", fmt.Sprintf(`{"cells":[0],"type":%d}`, typeIndex))
 	for v.solver.Status == "running" {
-		autoRequest(t, s, "POST", "/api/sessions/map/step", `{"count":10000}`)
+		legacyFixtureRequest(t, s, "POST", "/api/sessions/map/step", `{"count":10000}`)
 	}
-	autoRequest(t, s, "GET", "/api/sessions/map/detail/3/2/1", "")
-	tile, err := v.storedDetail(3, 2, 1)
+	legacyFixtureRequest(t, s, "GET", "/api/sessions/map/detail/3/2/1", "")
+	tile, err := v.fixtureDetail(3, 2, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	autoRequest(t, s, "POST", "/api/sessions/map/save", `{}`)
+	legacyFixtureRequest(t, s, "POST", "/api/sessions/map/save", `{}`)
 	partsBefore, err := db.LoadParts(context.Background(), v.worldID)
 	if err != nil {
 		t.Fatal(err)
 	}
-	autoRequest(t, s, "POST", "/api/sessions/map/autosave", `{"ui":{"camera2d":{"scale":140},"offsets":[1,2]}}`)
-	autoRequest(t, s, "POST", "/api/sessions/map/autosave", `{"ui":{"camera2d":{"scale":160}},"merge":true}`)
-	autoRequest(t, s, "POST", "/api/sessions/map/save", `{}`)
+	legacyFixtureRequest(t, s, "POST", "/api/sessions/map/autosave", `{"ui":{"camera2d":{"scale":140},"offsets":[1,2]}}`)
+	legacyFixtureRequest(t, s, "POST", "/api/sessions/map/autosave", `{"ui":{"camera2d":{"scale":160}},"merge":true}`)
+	legacyFixtureRequest(t, s, "POST", "/api/sessions/map/save", `{}`)
 	partsAfter, _ := db.LoadParts(context.Background(), v.worldID)
 	for _, key := range []string{"checkpoint", "environment", "tile/3/2/1"} {
 		if !bytes.Equal(partsBefore[key], partsAfter[key]) {
@@ -111,17 +111,17 @@ func TestExplicitSaveExplorationAndEditsWithoutExport(t *testing.T) {
 	}
 	original := v.solver.Snapshot()
 	world := v.worldID
-	autoRequest(t, s, "DELETE", "/api/sessions/map", "")
+	legacyFixtureRequest(t, s, "DELETE", "/api/sessions/map", "")
 	if _, err = os.Stat(v.dir); !os.IsNotExist(err) {
 		t.Fatal("cache survived")
 	}
 	fresh := NewWithOptions(t.TempDir(), Options{Projects: db, CacheDir: t.TempDir()})
-	opened := autoRequest(t, fresh, "POST", "/api/projects/"+world+"/open", `{}`)
+	opened := legacyFixtureRequest(t, fresh, "POST", "/api/projects/"+world+"/open", `{}`)
 	restored := fresh.sessions[opened["id"].(string)]
 	if !reflect.DeepEqual(restored.solver.Snapshot(), original) {
 		t.Fatal("edited world changed")
 	}
-	got, err := restored.storedDetail(3, 2, 1)
+	got, err := restored.fixtureDetail(3, 2, 1)
 	if err != nil || !bytes.Equal(tile, got) {
 		t.Fatal("explored tile regenerated", err)
 	}
@@ -141,12 +141,12 @@ func TestExplicitSaveExplorationAndEditsWithoutExport(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	got, err = imported.storedDetail(3, 2, 1)
+	got, err = imported.fixtureDetail(3, 2, 1)
 	if err != nil || !bytes.Equal(tile, got) {
 		t.Fatal("autosaved detail missing from ZIP", err)
 	}
 	// Importing a backup of an active world must retire all stale writers.
-	autoRequest(t, fresh, "POST", "/api/projects/import", string(archive))
+	legacyFixtureRequest(t, fresh, "POST", "/api/projects/import", string(archive))
 	if !restored.retired {
 		t.Fatal("import left competing world session active")
 	}
@@ -162,13 +162,13 @@ func TestExplicitSaveFailureRetainsDirtyCheckpointForRetry(t *testing.T) {
 		t.Fatal(err)
 	}
 	s := NewWithOptions(t.TempDir(), Options{Projects: db, CacheDir: t.TempDir()})
-	created := autoRequest(t, s, "POST", "/api/sessions", `{"options":{"width":24,"height":24,"radius2":2,"seed":12}}`)
+	created := legacyFixtureRequest(t, s, "POST", "/api/sessions", `{"options":{"width":24,"height":24,"radius2":2,"seed":12}}`)
 	id := created["id"].(string)
 	v := s.sessions[id]
-	autoRequest(t, s, "POST", "/api/sessions/"+id+"/save", `{}`)
+	legacyFixtureRequest(t, s, "POST", "/api/sessions/"+id+"/save", `{}`)
 	before, _ := db.LoadParts(context.Background(), v.worldID)
 	db.Close()
-	result := autoRequest(t, s, "POST", "/api/sessions/"+id+"/step", `{"count":3}`)
+	result := legacyFixtureRequest(t, s, "POST", "/api/sessions/"+id+"/step", `{"count":3}`)
 	failed := httptest.NewRecorder()
 	s.ServeHTTP(failed, httptest.NewRequest("POST", "/api/sessions/"+id+"/save", bytes.NewBufferString(`{}`)))
 	if failed.Code != 503 {
@@ -187,8 +187,8 @@ func TestExplicitSaveFailureRetainsDirtyCheckpointForRetry(t *testing.T) {
 	if !bytes.Equal(before["checkpoint"], after["checkpoint"]) {
 		t.Fatal("failed save corrupted committed checkpoint")
 	}
-	autoRequest(t, s, "POST", "/api/sessions/"+id+"/view", `{"ui":{}}`)
-	autoRequest(t, s, "POST", "/api/sessions/"+id+"/save", `{}`)
+	legacyFixtureRequest(t, s, "POST", "/api/sessions/"+id+"/view", `{"ui":{}}`)
+	legacyFixtureRequest(t, s, "POST", "/api/sessions/"+id+"/save", `{}`)
 	if v.dirty {
 		t.Fatal("dirty state not cleared after commit")
 	}

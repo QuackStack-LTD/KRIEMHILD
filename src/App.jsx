@@ -56,7 +56,7 @@ import Organizations, {
   OrganizationProfile,
 } from "./worldbuilding/Organizations.jsx";
 import { useEffect, useState } from "react";
-const TerrainApp = lazy(() => import("./TerrainApp.jsx"));
+const TerrainApp = lazy(() => import("./continuous/TerrainRouter.jsx"));
 import {
   historyRequest,
   graphLayout,
@@ -820,7 +820,7 @@ export default function App() {
               type="button"
               onClick={() => navigate("/world/new?legacyImport=1")}
             >
-              Import legacy terrain
+              Terrain archives
             </button>
           </form>
           <h2>Continue World</h2>
@@ -903,15 +903,15 @@ export default function App() {
             <section>
               <h2>Existing terrain projects</h2>
               <p>
-                Open an earlier map, then choose Move into a World. Its terrain
-                and explored detail are preserved.
+                Open a saved map in the continuous editor or archive viewer. Its
+                terrain and explored detail are preserved.
               </p>
               <div className="world-grid">
                 {legacy.map((p) => (
                   <article key={p.id}>
                     <h3>{p.name}</h3>
                     <button onClick={() => navigate(`/world/${p.id}/build`)}>
-                      Open legacy map
+                      Open saved map
                     </button>
                   </article>
                 ))}

@@ -1,0 +1,3 @@
+?   	kriemhild/internal/terrain/detail	[no test files]
+ok  	kriemhild/internal/terrain/tiles	6.424s
+ok  	kriemhild/internal/terrain/generate	21.937s
