@@ -1,15 +1,17 @@
 # KRIEMHILD
 
-React frontend and native Go backend for a shared worldbuilding project, preserving the **TerrainGenOnSteroids** generation engine. This project is self-contained; the neighboring source directory is not needed to build or run it.
+React frontend and native Go backend for a shared worldbuilding project. New worlds use the versioned continuous terrain workspace. Existing projects retain their legacy terrain reader and editor. This project is self-contained; the neighboring source directory is not needed to build or run it.
 
-The opening page is a **Project Hub** with named recent worlds and ZIP/folder import. **World Generation** contains the existing natural-world engine. **World Builder** edits the same world with settlements, roads, buildings, countries, parent/child entities, layers, undo/redo and local non-destructive landscape tools. Switching editors never regenerates the map. See [application architecture and Builder controls](docs/APPLICATION_ARCHITECTURE.md).
+The continuous terrain rebuild is an **in-progress replacement**, with working generation, tiled maps, local authoring and settlement previews. See [implementation and acceptance status](docs/terrain-rebuild/STATUS.md), the [seed gallery](docs/terrain-rebuild/gallery/index.html), and [coast/detail views](docs/terrain-rebuild/gallery/detail.html). The older engine documentation below describes compatibility behavior; it does not imply that every legacy feature has migrated to the new workspace.
+
+The opening page is a **Project Hub** with named recent worlds and ZIP/folder import. Fresh terrain opens the new Generator, Map Builder and Settlement Builder workspace. Existing maps open the appropriate versioned reader/editor. Switching editors never regenerates the map. The earlier [application architecture and Builder controls](docs/APPLICATION_ARCHITECTURE.md) remain useful for legacy projects.
 
 ## Run
 
-Physical worlds use terrain- and climate-driven drainage, lake water budgets,
+Legacy physical worlds use terrain- and climate-driven drainage, lake water budgets,
 groundwater springs and narrow, blended shore materials. See the
 [hydrology model, validation and compatibility notes](docs/HYDROLOGY.md).
-New physical worlds also infer layered lithology and geological history, then generate causal natural resources. Hover over terrain in either editor to inspect geological context and local or nearby goods. These invisible layers persist in database saves and world ZIPs. See [natural resources and hover queries](docs/NATURAL_RESOURCES.md).
+The legacy engine also stores layered lithology, geological history and natural resources. These records remain available when opening legacy projects; their full continuous-terrain replacement is outstanding. See [natural resources and hover queries](docs/NATURAL_RESOURCES.md) for the legacy contracts.
 
 Install Node.js 22.12+ and Go 1.26+, then run from this folder:
 

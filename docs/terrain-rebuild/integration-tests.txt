@@ -1,0 +1,16 @@
+=== RUN   TestClimateArchiveDatabaseAndAuthoredRestoration
+--- PASS: TestClimateArchiveDatabaseAndAuthoredRestoration (3.21s)
+=== RUN   TestContinuousArchiveRoundTrip
+--- PASS: TestContinuousArchiveRoundTrip (2.35s)
+=== RUN   TestContinuousAgeIsolationAndColdRestart
+--- PASS: TestContinuousAgeIsolationAndColdRestart (3.86s)
+=== RUN   TestContinuousJobCancellationAndValidation
+--- PASS: TestContinuousJobCancellationAndValidation (0.00s)
+=== RUN   TestNaturalLayersZIPAndDatabaseColdRestoration
+--- PASS: TestNaturalLayersZIPAndDatabaseColdRestoration (3.01s)
+PASS
+ok  	kriemhild/internal/httpapi	14.793s
+=== RUN   TestContinuousLandscapeHistoryRoundTrip
+--- PASS: TestContinuousLandscapeHistoryRoundTrip (0.00s)
+PASS
+ok  	kriemhild/internal/world	0.714s

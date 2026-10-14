@@ -20,6 +20,7 @@ import (
 
 func main() {
 	count := flag.Int("count", 50, "number of seeds")
+	metricsOnly := flag.Bool("metrics-only", false, "skip images for calibration")
 	out := flag.String("out", "docs/terrain-rebuild/gallery", "output directory")
 	flag.Parse()
 	if err := os.MkdirAll(*out, 0755); err != nil {
@@ -52,6 +53,10 @@ func main() {
 		summaries = append(summaries, summary)
 		b, _ := json.MarshalIndent(summary, "", "  ")
 		os.WriteFile(filepath.Join(*out, fmt.Sprintf("seed-%03d.json", i)), b, 0644)
+		if *metricsOnly {
+			fmt.Printf("%s: desert %.3f steppe %.3f\n", spec.Seed, p.Diagnostics.BiomeShares["desert"], p.Diagnostics.BiomeShares["steppe"])
+			continue
+		}
 		html += fmt.Sprintf("<article><h2>%s · %s</h2><p>Land %.1f%% · %d continents · largest share %.1f%%</p>", spec.Seed, spec.Preset, p.Diagnostics.LandCoverage*100, p.Diagnostics.MajorContinents, p.Diagnostics.LargestShare*100)
 		for _, style := range []string{"natural", "mask", "elevation", "bathymetry", "precipitation", "biome"} {
 			img := image.NewNRGBA(image.Rect(0, 0, 512, 256))

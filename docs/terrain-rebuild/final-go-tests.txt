@@ -1,0 +1,9 @@
+ok  	kriemhild/internal/httpapi	164.793s
+ok  	kriemhild/internal/world	2.547s
+?   	kriemhild/internal/terrain/model	[no test files]
+ok  	kriemhild/internal/terrain/generate	36.906s
+?   	kriemhild/internal/terrain/landmass	[no test files]
+?   	kriemhild/internal/terrain/tectonics	[no test files]
+ok  	kriemhild/internal/terrain/detail	1.127s
+ok  	kriemhild/internal/terrain/tiles	17.860s
+ok  	kriemhild/internal/settlements	6.472s
