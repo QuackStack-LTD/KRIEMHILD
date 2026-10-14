@@ -316,6 +316,9 @@ func (e *Environment) applyIslandFoundation(f IslandFoundation, volcanic bool, o
 				continue
 			}
 			if e.Mask[i] == 0 && z >= 4 {
+				if reserve := e.Fields["oceanReserve"]; len(reserve) > i && reserve[i] > 0 {
+					return false
+				}
 				// Retain an actual strait, including diagonals: island growth must not
 				// bridge existing continents and change their drainage-area hierarchy.
 				for yy := max(0, y-1); yy <= min(h-1, y+1); yy++ {

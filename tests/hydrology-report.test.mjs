@@ -11,6 +11,12 @@ test('Small worlds with no springs or canals still render their terrain legend',
  assert.match(legend,/Hydrology validation passed/);
 });
 
+test('Arid worlds without erosional landforms still render the hydrology report',()=>{
+ const distribution={min:0,median:0,p90:0,max:0};
+ const e={hydrology:{statistics:{classes:[],lengths:distribution,catchments:distribution,basinSizes:distribution,notes:[]}},geomorphology:{iterations:3,parameters:{duration_ma:2},landforms:null,erodedM3:0,depositedM3:0,exportedM3:0}};
+ assert.match(Object.fromEntries(hydrologyReportRows(e))['River erosion'],/0 recorded landforms/);
+});
+
 test('Hydrology reports count whole rivers and declare geographic units',()=>{
  const distribution={min:1,median:3,p90:20,max:80};
  const environment={hydrology:{targets:[],statistics:{classes:[{class:'major',count:2,length:140},{class:'regional',count:10,length:72},{class:'stream',count:30,length:60}],basinCount:55,lakes:8,wetlands:12,springs:5,coveragePercent:8,targetCoveragePercent:10,invalidDestinations:0,lowlandHeadwaters:25,lengths:distribution,catchments:distribution,basinSizes:distribution,lengthUnits:'base-grid cells',areaUnits:'base-grid cells squared',notes:[]}}};

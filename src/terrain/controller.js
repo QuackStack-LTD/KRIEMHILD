@@ -13,7 +13,7 @@ import { RemoteSolver } from './api.js';
 import { AutosaveQueue } from './autosave.js';
 import { createExplorer } from './explorer.js';
 import { reliefShades, shadePixel } from './relief.js';
-import { installEnvironmentOverlays, fieldColor, overlayLegend, drawPhysicalEntities } from './environment-view.js';
+import { installEnvironmentOverlays, syncEnvironmentOverlays, fieldColor, overlayLegend, drawPhysicalEntities } from './environment-view.js';
 
 export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
   installEnvironmentOverlays(document.getElementById('environmentOverlay'));
@@ -437,7 +437,7 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
     try {
       if ($('environment').checked) {
         const physicalValues=Object.fromEntries(climateSettingIds.map(id=>[id,$(id).value]));
-        nextSolver = await RemoteSolver.create({ environment: {geography:geographicSettings(physicalValues,width,height,readInt(ui.cellSize,1,40,6)),riverOptions:riverSettings(physicalValues),erosion:erosionSettings(physicalValues),seasonalClimate:climateSettings(Object.fromEntries(climateSettingIds.map(id=>[id,$(id).value])),width,height,readInt(ui.cellSize,1,40,6)),realism:$('realism').checked,columns:width,rows:height,seed:String(seedUsed),landPercent:Number($('landCoverage').value),temperatureOffset:Number($('temperatureOffset').value),rainfall:Number($('rainfall').value),plateCount:Number($('plateCount').value),continentCount:Math.max(2,Number(ui.contPoints.value)),selection:ui.selection.value,stability:Math.min(10,ui.stability.checked?stabilityStrength():0),latitudeNorth:Number($('latitudeNorth').value),latitudeSouth:Number($('latitudeSouth').value),ruggedness:Number($('ruggedness').value),volcanism:Number($('volcanism').value),landShape:{large:Number($('landShapeLarge').value),medium:Number($('landShapeMedium').value),small:Number($('landShapeSmall').value)},islandFrequency:Number($('islandFrequency').value),islandCoastalShare:Number($('islandCoastalShare').value),radius2:RADIUS_STEPS[Number(ui.radius.value)].radius2}, config, wrapX: sphere });
+        nextSolver = await RemoteSolver.create({ environment: {geography:geographicSettings(physicalValues,width,height,readInt(ui.cellSize,1,40,6)),riverOptions:riverSettings(physicalValues),erosion:erosionSettings(physicalValues),seasonalClimate:climateSettings(Object.fromEntries(climateSettingIds.map(id=>[id,$(id).value])),width,height,readInt(ui.cellSize,1,40,6)),realism:$('realism').checked,columns:width,rows:height,seed:String(seedUsed),landPercent:Number($('landCoverage').value),temperatureOffset:Number($('temperatureOffset').value),lapseRate:Number($('lapseRate').value),rainfall:Number($('rainfall').value),plateCount:Number($('plateCount').value),majorContinents:Number($('majorContinents').value),oceanSeparation:$('oceanSeparation').value,selection:ui.selection.value,stability:Math.min(10,ui.stability.checked?stabilityStrength():0),latitudeNorth:Number($('latitudeNorth').value),latitudeSouth:Number($('latitudeSouth').value),ruggedness:Number($('ruggedness').value),volcanism:Number($('volcanism').value),landShape:{large:Number($('landShapeLarge').value),medium:Number($('landShapeMedium').value),small:Number($('landShapeSmall').value)},islandFrequency:Number($('islandFrequency').value),islandCoastalShare:Number($('islandCoastalShare').value),radius2:RADIUS_STEPS[Number(ui.radius.value)].radius2}, config, wrapX: sphere });
       } else {
     nextSolver = await RemoteSolver.create({ config, options: {
       width,
@@ -481,6 +481,8 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
   // (Re)creates the offscreen image the map is painted into: one pixel per cell for plain
   // squares, or a finer Voronoi image. Called on new maps and when drawing settings change.
   function setupSurface() {
+    syncEnvironmentOverlays($('environmentOverlay'),solver?.environment);
+    $('layoutWarning').textContent=solver?.environment?.continentalLayout?.warning||'';
     if (!solver) return;
     terrainShades=reliefShades(solver.environment,solver.W,solver.H);
     const cs = readInt(ui.cellSize, 1, 40, 6);
@@ -687,7 +689,7 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
   }
   subscribeRiverThickness(()=>{if(!suspended)draw();},lifecycle.signal);
   listen($('environmentOverlay'), 'change',()=>{if(solver){solver.markAllDirty();draw();}});
-  for(const id of ['landCoverage','temperatureOffset','rainfall','plateCount','latitudeNorth','latitudeSouth','ruggedness','volcanism','islandFrequency','islandCoastalShare','landShapeLarge','landShapeMedium','landShapeSmall']) listen($(id), 'change',()=>generate());
+  for(const id of ['majorContinents','oceanSeparation','landCoverage','temperatureOffset','lapseRate','rainfall','plateCount','latitudeNorth','latitudeSouth','ruggedness','volcanism','islandFrequency','islandCoastalShare','landShapeLarge','landShapeMedium','landShapeSmall']) listen($(id), 'change',()=>generate());
   async function updateGenerationMode(){
     const request=++presetRequest;
     updateModeControls();
@@ -953,6 +955,8 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
       const f=env.fields,c=hoverCell;
         const climate=env.seasonalZones?.[f.seasonalClimate?.[c]]??env.climateZones?.[f.climate?.[c]];
       el.append(`${climate?climate+' · ':''}${Math.round(hoverDetail?.elevation??f.elevation[c])} m · ${(hoverDetail?.temperature??f.temperature[c]).toFixed(1)} °C · ${Math.round(f.precipitation[c])} mm/yr · `);
+      if(f.aridityIndex)el.append(`AI ${f.aridityIndex[c].toFixed(2)} \u00b7 summer/winter rain ${Math.round(f.summerRain?.[c]||0)}/${Math.round(f.winterRain?.[c]||0)} mm \u00b7 `);
+      if(f.annualPET)el.append(`PET ${Math.round(f.annualPET[c])} mm · soil water ${Math.round((f.soilWater?.[c]||0)*100)}% · drought ${f.droughtMonths?.[c]||0}/12 months · growing season ${f.growingMonths?.[c]||0}/12 · `);
       if((hoverDetail?.waterDepth??f.waterDepth?.[c])>0)el.append(`Depth ${(hoverDetail?.waterDepth??f.waterDepth[c]).toFixed(1)} m · surface ${(hoverDetail?.waterLevel??f.waterLevel[c]).toFixed(1)} m · `);
       else if((hoverDetail?.elevation??f.elevation[c])<0)el.append('Dry depression below sea level · ');
       if(f.reefType?.[c]>0)el.append(`${['','Fringing reef','Barrier reef','Patch reef','Atoll'][f.reefType[c]]} · `);
@@ -1111,8 +1115,8 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
     const physical = $('environment').checked;
     const on = ui.continents.checked || physical;
     ui.continents.disabled = physical;
-    ui.contPoints.disabled = !on;
-    ui.contPoints.min = physical ? 2 : 1;
+    ui.contPoints.disabled = physical || !on;
+    ui.contPoints.min = 1;
     ui.contStrength.disabled = physical || !on;
     ui.contShow.disabled = !on;
     ui.contPointsOut.textContent = `${ui.contPoints.value} points`;
@@ -1406,7 +1410,7 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
   // ---- start ------------------------------------------------------------------
 
   const SETTINGS_KEY = 'kriemhild.settings.v1';
-  const settingIds = [...climateSettingIds,'environment','realism','landCoverage','plateCount','temperatureOffset','rainfall','latitudeNorth','latitudeSouth','ruggedness','volcanism','islandFrequency','islandCoastalShare','landShapeLarge','landShapeMedium','landShapeSmall',
+  const settingIds = [...climateSettingIds,'environment','realism','majorContinents','oceanSeparation','landCoverage','plateCount','temperatureOffset','lapseRate','rainfall','latitudeNorth','latitudeSouth','ruggedness','volcanism','islandFrequency','islandCoastalShare','landShapeLarge','landShapeMedium','landShapeSmall',
     'width','height','cellSize','shape','seed','continents','contPoints','contStrength','climate',
     'climLayout','climStrength','selection','radius','stability','stabilityStrength','cleanupPasses',
     'speed','instant','voronoi','jitter','textures','iconSize','contShow','surface3d','height3d','environmentOverlay'];
@@ -1472,10 +1476,11 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
       $('environment').checked=!!solver.environment;$('realism').checked=!!solver.environment?.options.realism;
       for(const [id,key] of [['landShapeLarge','large'],['landShapeMedium','medium'],['landShapeSmall','small']])if(saved.settings?.[id]===undefined)$(id).value=solver.environment?.options.landShape?.[key]??1;
       for(const id of ['islandFrequency','islandCoastalShare','landShapeLarge','landShapeMedium','landShapeSmall'])if(saved.settings?.[id]===undefined&&solver.environment?.options[id]!==undefined)$(id).value=solver.environment.options[id];
+      for(const [id,fallback] of [['majorContinents',0],['oceanSeparation','standard']])if(saved.settings?.[id]===undefined)$(id).value=solver.environment?.options[id]??fallback;
       const climate=solver.environment?.options.seasonalClimate;
       if(climate){for(const [control,key] of Object.entries(climateInputs))if(saved.settings?.[control]===undefined)$(control).value=climate[key]??'';if(saved.settings?.seasonMode===undefined)$('seasonMode').value=climate.mode||'automatic';if(saved.settings?.seasonCount===undefined)$('seasonCount').value=climate.count||4;if(saved.settings?.seasonNames===undefined)$('seasonNames').value=(climate.names||[]).join(', ');if(saved.settings?.climateCoverage===undefined)$('climateCoverage').value=climate.coverage||'';}
       const geography=solver.environment?.options.geography,riverOptions=solver.environment?.options.riverOptions,erosion=solver.environment?.options.erosion;
-      for(const [id,key] of Object.entries({worldScale:'world_scale',planetRadius:'planetary_radius',longitudeWest:'longitude_west',longitudeEast:'longitude_east',climateCoverage:'map_coverage'}))if(saved.settings?.[id]===undefined&&geography?.[key]!==undefined)$(id).value=geography[key];
+      for(const [id,key] of Object.entries({worldScale:'world_scale',planetRadius:'planetary_radius',longitudeWest:'longitude_west',longitudeEast:'longitude_east',climateCoverage:'map_coverage'}))if(saved.settings?.[id]===undefined&&geography?.[key]!==undefined)$(id).value=(['planetRadius','worldScale'].includes(id)&&Number(geography[key])===0)?'':geography[key];
       for(const [id,key] of Object.entries({riverMinArea:'minimum_area_km2',riverMinDischarge:'minimum_discharge_m3s',riverVisibleOrder:'visible_stream_order',riverMajorArea:'major_area_km2',riverRegionalArea:'regional_area_km2',ephemeralDensity:'ephemeral_density'}))if(saved.settings?.[id]===undefined&&riverOptions?.[key]!==undefined)$(id).value=riverOptions[key];
       for(const [id,key] of Object.entries({erosionIterations:'iterations',erosionDuration:'duration_ma',erosionStrength:'strength'}))if(saved.settings?.[id]===undefined&&erosion?.[key]!==undefined)$(id).value=erosion[key];
       ui.width.value=solver.W;ui.height.value=solver.H;ui.shape.value=solver.wrapX?'sphere':'flat';
@@ -1533,9 +1538,9 @@ export function mountTerrain({onReady=()=>{},onWorld=()=>{}}={}) {
       previousPhysicalMode = physical;
       if (config) editor.render();
     }
-    for (const id of ['landCoverage','plateCount','temperatureOffset','rainfall','environmentOverlay','latitudeNorth','latitudeSouth','ruggedness','volcanism','islandFrequency','islandCoastalShare','landShapeLarge','landShapeMedium','landShapeSmall']) $(id).disabled = !physical;
+    for (const id of ['majorContinents','oceanSeparation','landCoverage','plateCount','temperatureOffset','lapseRate','rainfall','environmentOverlay','latitudeNorth','latitudeSouth','ruggedness','volcanism','islandFrequency','islandCoastalShare','landShapeLarge','landShapeMedium','landShapeSmall']) $(id).disabled = !physical;
     $('modeHint').textContent = physical
-      ? 'Physical environment layers onto the preset: its land coverage, climate, relief, points and terrain preferences shape the result. Environmental constraints replace legacy adjacency and climate-band weights.'
+      ? 'Physical environment layers onto the preset: its land coverage, climate, relief, major continents, ocean separation and terrain preferences shape the result. Environmental constraints replace legacy adjacency and climate-band weights.'
       : 'Terrain rules: continental kinds, climate weights, neighbor radius and terrain adjacency all apply. Physical settings and overlays are unavailable.';
     if ($('realism').checked) $('modeHint').textContent = 'Real-world rules enabled: climate, geology and water constrain terrain. Rivers, dunes, volcanoes and settlements follow the environmental fields. Inspect them in View.';
     for (const id of ['kindDetails', 'climateDetails']) {

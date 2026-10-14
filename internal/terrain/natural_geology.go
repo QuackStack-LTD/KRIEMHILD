@@ -38,24 +38,23 @@ func (e *Environment) BuildGeologicalHistory() {
 	e.Geology = g
 	defer e.attachFluvialHistory()
 	e.Resources = nil
-	f := e.get
+	f := e.climateField
 	sample := noise(Seed(e.Options.Seed) ^ 0x6417ca21)
 	labels := make([]string, n)
 	settings := make([]string, n)
 	islandSettings := e.islandProvinceSettings()
 	for i := range labels {
-		x, y := float64(i%w)/float64(w), float64(i/w)/float64(h)
 		setting := "stable-interior"
 		switch {
 		case f("ocean", i) > 0:
 			setting = "oceanic-crust"
 		case f("volcano", i) > .4:
 			setting = "volcanic-arc"
-		case (f("boundary", i) == 2 || f("boundary", i) == 3) && f("tectonicStress", i) > .22:
+		case (f("boundary", i) == 2) && f("tectonicStress", i) > .22:
 			setting = "rift"
 		case f("mountainCore", i) > .16:
 			setting = "orogenic-belt"
-		case sample(x*5+13, y*5+39) > .6:
+		case f("crustAge", i) > 1500 && f("highland", i) > .1:
 			setting = "ancient-orogen"
 		}
 		if f("ocean", i) == 0 && islandSettings[i] != "" {
@@ -90,12 +89,34 @@ func (e *Environment) BuildGeologicalHistory() {
 		if (setting == "rift" || setting == "oceanic-crust") && r > .68 {
 			rock = "peridotite"
 		}
-		paleo := detailHash(Seed(e.Options.Seed), i%w, i/w, 127)
-		marine := setting == "oceanic-crust" || f("shelf", i) > .25 || paleo > .35
-		wetland := setting != "oceanic-crust" && paleo > .28 && paleo < .65
-		evap := marine && paleo > .74
-		burial := 400 + 6200*detailHash(Seed(e.Options.Seed), i%w, i/w, 131)
-		history := GeologicalHistory{FormerMarine: marine, AncientWetland: wetland, Evaporative: evap, TropicalWeathering: age > 150 && paleo < .5, MaxBurial: rounded(burial), MaxTemperature: rounded(18 + burial*.027), Paleoclimate: "temperate"}
+		// Conservative inferred history: regional evidence, not a per-cell
+		// lottery. Uncertainty is explicit because no plate time-series exists.
+		shelf, lowland, wet, arid, heat, sediment, compression := 0., 0., 0., 0., 0., 0., 0.
+		for _, j := range cells {
+			shelf += f("shelf", j)
+			lowland += 1 - smooth(math.Max(0, f("elevation", j))/1200)
+			wet += f("moisture", j)
+			arid += f("aridity", j)
+			heat += f("temperature", j)
+			sediment += f("sediment", j) + clamp(f("fluvialDeposition", j)/10, 0, 1)
+			compression += f("convergence", j)
+		}
+		count := float64(len(cells))
+		shelf /= count
+		lowland /= count
+		wet /= count
+		arid /= count
+		heat /= count
+		sediment /= count
+		compression /= count
+		marine := setting == "oceanic-crust" || shelf > .4 && lowland > .5
+		wetland := setting != "oceanic-crust" && lowland > .7 && wet > .65
+		evap := arid > .65 && lowland > .65 && (setting == "rift" || f("terminalBasin", i) > 0)
+		burial := 300 + 3200*sediment + 1800*lowland
+		if setting == "rift" {
+			burial += 1200
+		}
+		history := GeologicalHistory{Inference: "Inferred from shared crust, basin relief, coastal deposition, water budget and deformation; not a reconstructed plate time-series", Confidence: .35, FormerMarine: marine, AncientWetland: wetland, Evaporative: evap, TropicalWeathering: age > 150 && heat > 20 && wet > .65, MaxBurial: rounded(burial), MaxTemperature: rounded(18 + burial*.027), Paleoclimate: "temperate"}
 		if history.TropicalWeathering {
 			history.Paleoclimate = "warm-humid"
 		}
@@ -103,13 +124,13 @@ func (e *Environment) BuildGeologicalHistory() {
 			history.Paleoclimate = "arid-restricted-basin"
 		}
 		if marine || wetland {
-			history.OrganicPreservation = rounded(.2 + .7*r)
+			history.OrganicPreservation = rounded(clamp(.1+.6*wet*lowland+.2*sediment, 0, 1))
 		}
-		if setting == "orogenic-belt" || setting == "ancient-orogen" {
+		if compression > .15 && (setting == "orogenic-belt" || setting == "ancient-orogen") {
 			history.Trap = "fold closure"
 		} else if evap {
 			history.Trap = "salt-related closure"
-		} else if paleo > .3 {
+		} else if sediment > .25 && lowland > .6 {
 			history.Trap = "stratigraphic pinch-out"
 		}
 		p := GeologicalProvince{ID: e.naturalID("province", i), Setting: setting, AgeMa: rounded(age), Rock: rock, Process: process, Geometry: NaturalGeometry{Kind: "region", Cells: cells}, History: history}

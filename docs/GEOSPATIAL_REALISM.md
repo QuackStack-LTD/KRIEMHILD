@@ -1,5 +1,10 @@
 # Geospatial realism implementation
 
+The latest [Terrain and Biosphere pipeline](TERRAIN_BIOSPHERE_PIPELINE.md) adds ocean framing on every map edge, footprint-aware random layouts, monthly water surplus for hydrology, crust/history provenance, basin-derived current effects, and versioned layered ecology. It supersedes the annual runoff and longitude-sine current proxies described in historical sections below.
+
+The October 2026 continental-layout and climate/biome revision is documented in [CONTINENTS_AND_BIOMES.md](CONTINENTS_AND_BIOMES.md), with [measured gallery evidence](landshape-gallery/index.html). That revision supersedes the earlier point-placement, moisture-threshold and seasonal-rainfall-proxy descriptions below: monthly climate is authoritative, steppe and xeric scrub have dedicated cover categories, and physical continents have protected ocean separation. The numeric legacy climate overlay retains its IDs.
+
+
 Implemented from the supplied `../KRIEMHILD_Climate_Geospatial_Realism_Guide.md` (the actual filename in the workspace), particularly its causal pipeline, acceptance criteria, debug layers and calibration scenarios.
 
 ## Enable
@@ -20,7 +25,7 @@ The current engine already supplied continuous elevation/bathymetry, synthetic m
 | --- | --- |
 | Continuous climate and ocean moderation | Existing elevation lapse rate, coastal current proxy and inland seasonal range retained. Twelve derived climate categories plus ocean replace legacy band labels. |
 | Wind, moisture and rain shadows | Smooth circulation transitions; fractional meridional transport replaces rounded-away wind components. Calibrated moisture retention allows distant mountains to intercept moisture. Uplift removes water from air before it reaches the lee. |
-| Seasonal climate classification | Local summer/winter precipitation proxy and growing-season suitability distinguish rainforest, monsoon, savanna, hot/cold desert, Mediterranean, oceanic, continental, boreal, tundra, ice cap and alpine conditions. |
+| Seasonal climate classification | Twelve monthly water/energy budgets and growing-season soil water distinguish rainforest, monsoon, savanna, hot/cold desert, Mediterranean, oceanic, continental, boreal, tundra, ice cap and alpine conditions. |
 | Tectonic geology | Synthetic convergent/divergent/transform boundaries, collision relief, trenches/ridges and seeded hotspots retained. Subduction vent suitability selects an overriding plate. Regional maxima produce discrete vents, with seeded active/dormant state. |
 | Volcano → lava/ash | Explicit volcano entities include origin, activity, lava path and ash deposits. Active land vents send lava strictly downhill; ash follows the spatial wind field. Submarine vents do not paint terrestrial lava or ash. |
 | Rivers and groundwater | Explicit river segments contain source, mouth, path and discharge. Segments join at confluences and terminate at water bodies; accumulated runoff increases downstream. Freshwater distance influences groundwater, fertility and human geography. |
@@ -29,9 +34,9 @@ The current engine already supplied continuous elevation/bathymetry, synthetic m
 | Reef habitat | Warm, shallow, clear, saline, well-lit ocean habitat is constrained by substrate and slope. Coastal shelves and submerged volcanic rims produce fringing, barrier, patch and atoll regions, preserved by WFC. |
 | Mesas | Layered sedimentary geology, resistant caprock, erosion, relief and aridity jointly constrain suitability. |
 | Wetlands and oases | Drainage, groundwater, freshwater proximity, slope, temperature and aridity constrain placement. |
-| Farmland and villages | Fertility, growing season, moderate climate, water and accessible slopes determine scores. Spaced villages require nearby suitable farms and fresh water. Farms/villages now become actual terrain instead of unused scores. |
+| Farmland and villages | Fertility, growing season, moderate climate, water and accessible slopes determine scores. Spaced villages require nearby suitable farms and fresh water. These remain suitability scores; settlements and cultivated fields require authoring. |
 | WFC | Environmental masks restrict candidates; suitability multiplies local selection weights. Neighbor boosts and stability retain local coherence. Cleanup and painting remain bounded by environmental masks. |
-| Rendering/debug | All 75 numerical fields have overlays, including climate, wind, geology, sediment, snow, water surfaces/depths and reef forms. Hover reports ground elevation and local water level/depth. The shared map texture includes relief/depth shading, rivers, dunes and vents; 3D water covers only actual water bodies. |
+| Rendering/debug | Physical numerical fields have overlays, including climate, wind, geology, sediment, snow, water surfaces/depths and reef forms. Hover reports ground elevation and local water level/depth. The shared map texture includes relief/depth shading, rivers, dunes and vents; 3D water covers only actual water bodies. |
 
 ## Validation
 

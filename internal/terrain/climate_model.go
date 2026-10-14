@@ -72,18 +72,21 @@ type ClimateScale struct {
 	Approximate          bool    `json:"approximate"`
 }
 type ClimateMonth struct {
-	Temperature    float64 `json:"temperature"`
-	Rain           float64 `json:"precipitation"`
-	Humidity       float64 `json:"humidity"`
-	Evaporation    float64 `json:"evaporation"`
-	WindX          float64 `json:"windX"`
-	WindY          float64 `json:"windY"`
-	WindSpeed      float64 `json:"windSpeed"`
-	Snow           float64 `json:"snow"`
-	SoilMoisture   float64 `json:"soilMoisture"`
-	Drought        float64 `json:"drought"`
-	FloodPotential float64 `json:"floodPotential"`
-	Daylight       float64 `json:"daylightHours"`
+	ActualEvaporation float64 `json:"actualEvaporation,omitempty"`
+	WaterYield        float64 `json:"waterYield,omitempty"`
+	Snowmelt          float64 `json:"snowmelt,omitempty"`
+	Temperature       float64 `json:"temperature"`
+	Rain              float64 `json:"precipitation"`
+	Humidity          float64 `json:"humidity"`
+	Evaporation       float64 `json:"evaporation"`
+	WindX             float64 `json:"windX"`
+	WindY             float64 `json:"windY"`
+	WindSpeed         float64 `json:"windSpeed"`
+	Snow              float64 `json:"snow"`
+	SoilMoisture      float64 `json:"soilMoisture"`
+	Drought           float64 `json:"drought"`
+	FloodPotential    float64 `json:"floodPotential"`
+	Daylight          float64 `json:"daylightHours"`
 }
 type ClimateSeason struct {
 	Name        string `json:"name"`
@@ -92,20 +95,23 @@ type ClimateSeason struct {
 	UserDefined bool   `json:"userDefined"`
 }
 type ClimateModifiers struct {
-	Elevation      float64 `json:"elevation"`
-	Latitude       float64 `json:"latitude"`
-	Maritime       float64 `json:"maritime"`
-	WaterProximity float64 `json:"waterProximity"`
-	RainShadow     float64 `json:"rainShadow"`
-	Current        float64 `json:"current"`
-	Geothermal     float64 `json:"geothermal"`
-	Wetland        float64 `json:"wetland"`
-	Glacier        float64 `json:"glacier"`
-	Forest         float64 `json:"forest"`
-	River          float64 `json:"river"`
-	Monsoon        float64 `json:"monsoon"`
+	RainfallPotential float64 `json:"rainfallPotential,omitempty"`
+	MoistureSupply    float64 `json:"moistureSupply,omitempty"`
+	Elevation         float64 `json:"elevation"`
+	Latitude          float64 `json:"latitude"`
+	Maritime          float64 `json:"maritime"`
+	WaterProximity    float64 `json:"waterProximity"`
+	RainShadow        float64 `json:"rainShadow"`
+	Current           float64 `json:"current"`
+	Geothermal        float64 `json:"geothermal"`
+	Wetland           float64 `json:"wetland"`
+	Glacier           float64 `json:"glacier"`
+	Forest            float64 `json:"forest"`
+	River             float64 `json:"river"`
+	Monsoon           float64 `json:"monsoon"`
 }
 type ClimateCell struct {
+	Biome     string           `json:"biome,omitempty"`
 	Zone      int              `json:"zone"`
 	Modifiers ClimateModifiers `json:"modifiers"`
 	Months    [12]ClimateMonth `json:"months"`

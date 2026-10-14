@@ -16,7 +16,22 @@ type LandmassMetric struct {
 	Bays            int     `json:"majorBays"`
 	BayDepth        float64 `json:"deepestBayCells"`
 }
+type OceanGapMetric struct {
+	A   int     `json:"continentA"`
+	B   int     `json:"continentB"`
+	Gap float64 `json:"waterGapCells"`
+}
 type LandShapeReport struct {
+	MajorAreas           []int              `json:"majorContinentAreas"`
+	MajorCount           int                `json:"majorContinentCount"`
+	MajorThreshold       int                `json:"majorAreaThresholdCells"`
+	MinimumGap           float64            `json:"minimumMajorOceanGapCells"`
+	OceanGaps            []OceanGapMetric   `json:"majorOceanGaps"`
+	OpenOceanFraction    float64            `json:"openOceanFraction"`
+	LargestOceanFraction float64            `json:"largestOceanFraction"`
+	ReservedLandCells    int                `json:"reservedOceanLandCells"`
+	Layout               *ContinentalLayout `json:"layout,omitempty"`
+
 	LandCells      int              `json:"landCells"`
 	LandFraction   float64          `json:"landFraction"`
 	IslandSizes    []int            `json:"islandSizes"`
@@ -133,16 +148,39 @@ func (e *Environment) LandShapeDiagnostics() LandShapeReport {
 			r.EnclosedWaters++
 		}
 	}
+	e.measureContinents(&r, landGroups, waterGroups)
 	for _, g := range landGroups {
 		if len(g) < 16 {
 			continue
 		}
 		m := LandmassMetric{Area: len(g)}
+		// Unwrap each component across its longest empty longitude interval before
+		// measuring hulls/covariance; the map seam is not a coast or a giant gulf.
+		cut := 0
+		if e.Geography != nil && e.Geography.WrapX {
+			used := make([]bool, w)
+			for _, i := range g {
+				used[i%w] = true
+			}
+			longest, run := 0, 0
+			for x := 0; x < 2*w; x++ {
+				if used[x%w] {
+					run = 0
+				} else {
+					run++
+					if run > longest {
+						longest = run
+						cut = (x + 1) % w
+					}
+				}
+			}
+		}
+		ux := func(i int) int { return (i%w - cut + w) % w }
 		points := []shapeXY{}
 		sx, sy := 0., 0.
 		minX, minY, maxX, maxY := w, h, 0, 0
 		for _, i := range g {
-			x, y := i%w, i/w
+			x, y := ux(i), i/w
 			sx += float64(x)
 			sy += float64(y)
 			minX = min(minX, x)
@@ -151,7 +189,10 @@ func (e *Environment) LandShapeDiagnostics() LandShapeReport {
 			maxY = max(maxY, y)
 			edge := false
 			for _, d := range [][2]int{{-1, 0}, {1, 0}, {0, -1}, {0, 1}} {
-				xx, yy := x+d[0], y+d[1]
+				xx, yy := i%w+d[0], y+d[1]
+				if e.Geography != nil && e.Geography.WrapX {
+					xx = (xx + w) % w
+				}
 				if xx < 0 || xx >= w || yy < 0 || yy >= h || e.Mask[yy*w+xx] == 0 {
 					m.Perimeter++
 					edge = true
@@ -167,7 +208,7 @@ func (e *Environment) LandShapeDiagnostics() LandShapeReport {
 		sy /= float64(len(g))
 		xx, yy, xy := 0., 0., 0.
 		for _, i := range g {
-			x, y := float64(i%w)-sx, float64(i/w)-sy
+			x, y := float64(ux(i))-sx, float64(i/w)-sy
 			xx += x * x
 			yy += y * y
 			xy += x * y
@@ -186,7 +227,7 @@ func (e *Environment) LandShapeDiagnostics() LandShapeReport {
 		bays := make([]bool, n)
 		for y := minY; y <= maxY; y++ {
 			for x := minX; x <= maxX; x++ {
-				i := y*w + x
+				i := y*w + (x+cut)%w
 				if !ocean[i] {
 					continue
 				}
@@ -215,7 +256,7 @@ func (e *Environment) LandShapeDiagnostics() LandShapeReport {
 			bays[i] = false
 			q := []int{i}
 			for head := 0; head < len(q); head++ {
-				for _, j := range nb(q[head], w, h) {
+				for _, j := range e.neighbors(q[head]) {
 					if bays[j] {
 						bays[j] = false
 						q = append(q, j)

@@ -12,6 +12,7 @@ const DetailTileSize = 32
 // Each octave is a nodal residual: new coefficients are zero on EVERY coarser
 // node. Tile boundaries use global indices, so request order cannot form seams.
 type DetailPoint struct {
+	Biome         string     `json:"biome,omitempty"`
 	Desert        *float64   `json:"desert,omitempty"`
 	Shore         float64    `json:"shore,omitempty"`
 	ShoreSediment float64    `json:"shoreSediment,omitempty"`
@@ -115,6 +116,7 @@ func detailHash(seed uint32, x, y, level int) float64 {
 // The continuous parent water footprint is fixed for all refinement levels.
 // Dry endorheic basins never become water merely because elevation is negative.
 func (m *DetailModel) base(x, y float64) DetailPoint {
+	biome := m.World.BiomeAt(m.cell(x, y))
 	// A small invertible, cell-interior coordinate warp resolves parent shores
 	// into coves and uneven banks. It fixes every grid edge/node, stays inside
 	// its parent cell, and cannot split or join a parent's water footprint.
@@ -127,6 +129,7 @@ func (m *DetailModel) base(x, y float64) DetailPoint {
 
 	c := m.cell(x, y)
 	p := DetailPoint{Elevation: m.field("elevation", x, y), Cell: c, Temperature: m.field("temperature", x, y), Moisture: m.field("moisture", x, y)}
+	p.Biome = biome
 	if m.World.Fields["desert"] != nil {
 		desert := m.field("desert", x, y)
 		p.Desert = &desert

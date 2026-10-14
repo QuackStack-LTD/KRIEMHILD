@@ -19,7 +19,11 @@ func (e *Environment) buildGeologicalSurface(sample func(float64, float64) float
 		shelfWidth := scale * (4 + 4*sample(x*4+233, y*4+271)) * (1 - .65*active)
 		d := math.Max(0, landDist[i]-.5)
 		shelf := 1 - smooth((d-shelfWidth)/(7*scale))
-		deep := 3600 + 1600*sample(x*5+431, y*5+371)
+		crustAge := 100.
+		if len(e.Fields["crustAge"]) == len(e.Mask) {
+			crustAge = e.climateField("crustAge", i)
+		}
+		deep := 2600 + 220*math.Sqrt(crustAge)
 		// The shelf itself slopes gently; the continental slope begins beyond it.
 		depth := 8 + 140*math.Pow(math.Min(1, d/shelfWidth), 1.5) + (1-shelf)*deep
 		// Sparse drowned offshore ridges can support barrier reefs, with lagoons

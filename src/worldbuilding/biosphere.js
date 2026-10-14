@@ -1,9 +1,9 @@
 export const groups=['plant','animal','fungus','algae','bacterium','archaea','protist','virus','custom'];
-export const roles=['producer','decomposer','herbivore','predator','omnivore','scavenger','pollinator','seed-disperser','mutualist','parasite','pathogen','host-dependent'];
+export const roles=['producer','decomposer','detritivore','herbivore','predator','omnivore','scavenger','pollinator','seed-disperser','mutualist','parasite','pathogen','host-dependent'];
 export const interactions=['feeds-on','predator-of','pollinates','disperses-seeds-for','symbiotic-with','parasite-of','pathogen-of','infects','competes-with','decomposes','depends-on','evolves-from'];
-export const habitatKinds=['tropical-forest','temperate-forest','boreal-forest','grassland','floodplain','alpine','tundra','polar','desert','desert-dunes','oasis','wetland','river','lake','estuary','intertidal','shallow-marine','reef','open-ocean','geothermal'];
+export const habitatKinds=['tropical-forest','temperate-forest','boreal-forest','grassland','steppe','xeric-scrub','savanna','mediterranean-woodland','cold-desert','volcanic-barren','floodplain','alpine','tundra','polar','desert','desert-dunes','oasis','wetland','river','lake','estuary','intertidal','shallow-marine','reef','open-ocean','geothermal'];
 export const statuses=['native','introduced','cultivated','invasive','rare','threatened','seasonally-present','migratory','locally-extinct','absent'];
-export const blankLifeform=()=>({version:1,group:'plant',origin:'custom-created',roles:['producer'],traits:{},dispersal:'regional',completeness:'draft',locked:true,requirements:{medium:'terrestrial',temperature:{min:-15,max:40},moisture:{min:.2,max:1},elevation:{min:-500,max:3000},depth:{min:0,max:0},salinity:{min:0,max:5},minLight:.1},dependencies:[]});
+export const blankLifeform=()=>({version:2,group:'plant',origin:'custom-created',roles:['producer'],traits:{},dispersal:'regional',completeness:'draft',locked:true,requirements:{medium:'terrestrial',temperature:{min:-15,max:40},moisture:{min:.2,max:1},elevation:{min:-500,max:3000},depth:{min:0,max:0},salinity:{min:0,max:5},minLight:.1},dependencies:[]});
 export const blankRule=()=>({id:crypto.randomUUID(),name:'',targetGroup:'fungus',habitats:[],traits:{},removeTraits:[],abundance:1,priority:0,conflict:'merge',strict:false,enabled:true,provenance:'authored'});
 // This is a transparent preset interpreter, not an AI. Arbitrary ideas are kept
 // verbatim; users review or author the actual executable conditions and effects.

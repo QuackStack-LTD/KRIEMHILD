@@ -10,6 +10,9 @@ import (
 var FieldNames = []string{"elevation", "bathymetry", "slope", "oceanDistance", "latitude", "temperature", "summer", "winter", "current", "windX", "windY", "windStrength", "precipitation", "moisture", "aridity", "plate", "boundary", "tectonicStress", "volcano", "flow", "accumulation", "groundwater", "sediment", "fertility", "snow", "glacier", "dune", "duneOrientation", "reef", "salinity", "clarity", "mesa", "wetland", "oasis", "farmland", "settlement", "lava", "ash", "lake"}
 
 type EnvironmentOptions struct {
+	LapseRate          float64                 `json:"lapseRate,omitempty"` // Degrees C per km; zero on old snapshots means 6.5.
+	MajorContinents    int                     `json:"majorContinents"`
+	OceanSeparation    string                  `json:"oceanSeparation,omitempty"`
 	LandShape          *LandShapeOptions       `json:"landShape,omitempty"`
 	Geography          *GeographicOptions      `json:"geography,omitempty"`
 	RiverOptions       *RiverOptions           `json:"riverOptions,omitempty"`
@@ -45,6 +48,18 @@ func DecodeEnvironment(data []byte) (EnvironmentOptions, error) {
 	err := json.Unmarshal(data, &o)
 	if err != nil {
 		return o, err
+	}
+	if o.MajorContinents < 0 || o.MajorContinents > 12 {
+		return o, fmt.Errorf("major continents must be 0 (seeded 4–7) or 1–12")
+	}
+	if !finite(o.LapseRate) || o.LapseRate < 0 || o.LapseRate > 12 {
+		return o, fmt.Errorf("lapse rate must be between 0 and 12 C/km")
+	}
+	if o.OceanSeparation == "" {
+		o.OceanSeparation = "standard"
+	}
+	if o.OceanSeparation != "narrow" && o.OceanSeparation != "standard" && o.OceanSeparation != "wide" {
+		return o, fmt.Errorf("ocean separation must be narrow, standard or wide")
 	}
 	shape := o.shapeOptions()
 	for _, v := range []float64{shape.Large, shape.Medium, shape.Small} {
@@ -105,6 +120,7 @@ type Plate struct {
 	Continental bool    `json:"continental"`
 }
 type Environment struct {
+	Layout                *ContinentalLayout   `json:"continentalLayout,omitempty"`
 	ContinentalStructures []LandmassStructure  `json:"continentalStructures,omitempty"`
 	Geography             *GeographicScale     `json:"geography,omitempty"`
 	Geomorphology         *Geomorphology       `json:"geomorphology,omitempty"`
@@ -208,13 +224,19 @@ func BuildEnvironment(o EnvironmentOptions) *Environment {
 	}
 	f, set := e.get, e.set
 	mask := e.Mask
-	macro := &Solver{Rules: &Rules{Config: Config{Continents: []Kind{{ID: "water", Name: "Water", Color: "#3a7bd5", Odds: .5}, {ID: "land", Name: "Land", Color: "#7cb342", Odds: .5}}}}, W: w, H: h, N: n, K: 2}
-	macro.buildContinents(&ContinentOptions{o.ContinentCount, 5}, seed)
-	e.Points = macro.ContPoints
 	for p := 0; p < o.PlateCount; p++ {
 		e.Plates = append(e.Plates, Plate{rng.Next() * float64(w), rng.Next() * float64(h), rng.Next()*2 - 1, rng.Next()*2 - 1, rng.Next() > .45})
 	}
-	e.generateContinentalMask(macro.ContPoints, sample)
+	if o.Heights == nil {
+		e.generateContinentalMask(nil, sample)
+	} else {
+		// Imported/authored heights already define their continental foundation.
+		for i, height := range o.Heights {
+			if height > o.Sea {
+				e.Mask[i] = 1
+			}
+		}
+	}
 	hotspots := make([][2]float64, max(1, int(round(3*o.Volcanism))))
 	for p := range hotspots {
 		hotspots[p] = [2]float64{(.15 + rng.Next()*.7) * float64(w), (.15 + rng.Next()*.7) * float64(h)}
@@ -269,6 +291,7 @@ func BuildEnvironment(o EnvironmentOptions) *Environment {
 		set("highland", i, strength*math.Exp(-math.Pow(gap/width, 2)))
 		set("mountainCore", i, strength*math.Exp(-math.Pow(gap/(width*.48), 2)))
 	}
+	e.buildCrustFoundation()
 	e.buildGeologicalSurface(sample, hotspots)
 	e.buildArchipelagos(hotspots)
 
@@ -276,6 +299,7 @@ func BuildEnvironment(o EnvironmentOptions) *Environment {
 	e.reconcilePlanetSeam()
 	e.limitSurfaceGradients()
 	e.connectOcean()
+	e.buildOceanCurrents()
 	for i := 0; i < n; i++ {
 		slope := 0.
 		for _, j := range nb(i, w, h) {
@@ -286,13 +310,15 @@ func BuildEnvironment(o EnvironmentOptions) *Environment {
 		lat := e.cellLatitude(i)
 		ab, r := math.Abs(lat), lat*math.Pi/180
 		set("latitude", i, lat)
-		set("current", i, math.Sin(x/float64(w)*math.Pi*4)*math.Sin(r*2)*3*math.Exp(-f("oceanDistance", i)/3))
-		base := 31 - 57*math.Pow(math.Sin(math.Abs(r)), 1.4) + o.TemperatureOffset + f("current", i)
+		// Keep a broad temperate belt: the former sin(latitude)^1.4 curve
+		// put sea-level 45-degree latitudes below freezing on an Earth-like world.
+		// Higher-latitude cooling remains steep enough for boreal and polar land.
+		base := 28 - 48*math.Pow(math.Sin(math.Abs(r)), 4) + o.TemperatureOffset + f("current", i)
 		airHeight := 0.
 		if mask[i] != 0 {
 			airHeight = f("elevation", i)
 		}
-		set("temperature", i, base-airHeight*.0065)
+		set("temperature", i, base-airHeight*o.lapseRate()/1000)
 		factor := .35
 		if mask[i] != 0 {
 			factor = 1
@@ -326,11 +352,11 @@ func BuildEnvironment(o EnvironmentOptions) *Environment {
 	if o.ClimateAdjustments != nil {
 		for i, factor := range o.ClimateAdjustments {
 			set("precipitation", i, f("precipitation", i)*factor)
-			potential := math.Max(120, (f("temperature", i)+25)*24)
-			set("aridity", i, clamp(potential/math.Max(1, f("precipitation", i))/5, 0, 1))
-			set("moisture", i, clamp(f("precipitation", i)/potential, 0, 1))
 		}
 	}
+	// The same monthly water budget supplies coarse hydrology and final biomes.
+	e.updateClimateBudget()
+
 	e.prepareHydrology()
 	if e.carveStorageBasins() {
 		e.prepareHydrology()
@@ -355,69 +381,7 @@ func BuildEnvironment(o EnvironmentOptions) *Environment {
 	e.BuildNaturalResources()
 	return e
 }
-func (e *Environment) precipitation() {
-	w, h := e.Options.Columns, e.Options.Rows
-	f, set := e.get, e.set
-	vapor, next := make([]float64, w*h), make([]float64, w*h)
-	for pass := 0; pass < 12; pass++ {
-		for y := 0; y < h; y++ {
-			east := f("windX", y*w+w/2) > 0
-			for k := 0; k < w; k++ {
-				x := k
-				direction := 1
-				if !east {
-					x = w - 1 - k
-					direction = -1
-				}
-				i := y*w + x
-				ux := max(0, min(w-1, x-direction))
-				if e.Geography != nil && e.Geography.WrapX {
-					ux = (x - direction + w) % w
-				}
-				up := y*w + ux
-				uy := max(0, min(h-1, int(round(float64(y)-f("windY", i)))))
-				cross := uy*w + ux
-				input := .85*next[up] + .15*vapor[cross]
-				if e.Options.Realism {
-					// Fractional meridional advection: rounding windY erased trade winds.
-					crossY := y - 1
-					if f("windY", i) < 0 {
-						crossY = y + 1
-					}
-					crossY = max(0, min(h-1, crossY))
-					mix := math.Abs(f("windY", i)) / (math.Abs(f("windX", i)) + math.Abs(f("windY", i)) + .001)
-					input = (1-mix)*next[up] + mix*vapor[crossY*w+x]
-				}
-				if e.Mask[i] == 0 {
-					next[i] = f32(clamp((f("temperature", i)+30)/60, .2, 1) * 1.5)
-					set("precipitation", i, 900)
-					continue
-				}
-				lat := math.Abs(f("latitude", i))
-				wetBelt := .065 + .11*math.Exp(-math.Pow(lat/15, 2)) + .06*math.Exp(-math.Pow((lat-55)/14, 2))
-				dryBelt := 1 - .65*math.Exp(-math.Pow((lat-28)/9, 2))
-				uplift := math.Max(0, f("elevation", i)-f("elevation", up)) / 1500
-				loss := clamp(wetBelt*dryBelt+uplift*.6, .018, .85)
-				if e.Options.Realism {
-					loss = clamp(wetBelt*dryBelt*.3+uplift*.6, .006, .85)
-				}
-				rain := input * loss
-				set("precipitation", i, (rain*10000+12)*e.Options.Rainfall)
-				next[i] = f32(math.Max(0, input-rain) * .984)
-				if e.Options.Realism {
-					set("precipitation", i, (rain*22000+12)*e.Options.Rainfall)
-					next[i] = f32(math.Max(0, input-rain) * .995)
-				}
-			}
-		}
-		copy(vapor, next)
-	}
-	for i := 0; i < w*h; i++ {
-		potential := math.Max(120, (f("temperature", i)+25)*24)
-		set("aridity", i, clamp(potential/math.Max(1, f("precipitation", i))/5, 0, 1))
-		set("moisture", i, clamp(f("precipitation", i)/potential, 0, 1))
-	}
-}
+
 func (e *Environment) hydrology() { e.simulateHydrology() }
 func (e *Environment) entities(sample func(float64, float64) float64) {
 	w, h := e.Options.Columns, e.Options.Rows
@@ -550,6 +514,9 @@ func (e *Environment) Candidates(i int) []string {
 		}
 		return []string{"water"}
 	}
+	if choices := e.biomeCandidates(i); choices != nil {
+		return choices
+	}
 	for _, v := range []struct {
 		name      string
 		threshold float64
@@ -598,6 +565,26 @@ func (e *Environment) Candidates(i int) []string {
 	return []string{"grass", "meadow"}
 }
 func PrepareEnvironment(o EnvironmentOptions, c Config) (*Solver, error) {
+	// Upgrade palettes only for explicit physical generation, never on load.
+	// Existing indices and custom environmentType aliases remain intact.
+	defaults, _ := DecodeConfig(Defaults)
+	present := map[string]bool{}
+	for _, t := range c.Types {
+		id := t.ID
+		if t.EnvironmentType != "" {
+			id = t.EnvironmentType
+		}
+		present[id] = true
+	}
+	c.Types = append([]Type(nil), c.Types...)
+	for _, t := range defaults.Types {
+		if (t.ID == "steppe" || t.ID == "scrubland" || t.ID == "savanna" || t.ID == "mediterranean") && !present[t.ID] {
+			if len(c.Types) >= 32 {
+				return nil, fmt.Errorf("physical generation needs %s; the 32-type palette is full", t.ID)
+			}
+			c.Types = append(c.Types, t)
+		}
+	}
 	e := BuildEnvironment(o)
 	if d := e.Hydrology.Diagnostics; len(d) > 0 {
 		return nil, fmt.Errorf("hydrology validation: %s: %s", d[0].Object, d[0].Reason)

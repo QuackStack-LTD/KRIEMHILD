@@ -1,9 +1,13 @@
+import {biomeCatalog} from './biome-material.js';
 import {riverWidthPixels} from './river-width.js';
 import {updateHydrologyReport} from './hydrology-report.js';
 // Environmental data comes from Go. These functions only visualize it.
 const climateColors = ['#245e94','#136d38','#32904b','#a7b858','#d9b06a','#b9a58b','#c6b769','#64b9a3','#77a16a','#406d62','#acbbb3','#e6f4fa','#a8adc5'];
 export function riverSystemColor(id){let hash=0;for(const ch of id)hash=(Math.imul(hash,31)+ch.charCodeAt(0))>>>0;return `hsl(${hash%360} 70% 68%)`;}
 const ranges = {
+ annualPET:[0,3000],soilWater:[0,1],droughtMonths:[0,12],growingMonths:[0,12],climateWaterYield:[0,2000],climateActualET:[0,2000],climateSnowmelt:[0,2000],climateDryYield:[0,1000],crustAge:[0,3500],crustThickness:[0,70],currentX:[-1,1],currentY:[-1,1],
+ catchmentKM2:[0,1e7],dischargeM3s:[0,1e5],channelWidthMetres:[0,2000],valleyWidthKM:[0,50],fluvialIncision:[0,500],fluvialDeposition:[0,100],sedimentTransport:[0,1e9],erosionAgeMa:[0,100],
+ aridityIndex:[0,2],rainfallPotential:[0,3000],continentalShape:[-4,4],
  runoff:[0,3],recharge:[0,2],baseflow:[0,1],waterTableDepth:[0,15],streamOrder:[1,8],geothermal:[25,250],snowmelt:[0,2],glacierMelt:[0,1],dryDischarge:[0,30],spring:[0,3],lithology:[0,5],coastType:[0,6],
   temperature:[-40,40],summer:[-40,40],winter:[-40,40],elevation:[-12000,8000],
   drainageElevation:[-12000,8000],bathymetry:[0,12000],precipitation:[0,3000],
@@ -12,9 +16,15 @@ const ranges = {
   duneOrientation:[-Math.PI,Math.PI*1.5],oceanDistance:[0,30],freshwaterDistance:[0,20],
   salinity:[0,35],waterLevel:[-1000,5000],waterDepth:[0,12000],catchmentArea:[0,1000],geology:[0,6],landform:[0,8],reefType:[0,4],
 };
+export function syncEnvironmentOverlays(select,environment){
+ const present=new Set([...select.options].map(o=>o.value));
+ for(const name of Object.keys(environment?.fields||{}))if(!present.has(name)){
+  const option=document.createElement('option');option.value=name;option.textContent=name.replace(/([A-Z])/g,' $1').replace(/^./,c=>c.toUpperCase());select.append(option);
+ }
+}
 export function installEnvironmentOverlays(select) {
 	for(const [value,label] of [['riverClass','Major river routes'],['riverSystem','River systems and tributary connections']]){const option=document.createElement('option');option.value=value;option.textContent=label;select.append(option);}
-  const fields = ['hillslopeRunoff','hillslopeAreaKM2','seasonalClimate','seasonCount','runoff','recharge','baseflow','waterTableDepth','streamOrder','watershed','permeability','lithology','snowmelt','glacierMelt','dryDischarge','spring','geothermal','beach','coastType','climate','wind','latitude','current','windY','slope','oceanDistance','tectonicStress','summerRain','winterRain','growingSeason','drainageElevation','river','freshwaterDistance','rockType','layering','caprock','erosion','sandSupply','sandTransport','deposition','vegetation','substrate','snowBalance','duneField','duneOrientation','hotspot','vent','cultivated','village','ocean','waterLevel','waterDepth','waterBody','basin','catchmentArea','shelf','seamount','reefType','light','landform','highland','mountainCore','geology'];
+  const fields = ['biome','aridityIndex','steppe','desert','rainfallPotential','rainShadow','moistureSupply','oceanReserve','continentalOwner','continentalShape','hillslopeRunoff','hillslopeAreaKM2','seasonalClimate','seasonCount','runoff','recharge','baseflow','waterTableDepth','streamOrder','watershed','permeability','lithology','snowmelt','glacierMelt','dryDischarge','spring','geothermal','beach','coastType','climate','wind','latitude','current','windY','slope','oceanDistance','tectonicStress','summerRain','winterRain','growingSeason','drainageElevation','river','freshwaterDistance','rockType','layering','caprock','erosion','sandSupply','sandTransport','deposition','vegetation','substrate','snowBalance','duneField','duneOrientation','hotspot','vent','cultivated','village','ocean','waterLevel','waterDepth','waterBody','basin','catchmentArea','shelf','seamount','reefType','light','landform','highland','mountainCore','geology'];
   for(const name of fields) if(![...select.options].some(o=>o.value===name)) {
     const option=document.createElement('option'); option.value=name;
     option.textContent=name==='seasonalClimate'?'Seasonal climate zones':name==='seasonCount'?'Local season count':name==='climate'?'Derived climate zones':name==='wind'?'Wind direction (arrows)':name.replace(/([A-Z])/g,' $1').replace(/^./,c=>c.toUpperCase());
@@ -33,6 +43,8 @@ export function fieldColor(environment,name,c) {
   if(name==='watershed'&&f.ocean?.[c])return '#173e59';
   if(name==='seasonalClimate')return `hsl(${v*137.508%360} 45% 55%)`;
   if(name==='seasonCount')return ['#777','#69859d','#65a397','#9eae67','#c1a15d','#b9776b','#976eaf'][Math.round(v)]||'#777';
+  if(name==='biome')return biomeCatalog[v]?.color||'#777777';
+  if(name==='continentalOwner')return `hsl(${v*137.508%360} 48% 56%)`;
   if(name==='climate') return climateColors[v] || '#777777';
   if(name==='rockType') return ['#97919d','#c4ac7a','#695765'][v];
   if(name==='boundary') return ['#18344d','#e77355','#69cbbb','#deb968'][v];
@@ -60,6 +72,10 @@ export function overlayLegend(e,name) {
   if(!e?.fields[name]) return 'This layer requires Real-world geology & climate.';
   if(name==='seasonalClimate')return (e.seasonalZones||[]).map((name,i)=>`${i}: ${name}`).join(' / ');
   if(name==='seasonCount')return '1-6 local phases derived from the annual climate curve, or the chosen custom count. Pin a point to inspect its seasons.';
+  if(name==='biome')return biomeCatalog.map((b,i)=>`${i}: ${b.name}`).join(' ? ');
+  if(name==='aridityIndex')return 'Annual precipitation / potential evapotranspiration: <0.25 arid, 0.25?0.50 steppe, 0.50?0.65 dry subhumid. Cold growing conditions can take priority.';
+  if(name==='rainfallPotential')return 'Large-scale circulation potential (mm/year); moisture supply and rain shadows modify actual rainfall.';
+  if(name==='oceanReserve')return 'Protected intercontinental water corridors. Land coverage and islands cannot fill these gaps.';
   if(name==='climate') return e.climateZones.map((v,i)=>`${i}: ${v}`).join(' · ');
   if(name==='rockType') return '0: crystalline · 1: sedimentary · 2: volcanic';
   if(name==='boundary') return '0: interior · 1: convergent · 2: divergent · 3: transform';

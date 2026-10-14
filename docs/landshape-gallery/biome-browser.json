@@ -1,0 +1,20 @@
+{
+  "biome": {
+    "checks": [
+      "Major continent count and wide ocean separation reach the physical layout; legacy count stays separate",
+      "Steppe and scrubland agree between base fields, actual detail tiles and hover labels",
+      "Hover reports the water budget and keeps canvas/document dimensions fixed"
+    ],
+    "hovered": [
+      "56.49°N, 25.53°W · 9483.8 km east of west edge, 3726.7 km south of north edge · Semi-arid steppe · Semi-arid steppe · 48 m · 3.7 °C · 193 mm/yr · AI 0.45 · summer/winter rain 102/102 mm · PET 449 mm · soil water 3% · drought 6/12 months · growing season 1/12 · ",
+      "33.97°N, 121.41°W · 5402.6 km east of west edge, 6229.8 km south of north edge · Xeric scrubland · Humid subtropical · 294 m · 21.8 °C · 542 mm/yr · AI 0.55 · summer/winter rain 266/306 mm · PET 1032 mm · soil water 0% · drought 6/12 months · growing season 0/12 · "
+    ],
+    "layout": {
+      "count": 5,
+      "gapCells": 4.8,
+      "requestedLandPercent": 42,
+      "foundationLandPercent": 29.375,
+      "warning": "Ocean separation and connected continents take priority: requested 42.0% land, achieved 29.4% continental foundations. Reduce continent count or ocean separation for more land."
+    }
+  }
+}

@@ -64,6 +64,7 @@ func TestPlanetaryLowlandTrunkAndRegionalBoundary(t *testing.T) {
 		e.set("mountainCore", i, 0)
 		e.set("glacier", i, 0)
 	}
+	e.updateClimateBudget() // Rainfall edits must update the authoritative supply.
 	e.prepareHydrology()
 	e.hydrology()
 	e.finishHydrology()

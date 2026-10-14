@@ -54,8 +54,19 @@ func TestArchipelagoProcessesDensityAndDeterminism(t *testing.T) {
 			}
 			o.IslandFrequency = 2.5
 			dense := BuildEnvironment(o)
-			if len(dense.Archipelagos) <= len(e.Archipelagos) || len(landmasses(dense)) <= len(landmasses(e)) {
-				t.Fatal("frequency does not increase island groups")
+			landArea := func(world *Environment) int {
+				count := 0
+				for _, land := range world.Mask {
+					if land != 0 {
+						count++
+					}
+				}
+				return count
+			}
+			// Additional members can join within an archipelago. Count geological
+			// groups and emerged area, not only disconnected raster fragments.
+			if len(dense.Archipelagos) <= len(e.Archipelagos) || landArea(dense) <= landArea(e) {
+				t.Fatalf("frequency does not increase island groups/area: groups %d -> %d, land %d -> %d", len(e.Archipelagos), len(dense.Archipelagos), landArea(e), landArea(dense))
 			}
 		}
 	}

@@ -105,6 +105,19 @@ export function Tolerances({ value: r, onChange }) {
           onChange={(e) => onChange({ ...r, minLight: Number(e.target.value) })}
         />
       </label>
+      <details>
+        <summary>Seasonal and vertical niche</summary>
+        <label>Strata (empty allows any)
+          <CSVInput value={r.strata} onChange={strata=>onChange({...r,strata})}/>
+        </label>
+        <label>Dispersal distance in km (0 uses dispersal class)
+          <input type="number" min="0" max="50000" value={r.dispersalKm||0} onChange={e=>onChange({...r,dispersalKm:Number(e.target.value)})}/>
+        </label>
+        {[["soilPH","Soil pH",14],["droughtMonths","Drought months",12],["growingMonths","Growing months",12]].map(([key,title,max])=><fieldset key={key}>
+          <legend><label><input type="checkbox" checked={!!r[key]} onChange={e=>{const next={...r};if(e.target.checked)next[key]={min:0,max};else delete next[key];onChange(next)}}/>{title}</label></legend>
+          {r[key]&&["min","max"].map(end=><label key={end}>{end}<input type="number" min="0" max={max} step="any" value={r[key][end]} onChange={e=>onChange({...r,[key]:{...r[key],[end]:Number(e.target.value)}})}/></label>)}
+        </fieldset>)}
+      </details>
       <label>
         Essential substrates (comma separated)
         <CSVInput
@@ -426,7 +439,24 @@ export function RulesEditor({
     </div>
   );
 }
-export function DependenciesEditor({ value = [], onChange }) {
+function DependencyTargets({ choices, value = [], onChange }) {
+  const [search, setSearch] = useState("");
+  const selected = new Set(value);
+  const matches = choices.filter((species) => !selected.has(species.id) && species.name.toLowerCase().includes(search.toLowerCase())).slice(0, 20);
+  return <fieldset>
+    <legend>Specific hosts or partners (optional)</legend>
+    {value.map((id) => <button type="button" key={id} onClick={() => onChange(value.filter((item) => item !== id))}>
+      {choices.find((species) => species.id === id)?.name || "Unavailable lifeform"} ×
+    </button>)}
+    <input aria-label="Find a host or partner" placeholder="Search lifeforms by name" value={search} onChange={(event) => setSearch(event.target.value)} />
+    {search && <select aria-label="Choose a host or partner" value="" onChange={(event) => { if (event.target.value) { onChange([...value, event.target.value]); setSearch(""); } }}>
+      <option value="">Choose a matching lifeform</option>
+      {matches.map((species) => <option key={species.id} value={species.id}>{species.name} — {label(species.biology.group)}</option>)}
+    </select>}
+    {!value.length && <small>Any compatible lifeform may supply this dependency.</small>}
+  </fieldset>;
+}
+export function DependenciesEditor({ value = [], onChange, species = [] }) {
   return (
     <div>
       {value.map((d, i) => (
@@ -490,6 +520,39 @@ export function DependenciesEditor({ value = [], onChange }) {
               )
             }
           />
+          <details>
+            <summary>Host, season and life stage</summary>
+            <DependencyTargets choices={species} value={d.speciesIds || []} onChange={(ids) => onChange(value.map((x, j) => j === i ? { ...x, speciesIds: ids } : x))} />
+            {[
+              ["seasons", "Required overlapping seasons", true],
+              ["lifeStage", "Required host / prey life stage", false],
+            ].map(([key, label, list]) => (
+              <label key={key}>
+                {label}
+                {list ? (
+                  <CSVInput
+                    value={d[key] || []}
+                    placeholder="Comma-separated; blank allows any"
+                    onChange={(items) => onChange(value.map((x, j) => j === i ? { ...x, [key]: items } : x))}
+                  />
+                ) : (
+                  <input
+                    value={d[key] || ""}
+                    placeholder="Blank allows any"
+                    onChange={(e) => onChange(value.map((x, j) => j === i ? { ...x, [key]: e.target.value } : x))}
+                  />
+                )}
+              </label>
+            ))}
+            <label>
+              Required medium
+              <select value={d.medium || ""} onChange={(e) => onChange(value.map((x, j) => j === i ? { ...x, medium: e.target.value } : x))}>
+                <option value="">Any compatible medium</option>
+                {["terrestrial", "freshwater", "marine", "amphibious"].map((medium) => <option key={medium}>{medium}</option>)}
+              </select>
+            </label>
+            <small>Lifeforms can define activeSeasons and lifeStages as comma-separated biological traits.</small>
+          </details>
           <button
             type="button"
             onClick={() => onChange(value.filter((_, j) => j !== i))}

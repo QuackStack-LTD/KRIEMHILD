@@ -343,6 +343,7 @@ export default function LifeformProfile({
           <section>
             <h2>Required ecological dependencies</h2>
             <DependenciesEditor
+              species={all.filter((species) => species.id !== entity.id)}
               value={b.dependencies}
               onChange={(v) => bio("dependencies", v)}
             />

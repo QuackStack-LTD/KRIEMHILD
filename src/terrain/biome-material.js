@@ -1,6 +1,10 @@
+import biomeCatalog from '../../internal/terrain/biomes.json' with {type:'json'};
+export {biomeCatalog};
+export const biomeNames=Object.freeze(Object.fromEntries(biomeCatalog.map(b=>[b.id,b.name])));
+export function categoricalBiome(environment,i){return biomeCatalog[environment?.fields?.biome?.[i]]?.id;}
 const clamp=v=>Math.max(0,Math.min(1,v));
 const smooth=v=>{v=clamp(v);return v*v*(3-2*v);};
-export const naturalMaterials=Object.freeze({grass:[113,148,78],forest:[53,103,59],desert:[158,141,99],mountain:[123,119,109],tundra:[143,150,127],snow:[224,232,231],sand:[191,172,124],swamp:[76,115,103]});
+export const naturalMaterials=Object.freeze(Object.fromEntries(biomeCatalog.map(b=>[b.id,b.color.match(/\w{2}/g).map(c=>parseInt(c,16))])));
 
 // World-coordinate value noise produces connected ecotone lobes, never a
 // screen-space blur or independently randomized patches at each zoom level.
@@ -12,6 +16,9 @@ export function materialNoise(x,y,seed=0){
 }
 export function materialSeed(seed=''){let h=2166136261;for(const ch of String(seed))h=Math.imul(h^ch.charCodeAt(0),16777619);return h>>>0;}
 export function biomeName(p,position){
+ // New worlds carry a categorical cover chosen from the monthly water budget.
+ // Texture and relief can vary within it; neither can reclassify its climate.
+ if(naturalMaterials[p.biome])return p.biome;
  let name='grass';
  const x=position?.x??0,y=position?.y??0,seed=position?.seed??0;
  const broad=materialNoise(x*.31,y*.31,seed),fine=materialNoise(x*1.7+broad,y*1.7-broad,seed^9137);
@@ -39,5 +46,5 @@ export function coarseMaterial(environment,i){
  const f=environment.fields,v=(name,fallback=0)=>f[name]?.[i]??fallback;
  const rock=clamp(v('slope')*1.2+v('mountainCore')*.4);
  const sand=clamp(v('dune')+v('sandSupply')*.15*v('aridity'))*(1-rock);
- return {temperature:v('temperature',15),moisture:v('moisture',.5),vegetation:v('moisture',.5)*(1-v('snow')),rock,sand:Math.max(sand,v('beach')),snow:v('snow'),wetland:v('wetland'),...(f.desert?{desert:v('desert')}:{})};
+ return {...(f.biome?{biome:categoricalBiome(environment,i)}:{}),temperature:v('temperature',15),moisture:v('moisture',.5),vegetation:v('moisture',.5)*(1-v('snow')),rock,sand:Math.max(sand,v('beach')),snow:v('snow'),wetland:v('wetland'),...(f.desert?{desert:v('desert')}:{})};
 }

@@ -1,0 +1,12 @@
+{
+  "detail": {
+    "checks": [
+      "2D cursor anchor is invariant",
+      "Visible detail tiles load without regenerating the parent world",
+      "Zoom out returns to the same geographic point",
+      "3D zoom preserves the raycast terrain point"
+    ],
+    "detail": "World · 3D · refining…",
+    "anchorError": 1.921522428865554e-15
+  }
+}

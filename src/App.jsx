@@ -56,7 +56,7 @@ import Organizations, {
   OrganizationProfile,
 } from "./worldbuilding/Organizations.jsx";
 import { useEffect, useState } from "react";
-import TerrainApp from "./TerrainApp.jsx";
+const TerrainApp = lazy(() => import("./TerrainApp.jsx"));
 import {
   historyRequest,
   graphLayout,
@@ -489,15 +489,23 @@ export default function App() {
   if (path.startsWith("/world/"))
     return (
       <div className="terrain-app">
-        <TerrainApp
-          onExit={(worldID, entityID, ageID) =>
-            navigate(
-              worldID
-                ? `/worlds/${worldID}${entityID ? `/profile?entity=${entityID}&age=${ageID}` : ""}`
-                : "/",
-            )
+        <Suspense
+          fallback={
+            <main className="world-page" role="status">
+              Loading terrain workspace...
+            </main>
           }
-        />
+        >
+          <TerrainApp
+            onExit={(worldID, entityID, ageID) =>
+              navigate(
+                worldID
+                  ? `/worlds/${worldID}${entityID ? `/profile?entity=${entityID}&age=${ageID}` : ""}`
+                  : "/",
+              )
+            }
+          />
+        </Suspense>
       </div>
     );
   async function command(c) {

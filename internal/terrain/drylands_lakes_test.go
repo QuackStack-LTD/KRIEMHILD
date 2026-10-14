@@ -14,6 +14,17 @@ func TestDesertsFollowAnnualClimateWaterBalance(t *testing.T) {
 			continue
 		}
 		zone := e.Climate.Zones[c.Zone].Kind
+		if (e.get("steppe", i) > 0) != (zone == "steppe") {
+			t.Fatal("steppe suitability disagrees with climate", i)
+		}
+		rain, pet := 0., 0.
+		for _, m := range c.Months {
+			rain += m.Rain
+			pet += m.Evaporation
+		}
+		if math.Abs(e.get("aridityIndex", i)-rain/math.Max(1, pet)) > 1e-5 {
+			t.Fatal("aridity index does not represent monthly budget", i)
+		}
 		if zone == "desert" {
 			deserts++
 		} else {
@@ -29,6 +40,9 @@ func TestDesertsFollowAnnualClimateWaterBalance(t *testing.T) {
 	m := NewDetailModel(e)
 	for i := range e.Mask {
 		p := m.Sample(float64(i%e.Options.Columns), float64(i/e.Options.Columns), 0)
+		if p.Biome != e.BiomeAt(i) {
+			t.Fatal("detail lost categorical biome", i)
+		}
 		if p.Desert == nil || math.Abs(*p.Desert-e.get("desert", i)) > 1e-6 {
 			t.Fatal("detail lost climate suitability", i)
 		}
@@ -42,6 +56,9 @@ func TestDesertsFollowAnnualClimateWaterBalance(t *testing.T) {
 		t.Fatal(err)
 	}
 	for i := range e.Mask {
+		if restored.BiomeAt(i) != e.BiomeAt(i) || restored.ClimateKind(i) != e.ClimateKind(i) {
+			t.Fatal("saved biome or climate changed", i)
+		}
 		if restored.desertAt(i) != e.desertAt(i) {
 			t.Fatal("saved desert distribution changed")
 		}

@@ -665,6 +665,9 @@ func (s *Solver) zoneShares(x, y float64) []float64 {
 	}
 	return out
 }
+
+// buildContinents is the legacy mixed terrain-point influence model. Physical
+// generation uses Environment.layoutCenters and separated continental footprints.
 func (s *Solver) buildContinents(cont *ContinentOptions, seed uint32) {
 	s.ContPoints = []Point{}
 	if cont == nil || cont.Count <= 0 || cont.Strength <= 0 || s.K == 0 {

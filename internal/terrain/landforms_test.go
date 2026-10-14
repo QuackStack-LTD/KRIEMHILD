@@ -89,18 +89,23 @@ func TestPhysicalLandDistribution(t *testing.T) {
 	}
 }
 
-func TestPhysicalDeterminismAndPointScale(t *testing.T) {
-	o, _ := DecodeEnvironment([]byte(`{"columns":160,"rows":100,"seed":"KRIEMHILD","continentCount":8}`))
+func TestPhysicalDeterminismAndContinentScale(t *testing.T) {
+	o, _ := DecodeEnvironment([]byte(`{"columns":96,"rows":64,"seed":"KRIEMHILD","majorContinents":4}`))
 	a, b := BuildEnvironment(o), BuildEnvironment(o)
 	if !reflect.DeepEqual(a, b) {
 		t.Fatal("identical settings are not deterministic")
 	}
 	o.ContinentCount = 40
 	c := BuildEnvironment(o)
-	if reflect.DeepEqual(a.Heights, c.Heights) {
-		t.Fatal("point count does not affect geography")
+	if !reflect.DeepEqual(a.Heights, c.Heights) {
+		t.Fatal("legacy point count changed physical geography")
 	}
-	if len(landmasses(c)) <= len(landmasses(a)) {
-		t.Fatalf("more points should produce smaller regions in this regression world: %v vs %v", landmasses(a), landmasses(c))
+	o.MajorContinents = 7
+	d := BuildEnvironment(o)
+	if reflect.DeepEqual(a.Heights, d.Heights) || d.Layout.Count != 7 {
+		t.Fatal("major-continent control did not change geography")
+	}
+	if d.LandShapeDiagnostics().MajorCount <= a.LandShapeDiagnostics().MajorCount {
+		t.Fatal("explicit larger continent count lost its major foundations")
 	}
 }

@@ -157,10 +157,11 @@ func (e *Environment) buildReefs(sample func(float64, float64) float64) {
 		}
 		// Warm shallows are potential habitat, not automatic coral coverage.
 		// Coherent provinces represent sustained recruitment and stable substrate;
-		// a second scale leaves gaps rather than painting entire coastlines pink.
+		// a second scale leaves gaps even across the broader warm-water habitat
+		// of the temperate climate calibration.
 		x, y := float64(i%w)/float64(w), float64(i/w)/float64(h)
 		province := sample(x*9+813, y*9+927)
-		if !atollRims[i] && (province < .70 || sample(x*32+619, y*32+731) < .48) {
+		if !atollRims[i] && (province < .74 || sample(x*32+619, y*32+731) < .48) {
 			continue
 		}
 		kind := 3.

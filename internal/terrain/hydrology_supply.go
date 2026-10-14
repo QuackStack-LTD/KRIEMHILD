@@ -69,6 +69,11 @@ func (e *Environment) prepareHydrology() {
 		cover := clamp(f("moisture", i)*(f("temperature", i)+10)/30, 0, 1)
 		et := math.Min(available*.8, math.Max(40, (f("temperature", i)+20)*12)*(.6+.4*cover))
 		liquid := math.Max(0, available-et)
+		if len(e.Fields["climateWaterYield"]) == n {
+			liquid = f("climateWaterYield", i)
+			et = f("climateActualET", i)
+			set("snowmelt", i, f("climateSnowmelt", i)/1000)
+		}
 		recharge := liquid * perm * .5
 		baseflow := recharge * .65
 		runoff := liquid - recharge + baseflow
@@ -79,6 +84,9 @@ func (e *Environment) prepareHydrology() {
 		lat := math.Abs(f("latitude", i))
 		share := .5 + .24*math.Exp(-math.Pow((lat-13)/13, 2)) - .28*math.Exp(-math.Pow((lat-36)/8, 2))*math.Exp(-f("oceanDistance", i)/8)
 		seasonal := clamp(2*math.Min(share, 1-share)*(1-f("aridity", i)*.85), .02, 1)
+		if len(e.Fields["climateDryYield"]) == n {
+			seasonal = clamp(f("climateDryYield", i)/math.Max(.001, liquid), 0, 1)
+		}
 		set("dryRunoff", i, (baseflow+(runoff-baseflow)*seasonal*.45)/1000*e.areaWeight(i))
 		set("geothermal", i, 25+90*f("tectonicStress", i)+140*f("volcano", i))
 		if f("ocean", i) > 0 {

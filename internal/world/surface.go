@@ -69,10 +69,16 @@ func Apply(p terrain.DetailPoint, x, y float64, ops []Operation) terrain.DetailP
 		case "plant":
 			if p.WaterBody == 0 {
 				p.Vegetation += (1 - p.Vegetation) * f
+				if f > .5 && p.Vegetation > .6 {
+					p.Biome = "forest"
+				}
 			}
 		case "clear":
 			p.Vegetation *= 1 - f
 			p.Rock = math.Max(p.Rock, f*.3)
+			if f > .5 && p.Vegetation < .3 && (p.Biome == "forest" || p.Biome == "jungle" || p.Biome == "taiga") {
+				p.Biome = "grass"
+			}
 		case "river":
 			p.Elevation -= math.Abs(o.Amount) * f
 			p.RiverLevel = p.Elevation + math.Abs(o.Amount)*f*.6
@@ -195,9 +201,14 @@ func (s *State) Environment(base *terrain.Environment) *terrain.Environment {
 	for name, f := range base.Fields {
 		e.Fields[name] = f
 	}
-	for _, name := range []string{"elevation", "waterBody", "waterLevel", "waterDepth", "vegetation", "river"} {
+	for _, name := range []string{"elevation", "waterBody", "waterLevel", "waterDepth", "vegetation", "river", "biome", "authoredCover"} {
 		e.Fields[name] = make([]float64, len(base.Mask))
 		copy(e.Fields[name], base.Fields[name])
+		if name == "biome" && len(base.Fields[name]) != len(base.Mask) {
+			for i := range e.Fields[name] {
+				e.Fields[name][i] = -1
+			}
+		}
 	}
 	w := base.Options.Columns
 	for i := range e.Fields["elevation"] {
@@ -206,7 +217,16 @@ func (s *State) Environment(base *terrain.Environment) *terrain.Environment {
 		if len(ops) == 0 {
 			continue
 		}
-		p := Apply(terrain.DetailPoint{Elevation: base.Fields["elevation"][i], WaterBody: int(base.Fields["waterBody"][i]), WaterLevel: base.Fields["waterLevel"][i], WaterDepth: base.Fields["waterDepth"][i], Vegetation: e.Fields["vegetation"][i]}, x, y, ops)
+		p := Apply(terrain.DetailPoint{Biome: base.BiomeAt(i), Elevation: base.Fields["elevation"][i], WaterBody: int(base.Fields["waterBody"][i]), WaterLevel: base.Fields["waterLevel"][i], WaterDepth: base.Fields["waterDepth"][i], Vegetation: e.Fields["vegetation"][i]}, x, y, ops)
+		if p.Biome != base.BiomeAt(i) {
+			for index, biome := range terrain.Biomes {
+				if biome.ID == p.Biome {
+					e.Fields["biome"][i] = float64(index)
+					e.Fields["authoredCover"][i] = float64(index + 1)
+					break
+				}
+			}
+		}
 		e.Fields["elevation"][i] = p.Elevation
 		e.Fields["waterBody"][i] = float64(p.WaterBody)
 		e.Fields["waterLevel"][i] = p.WaterLevel

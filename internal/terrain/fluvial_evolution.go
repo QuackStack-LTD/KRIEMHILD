@@ -216,10 +216,8 @@ func (e *Environment) evolveRiverLandscape() {
 		e.precipitation()
 		for i, factor := range e.Options.ClimateAdjustments {
 			set("precipitation", i, f("precipitation", i)*factor)
-			potential := math.Max(120, (f("temperature", i)+25)*24)
-			set("aridity", i, clamp(potential/math.Max(1, f("precipitation", i))/5, 0, 1))
-			set("moisture", i, clamp(f("precipitation", i)/potential, 0, 1))
 		}
+		e.updateClimateBudget() // Reconcile the monthly water budget after changed relief.
 		e.prepareHydrology()
 		e.hydrology()
 		g.Iterations++
@@ -322,6 +320,10 @@ func (e *Environment) reconcilePlanetSeam() {
 		}
 	}
 	for i := range e.Mask {
+		if reserve := e.Fields["oceanReserve"]; len(reserve) == len(e.Mask) && reserve[i] > 0 {
+			// Seam smoothing may change relief, but cannot close protected basins.
+			e.set("elevation", i, math.Min(-80, e.get("elevation", i)))
+		}
 		e.Heights[i] = int(round(e.get("elevation", i) / 4))
 	}
 }

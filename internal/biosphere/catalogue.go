@@ -13,7 +13,7 @@ func Catalogue() []Species {
 	all := []Species{}
 	add := func(id, name, group, role string, r Requirements, habitats []string, deps ...Dependency) {
 		r.Habitats = habitats
-		all = append(all, Species{ID: id, Name: name, Summary: "Representative ecological reference; tolerance values are procedural game approximations.", Biology: Lifeform{Version: 1, Group: group, Origin: "earth-reference", Roles: []string{role}, Traits: map[string]string{}, Dispersal: "regional", Requirements: r, Dependencies: deps, Completeness: "draft", CatalogueID: "core-v1/" + id}})
+		all = append(all, Species{ID: id, Name: name, Summary: "Representative ecological reference; tolerance values are procedural game approximations.", Biology: Lifeform{Version: Version, Group: group, Origin: "earth-reference", Roles: []string{role}, Traits: map[string]string{}, Dispersal: "regional", Requirements: r, Dependencies: deps, Completeness: "draft", CatalogueID: "core-v1/" + id}})
 	}
 	feed := func(role string) Dependency { return Dependency{Role: role, Kind: "feeds-on"} }
 	add("broadleaf", "Temperate broadleaf tree", "plant", "producer", land, []string{"temperate-forest", "floodplain"})
@@ -45,9 +45,10 @@ func Catalogue() []Species {
 	algae.MinLight = .08
 	add("fresh-algae", "Freshwater algae", "algae", "producer", algae, []string{"river", "lake", "wetland"})
 	plankton := marine
-	plankton.Depth.Max = 12000
-	plankton.MinLight = 0
-	// Ocean cells describe seabed depth; pelagic producers occupy the photic surface.
+	plankton.Depth.Max = 200
+	plankton.MinLight = .02
+	plankton.Strata = []string{"photic"}
+	// Organism depth is separate from seabed bathymetry in v2.
 	add("phytoplankton", "Marine phytoplankton", "algae", "producer", plankton, nil)
 	all[len(all)-1].Biology.Traits["verticalRange"] = "Photic surface above the seabed"
 	decomposer := land
@@ -83,5 +84,17 @@ func Catalogue() []Species {
 	all[len(all)-1].Biology.Traits["reference"] = "https://www.nps.gov/yell/learn/nature/thermophilic-archaea.htm"
 	add("phage", "Host-associated bacteriophage", "virus", "host-dependent", broad, nil, Dependency{Group: "bacterium", Kind: "infects", Description: "Compatible bacterial host required; infection does not imply disease"})
 	all[len(all)-1].Biology.Traits["transmission"] = "Local contact with compatible bacterial hosts in soil or water"
+	add("steppe-grass", "Drought-adapted bunchgrass", "plant", "producer", dry, []string{"steppe", "savanna", "xeric-scrub"})
+	add("sclerophyll", "Drought-adapted woodland shrub", "plant", "producer", dry, []string{"mediterranean-woodland", "xeric-scrub"})
+	deep := marine
+	deep.MinLight = 0
+	deep.Strata = []string{"benthic", "aphotic", "twilight"}
+	add("detrital-microbes", "Deep-water detrital microbes", "bacterium", "decomposer", deep, nil)
+	all[len(all)-1].Biology.Traits["energy"] = "Sinking organic detritus from photic production"
+	for i := range all {
+		if all[i].Biology.Group == "plant" && all[i].ID != "moss" && all[i].ID != "evergreen" {
+			all[i].Biology.Traits["reproduction"] = "flowering"
+		}
+	}
 	return all
 }

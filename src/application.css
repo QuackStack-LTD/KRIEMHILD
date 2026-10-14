@@ -45,6 +45,11 @@
 .generator-host .app {
   height: calc(100vh - 62px);
 }
+@media (max-width: 800px) {
+  .generator-host .app {
+    height: auto;
+  }
+}
 .project-hub {
   max-width: 1180px;
   padding: 54px 36px 80px;

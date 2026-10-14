@@ -25,7 +25,7 @@ func Habitats(e *terrain.Environment, categories []string, terrainID string) ([]
 		E *terrain.Environment
 		C []string
 	}{e, categories})
-	signature := Stable(string(raw))
+	signature := Stable("habitat-v2", string(raw))
 	get := func(k string, i int, def float64) float64 {
 		if i < len(e.Fields[k]) {
 			return e.Fields[k][i]
@@ -69,6 +69,7 @@ func Habitats(e *terrain.Environment, categories []string, terrainID string) ([]
 		}
 		c := Conditions{Temperature: Range{get("winter", i, t-5), get("summer", i, t+5)}, Moisture: Range{m, m}, Elevation: Range{z, z}, Depth: Range{depth, depth}, Salinity: Range{sal, sal}, Rain: get("precipitation", i, 800), Fertility: get("fertility", i, .4), Light: 1, Medium: medium, Substrates: []string{"soil"}, ClimateZones: []string{}, Seasons: []string{}}
 		if e.Climate != nil && i < len(e.Climate.Cells) {
+			c.SeasonalKnown = true
 			cc := e.Climate.Cells[i]
 			c.Temperature = Range{math.Inf(1), math.Inf(-1)}
 			c.Moisture = Range{1, 0}
@@ -100,7 +101,17 @@ func Habitats(e *terrain.Environment, categories []string, terrainID string) ([]
 		if e.Geology != nil && i < len(e.Geology.Cells) {
 			g := e.Geology.Cells[i]
 			if g.Province >= 0 && g.Province < len(e.Geology.Provinces) {
-				c.Substrates = append(c.Substrates, e.Geology.Provinces[g.Province].Rock)
+				if get("rock", i, 0) > .65 || get("slope", i, 0) > .65 && get("vegetation", i, 0) < .25 {
+					rock := e.Geology.Provinces[g.Province].Rock
+					formation := g.Cover
+					if formation < 0 {
+						formation = g.Basement
+					}
+					if formation >= 0 && formation < len(e.Geology.Formations) && len(e.Geology.Formations[formation].Strata) > 0 {
+						rock = e.Geology.Formations[formation].Strata[0].Rock
+					}
+					c.Substrates = []string{rock, "rock"}
+				}
 			}
 			c.Fertility = clamp((c.Fertility+g.Soil)/2, 0, 1)
 		}
@@ -110,8 +121,14 @@ func Habitats(e *terrain.Environment, categories []string, terrainID string) ([]
 		if get("dune", i, 0) > .15 {
 			c.Substrates = append(c.Substrates, "sand")
 		}
-		tile := ""
-		if i < len(categories) {
+		tile := e.BiomeAt(i)
+		if e.Climate != nil && i < len(e.Climate.Cells) && e.Climate.Cells[i].Biome != "" {
+			tile = e.Climate.Cells[i].Biome
+		}
+		if cover := int(get("authoredCover", i, 0)) - 1; cover >= 0 && cover < len(terrain.Biomes) {
+			tile = terrain.Biomes[cover].ID
+		}
+		if tile == "" && i < len(categories) {
 			tile = categories[i]
 		}
 		kind := "grassland"
@@ -163,8 +180,49 @@ func Habitats(e *terrain.Environment, categories []string, terrainID string) ([]
 		case get("floodplain", i, 0) > .3:
 			kind = "floodplain"
 		}
+		if medium == "terrestrial" {
+			if canonical := habitatKind(tile); canonical != "" {
+				kind = canonical
+			}
+			if get("vegetation", i, -1) >= 0 && get("vegetation", i, 0) < .12 && strings.Contains(kind, "forest") {
+				kind = "grassland"
+			}
+		}
+		c.Bathymetry = c.Depth
+		c.SoilPH = clamp(6.8-get("precipitation", i, 800)/4000+get("salinity", i, 0)*.02, 4, 9)
+		c.SoilDepth = clamp(.25+get("sediment", i, 0)*.8+get("fertility", i, .4)*.6-get("slope", i, 0), .02, 2)
+		c.Drainage = clamp(get("permeability", i, .5)*(1-get("wetland", i, 0)), 0, 1)
+		if medium == "terrestrial" {
+			switch tile {
+			case "snow":
+				c.Substrates = []string{"ice"}
+				c.SoilDepth = 0
+			case "sand", "dunes":
+				c.Substrates = []string{"sand"}
+			case "lava":
+				c.Substrates = []string{"lava", "volcanic"}
+				c.SoilDepth = 0
+			case "ash":
+				c.Substrates = []string{"ash", "volcanic"}
+			case "mountain", "alpine":
+				c.Substrates = []string{"rock", "scree"}
+				c.SoilDepth = math.Min(.1, c.SoilDepth)
+			}
+		}
+		c.Geothermal = get("geothermal", i, 0)
+		if e.Climate != nil && i < len(e.Climate.Cells) {
+			for _, month := range e.Climate.Cells[i].Months {
+				if month.Drought > .5 {
+					c.DroughtMonths++
+				}
+				if month.Temperature > 5 && month.SoilMoisture > .1 {
+					c.GrowingMonths++
+				}
+			}
+		}
 		c.SeasonalAmplitude = c.Temperature.Max - c.Temperature.Min
 		keys[i] = kind + "/" + fmt.Sprint(math.Floor(c.Temperature.Min/15)) + "/" + fmt.Sprint(math.Floor(c.Temperature.Max/15))
+		keys[i] += fmt.Sprintf("/%d/%d/%d/%d", int(c.DroughtMonths/4), int(c.Drainage*2), int(c.Salinity.Max/10), int(math.Log1p(depth)/2))
 		kinds[i] = kind
 		profiles[i] = c
 	}
@@ -206,6 +264,12 @@ func Habitats(e *terrain.Environment, categories []string, terrainID string) ([]
 		}
 		sort.Ints(cells)
 		c := profiles[cells[0]]
+		c.SoilPH = 0
+		c.SoilDepth = 0
+		c.Drainage = 0
+		c.DroughtMonths = 0
+		c.GrowingMonths = 0
+		c.Geothermal = 0
 		c.Rain = 0
 		c.Fertility = 0
 		c.Light = 0
@@ -220,6 +284,12 @@ func Habitats(e *terrain.Environment, categories []string, terrainID string) ([]
 			mergeRange(&c.Elevation, p.Elevation)
 			mergeRange(&c.Depth, p.Depth)
 			mergeRange(&c.Salinity, p.Salinity)
+			c.SoilPH += p.SoilPH
+			c.SoilDepth += p.SoilDepth
+			c.Drainage += p.Drainage
+			c.DroughtMonths += p.DroughtMonths
+			c.GrowingMonths += p.GrowingMonths
+			c.Geothermal += p.Geothermal
 			c.Rain += p.Rain
 			c.Fertility += p.Fertility
 			c.Light += p.Light
@@ -235,21 +305,40 @@ func Habitats(e *terrain.Environment, categories []string, terrainID string) ([]
 			}
 		}
 		count := float64(len(cells))
+		c.SoilPH /= count
+		c.SoilDepth /= count
+		c.Drainage /= count
+		c.DroughtMonths /= count
+		c.GrowingMonths /= count
+		c.Geothermal /= count
 		c.Rain /= count
 		c.Fertility /= count
 		c.Light /= count
 		c.SeasonalAmplitude = c.Temperature.Max - c.Temperature.Min
 		strata := []string{"surface"}
+		if c.Medium != "terrestrial" {
+			strata = []string{"photic", "benthic"}
+			if c.Depth.Min > 200 {
+				strata = append(strata, "twilight")
+			}
+			if c.Depth.Min > 1000 {
+				strata = append(strata, "aphotic")
+			}
+		}
 		if strings.Contains(kind, "forest") {
 			strata = []string{"canopy", "understory", "floor"}
 		}
 		for _, stratum := range strata {
-			local := c
-			if stratum == "understory" {
-				local.Light *= .4
-			}
-			if stratum == "floor" {
-				local.Light *= .15
+			local := layerConditions(c, stratum)
+			cellProfiles := make([]Conditions, len(cells))
+			var overlays []string
+			for k, cell := range cells {
+				cellProfiles[k] = layerConditions(profiles[cell], stratum)
+				for _, overlay := range []string{"river", "wetland", "floodplain", "oasis", "reef", "glacier", "dune", "lava"} {
+					if get(overlay, cell, 0) > .3 && !slices.Contains(overlays, overlay) {
+						overlays = append(overlays, overlay)
+					}
+				}
 			}
 			// Stable within an environmental revision. Changed cell sets or conditions
 			// receive a new revision ID so saved occurrences keep their old extent.
@@ -258,8 +347,86 @@ func Habitats(e *terrain.Environment, categories []string, terrainID string) ([]
 				Cells      []int
 				Conditions Conditions
 			}{cells, local})
-			id := Stable(region, string(revision))
-			out = append(out, Habitat{ID: id, RegionID: region, Name: strings.ReplaceAll(kind, "-", " ") + " · " + stratum + " " + fmt.Sprint(start), Kind: kind, Stratum: stratum, Cells: cells, Conditions: local, Description: fmt.Sprintf("Connected %s habitat; seasonal temperature %.1f–%.1f °C, annual precipitation %.0f mm, elevation %.0f–%.0f m. %s.", kind, c.Temperature.Min, c.Temperature.Max, c.Rain, c.Elevation.Min, c.Elevation.Max, strings.Join(c.Substrates, ", "))})
+			profileRevision, _ := json.Marshal(cellProfiles)
+			id := Stable("v2", region, string(revision), string(profileRevision), strings.Join(overlays, "/"))
+			out = append(out, Habitat{Profiles: cellProfiles, BaseBiome: e.BiomeAt(start), Overlays: overlays, ID: id, RegionID: region, Name: strings.ReplaceAll(kind, "-", " ") + " · " + stratum + " " + fmt.Sprint(start), Kind: kind, Stratum: stratum, Cells: cells, Conditions: local, Description: fmt.Sprintf("Connected %s habitat; seasonal temperature %.1f–%.1f °C, annual precipitation %.0f mm, elevation %.0f–%.0f m. %s.", kind, c.Temperature.Min, c.Temperature.Max, c.Rain, c.Elevation.Min, c.Elevation.Max, strings.Join(c.Substrates, ", "))})
+		}
+	}
+	// A mapped river occupies part of a land cell. Preserve the surrounding
+	// terrestrial biome as an overlapping habitat, rather than making its banks
+	// disappear and cutting every terrestrial range at the river centreline.
+	if rivers := e.Fields["river"]; len(rivers) == n {
+		banks := map[int]bool{}
+		for i, river := range rivers {
+			if river > .08 && get("waterBody", i, 0) == 0 && i < len(e.Mask) && e.Mask[i] != 0 {
+				banks[i] = true
+			}
+		}
+		if len(banks) > 0 {
+			land := *e
+			land.Fields = make(map[string][]float64, len(e.Fields))
+			for key, field := range e.Fields {
+				land.Fields[key] = field
+			}
+			land.Fields["river"] = make([]float64, n)
+			// This single extra derivation cannot recurse: its river field is zero.
+			terrestrial, _, err := Habitats(&land, categories, terrainID)
+			if err != nil {
+				return nil, "", err
+			}
+			for _, habitat := range terrestrial {
+				if habitat.Conditions.Medium != "terrestrial" {
+					continue
+				}
+				positions := map[int]int{}
+				for k, cell := range habitat.Cells {
+					if banks[cell] {
+						positions[cell] = k
+					}
+				}
+				for _, start := range habitat.Cells {
+					if _, ok := positions[start]; !ok {
+						continue
+					}
+					cells, visited := []int{start}, map[int]bool{start: true}
+					for head := 0; head < len(cells); head++ {
+						cell := cells[head]
+						x, y := cell%w, cell/w
+						for _, d := range [][2]int{{-1, 0}, {1, 0}, {0, -1}, {0, 1}} {
+							xx, yy := x+d[0], y+d[1]
+							if e.Geography != nil && e.Geography.WrapX {
+								xx = (xx + w) % w
+							}
+							if xx < 0 || xx >= w || yy < 0 || yy >= h {
+								continue
+							}
+							next := yy*w + xx
+							if _, ok := positions[next]; ok && !visited[next] {
+								visited[next] = true
+								cells = append(cells, next)
+							}
+						}
+					}
+					sort.Ints(cells)
+					bank := habitat
+					bank.Cells = cells
+					bank.Profiles = make([]Conditions, len(cells))
+					for k, cell := range cells {
+						bank.Profiles[k] = habitat.Profiles[positions[cell]]
+						delete(positions, cell)
+					}
+					bank.Overlays = append(append([]string(nil), habitat.Overlays...), "river", "riparian")
+					bank.RegionID = Stable(terrainID, "riparian", bank.Kind, bank.Stratum, fmt.Sprint(start))
+					data, _ := json.Marshal(struct {
+						Cells    []int
+						Profiles []Conditions
+					}{bank.Cells, bank.Profiles})
+					bank.ID = Stable("riparian-v2", bank.RegionID, string(data))
+					bank.Name = "Riverbank · " + bank.Name
+					bank.Description = "Terrestrial banks alongside the river; " + bank.Description
+					out = append(out, bank)
+				}
+			}
 		}
 	}
 	return out, signature, nil
@@ -268,7 +435,57 @@ func Habitats(e *terrain.Environment, categories []string, terrainID string) ([]
 // Hard compatibility is never relaxed implicitly. Speculative tolerance changes
 // must be explicit in a species or rule, rather than disabling water/host checks.
 func Suitability(b Lifeform, h Habitat) (float64, string) {
+	// These categorical constraints are constant across a connected habitat.
+	// Reject them before traversing every cell during native-range searches.
+	if len(b.Requirements.Habitats) > 0 && !slices.Contains(b.Requirements.Habitats, h.Kind) {
+		return 0, "outside native habitat types"
+	}
+	if len(b.Requirements.Strata) > 0 && !slices.Contains(b.Requirements.Strata, h.Stratum) {
+		return 0, "outside vertical niche"
+	}
+	if len(h.Profiles) == 0 {
+		return profileSuitability(b, h)
+	}
+	score, suitable := 0., 0
+	reason := "no cells within survival limits"
+	for _, c := range h.Profiles {
+		local := h
+		local.Profiles = nil
+		local.Conditions = c
+		value, why := profileSuitability(b, local)
+		if value > 0 {
+			score += value
+			suitable++
+		} else {
+			reason = why
+		}
+	}
+	if suitable == 0 {
+		return 0, reason
+	}
+	fraction := float64(suitable) / float64(len(h.Profiles))
+	return score / float64(suitable) * math.Sqrt(fraction), fmt.Sprintf("%.0f%% of habitat cells within survival limits; %s stratum", fraction*100, h.Stratum)
+}
+func profileSuitability(b Lifeform, h Habitat) (float64, string) {
 	r, c := b.Requirements, h.Conditions
+	if len(r.Strata) > 0 && !slices.Contains(r.Strata, h.Stratum) {
+		return 0, "outside vertical niche"
+	}
+	for _, niche := range []struct {
+		r     *Range
+		value float64
+		name  string
+	}{{r.SoilPH, c.SoilPH, "soil pH"}, {r.DroughtMonths, c.DroughtMonths, "seasonal drought"}, {r.GrowingMonths, c.GrowingMonths, "growing season"}} {
+		if niche.r != nil && (niche.value < niche.r.Min || niche.value > niche.r.Max) {
+			return 0, "outside " + niche.name + " tolerance"
+		}
+	}
+	if (b.Version >= 2 || h.Stratum == "benthic" || h.Stratum == "aphotic" || h.Stratum == "twilight") && slices.Contains(b.Roles, "producer") && (b.Group == "plant" || b.Group == "algae") && c.Light < .01 {
+		return 0, "photosynthesis requires light"
+	}
+	if b.Version >= 2 && b.Group == "plant" && slices.Contains(b.Roles, "producer") && c.Medium == "terrestrial" && c.SeasonalKnown && c.Temperature.Max <= 0 {
+		return 0, "no thaw season for terrestrial plant production"
+	}
 	if r.Medium != "any" && r.Medium != c.Medium && !(r.Medium == "amphibious" && (c.Medium == "terrestrial" || c.Medium == "freshwater")) {
 		return 0, "incompatible terrestrial / freshwater / marine requirements"
 	}

@@ -186,8 +186,8 @@ test('Physical continental markers are returned and renamed biomes retain their 
     if (t.weightNear?.water !== undefined) { t.weightNear.azure_sea = t.weightNear.water; delete t.weightNear.water; }
   }
   for (const z of palette.climates) if (z.types?.water !== undefined) { z.types.azure_sea = z.types.water; delete z.types.water; }
-  const state = await api('sessions', { config: palette, environment: { columns: 32, rows: 24, seed: 'renamed', continentCount: 9 } }, 'POST', 201);
-  assert.equal(state.contPoints.length, 9);
+  const state = await api('sessions', { config: palette, environment: { columns: 32, rows: 24, seed: 'renamed', continentCount: 9, majorContinents: 5 } }, 'POST', 201);
+  assert.equal(state.contPoints.length, 5);
   assert.ok(state.contPoints.every(p => p.kind.name && p.kind.color));
   assert.equal(state.config.types.find(t => t.id === 'azure_sea').environmentType, 'water');
   await api(`sessions/${state.id}`, undefined, 'DELETE', 204);
@@ -223,7 +223,8 @@ test('All eight presets layer their physical profiles and weights under both env
     const e=initial.environment,land=e.mask.reduce((a,b)=>a+b,0);
     const temperature=e.fields.temperature.reduce((a,b,i)=>a+(e.mask[i]?b:0),0)/land;
     summaries[`${preset.id}/${realism}`]={land,temperature};
-    assert.ok(Math.abs(land/6144*100-preset.environment.landPercent)<5,`${preset.id}: coverage ${land/6144*100} differs from ${preset.environment.landPercent}`);
+    assert.ok(Math.abs(land/6144*100-preset.environment.landPercent)<5 || e.continentalLayout?.warning,`${preset.id}: unreported coverage conflict ${land/6144*100} vs ${preset.environment.landPercent}`);
+    for(let i=0;i<e.mask.length;i++)if(i%96===0||i%96===95||i<96||i>=96*63)assert.equal(e.mask[i],0,`${preset.id}: clipped land at ${i}`);
     await api(`sessions/${initial.id}`,undefined,'DELETE',204);
   }
   for(const mode of [false,true]){

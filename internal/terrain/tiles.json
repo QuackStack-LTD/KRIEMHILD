@@ -1,5 +1,5 @@
 {
-  "version": 5,
+  "version": 6,
   "continents": [
     { "id": "water",    "name": "Water",    "color": "#3a7bd5", "odds": 0.3 },
     { "id": "land",     "name": "Land",     "color": "#7cb342", "odds": 0.25 },
@@ -233,6 +233,10 @@
       "weight": 0.15,
       "neighbors": ["ash", "lava"],
       "weightNear": { "lava": 2 }
-    }
+    },
+    {"id": "steppe", "name": "Semi-arid steppe", "color": "#aaa36b", "pattern": "tufts", "height": 0.4, "continent": "land", "weight": 0, "neighbors": ["sand", "grass", "forest"]},
+    {"id": "scrubland", "name": "Xeric scrubland", "color": "#9b9966", "pattern": "tufts", "height": 0.4, "continent": "land", "weight": 0, "neighbors": ["sand", "grass", "forest"]},
+    {"id": "savanna", "name": "Tropical seasonal woodland / savanna", "color": "#9baf55", "pattern": "tufts", "height": 0.4, "continent": "land", "weight": 0, "neighbors": ["sand", "grass", "forest"]},
+    {"id": "mediterranean", "name": "Mediterranean woodland / scrub", "color": "#87965a", "pattern": "tufts", "height": 0.4, "continent": "land", "weight": 0, "neighbors": ["sand", "grass", "forest"]}
   ]
 }

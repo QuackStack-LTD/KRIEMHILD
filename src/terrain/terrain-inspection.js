@@ -1,4 +1,4 @@
-import {biomeName,coarseMaterial,materialSeed} from './biome-material.js';
+import {biomeName,biomeNames,categoricalBiome,coarseMaterial,materialSeed} from './biome-material.js';
 import {riverWidthPixels} from './river-width.js';
 
 export function sampleTerrainTile(tile,point,detail){
@@ -10,7 +10,8 @@ export function sampleTerrainTile(tile,point,detail){
  const elevation=mix('parent')+(mix('elevation')-mix('parent'))*blend;
  let coverage=0,body=0,best=0;for(let k=0;k<4;k++)if(points[k].waterBody>0){coverage+=weights[k];if(weights[k]>best){best=weights[k];body=points[k].waterBody;}}
  const wet=coverage>=.5,river=tile.level>=3&&mix('riverDepth')>.3,waterLevel=mix(wet?'waterLevel':'riverLevel');
- return {...point,...(points.some(p=>p.desert!==undefined)?{desert:mix('desert')}:{}),...Object.fromEntries(['temperature','moisture','vegetation','rock','sand','snow','wetland','riverDepth'].map(key=>[key,mix(key)])),level:tile.level,elevation,waterBody:wet?body:0,waterLevel,waterDepth:wet||river?Math.max(0,waterLevel-elevation):0};
+ const biome=points[(b>=.5?2:0)+(a>=.5?1:0)].biome;
+ return {...point,...(biome?{biome}:{}),...(points.some(p=>p.desert!==undefined)?{desert:mix('desert')}:{}),...Object.fromEntries(['temperature','moisture','vegetation','rock','sand','snow','wetland','riverDepth'].map(key=>[key,mix(key)])),level:tile.level,elevation,waterBody:wet?body:0,waterLevel,waterDepth:wet||river?Math.max(0,waterLevel-elevation):0};
 }
 
 export function renderedRiverAt(features,point,scale,detail){
@@ -52,14 +53,15 @@ export function terrainInspection(solver,point,sample=null){
   const left=Math.floor(x),top=Math.floor(y),a=x-left,b=y-top;
   const nodes=[[left,top,(1-a)*(1-b)],[Math.min(left+1,solver.W-1),top,a*(1-b)],[left,Math.min(top+1,solver.H-1),(1-a)*b],[Math.min(left+1,solver.W-1),Math.min(top+1,solver.H-1),a*b]];
   sample={};let wet=0,best=0,body=0;
-  for(const [xx,yy,weight] of nodes){const i=yy*solver.W+xx;for(const [key,value] of Object.entries(coarseMaterial(env,i)))sample[key]=(sample[key]||0)+value*weight;
+  for(const [xx,yy,weight] of nodes){const i=yy*solver.W+xx;for(const [key,value] of Object.entries(coarseMaterial(env,i)))if(key!=='biome')sample[key]=(sample[key]||0)+value*weight;
    sample.elevation=(sample.elevation||0)+(env.fields.elevation?.[i]||0)*weight;
    const water=env.fields.waterBody?.[i]||0;if(water){wet+=weight;if(weight>best){best=weight;body=water;}}
   }sample.waterBody=wet>=.5?body:0;
  }
+ sample={...sample,...(env.fields.biome?{biome:categoricalBiome(env,cell)}:{})};
  let material=biomeName(sample,{x,y,seed:materialSeed(env.options?.seed||0)}),terrain;
  if(sample.waterBody>0){material='water';terrain=sample.waterBody===1?'Ocean / sea':'Lake';}
  else if(sample.riverVisible||(sample.level>=3&&sample.riverDepth>.3)){material='river';terrain='River';}
- else {const names={grass:'Grassland',forest:'Forest',desert:'Desert',mountain:'Mountain terrain',tundra:'Tundra',snow:'Snow / ice',sand:'Sand / shore',swamp:'Wetland'};terrain=names[material];}
+ else terrain=sample.biome?biomeNames[material]:({forest:'Forest',mountain:'Mountain terrain',sand:'Sand / shore',swamp:'Wetland'}[material]||biomeNames[material]);
  return {terrain,material,point:{x,y},sample};
 }

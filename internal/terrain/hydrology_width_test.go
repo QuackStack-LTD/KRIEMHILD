@@ -48,7 +48,9 @@ func TestGeologicalChannelWidthsAreSeededAndPhysical(t *testing.T) {
 }
 
 func TestGeneratedWidthProfilesAndGeologySurviveRestoration(t *testing.T) {
-	e := BuildEnvironment(realismOptions(t, `{"columns":48,"rows":32,"seed":"river-thickness","rainfall":1.8}`))
+	// A large catchment is necessary to exercise confluence widths. Several
+	// separated continents at this tiny resolution only contain short streams.
+	e := BuildEnvironment(realismOptions(t, `{"columns":48,"rows":32,"majorContinents":1,"seed":"river-thickness","rainfall":1.8}`))
 	if len(e.Hydrology.Reaches) < 10 {
 		t.Fatal("insufficient fixture rivers")
 	}

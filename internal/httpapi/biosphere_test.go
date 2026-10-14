@@ -114,6 +114,18 @@ func TestBiosphereGenerationRestartInheritanceAndZIP(t *testing.T) {
 		t.Fatal("regeneration replaced author data")
 	}
 	if !reflect.DeepEqual(saved.Occurrences, d.Biosphere(age, terrainID).Occurrences) {
+		current := d.Biosphere(age, terrainID).Occurrences
+		t.Logf("saved %d current %d", len(saved.Occurrences), len(current))
+		old := map[string]biosphere.Occurrence{}
+		for _, o := range saved.Occurrences {
+			old[o.ID] = o
+		}
+		for _, o := range current {
+			if before, ok := old[o.ID]; !ok || !reflect.DeepEqual(before, o) {
+				t.Logf("changed occurrence old=%+v new=%+v", before, o)
+				break
+			}
+		}
 		t.Fatal("confirmed ranges changed")
 	}
 	if len(d.Years) == 0 {

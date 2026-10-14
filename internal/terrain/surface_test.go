@@ -79,6 +79,9 @@ func TestContinuousSurfaceAndHydrology(t *testing.T) {
 		runoff, sinks := 0., 0.
 		for i := range e.Mask {
 			z, d := f("elevation", i), f("waterDepth", i)
+			if f("oceanReserve", i) > 0 && (e.Mask[i] != 0 || f("ocean", i) == 0 || d <= 0 || z >= 0) {
+				t.Fatal("reserved ocean gap lost its marine bed/water consistency", i)
+			}
 			if e.Mask[i] != 0 {
 				if z < 1800 {
 					lowland[int(z)] = true

@@ -106,14 +106,14 @@
   // Physical inputs express the same theme through causal environmental fields.
   // Palette weights remain preferences within the physically valid candidates.
   const environments = {
-    earth: { islandFrequency:1, islandCoastalShare:.6, landPercent:42, temperatureOffset:0, rainfall:1, latitudeNorth:90, latitudeSouth:-90, ruggedness:100, plateCount:12, volcanism:1 },
-    islands: { islandFrequency:2.2, islandCoastalShare:.45, landPercent:25, temperatureOffset:2, rainfall:1.3, latitudeNorth:25, latitudeSouth:-25, ruggedness:110, plateCount:16, volcanism:1.2 },
-    lava: { islandFrequency:1, islandCoastalShare:.6, landPercent:75, temperatureOffset:20, rainfall:.2, latitudeNorth:45, latitudeSouth:-45, ruggedness:145, plateCount:24, volcanism:3 },
-    diversity: { islandFrequency:1, islandCoastalShare:.6, landPercent:60, temperatureOffset:0, rainfall:1, latitudeNorth:90, latitudeSouth:-90, ruggedness:125, plateCount:20, volcanism:1.3 },
-    continents: { islandFrequency:1, islandCoastalShare:.6, landPercent:45, temperatureOffset:0, rainfall:1, latitudeNorth:70, latitudeSouth:-70, ruggedness:100, plateCount:10, volcanism:.7 },
-    villages: { islandFrequency:1, islandCoastalShare:.6, landPercent:65, temperatureOffset:0, rainfall:1.2, latitudeNorth:50, latitudeSouth:25, ruggedness:45, plateCount:8, volcanism:.3 },
-    frozen: { islandFrequency:1, islandCoastalShare:.6, landPercent:55, temperatureOffset:-8, rainfall:1.2, latitudeNorth:85, latitudeSouth:50, ruggedness:115, plateCount:14, volcanism:.5 },
-    desert: { islandFrequency:1, islandCoastalShare:.6, landPercent:75, temperatureOffset:7, rainfall:.2, latitudeNorth:35, latitudeSouth:15, ruggedness:85, plateCount:12, volcanism:.5 },
+    earth: { lapseRate:6.5, majorContinents:0, oceanSeparation:'standard', islandFrequency:1, islandCoastalShare:.6, landPercent:42, temperatureOffset:0, rainfall:1, latitudeNorth:90, latitudeSouth:-90, ruggedness:100, plateCount:12, volcanism:1 },
+    islands: { lapseRate:6.5, majorContinents:3, oceanSeparation:'wide', islandFrequency:2.2, islandCoastalShare:.45, landPercent:25, temperatureOffset:2, rainfall:1.3, latitudeNorth:25, latitudeSouth:-25, ruggedness:110, plateCount:16, volcanism:1.2 },
+    lava: { lapseRate:6.5, majorContinents:2, oceanSeparation:'narrow', islandFrequency:1, islandCoastalShare:.6, landPercent:75, temperatureOffset:20, rainfall:.2, latitudeNorth:45, latitudeSouth:-45, ruggedness:145, plateCount:24, volcanism:3 },
+    diversity: { lapseRate:6.5, majorContinents:6, oceanSeparation:'narrow', islandFrequency:1, islandCoastalShare:.6, landPercent:60, temperatureOffset:0, rainfall:1, latitudeNorth:90, latitudeSouth:-90, ruggedness:125, plateCount:20, volcanism:1.3 },
+    continents: { lapseRate:6.5, majorContinents:4, oceanSeparation:'standard', islandFrequency:1, islandCoastalShare:.6, landPercent:45, temperatureOffset:0, rainfall:1, latitudeNorth:70, latitudeSouth:-70, ruggedness:100, plateCount:10, volcanism:.7 },
+    villages: { lapseRate:6.5, majorContinents:2, oceanSeparation:'narrow', islandFrequency:1, islandCoastalShare:.6, landPercent:65, temperatureOffset:0, rainfall:1.2, latitudeNorth:50, latitudeSouth:25, ruggedness:45, plateCount:8, volcanism:.3 },
+    frozen: { lapseRate:6.5, majorContinents:3, oceanSeparation:'standard', islandFrequency:1, islandCoastalShare:.6, landPercent:55, temperatureOffset:-8, rainfall:1.2, latitudeNorth:85, latitudeSouth:50, ruggedness:115, plateCount:14, volcanism:.5 },
+    desert: { lapseRate:6.5, majorContinents:2, oceanSeparation:'narrow', islandFrequency:1, islandCoastalShare:.6, landPercent:75, temperatureOffset:7, rainfall:.2, latitudeNorth:35, latitudeSouth:15, ruggedness:85, plateCount:12, volcanism:.5 },
   };
   for(const preset of LIST) preset.environment=environments[preset.id];
 

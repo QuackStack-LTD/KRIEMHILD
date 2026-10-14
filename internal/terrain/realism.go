@@ -417,6 +417,9 @@ func (e *Environment) realisticCandidates(i int) []string {
 		}
 		return []string{"water"}
 	}
+	if choices := e.biomeCandidates(i); choices != nil {
+		return choices
+	}
 	for _, x := range []struct {
 		field, id string
 		threshold float64

@@ -1,5 +1,5 @@
 import {riverWidthPixels} from './river-width.js';
-import {biomeColor,coarseMaterial,materialSeed} from './biome-material.js';
+import {biomeColor,naturalMaterials,categoricalBiome,coarseMaterial,materialSeed} from './biome-material.js';
 import {riverStyle} from './feature-style.js';
 import {fieldColor,riverSystemColor} from './environment-view.js';
 import {smooth} from './map-camera.js';
@@ -8,7 +8,7 @@ const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 export function makeDetailPalette(solver,layer='terrain'){
   const ctx=document.createElement('canvas').getContext('2d',{willReadFrequently:true}),cache=new Map();
   const seed=materialSeed(solver.environment?.options?.seed||0),materials={};
-  for(const type of solver.config.types){const key=type.environmentType||type.id;if(!['grass','forest','desert','mountain','tundra','snow','sand','swamp'].includes(key))continue;ctx.fillStyle=type.color;ctx.fillRect(0,0,1,1);materials[key]=[...ctx.getImageData(0,0,1,1).data].slice(0,3);}
+  for(const type of solver.config.types){const key=type.environmentType||type.id;if(!naturalMaterials[key])continue;ctx.fillStyle=type.color;ctx.fillRect(0,0,1,1);materials[key]=[...ctx.getImageData(0,0,1,1).data].slice(0,3);}
   const palette=Array.from({length:solver.N},(_,i)=>{
     if(layer==='terrain'&&!solver.pinned?.[i]&&solver.environment?.fields.waterBody[i]===0)return biomeColor(coarseMaterial(solver.environment,i),materials,{x:i%solver.W,y:Math.floor(i/solver.W),seed});
     const type=solver.config.types[solver.typeAt(i)];const css=layer==='terrain'?(type?.color||'#7c9864'):(fieldColor(solver.environment,layer,i)||'#637b83');
@@ -62,7 +62,9 @@ export function tileImage(tile,solver,palette,layer,blend=1){
     for(let k=0;k<4;k++){const body=tile.points[indices[k]].waterBody;if(body>0){wetCoverage+=weights[k];if(weights[k]>waterWeight){p.waterBody=body;waterWeight=weights[k];}}}if(wetCoverage<.5)p.waterBody=0;
     if(hasDesert)p.desert=indices.reduce((v,index,k)=>v+(tile.points[index].desert??0)*weights[k],0);
     position.x=x;position.y=y;
-    let rgb=layer==='terrain'?null:baseColor(solver,palette,x,y,null);
+    const cell=clamp(Math.round(y),0,solver.H-1)*solver.W+clamp(Math.round(x),0,solver.W-1);
+    p.biome=categoricalBiome(solver.environment,cell)||tile.points[indices[(b>=.5?2:0)+(a>=.5?1:0)]].biome;
+    let rgb=layer==='terrain'?null:layer==='biome'?palette[cell]:baseColor(solver,palette,x,y,null);
     if(layer==='terrain'){
       if(p.waterBody>0){const deep=clamp(Math.log1p(p.waterDepth)/9,0,1);rgb=[45-25*deep,140-96*deep,175-91*deep];}
       else {

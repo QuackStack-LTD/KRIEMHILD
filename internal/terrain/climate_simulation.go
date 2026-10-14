@@ -49,6 +49,9 @@ func (e *Environment) climateMonths(i int, p ClimateParameters, scale ClimateSca
 		up = i + 1
 	}
 	shadow := clamp((f("elevation", up)-f("elevation", i))/1400, 0, 1)
+	if e.Fields["rainShadow"] != nil {
+		shadow = f("rainShadow", i)
+	}
 	monsoon := math.Exp(-math.Pow((math.Abs(lat)-17)/14, 2)) * p.Circulation * (.25 + .75*(1-maritime)) * clamp(f("precipitation", i)/650, 0, 1)
 	if !land {
 		monsoon *= .25
@@ -65,6 +68,7 @@ func (e *Environment) climateMonths(i int, p ClimateParameters, scale ClimateSca
 	}
 	var out [12]ClimateMonth
 	var tempDelta, rainWeights [12]float64
+	var seasonalWinds [12][2]float64
 	meanDelta, weight := 0., 0.
 	for month := range out {
 		decl, forcing := climateOrbit(p, month)
@@ -83,7 +87,14 @@ func (e *Environment) climateMonths(i int, p ClimateParameters, scale ClimateSca
 		itcz := p.AxialTilt * .65 * season
 		belt := math.Exp(-math.Pow((lat-itcz)/13, 2))
 		med := math.Exp(-math.Pow((math.Abs(lat)-36)/8, 2)) * maritime * p.Circulation
-		rainWeights[month] = math.Max(.06, 1+monsoon*1.05*local-med*.85*local+(belt-.5)*.5*p.Circulation)
+		rainWeights[month] = math.Max(.06, 1+monsoon*1.05*local-med*.85*local+(belt-.5)*.5*p.Circulation) * circulationPotential(lat, p, month)
+		seasonalWind := monsoon * local
+		wx, wy := f("windX", i)*(1-1.7*math.Max(0, seasonalWind)), f("windY", i)+seasonalWind*.8
+		length := math.Max(.01, math.Hypot(wx, wy))
+		seasonalWinds[month] = [2]float64{wx / length, wy / length}
+		if land {
+			rainWeights[month] *= .85 + .3*e.seasonalVaporAccess(i, wx, wy)
+		}
 		weight += rainWeights[month]
 		dayAngle := math.Acos(clamp(-math.Tan(r)*math.Tan(decl), -1, 1))
 		out[month].Daylight = rounded(dayAngle * 24 / math.Pi)
@@ -97,15 +108,13 @@ func (e *Environment) climateMonths(i int, p ClimateParameters, scale ClimateSca
 		rain := annual * rainWeights[month] / weight
 		days := p.OrbitalDays / 12
 		pet := math.Max(.15, (temp+5)*.11) * days * (.45 + out[month].Daylight/24) * (1 - .12*forest)
-		seasonalWind := monsoon * math.Sin(2*math.Pi*(float64(month)+.5)/12)
-		x, y := f("windX", i)*(1-1.7*math.Max(0, seasonalWind)), f("windY", i)+seasonalWind*.8
-		length := math.Max(.01, math.Hypot(x, y))
+		x, y := seasonalWinds[month][0], seasonalWinds[month][1]
 		out[month].Temperature = rounded(temp)
 		out[month].Rain = rounded(rain)
 		out[month].Evaporation = rounded(pet)
-		out[month].WindX = rounded(x / length)
-		out[month].WindY = rounded(y / length)
-		out[month].WindSpeed = rounded((2 + f("windStrength", i)*9) * (1 + math.Abs(seasonalWind)*.35) * (1 + height/16000))
+		out[month].WindX = rounded(x)
+		out[month].WindY = rounded(y)
+		out[month].WindSpeed = rounded((2 + f("windStrength", i)*9) * (1 + math.Abs(x-f("windX", i))*.2) * (1 + height/16000))
 		out[month].Humidity = rounded(clamp(.22+.48*rain/(rain+pet+1)+.22*water+.12*forest+.12*m.Wetland, .08, .99))
 	}
 	// Two spin-up years prevent an arbitrary January water/snow state. Soil
@@ -119,8 +128,16 @@ func (e *Environment) climateMonths(i int, p ClimateParameters, scale ClimateSca
 			snow += v.Rain * frozen
 			melt := math.Min(snow, math.Max(0, v.Temperature)*p.OrbitalDays/12*.8)
 			snow -= melt
-			supply := v.Rain*(1-frozen) + melt + water*m.Wetland*15
-			storage = clamp(storage+supply-v.Evaporation, 0, capacity)
+			supply := v.Rain*(1-frozen) + melt
+			// Storm runoff can leave a partly dry soil before monthly evaporation
+			// consumes its water. The remainder infiltrates the bucket; both paths
+			// conserve supply. Permeable, gentle ground has less rapid runoff.
+			quick := supply * clamp((1-f("permeability", i))*.12+f("slope", i)*.12, .02, .25)
+			v.ActualEvaporation = math.Min(v.Evaporation, storage+supply-quick)
+			balance := storage + supply - quick - v.ActualEvaporation
+			v.WaterYield = quick + math.Max(0, balance-capacity)
+			v.Snowmelt = melt
+			storage = clamp(balance, 0, capacity)
 			v.SoilMoisture = rounded(storage / capacity)
 			v.Snow = rounded(clamp(snow/100+m.Glacier*.7, 0, 1))
 			v.Drought = rounded((1 - v.SoilMoisture) * clamp((v.Evaporation-v.Rain)/math.Max(1, v.Evaporation), 0, 1))
@@ -155,10 +172,10 @@ func climateClass(v [12]ClimateMonth, m ClimateModifiers, p ClimateParameters) (
 		}
 		return "tundra", "Tundra"
 	}
-	if rain < pet*.25 {
+	if rain < pet*desertAI {
 		return "desert", "Arid desert"
 	}
-	if rain < pet*.5 {
+	if rain < pet*steppeAI {
 		return "steppe", "Semi-arid steppe"
 	}
 	if lo >= 18 {
@@ -199,6 +216,17 @@ func (e *Environment) BuildClimate() {
 }
 
 func (e *Environment) buildClimate(p ClimateParameters, scale ClimateScale) {
+	e.simulateClimate(p, scale, true)
+}
+
+// Erosion needs the exact monthly budget and surface fields, but seasonal
+// clustering and connected climate regions are only consumed by the final map.
+func (e *Environment) updateClimateBudget() {
+	p, scale := e.Options.climateConfiguration()
+	e.simulateClimate(p, scale, false)
+}
+
+func (e *Environment) simulateClimate(p ClimateParameters, scale ClimateScale, final bool) {
 	state := &ClimateState{Version: ClimateModelVersion, Parameters: p, Scale: scale, Cells: make([]ClimateCell, len(e.Mask)), Zones: []ClimateRegion{}, Source: "terrain elevation, advected annual precipitation, circulation, water bodies, vegetation and geological heat; monthly means, not forecasts"}
 	waterMask := make([]int, len(e.Mask))
 	for i := range waterMask {
@@ -211,12 +239,17 @@ func (e *Environment) buildClimate(p ClimateParameters, scale ClimateScale) {
 	// A continuous, persisted suitability field shares the climate model's
 	// annual water-balance threshold. Rendering must not invent dry patches.
 	e.Fields["desert"] = make([]float64, len(e.Mask))
+	for _, name := range []string{"aridityIndex", "biome", "steppe", "summerRain", "winterRain", "annualPET", "soilWater", "droughtMonths", "growingMonths", "climateWaterYield", "climateActualET", "climateSnowmelt", "climateDryYield"} {
+		e.Fields[name] = make([]float64, len(e.Mask))
+	}
 	var representative [12]ClimateMonth
 	landCount := 0
 	for i := range state.Cells {
 		c := &state.Cells[i]
 		c.Months, c.Modifiers = e.climateMonths(i, p, scale, waterDistance)
-		c.Seasons, c.Estimate = climateSeasons(c.Months, c.Modifiers, p)
+		if final {
+			c.Seasons, c.Estimate = climateSeasons(c.Months, c.Modifiers, p)
+		}
 		kinds[i], names[i] = climateClass(c.Months, c.Modifiers, p)
 		rain, demand, warmest := 0., 0., -100.
 		for _, month := range c.Months {
@@ -224,9 +257,56 @@ func (e *Environment) buildClimate(p ClimateParameters, scale ClimateScale) {
 			demand += month.Evaporation
 			warmest = math.Max(warmest, month.Temperature)
 		}
-		if e.climateField("waterBody", i) == 0 && warmest >= 10 {
-			e.set("desert", i, clamp(.5+(.25-rain/math.Max(1, demand))*4, 0, 1))
+		ai := rain / math.Max(1, demand)
+		e.set("annualPET", i, demand)
+		minimumYield := math.Inf(1)
+		for _, m := range c.Months {
+			e.set("soilWater", i, e.get("soilWater", i)+m.SoilMoisture/12)
+			if m.Drought > .5 {
+				e.set("droughtMonths", i, e.get("droughtMonths", i)+1)
+			}
+			if m.Temperature > 5 && m.SoilMoisture > .1 {
+				e.set("growingMonths", i, e.get("growingMonths", i)+1)
+			}
+			e.set("climateWaterYield", i, e.get("climateWaterYield", i)+m.WaterYield)
+			e.set("climateActualET", i, e.get("climateActualET", i)+m.ActualEvaporation)
+			e.set("climateSnowmelt", i, e.get("climateSnowmelt", i)+m.Snowmelt)
+			minimumYield = math.Min(minimumYield, m.WaterYield)
 		}
+		e.set("climateDryYield", i, minimumYield*12)
+		summerRain, winterRain := 0., 0.
+		for month, m := range c.Months {
+			decl, _ := climateOrbit(p, month)
+			warm := decl >= 0
+			if c.Modifiers.Latitude < 0 {
+				warm = !warm
+			}
+			if warm {
+				summerRain += m.Rain
+			} else {
+				winterRain += m.Rain
+			}
+		}
+		e.set("summerRain", i, summerRain)
+		e.set("winterRain", i, winterRain)
+		e.set("aridityIndex", i, ai)
+		// Compatibility conversion: moisture is capped AI, and legacy aridity
+		// increases with dryness. Neither field independently decides a biome.
+		e.set("moisture", i, clamp(ai, 0, 1))
+		e.set("aridity", i, clamp(1-ai, 0, 1))
+		if kinds[i] != "desert" && e.Fields["oasis"] != nil {
+			e.set("oasis", i, 0) // Final soil-water feedback may remove an earlier deficit.
+		}
+		if e.climateField("waterBody", i) == 0 && warmest >= 10 && kinds[i] == "desert" {
+			e.set("desert", i, math.Max(.5001, clamp(.5+(desertAI-ai)*4, 0, 1)))
+		}
+		if kinds[i] == "steppe" && e.climateField("waterBody", i) == 0 {
+			e.set("steppe", i, 1)
+		}
+		c.Modifiers.RainfallPotential = e.climateField("rainfallPotential", i)
+		c.Modifiers.MoistureSupply = e.climateField("moistureSupply", i)
+		c.Biome = e.surfaceBiome(i, kinds[i], *c, ai)
+		e.set("biome", i, float64(biomeIndex(c.Biome)))
 		// Inland dune sand needs an arid climate; beaches remain independent.
 		if e.Fields["dune"] != nil && !e.desertAt(i) {
 			e.set("dune", i, 0)
@@ -244,6 +324,9 @@ func (e *Environment) buildClimate(p ClimateParameters, scale ClimateScale) {
 				representative[target].SoilMoisture += v.SoilMoisture
 			}
 		}
+	}
+	if !final {
+		return
 	}
 	if landCount == 0 {
 		representative = state.Cells[0].Months
@@ -305,7 +388,7 @@ func (e *Environment) RebuildClimateForSurface(base *Environment) {
 		if e.Mask[i] == 0 {
 			height = 0
 		}
-		e.set("temperature", i, base.climateField("temperature", i)-(height-oldHeight)*.0065)
+		e.set("temperature", i, base.climateField("temperature", i)-(height-oldHeight)*e.Options.lapseRate()/1000)
 	}
 	ocean := make([]int, len(e.Mask))
 	for i := range ocean {

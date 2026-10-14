@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {biomeColor,biomeName,coarseMaterial,naturalMaterials} from '../src/terrain/biome-material.js';
+import {biomeCatalog,biomeColor,biomeName,coarseMaterial,naturalMaterials} from '../src/terrain/biome-material.js';
+import {sampleTerrainTile,terrainInspection} from '../src/terrain/terrain-inspection.js';
 import {DetailTiles} from '../src/terrain/detail-tiles.js';
 
 test('Deserts require climatic water deficit, independent of decorative noise',()=>{
@@ -10,6 +11,25 @@ test('Deserts require climatic water deficit, independent of decorative noise',(
   assert.equal(biomeName({temperature:22,moisture:.4,vegetation:.1,desert:.9},position),'desert');
   assert.notEqual(biomeName({temperature:22,moisture:.28,vegetation:.1},position),'desert');
  }
+});
+
+test('Authoritative dryland and humid cover cannot be overturned by noise or relief textures',()=>{
+ for(const biome of ['desert','cold_desert','steppe','scrubland','forest','jungle','savanna','taiga','mediterranean'])for(let seed=0;seed<10;seed++)for(let x=0;x<20;x++){
+  assert.equal(biomeName({biome,temperature:-10,moisture:1,vegetation:1,rock:1,sand:1,snow:1,wetland:1,desert:1},{x,y:seed,seed}),biome);
+ }
+});
+
+test('Categorical cover survives provisional tiles, detail sampling, inspection and authored overrides',()=>{
+ const steppe=biomeCatalog.findIndex(b=>b.id==='steppe'),scrub=biomeCatalog.findIndex(b=>b.id==='scrubland');
+ const fields=Object.fromEntries(['elevation','waterBody','waterDepth','waterLevel','temperature','moisture'].map(k=>[k,Array(4).fill(0)]));fields.biome=[steppe,scrub,steppe,scrub];
+ const solver={W:2,H:2,config:{types:[{name:'Authored forest'}]},typeAt:()=>0,environment:{fields}},tiles=new DetailTiles(solver,()=>{}),tile=tiles.cache.get('0/0/0');
+ assert.equal(tile.points[0].biome,'steppe');assert.equal(tile.points[1].biome,'scrubland');
+ for(const x of [.1,.49,.51,.9]){
+  const point={x,y:0},sample=sampleTerrainTile(tile,point,0),expected=x<.5?'steppe':'scrubland';
+  assert.equal(sample.biome,expected);assert.equal(terrainInspection(solver,point,sample).material,expected);
+  assert.equal(terrainInspection(solver,point).material,expected);
+ }
+ solver.pinned=[true];assert.equal(terrainInspection(solver,{x:0,y:0}).terrain,'Authored forest');tiles.dispose();
 });
 
 test('Biome boundaries select a single material without mixed colors',()=>{

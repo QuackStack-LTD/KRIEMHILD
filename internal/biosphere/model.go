@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-const Version = 1
+const Version = 2
 
 func Stable(parts ...string) string {
 	h := sha256.Sum256([]byte(strings.Join(parts, "/")))
@@ -24,41 +24,51 @@ type Range struct {
 	Max float64 `json:"max"`
 }
 type Requirements struct {
-	Medium      string   `json:"medium"` // terrestrial, freshwater, marine, amphibious, any
-	Temperature Range    `json:"temperature"`
-	Moisture    Range    `json:"moisture"`
-	Elevation   Range    `json:"elevation"`
-	Depth       Range    `json:"depth"`
-	Salinity    Range    `json:"salinity"`
-	Substrates  []string `json:"substrates,omitempty"`
-	Habitats    []string `json:"habitats,omitempty"`
-	MinLight    float64  `json:"minLight"`
+	Strata        []string `json:"strata,omitempty"`
+	SoilPH        *Range   `json:"soilPH,omitempty"`
+	DroughtMonths *Range   `json:"droughtMonths,omitempty"`
+	GrowingMonths *Range   `json:"growingMonths,omitempty"`
+	DispersalKM   float64  `json:"dispersalKm,omitempty"`
+	Medium        string   `json:"medium"` // terrestrial, freshwater, marine, amphibious, any
+	Temperature   Range    `json:"temperature"`
+	Moisture      Range    `json:"moisture"`
+	Elevation     Range    `json:"elevation"`
+	Depth         Range    `json:"depth"`
+	Salinity      Range    `json:"salinity"`
+	Substrates    []string `json:"substrates,omitempty"`
+	Habitats      []string `json:"habitats,omitempty"`
+	MinLight      float64  `json:"minLight"`
 }
 type Dependency struct {
-	Group       string `json:"group,omitempty"`
-	Role        string `json:"role,omitempty"`
-	Kind        string `json:"kind"`
-	Description string `json:"description,omitempty"`
+	SpeciesIDs  []string `json:"speciesIds,omitempty"`
+	Medium      string   `json:"medium,omitempty"`
+	Seasons     []string `json:"seasons,omitempty"`
+	LifeStage   string   `json:"lifeStage,omitempty"`
+	Group       string   `json:"group,omitempty"`
+	Role        string   `json:"role,omitempty"`
+	Kind        string   `json:"kind"`
+	Description string   `json:"description,omitempty"`
 }
 type Lifeform struct {
-	Version        int               `json:"version"`
-	Group          string            `json:"group"`
-	CustomGroup    string            `json:"customGroup,omitempty"`
-	Origin         string            `json:"origin"`
-	ScientificName string            `json:"scientificName,omitempty"`
-	Taxonomy       string            `json:"taxonomy,omitempty"`
-	ParentID       string            `json:"parentId,omitempty"`
-	Roles          []string          `json:"roles"`
-	Traits         map[string]string `json:"traits,omitempty"`
-	Lifecycle      string            `json:"lifecycle,omitempty"`
-	Dispersal      string            `json:"dispersal"`
-	Requirements   Requirements      `json:"requirements"`
-	Dependencies   []Dependency      `json:"dependencies,omitempty"`
-	Completeness   string            `json:"completeness"`
-	CatalogueID    string            `json:"catalogueId,omitempty"`
-	Generator      string            `json:"generator,omitempty"`
-	RuleIDs        []string          `json:"ruleIds,omitempty"`
-	Locked         bool              `json:"locked"`
+	Version             int               `json:"version"`
+	Group               string            `json:"group"`
+	CustomGroup         string            `json:"customGroup,omitempty"`
+	Origin              string            `json:"origin"`
+	ScientificName      string            `json:"scientificName,omitempty"`
+	Taxonomy            string            `json:"taxonomy,omitempty"`
+	ParentID            string            `json:"parentId,omitempty"`
+	Roles               []string          `json:"roles"`
+	Traits              map[string]string `json:"traits,omitempty"`
+	Lifecycle           string            `json:"lifecycle,omitempty"`
+	Dispersal           string            `json:"dispersal"`
+	Requirements        Requirements      `json:"requirements"`
+	Dependencies        []Dependency      `json:"dependencies,omitempty"`
+	Completeness        string            `json:"completeness"`
+	CatalogueID         string            `json:"catalogueId,omitempty"`
+	Generator           string            `json:"generator,omitempty"`
+	NativeOriginHabitat string            `json:"nativeOriginHabitat,omitempty"`
+	RuleIDs             []string          `json:"ruleIds,omitempty"`
+	Locked              bool              `json:"locked"`
 }
 type Species struct {
 	ID      string   `json:"id"`
@@ -67,6 +77,15 @@ type Species struct {
 	Biology Lifeform `json:"biology"`
 }
 type Conditions struct {
+	SeasonalKnown     bool     `json:"seasonalKnown,omitempty"`
+	Bathymetry        Range    `json:"bathymetry,omitempty"`
+	SoilPH            float64  `json:"soilPH,omitempty"`
+	SoilDepth         float64  `json:"soilDepth,omitempty"`
+	Drainage          float64  `json:"drainage,omitempty"`
+	DroughtMonths     float64  `json:"droughtMonths,omitempty"`
+	GrowingMonths     float64  `json:"growingMonths,omitempty"`
+	DetritalSupply    float64  `json:"detritalSupply,omitempty"`
+	Geothermal        float64  `json:"geothermal,omitempty"`
 	Temperature       Range    `json:"temperature"`
 	Moisture          Range    `json:"moisture"`
 	Elevation         Range    `json:"elevation"`
@@ -82,14 +101,17 @@ type Conditions struct {
 	Seasons           []string `json:"seasons"`
 }
 type Habitat struct {
-	RegionID    string     `json:"regionId,omitempty"`
-	ID          string     `json:"id"`
-	Name        string     `json:"name"`
-	Kind        string     `json:"kind"`
-	Stratum     string     `json:"stratum,omitempty"`
-	Cells       []int      `json:"cells"`
-	Conditions  Conditions `json:"conditions"`
-	Description string     `json:"description"`
+	BaseBiome   string       `json:"baseBiome,omitempty"`
+	Overlays    []string     `json:"overlays,omitempty"`
+	Profiles    []Conditions `json:"profiles,omitempty"` // One profile per cell, same order as Cells.
+	RegionID    string       `json:"regionId,omitempty"`
+	ID          string       `json:"id"`
+	Name        string       `json:"name"`
+	Kind        string       `json:"kind"`
+	Stratum     string       `json:"stratum,omitempty"`
+	Cells       []int        `json:"cells"`
+	Conditions  Conditions   `json:"conditions"`
+	Description string       `json:"description"`
 }
 type Occurrence struct {
 	ID          string   `json:"id"`
@@ -152,19 +174,24 @@ type Settings struct {
 	Catalogue   []Species      `json:"catalogue,omitempty"`
 }
 type State struct {
-	ID           string        `json:"id"`
-	AgeID        string        `json:"ageId"`
-	TerrainID    string        `json:"terrainId"`
-	Version      int           `json:"version"`
-	Source       string        `json:"source"`
-	Width        int           `json:"width"`
-	Height       int           `json:"height"`
-	Habitats     []Habitat     `json:"habitats"`
-	Occurrences  []Occurrence  `json:"occurrences"`
-	Interactions []Interaction `json:"interactions"`
-	Settings     Settings      `json:"settings"`
-	Diagnostics  []string      `json:"diagnostics"`
-	Stale        bool          `json:"stale"`
+	WrapX          bool          `json:"wrapX,omitempty"`
+	CellKM         float64       `json:"cellKm,omitempty"`
+	CellEastWestKM float64       `json:"cellEastWestKm,omitempty"`
+	LatitudeNorth  float64       `json:"latitudeNorth,omitempty"`
+	LatitudeSouth  float64       `json:"latitudeSouth,omitempty"`
+	ID             string        `json:"id"`
+	AgeID          string        `json:"ageId"`
+	TerrainID      string        `json:"terrainId"`
+	Version        int           `json:"version"`
+	Source         string        `json:"source"`
+	Width          int           `json:"width"`
+	Height         int           `json:"height"`
+	Habitats       []Habitat     `json:"habitats"`
+	Occurrences    []Occurrence  `json:"occurrences"`
+	Interactions   []Interaction `json:"interactions"`
+	Settings       Settings      `json:"settings"`
+	Diagnostics    []string      `json:"diagnostics"`
+	Stale          bool          `json:"stale"`
 }
 type Preview struct {
 	State      State     `json:"state"`
@@ -173,10 +200,23 @@ type Preview struct {
 }
 
 var Groups = []string{"plant", "animal", "fungus", "algae", "bacterium", "archaea", "protist", "virus", "custom"}
-var Roles = []string{"producer", "decomposer", "herbivore", "predator", "omnivore", "scavenger", "pollinator", "seed-disperser", "mutualist", "parasite", "pathogen", "host-dependent"}
+var Roles = []string{"producer", "decomposer", "detritivore", "herbivore", "predator", "omnivore", "scavenger", "pollinator", "seed-disperser", "mutualist", "parasite", "pathogen", "host-dependent"}
 var InteractionKinds = []string{"feeds-on", "predator-of", "pollinates", "disperses-seeds-for", "symbiotic-with", "parasite-of", "pathogen-of", "infects", "competes-with", "decomposes", "depends-on", "evolves-from"}
 
 func ValidRequirements(r Requirements) error {
+	if !finite(r.DispersalKM) || r.DispersalKM < 0 || r.DispersalKM > 50000 {
+		return fmt.Errorf("invalid dispersal distance")
+	}
+	for _, v := range []*Range{r.SoilPH, r.DroughtMonths, r.GrowingMonths} {
+		if v != nil && (!finite(v.Min) || !finite(v.Max) || v.Min > v.Max || v.Min < 0 || v.Max > 14) {
+			return fmt.Errorf("invalid ecological niche range")
+		}
+	}
+	for _, v := range []*Range{r.DroughtMonths, r.GrowingMonths} {
+		if v != nil && v.Max > 12 {
+			return fmt.Errorf("month range exceeds annual cycle")
+		}
+	}
 	if !slices.Contains([]string{"terrestrial", "freshwater", "marine", "amphibious", "any"}, r.Medium) {
 		return fmt.Errorf("invalid environmental medium")
 	}
@@ -194,7 +234,7 @@ func ValidateLifeform(b *Lifeform) error {
 	if b == nil {
 		return nil
 	}
-	if b.Version != Version || !slices.Contains(Groups, b.Group) || !slices.Contains([]string{"earth-reference", "fictional", "custom-created", "placeholder"}, b.Origin) || !slices.Contains([]string{"placeholder", "draft", "complete"}, b.Completeness) || !slices.Contains([]string{"local", "regional", "mobile", "waterborne"}, b.Dispersal) {
+	if (b.Version < 1 || b.Version > Version) || !slices.Contains(Groups, b.Group) || !slices.Contains([]string{"earth-reference", "fictional", "custom-created", "placeholder"}, b.Origin) || !slices.Contains([]string{"placeholder", "draft", "complete"}, b.Completeness) || !slices.Contains([]string{"local", "regional", "mobile", "waterborne"}, b.Dispersal) {
 		return fmt.Errorf("invalid lifeform classification")
 	}
 	if len(b.Roles) == 0 || len(b.Roles) > 12 || len(b.Dependencies) > 20 || len(b.Traits) > 60 {
@@ -214,7 +254,7 @@ func ValidateLifeform(b *Lifeform) error {
 		return fmt.Errorf("biological profile too large")
 	}
 	for _, dep := range b.Dependencies {
-		if !slices.Contains(InteractionKinds, dep.Kind) || (dep.Group == "" && dep.Role == "") || (dep.Group != "" && !slices.Contains(Groups, dep.Group)) || (dep.Role != "" && !slices.Contains(Roles, dep.Role)) {
+		if !slices.Contains(InteractionKinds, dep.Kind) || (dep.Group == "" && dep.Role == "" && len(dep.SpeciesIDs) == 0) || (dep.Group != "" && !slices.Contains(Groups, dep.Group)) || (dep.Role != "" && !slices.Contains(Roles, dep.Role)) || len(dep.SpeciesIDs) > 20 || len(dep.Seasons) > 12 || len(dep.LifeStage) > 80 || dep.Medium != "" && !slices.Contains([]string{"any", "terrestrial", "freshwater", "marine", "amphibious"}, dep.Medium) {
 			return fmt.Errorf("invalid ecological dependency")
 		}
 	}

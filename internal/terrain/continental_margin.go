@@ -3,7 +3,6 @@ package terrain
 import (
 	"fmt"
 	"math"
-	"sort"
 )
 
 // Amplitudes multiply independent large, medium and fine domain warps. Nil
@@ -107,6 +106,10 @@ func makeLandmass(seed uint32, formation string, center [2]float64, radius, bear
 	}
 	bend := (rng.Next() - .5) * 1.1
 	switch formation {
+	case "compact":
+		curve([2]float64{-.5, -.1}, [2]float64{-.2, bend}, [2]float64{.3, -bend}, [2]float64{.5, .1}, .85, .7, false)
+	case "elongated":
+		curve([2]float64{-1, -.1}, [2]float64{-.4, bend}, [2]float64{.4, -bend}, [2]float64{1, .1}, .55, .65, false)
 	case "crescent":
 		arc := math.Pi * (1.2 + rng.Next()*.55)
 		p := []LandSpinePoint{}
@@ -209,117 +212,8 @@ func (e *Environment) platesAt(x, y float64) (a, b int, da, db, convergence, bea
 	return
 }
 
-func (e *Environment) continentalNuclei(points []Point) []LandmassStructure {
-	count := 0
-	for _, p := range points {
-		if p.K == 1 {
-			count++
-		}
-	}
-	w, h := float64(e.Options.Columns), float64(e.Options.Rows)
-	radius := math.Sqrt(w*h/math.Max(2, float64(count))) * .45
-	shapes := []LandmassStructure{}
-	seed := Seed(e.Options.Seed)
-	for k, p := range points {
-		if p.K != 1 {
-			continue
-		}
-		rng := RNG(seed ^ uint32(k+1)*0x738a913)
-		center := [2]float64{p.X, p.Y}
-		a, b, _, _, convergence, bearing := e.platesAt(center[0], center[1])
-		names := []string{"curved", "branched", "hook", "isthmus", "crescent", "enclosed-basin", "indented"}
-		formation := names[int(rng.Next()*float64(len(names)))]
-		process := "erosion-and-shelf-flooding"
-		if convergence < -.3 {
-			process = "continental-rifting"
-			if rng.Next() < .65 {
-				formation = "rifted"
-			}
-		}
-		if convergence > .3 {
-			process = "continental-collision"
-			if !e.Plates[a].Continental || !e.Plates[b].Continental {
-				process = "subduction-margin"
-				if rng.Next() < .5 {
-					formation = "crescent"
-				}
-			} else if rng.Next() < .5 {
-				formation = "branched"
-			}
-		}
-		// High-latitude uplifted margins preserve drowned glacial troughs.
-		latitude := e.Options.LatitudeNorth + (e.Options.LatitudeSouth-e.Options.LatitudeNorth)*center[1]/h
-		if math.Abs(latitude) > 55 && convergence > .2 && rng.Next() < .6 {
-			formation = "indented"
-			process = "glacially-eroded-margin"
-		}
-		warp := e.Options.shapeOptions()
-		warp.Large *= .6 + rng.Next()*.9
-		warp.Medium *= .5 + rng.Next()
-		warp.Small *= .3 + rng.Next()*1.3
-		s := makeLandmass(seed^uint32(k+1)*0x471cab31, formation, center, radius*(.55+rng.Next()*.6), bearing+(rng.Next()-.5)*1.2, warp)
-		s.ID = fmt.Sprintf("land-structure/%08x/%d", seed, k)
-		s.Process = process
-		s.Plate = a
-		s.OtherPlate = b
-		// Place complete foundations inside the overview, rather than slicing
-		// their land at a rectangular mask. Partial maps can continue off frame.
-		if e.Geography == nil || e.Geography.Coverage == "planet" {
-			minX, minY, maxX, maxY := math.Inf(1), math.Inf(1), math.Inf(-1), math.Inf(-1)
-			for _, path := range s.Spines {
-				for _, v := range path {
-					pad := v.Width*1.15 + s.Scale*.12
-					minX = math.Min(minX, v.X-pad)
-					maxX = math.Max(maxX, v.X+pad)
-					minY = math.Min(minY, v.Y-pad)
-					maxY = math.Max(maxY, v.Y+pad)
-				}
-			}
-			margin := float64(e.Margin) + 1
-			scale := math.Min(1, math.Min((w-2*margin)/(maxX-minX), (h-2*margin)/(maxY-minY)))
-			cx, cy := (minX+maxX)/2, (minY+maxY)/2
-			tx := clamp(cx, margin+(maxX-minX)*scale/2, w-margin-(maxX-minX)*scale/2)
-			ty := clamp(cy, margin+(maxY-minY)*scale/2, h-margin-(maxY-minY)*scale/2)
-			// Evaluate actual fitted candidates: choosing corners before fitting
-			// would repeatedly push unrelated masses onto the same central position.
-			if len(shapes) > 0 {
-				best := math.Inf(-1)
-				for trial := 0; trial < 64; trial++ {
-					px := margin + (maxX-minX)*scale/2 + rng.Next()*(w-2*margin-(maxX-minX)*scale)
-					py := margin + (maxY-minY)*scale/2 + rng.Next()*(h-2*margin-(maxY-minY)*scale)
-					score := 0.
-					for _, path := range s.Spines {
-						for j := 0; j < len(path); j += 3 {
-							x, y := px+(path[j].X-cx)*scale, py+(path[j].Y-cy)*scale
-							nearest := math.Inf(-1)
-							for _, old := range shapes {
-								nearest = math.Max(nearest, old.field(x, y))
-							}
-							score += clamp(-nearest, -3, 2)
-						}
-					}
-					score -= .008 * math.Hypot(px-p.X, py-p.Y)
-					if score > best {
-						best = score
-						tx, ty = px, py
-					}
-				}
-			}
-			s.Center = [2]float64{tx + (s.Center[0]-cx)*scale, ty + (s.Center[1]-cy)*scale}
-			s.Scale *= scale
-			for _, paths := range [][][]LandSpinePoint{s.Spines, s.Cuts} {
-				for _, path := range paths {
-					for j := range path {
-						path[j].X = tx + (path[j].X-cx)*scale
-						path[j].Y = ty + (path[j].Y-cy)*scale
-						path[j].Width *= scale
-					}
-				}
-			}
-		}
-		shapes = append(shapes, s)
-	}
-	return shapes
+func (e *Environment) continentalNuclei(_ []Point) []LandmassStructure {
+	return e.layoutNuclei()
 }
 
 func continentalMass(x, y float64, shapes []LandmassStructure) (float64, int) {
@@ -335,59 +229,8 @@ func continentalMass(x, y float64, shapes []LandmassStructure) (float64, int) {
 	return .5 + .5*math.Tanh(best*1.7), owner
 }
 
-func (e *Environment) generateContinentalMask(points []Point, sample func(float64, float64) float64) {
-	w, h := e.Options.Columns, e.Options.Rows
-	n := w * h
-	e.ContinentalStructures = e.continentalNuclei(points)
-	scores := make([]float64, n)
-	eligible := make([]int, 0, n)
-	owners := make([]int, n)
-	clearances := make([]float64, n)
-	for i := range scores {
-		x, y := float64(i%w), float64(i/w)
-		scores[i], owners[i] = continentalMass(x, y, e.ContinentalStructures)
-		clearance := continentalClearance(x, y, w, h, e.Margin, clamp((100-e.Options.LandPercent)/50, .2, 1), sample)
-		if e.Geography != nil && e.Geography.Coverage != "planet" {
-			clearance = float64(min(w, h))
-		}
-		// This offshore guard is normally outside the generated structure. A broad
-		// deformation prevents high-coverage worlds from following a straight rim.
-		scores[i] -= (1 - smooth(clearance/(float64(min(w, h))*.09))) * .7
-		clearances[i] = clearance
-	}
-	// Submerged sutures have resolved width; sub-cell competitive boundaries
-	// must not become diagonal land bridges or one-pixel cracks. Collision can
-	// weld related bodies, whereas other overlaps are drowned continental seams.
-	seam := make([]int, n)
-	for i := range seam {
-		seam[i] = 1
-		for _, j := range e.neighbors(i) {
-			if owners[i] != owners[j] {
-				a, b := e.ContinentalStructures[owners[i]], e.ContinentalStructures[owners[j]]
-				if a.Plate == b.Plate && a.Process == "continental-collision" && b.Process == "continental-collision" {
-					continue
-				}
-				seam[i] = 0
-				break
-			}
-		}
-	}
-	distance := e.gridDistance(seam, 0)
-	for i := range scores {
-		width := 1.2 + 1.5*sample(float64(i%w)/17+911, float64(i/w)/17+953)
-		scores[i] *= smooth((distance[i] - .5) / width)
-		if clearances[i] > 0 && distance[i] >= 1 {
-			eligible = append(eligible, i)
-		}
-	}
-	// Relative spine distance gives narrow and broad cores the same priority:
-	// coverage changes widen shores rather than erase the axes of peninsulas.
-	sort.SliceStable(eligible, func(a, b int) bool { return scores[eligible[a]] > scores[eligible[b]] })
-	count := min(len(eligible), int(round(float64(n)*e.Options.LandPercent/100)))
-	for _, i := range eligible[:count] {
-		e.Mask[i] = 1
-	}
-	e.Fields["continentalShape"] = scores
+func (e *Environment) generateContinentalMask(_ []Point, sample func(float64, float64) float64) {
+	e.separatedContinentalMask(sample)
 }
 
 // Reserve connected offshore water without imprinting the rectangular canvas
@@ -407,7 +250,7 @@ func validateLandmassStructure(s LandmassStructure) error {
 		return fmt.Errorf("invalid land structure %s", s.ID)
 	}
 	switch s.Formation {
-	case "curved", "branched", "hook", "isthmus", "crescent", "enclosed-basin", "rifted", "indented":
+	case "compact", "elongated", "curved", "branched", "hook", "isthmus", "crescent", "enclosed-basin", "rifted", "indented":
 	default:
 		return fmt.Errorf("unknown land formation %s", s.ID)
 	}

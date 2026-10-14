@@ -1,0 +1,14 @@
+{
+  "realism": {
+    "checks": [
+      "Switch enables real Go environmental pipeline and completes generation",
+      "Every environmental field has an overlay; climate and wind render",
+      "Both earlier modes remain available",
+      "Realism fills missing biome types when enabled from a reduced preset",
+      "All eight presets compose with both physical modes and preserve profiles, weights and radius",
+      "Disabling physics retains the preset and restores its original palette",
+      "Realism setting persisted for reload"
+    ],
+    "status": "Done · 64×40 · seed 4139746970 · 3.50 s"
+  }
+}

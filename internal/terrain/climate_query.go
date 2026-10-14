@@ -21,6 +21,8 @@ type SeasonalDescription struct {
 	Description    string  `json:"description"`
 }
 type ClimateDescription struct {
+	AridityIndex   float64               `json:"aridityIndex"`
+	Biome          string                `json:"biome,omitempty"`
 	Available      bool                  `json:"available"`
 	Approximate    bool                  `json:"approximate"`
 	ZoneID         string                `json:"zoneId"`
@@ -95,14 +97,25 @@ func (c *ClimateState) Describe(x, y float64) ClimateDescription {
 	if m.Geothermal > .4 {
 		q.Influences = append(q.Influences, "Geothermal heating has a small ground-level influence; regional air remains governed by the climate.")
 	}
+	pet := 0.
 	mean, rain, lo, hi := 0., 0., math.Inf(1), math.Inf(-1)
 	for _, v := range cell.Months {
 		mean += v.Temperature / 12
 		rain += v.Rain
+		pet += v.Evaporation
 		lo = math.Min(lo, v.Temperature)
 		hi = math.Max(hi, v.Temperature)
 	}
 	q.Summary = fmt.Sprintf("%s climate at %.0f m, %.1f° latitude. Modeled annual mean %.1f °C; monthly means %.1f–%.1f °C; %.0f mm precipitation per %.0f-day local year. %d local seasonal periods.", z.Name, m.Elevation, m.Latitude, mean, lo, hi, rain, q.YearDays, q.LocalCount)
+	q.AridityIndex = rain / math.Max(1, pet)
+	q.Biome = cell.Biome
+	q.Summary += fmt.Sprintf(" Aridity index %.2f (rain / potential evaporation).", q.AridityIndex)
+	if q.Biome != "" {
+		q.Summary += " Surface cover: " + Biomes[biomeIndex(q.Biome)].Name + "."
+	}
+	if m.RainfallPotential > 0 {
+		q.Influences = append(q.Influences, fmt.Sprintf("Large-scale circulation rainfall potential %.0f mm/year; upwind moisture supply %.0f%%.", m.RainfallPotential, m.MoistureSupply*100))
+	}
 	if q.Mode == "custom" {
 		q.Summary += fmt.Sprintf(" The %d periods are user-defined subdivisions; similar periods do not imply different weather.", q.RequestedCount)
 	}

@@ -43,7 +43,7 @@ func (s *Server) biosphereTerrain(r *http.Request, d *history.Document, age, id 
 	if err == nil {
 		var c checkpoint
 		if expandJSON(raw, &c) == nil {
-			for _, mask := range c.Solver.Dom {
+			for cell, mask := range c.Solver.Dom {
 				kind := ""
 				j := bits.TrailingZeros32(mask)
 				if j < len(c.Config.Types) {
@@ -53,6 +53,17 @@ func (s *Server) biosphereTerrain(r *http.Request, d *history.Document, age, id 
 					}
 				}
 				categories = append(categories, kind)
+				if cell < len(c.Solver.Pinned) && c.Solver.Pinned[cell] != 0 {
+					if e.Fields["authoredCover"] == nil {
+						e.Fields["authoredCover"] = make([]float64, len(e.Mask))
+					}
+					for index, biome := range terrain.Biomes {
+						if biome.ID == kind && cell < len(e.Mask) {
+							e.Fields["authoredCover"][cell] = float64(index + 1)
+							break
+						}
+					}
+				}
 			}
 		}
 	}
@@ -89,11 +100,24 @@ func (s *Server) biosphereTerrain(r *http.Request, d *history.Document, age, id 
 			e.RebuildClimateForSurface(base)
 		}
 	}
+	// An authored climate can exist without a terrain brush operation.
+	var climateOverride authoredClimate
+	if raw := parts["authored-climate"]; len(raw) > 0 && expandJSON(raw, &climateOverride) == nil && climateOverride.State != nil {
+		e.Climate = climateOverride.State
+	}
 	habitats, source, err := biosphere.Habitats(e, categories, id)
 	if err != nil {
 		return biosphere.State{}, err
 	}
 	st := biosphere.State{ID: id, AgeID: age, TerrainID: id, Version: biosphere.Version, Source: source, Width: e.Options.Columns, Height: e.Options.Rows, Habitats: habitats, Occurrences: []biosphere.Occurrence{}, Interactions: []biosphere.Interaction{}, Diagnostics: []string{}, Settings: biosphere.Settings{Mode: "guided", Preset: "earth-like", Familiarity: .5, Richness: "moderate", Coherence: "realistic", Scope: "entire", Seed: e.Options.Seed, Rules: []biosphere.Rule{}}}
+	if e.Geography != nil {
+		st.WrapX = e.Geography.WrapX
+	}
+	if e.Climate != nil {
+		st.CellKM = e.Climate.Scale.NorthSouthKM
+		st.CellEastWestKM = e.Climate.Scale.EquatorialEastWestKM
+		st.LatitudeNorth, st.LatitudeSouth = e.Climate.Scale.LatitudeNorth, e.Climate.Scale.LatitudeSouth
+	}
 	return st, nil
 }
 func (s *Server) getBiosphere(w http.ResponseWriter, r *http.Request) {
@@ -155,6 +179,32 @@ func (s *Server) generateBiosphere(w http.ResponseWriter, r *http.Request) {
 	}
 	if old := d.Biosphere(req.AgeID, base.TerrainID); old != nil {
 		base.Occurrences = old.Occurrences
+		base.Interactions = old.Interactions
+		base.Settings = old.Settings
+		// Preserve the exact extent of locked/confirmed records on an older
+		// snapshot. They are reviewed alongside the new derived habitat revision.
+		for _, habitat := range old.Habitats {
+			needed := false
+			for _, occurrence := range old.Occurrences {
+				if occurrence.HabitatID == habitat.ID && (occurrence.Locked || occurrence.Confirmed) {
+					needed = true
+					break
+				}
+			}
+			if !needed {
+				continue
+			}
+			found := false
+			for _, current := range base.Habitats {
+				if current.ID == habitat.ID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				base.Habitats = append(base.Habitats, habitat)
+			}
+		}
 	}
 	p, err := biosphere.Generate(base, req.Settings, d.Lifeforms(req.AgeID))
 	if err != nil {

@@ -576,6 +576,7 @@ export default function Biosphere({
                 </span>
                 <h2>{h.name}</h2>
                 <p>{h.description}</p>
+                {h.baseBiome && <p>Base cover: {label(h.baseBiome)}{h.overlays?.length ? ` · ${h.overlays.map(label).join(", ")}` : ""}</p>}
                 <p>
                   Climate:{" "}
                   {h.conditions.climateZones.join(", ") ||
@@ -589,6 +590,13 @@ export default function Biosphere({
                   {h.conditions.salinity.min.toFixed(1)}–
                   {h.conditions.salinity.max.toFixed(1)}‰
                 </p>
+                {h.conditions.medium === "terrestrial" && h.conditions.soilPH != null && <p>
+                  Soil pH: {h.conditions.soilPH.toFixed(1)} · Soil depth: {(h.conditions.soilDepth || 0).toFixed(2)} m · Drainage: {Math.round((h.conditions.drainage || 0) * 100)}%
+                  {h.conditions.seasonalKnown && <> · Drought: {Math.round(h.conditions.droughtMonths || 0)} months · Growing season: {Math.round(h.conditions.growingMonths || 0)} months</>}
+                </p>}
+                {["photic", "twilight", "aphotic", "benthic"].includes(h.stratum) && h.conditions.bathymetry && <p>
+                  Organism depth: {h.conditions.depth.min.toFixed(0)}–{h.conditions.depth.max.toFixed(0)} m · Seabed depth: {h.conditions.bathymetry.min.toFixed(0)}–{h.conditions.bathymetry.max.toFixed(0)} m
+                </p>}
                 <button
                   disabled={!saved}
                   onClick={() => onAtlas(terrainID, h.id)}

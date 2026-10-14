@@ -25,6 +25,7 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
   padding: 16px;
   gap: 10px;
 }
@@ -32,6 +33,8 @@
 :where(.terrain-app) .canvas-wrap {
   flex: 1;
   min-height: 0;
+  min-width: 0;
+  contain: size;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -62,13 +65,39 @@
 }
 
 :where(.terrain-app) .hover {
-  min-height: 1.45em;
+  /* Readouts must not resize the map when coordinates or climate names wrap. */
+  flex: 0 0 3lh;
+  min-height: 0;
+  overflow: auto;
+  overflow-wrap: anywhere;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
 :where(.terrain-app) .hover strong {
   color: var(--text);
   font-weight: 600;
+}
+
+/* Reserve space for asynchronous inspection results. Scroll the description
+   inside this panel instead of growing the grid or shrinking the map. */
+:where(.terrain-app) .stage .natural-hover {
+  flex: 0 0 clamp(160px, 30vh, 260px);
+  min-width: 0;
+  min-height: 0;
+  margin-top: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+:where(.terrain-app) .stage .natural-hover-content {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  scrollbar-gutter: stable;
+}
+:where(.terrain-app) .stage .natural-hover > :not(.natural-hover-content) {
+  flex-shrink: 0;
 }
 
 :where(.terrain-app) kbd {
@@ -384,10 +413,14 @@
 :where(.terrain-app) .field input {
   margin-top: 3px;
 }
+:where(.terrain-app) .row2,
 :where(.terrain-app) .row3 {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
+}
+:where(.terrain-app) .row2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 :where(.terrain-app) .row3 input {
   margin-top: 3px;
@@ -786,6 +819,7 @@
 }
 :where(.terrain-app) .map-navigation {
   display: flex;
+  flex-shrink: 0;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;

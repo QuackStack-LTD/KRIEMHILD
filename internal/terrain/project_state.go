@@ -111,6 +111,11 @@ func RestoreProjectSolver(s *Solver, c Config, e *Environment, edit Snapshot) er
 				}
 			}
 		}
+		for _, v := range e.Fields["biome"] {
+			if v != float64(int(v)) || v < 0 || int(v) >= len(Biomes) {
+				return fmt.Errorf("invalid surface biome")
+			}
+		}
 		for i, v := range e.Fields["flow"] {
 			j := int(v)
 			if v != float64(j) || j < -1 || j >= s.N || j == i {

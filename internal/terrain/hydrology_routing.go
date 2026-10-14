@@ -434,6 +434,26 @@ func (e *Environment) breachNumericalPits(filled []float64) {
 		if !outlet {
 			continue
 		}
+		// A numerical breach must not undercut a neighboring mountain beyond
+		// the same structural gradient allowed by the main erosion pass. Reject
+		// the whole path rather than leaving a partially excavated outlet.
+		if e.Options.Heights == nil {
+			for k, cell := range cells {
+				for _, neighbor := range e.neighbors(cell) {
+					limit := 650.
+					a, b := e.get("geology", cell), e.get("geology", neighbor)
+					if (a == 2 || a == 6) && (b == 2 || b == 6) {
+						limit = 1100
+					}
+					if e.get("elevation", neighbor)-levels[k] > limit {
+						outlet = false
+					}
+				}
+			}
+		}
+		if !outlet {
+			continue
+		}
 		for k, cell := range cells {
 			cut := math.Max(0, e.get("elevation", cell)-levels[k])
 			e.set("elevation", cell, e.get("elevation", cell)-cut)

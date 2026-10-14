@@ -14,6 +14,8 @@ type GeologicalEvent struct {
 	Environment string  `json:"environment"`
 }
 type GeologicalHistory struct {
+	Inference           string  `json:"inference,omitempty"`
+	Confidence          float64 `json:"confidence,omitempty"`
 	FormerMarine        bool    `json:"formerMarine"`
 	AncientWetland      bool    `json:"ancientWetland"`
 	Evaporative         bool    `json:"evaporative"`
