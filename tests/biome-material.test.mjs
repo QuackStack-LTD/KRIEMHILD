@@ -40,6 +40,17 @@ test('Biome boundaries select a single material without mixed colors',()=>{
  }
 });
 
+test('Refined coastal land and its inspector retain detail cover over a coarse ocean cell',()=>{
+ const fields={biome:[0,0,0,0],elevation:[-20,-20,-20,-20],waterBody:[1,1,1,1]};
+ const solver={W:2,H:2,config:{types:[{name:'Water'}]},typeAt:()=>0,environment:{fields}};
+ const tile={x:0,y:0,step:1/8,level:3,points:Array.from({length:33*33},()=>({biome:'scrubland',waterBody:0,elevation:8,parent:0}))};
+ const point={x:.25,y:.25},sample=sampleTerrainTile(tile,point,3);
+ assert.equal(sample.waterBody,0);assert.equal(sample.biome,'scrubland');
+ assert.equal(terrainInspection(solver,point,sample).material,'scrubland');
+ tile.points.forEach(p=>{p.biome='water';p.waterBody=1;p.waterDepth=8;p.elevation=-8;});
+ assert.equal(terrainInspection(solver,point,sampleTerrainTile(tile,point,3)).terrain,'Ocean / sea');
+});
+
 test('Provisional world tiles retain physical materials while refined tiles load',()=>{
  const fields=Object.fromEntries(['elevation','waterBody','waterDepth','waterLevel','temperature','moisture','slope','mountainCore','snow','wetland','aridity','sandSupply'].map(k=>[k,Array(4).fill(0)]));
  fields.moisture.fill(.8);fields.slope.fill(.5);fields.mountainCore.fill(.9);fields.snow.fill(.4);

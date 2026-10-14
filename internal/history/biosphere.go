@@ -260,6 +260,15 @@ func (d *Document) AcceptBiosphere(p biosphere.Preview, ids, locks []string, nam
 		s.Diagnostics = append(s.Diagnostics, fmt.Sprintf("Omitted %d selected populations because their food or host populations were not accepted.", removedDependents))
 	}
 	used := map[string]bool{}
+	// Record a completed acceptance only when every preview population survived
+	// selection and dependency checks. Partial acceptance must remain resumable.
+	s.AcceptedGeneration = biosphere.GenerationKey(s.Source, s.Settings)
+	for _, occurrence := range p.State.Occurrences {
+		if _, ok := occurrences[occurrence.ID]; !ok {
+			s.AcceptedGeneration = ""
+			break
+		}
+	}
 	s.Occurrences = nil
 	for _, o := range occurrences {
 		s.Occurrences = append(s.Occurrences, o)

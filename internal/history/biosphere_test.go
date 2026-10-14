@@ -32,8 +32,14 @@ func TestBiosphereRetainsConfirmedGeometryAndIndependentInheritance(t *testing.T
 	if len(isolated.Biospheres[0].Occurrences) != 0 || len(isolated.Biospheres[0].Diagnostics) == 0 {
 		t.Fatal("unsupported consumer saved without diagnostic")
 	}
+	if isolated.Biospheres[0].AcceptedGeneration != "" {
+		t.Fatal("partial acceptance marked the entire preview complete")
+	}
 	if err := d.AcceptBiosphere(p, []string{"population-1"}, []string{"population-1"}, nil); err != nil {
 		t.Fatal(err)
+	}
+	if d.Biosphere(age, "terrain").AcceptedGeneration != biosphere.GenerationKey(st.Source, st.Settings) {
+		t.Fatal("complete acceptance did not retain its generation identity")
 	}
 	p.State.Source = "surface-2"
 	p.State.Habitats[0].ID = "region-v2"

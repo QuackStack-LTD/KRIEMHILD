@@ -10,12 +10,20 @@ import (
 func TestTwentySeedOceanFramingAndFootprintVariety(t *testing.T) {
 	forms := map[string]bool{}
 	counts := map[int]bool{}
+	families := map[string]bool{}
 	irregular := 0
 	for seed := 0; seed < 20; seed++ {
 		e := shapeFixture(fmt.Sprintf("framing-%d", seed), 160, 100)
 		r := e.LandShapeDiagnostics()
 		counts[r.MajorCount] = true
-		if r.MajorCount < 4 || r.MajorCount > 7 || r.MinimumGap < 8 || r.ReservedLandCells > 0 {
+		families[e.Layout.Family] = true
+		for i, land := range e.Mask {
+			expected := e.Fields["oceanReserve"][i] == 0 && e.Fields["continentalShape"][i] >= e.Layout.SeaThreshold
+			if (land != 0) != expected {
+				t.Fatal("final mask no longer follows union field", seed, i)
+			}
+		}
+		if r.MajorCount < 1 || r.MajorCount > 12 || r.ReservedLandCells > 0 {
 			t.Fatalf("seed %d layout %+v", seed, r)
 		}
 		for i, land := range e.Mask {
@@ -36,7 +44,7 @@ func TestTwentySeedOceanFramingAndFootprintVariety(t *testing.T) {
 			}
 		}
 	}
-	if len(forms) < 7 || len(counts) < 2 || irregular < 20 {
+	if len(forms) < 7 || len(counts) < 3 || len(families) < 5 || irregular < 20 {
 		t.Fatal("uniform layouts", forms, counts, irregular)
 	}
 }

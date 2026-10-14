@@ -8,7 +8,7 @@ if(typeof document==='undefined'){
  let state;
  window.fetch=async(...args)=>{const response=await original.apply(window,args);if(String(args[0])==='/api/sessions')state=await response.clone().json();return response};
  try{
-  $('shape').value='flat';$('width').value=64;$('height').value=40;$('seed').value='KRIEMHILD';$('instant').checked=true;
+  $('shape').value='flat';$('view3d').checked=false;$('view3d').dispatchEvent(new Event('change',{bubbles:true}));$('width').value=64;$('height').value=40;$('seed').value='KRIEMHILD';$('instant').checked=true;
   $('majorContinents').value='5';$('oceanSeparation').value='wide';$('landCoverage').value='42';$('environment').checked=true;$('realism').checked=true;
   $('generate').click();await wait(()=>state,'New generation response');await wait(()=>$('statusLine').textContent.startsWith('Done'),'Finished generation');
   assert(!state.error,state.error);assert(!$('error').textContent,$('error').textContent);

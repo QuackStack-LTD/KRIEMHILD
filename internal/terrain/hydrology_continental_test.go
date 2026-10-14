@@ -53,7 +53,7 @@ func TestContinentalDrainageProfile(t *testing.T) {
 		// Coastline changes alter individual catchment sizes; enforce the
 		// ten-percent baseline across this sample, with one point of tolerance.
 		if stats.Classes[0].Count == 0 || lowland < len(e.Hydrology.Reaches)/2 || stats.InvalidDestinations != 0 || stats.CoveragePercent < 9 || stats.CoveragePercent > 25 {
-			t.Fatalf("incomplete or excessive drainage hierarchy: %+v", stats)
+			t.Errorf("incomplete or excessive drainage hierarchy: %+v", stats)
 		}
 		coverage += stats.CoveragePercent
 		if d := e.ValidateHydrology(); len(d) > 0 {

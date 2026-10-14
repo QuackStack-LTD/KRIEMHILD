@@ -4,7 +4,7 @@ New generation uses the following order. Stored worlds are restored from their
 saved fields and detail tiles; none of these stages run merely to open a world.
 
 1. Establish geographic scale, seeded plates and continental foundations.
-2. Reserve ocean gaps and an irregular ocean frame on **all four sides**. Wrapped
+2. Union filled continental fields, subtract geological cuts, and preserve an irregular ocean frame on **all four sides**. Wrapped
    physical distances still apply, but no generated land crosses the displayed cut.
 3. Derive crust type, age and thickness proxies, boundary motion, relief, shelves,
    ocean depth and archipelagos from the shared foundations.
@@ -23,20 +23,7 @@ saved fields and detail tiles; none of these stages run merely to open a world.
 
 ## Continental layout
 
-Automatic placement chooses 4–6 major foundations using seeded random sequential
-inhibition. It accepts spatially feasible random positions instead of maximizing
-every inter-center distance. Size, bearing, bends, cuts and shape grammar vary by
-seed. Competition for space includes the actual organic footprint, so a lobe or
-gulf is not clipped to a center-only polygon. Connected growth first establishes
-each interior and then allocates remaining area by organic shape score.
-
-Ocean separation remains 5%, 8% or 12% of the smaller grid dimension. Reserved
-water survives area reconciliation, archipelago placement and seam reconciliation.
-An irregular geographic frame, rather than a rendering crop, keeps all edges wet.
-Automatic layouts that cannot approach the area target retry with fewer foundations,
-down to four. Explicit continent counts are honored. If constraints still conflict,
-the returned `continentalLayout.warning` explains the achieved area; the Generator
-shows that warning. Ocean gaps and connected interiors take priority over coverage.
+The current `filled-union-2` layout uses five seeded spatial families and variable foundation areas. Count and ocean separation are preferences: collisions can merge masses and rifts can divide them. Filled envelopes, asymmetric lobes and multiscale domain warps define the coast; global cuts follow the union. A bounded global sea-level search replaces connected quota growth and owner partitions. The irregular ocean frame keeps every displayed edge wet. Coverage conflicts are reported instead of filling cutouts or rerunning smaller continent counts. See [the implementation and controls](CONTINENTS_AND_BIOMES.md) and [detail topology](COASTLINE_REPAIR.md).
 
 ## Water and geological provenance
 

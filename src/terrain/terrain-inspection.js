@@ -1,4 +1,4 @@
-import {biomeName,biomeNames,categoricalBiome,coarseMaterial,materialSeed} from './biome-material.js';
+import {biomeName,biomeNames,categoricalBiome,coarseMaterial,materialSeed,detailBiome} from './biome-material.js';
 import {riverWidthPixels} from './river-width.js';
 
 export function sampleTerrainTile(tile,point,detail){
@@ -10,7 +10,7 @@ export function sampleTerrainTile(tile,point,detail){
  const elevation=mix('parent')+(mix('elevation')-mix('parent'))*blend;
  let coverage=0,body=0,best=0;for(let k=0;k<4;k++)if(points[k].waterBody>0){coverage+=weights[k];if(weights[k]>best){best=weights[k];body=points[k].waterBody;}}
  const wet=coverage>=.5,river=tile.level>=3&&mix('riverDepth')>.3,waterLevel=mix(wet?'waterLevel':'riverLevel');
- const biome=points[(b>=.5?2:0)+(a>=.5?1:0)].biome;
+ const biome=detailBiome(points,weights,wet?body:0);
  return {...point,...(biome?{biome}:{}),...(points.some(p=>p.desert!==undefined)?{desert:mix('desert')}:{}),...Object.fromEntries(['temperature','moisture','vegetation','rock','sand','snow','wetland','riverDepth'].map(key=>[key,mix(key)])),level:tile.level,elevation,waterBody:wet?body:0,waterLevel,waterDepth:wet||river?Math.max(0,waterLevel-elevation):0};
 }
 
@@ -58,7 +58,7 @@ export function terrainInspection(solver,point,sample=null){
    const water=env.fields.waterBody?.[i]||0;if(water){wet+=weight;if(weight>best){best=weight;body=water;}}
   }sample.waterBody=wet>=.5?body:0;
  }
- sample={...sample,...(env.fields.biome?{biome:categoricalBiome(env,cell)}:{})};
+ sample={...sample,...(!sample.biome&&env.fields.biome?{biome:categoricalBiome(env,cell)}:{})};
  let material=biomeName(sample,{x,y,seed:materialSeed(env.options?.seed||0)}),terrain;
  if(sample.waterBody>0){material='water';terrain=sample.waterBody===1?'Ocean / sea':'Lake';}
  else if(sample.riverVisible||(sample.level>=3&&sample.riverDepth>.3)){material='river';terrain='River';}

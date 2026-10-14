@@ -1,5 +1,5 @@
 import {riverWidthPixels} from './river-width.js';
-import {biomeColor,naturalMaterials,categoricalBiome,coarseMaterial,materialSeed} from './biome-material.js';
+import {biomeColor,naturalMaterials,categoricalBiome,coarseMaterial,materialSeed,detailBiome} from './biome-material.js';
 import {riverStyle} from './feature-style.js';
 import {fieldColor,riverSystemColor} from './environment-view.js';
 import {smooth} from './map-camera.js';
@@ -63,7 +63,7 @@ export function tileImage(tile,solver,palette,layer,blend=1){
     if(hasDesert)p.desert=indices.reduce((v,index,k)=>v+(tile.points[index].desert??0)*weights[k],0);
     position.x=x;position.y=y;
     const cell=clamp(Math.round(y),0,solver.H-1)*solver.W+clamp(Math.round(x),0,solver.W-1);
-    p.biome=categoricalBiome(solver.environment,cell)||tile.points[indices[(b>=.5?2:0)+(a>=.5?1:0)]].biome;
+    p.biome=detailBiome(indices.map(index=>tile.points[index]),weights,p.waterBody,categoricalBiome(solver.environment,cell));
     let rgb=layer==='terrain'?null:layer==='biome'?palette[cell]:baseColor(solver,palette,x,y,null);
     if(layer==='terrain'){
       if(p.waterBody>0){const deep=clamp(Math.log1p(p.waterDepth)/9,0,1);rgb=[45-25*deep,140-96*deep,175-91*deep];}

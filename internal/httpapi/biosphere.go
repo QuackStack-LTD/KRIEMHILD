@@ -181,6 +181,7 @@ func (s *Server) generateBiosphere(w http.ResponseWriter, r *http.Request) {
 		base.Occurrences = old.Occurrences
 		base.Interactions = old.Interactions
 		base.Settings = old.Settings
+		base.AcceptedGeneration = old.AcceptedGeneration
 		// Preserve the exact extent of locked/confirmed records on an older
 		// snapshot. They are reviewed alongside the new derived habitat revision.
 		for _, habitat := range old.Habitats {

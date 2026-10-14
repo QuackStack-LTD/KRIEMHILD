@@ -1,80 +1,135 @@
 package terrain
 
 import (
-	"container/heap"
 	"fmt"
 	"math"
 )
 
-// Layout constraints are generation provenance, never a recipe for reloading
-// stored terrain. Zero majorContinents chooses 4–6 from the seed.
+// Foundation count is a preference: collisions merge and rifts split masses.
+// Provenance only; opening an old saved world never reconstructs its mask.
 type ContinentalLayout struct {
+	Version               string  `json:"version,omitempty"`
+	Family                string  `json:"family,omitempty"`
 	Count                 int     `json:"count"`
 	GapCells              float64 `json:"gapCells"`
+	SeaThreshold          float64 `json:"seaThreshold,omitempty"`
 	RequestedLandPercent  float64 `json:"requestedLandPercent"`
 	FoundationLandPercent float64 `json:"foundationLandPercent"`
 	Warning               string  `json:"warning,omitempty"`
 }
 
 func (o EnvironmentOptions) oceanGap() float64 {
-	fraction := .08
+	f := .08
 	if o.OceanSeparation == "narrow" {
-		fraction = .05
+		f = .05
 	}
 	if o.OceanSeparation == "wide" {
-		fraction = .12
+		f = .12
 	}
-	return math.Max(1, fraction*float64(min(o.Columns, o.Rows)))
+	return math.Max(1, f*float64(min(o.Columns, o.Rows)))
 }
-
+func (e *Environment) layoutFamily() string {
+	// Avalanche numeric seeds before taking a family: the first LCG draw of
+	// adjacent seed integers otherwise selected the same family repeatedly.
+	return []string{"clustered", "dominant-and-fragments", "hemispheric", "elongated-belt", "scattered-remnants"}[int(detailHash(Seed(e.Options.Seed), 53, 67, 129)*5)]
+}
 func (e *Environment) layoutCenters() []Point {
 	w, h := float64(e.Options.Columns), float64(e.Options.Rows)
-	rng := RNG(Seed(e.Options.Seed) ^ 0x8ec0137b)
+	rng := RNG(uint32(detailHash(Seed(e.Options.Seed), 31, 79, 217) * 4294967295))
 	count := e.Options.MajorContinents
 	if count == 0 {
-		count = 4 + int(rng.Next()*3)
+		count = 3 + int(rng.Next()*6)
 	}
-	centers := []Point{}
-	// Random sequential inhibition keeps room for independent footprints without
-	// maximizing every distance (which produced an almost regular latitude grid).
-	spacing := math.Sqrt(w*h/float64(count)) * .68
+	family := e.layoutFamily()
+	anchors := [][2]float64{{.22 + rng.Next()*.20, .20 + rng.Next()*.60}, {.58 + rng.Next()*.20, .20 + rng.Next()*.60}}
+	angle := (rng.Next() - .5) * math.Pi
+	separation := e.Options.oceanGap() / float64(min(e.Options.Columns, e.Options.Rows))
+	centers := make([]Point, 0, count)
+	weights := e.foundationWeights(count)
+	total := 0.
+	for _, v := range weights {
+		total += v
+	}
+	radii := make([]float64, count)
+	for k, v := range weights {
+		radii[k] = math.Sqrt(w * h * e.Options.LandPercent / 100 * v / total / math.Pi)
+	}
 	for k := 0; k < count; k++ {
-		best := math.Inf(-1)
-		var chosen Point
-		for trial := 0; trial < 256; trial++ {
-			p := Point{X: (.12 + rng.Next()*.76) * w, Y: (.12 + rng.Next()*.76) * h, K: 1, Kind: Kind{ID: "land", Name: "Major continent", Color: "#9ebd79"}}
-			score := math.Inf(1)
-			for _, old := range centers {
-				dx := p.X - old.X
-				if e.Geography != nil && e.Geography.WrapX {
-					dx = math.Remainder(dx, w)
+		x, y := .5, .5
+		for trial := 0; trial < 96; trial++ {
+			x, y = .10+rng.Next()*.80, .12+rng.Next()*.76
+			switch family {
+			case "clustered":
+				a := anchors[k%2]
+				x = a[0] + (rng.Next()-.5)*.48
+				y = a[1] + (rng.Next()-.5)*.55
+			case "dominant-and-fragments":
+				if k == 0 {
+					x, y = .3+rng.Next()*.16, .35+rng.Next()*.3
+				} else {
+					x = .12 + rng.Next()*.76
 				}
-				score = math.Min(score, math.Hypot(dx, p.Y-old.Y))
+			case "hemispheric":
+				x = .22 + float64(k%2)*.56 + (rng.Next()-.5)*.24
+				y = .22 + float64(k%2)*.48 + (rng.Next()-.5)*.38
+			case "elongated-belt":
+				u := (float64(k)+rng.Next())/float64(count) - .5
+				x = .5 + math.Cos(angle*.4)*u*.9 + (rng.Next()-.5)*.16
+				y = .5 + math.Sin(angle*.4)*u*.65 + (rng.Next()-.5)*.36
 			}
-			if score > best {
-				best = score
-				chosen = p
+			spread := 1 + (separation-.08)*3
+			x, y = .5+(x-.5)*spread, .5+(y-.5)*spread
+			x, y = clamp(x, .12, .88), clamp(y, .13, .87)
+			weight := 1.
+			for j, p := range centers {
+				d := math.Hypot(x*w-p.X, y*h-p.Y)
+				exclusion := radii[k] + radii[j] + e.Options.oceanGap()*.35
+				collision := family == "clustered" && k%2 == j%2 || family == "hemispheric" && k%2 == j%2 || family == "elongated-belt" && k%3 == j%3
+				strength := 9.
+				if collision {
+					strength = 1.2
+				}
+				weight *= math.Exp(-strength * math.Max(0, 1-d/exclusion))
 			}
-			if score >= spacing*(.85+rng.Next()*.3) {
-				chosen = p
+			// Rejection sampling from the weighted layout family; the first
+			// accepted proposal wins. No farthest-point optimization or partitions.
+			if rng.Next() < weight {
 				break
 			}
 		}
-		centers = append(centers, chosen)
+		centers = append(centers, Point{X: x * w, Y: y * h, K: 1, Kind: Kind{ID: "land", Name: "Continental foundation", Color: "#9ebd79"}})
 	}
 	return centers
 }
-
+func (e *Environment) foundationWeights(count int) []float64 {
+	values := make([]float64, count)
+	for k := range values {
+		values[k] = math.Exp((detailHash(Seed(e.Options.Seed), k, 11, 71) - .5) * 2.1)
+		if e.layoutFamily() == "dominant-and-fragments" {
+			values[k] *= .45
+			if k == 0 {
+				values[k] = 5.5
+			}
+		}
+	}
+	return values
+}
 func (e *Environment) layoutNuclei() []LandmassStructure {
 	e.Points = e.layoutCenters()
+	total := 0.
+	weights := e.foundationWeights(len(e.Points))
+	for _, v := range weights {
+		total += v
+	}
 	shapes := make([]LandmassStructure, 0, len(e.Points))
-	radius := math.Sqrt(float64(len(e.Mask)) * e.Options.LandPercent / 100 / float64(len(e.Points)) / math.Pi)
 	for k, p := range e.Points {
 		rng := RNG(Seed(e.Options.Seed) ^ uint32(k+1)*0x471cab31)
-		names := []string{"compact", "elongated", "indented", "indented", "curved", "isthmus", "hook", "branched", "crescent", "rifted"}
+		names := []string{"compact", "elongated", "indented", "curved", "isthmus", "hook", "branched", "crescent", "rifted"}
 		name := names[int(rng.Next()*float64(len(names)))]
 		a, b, _, _, convergence, bearing := e.platesAt(p.X, p.Y)
-		s := makeLandmass(Seed(e.Options.Seed)^uint32(k+1)*0x738a913, name, [2]float64{p.X, p.Y}, radius*(.6+rng.Next()*.8), bearing+(rng.Next()-.5)*math.Pi*2, e.Options.shapeOptions())
+		radius := math.Sqrt(float64(len(e.Mask)) * e.Options.LandPercent / 100 * weights[k] / total / math.Pi)
+		radius *= 1.04 - (e.Options.oceanGap()/float64(min(e.Options.Columns, e.Options.Rows))-.08)*1.2
+		s := makeLandmass(Seed(e.Options.Seed)^uint32(k+1)*0x738a913, name, [2]float64{p.X, p.Y}, radius, bearing+(rng.Next()-.5)*math.Pi*2, e.Options.shapeOptions())
 		s.ID = fmt.Sprintf("continent/%08x/%d", Seed(e.Options.Seed), k)
 		s.Plate, s.OtherPlate = a, b
 		s.Process = "continental-foundation"
@@ -89,195 +144,92 @@ func (e *Environment) layoutNuclei() []LandmassStructure {
 	return shapes
 }
 
-type layoutCell struct {
-	cell  int
-	score float64
-}
-type layoutQueue []layoutCell
-
-func (q layoutQueue) Len() int { return len(q) }
-func (q layoutQueue) Less(i, j int) bool {
-	if q[i].score == q[j].score {
-		return q[i].cell < q[j].cell
+// Diagnostic owner never restricts flooding, cell ownership or growth.
+func (e *Environment) continentalUnion(x, y float64) (float64, int) {
+	value, owner := math.Inf(-1), 0
+	void := math.Inf(-1)
+	for k, s := range e.ContinentalStructures {
+		sx := x
+		if e.Geography != nil && e.Geography.WrapX {
+			sx = s.Center[0] + math.Remainder(x-s.Center[0], float64(e.Options.Columns))
+		}
+		land, cut := s.fieldParts(sx, y)
+		v := land * s.Scale
+		void = math.Max(void, cut*s.Scale)
+		if v > value {
+			value, owner = v, k
+		}
 	}
-	return q[i].score > q[j].score
+	// Subtract flooded structures after union. Otherwise an overlapping lobe
+	// from the next foundation silently fills a deep gulf or tectonic rift.
+	return math.Min(value, -void*8), owner
 }
-func (q layoutQueue) Swap(i, j int) { q[i], q[j] = q[j], q[i] }
-func (q *layoutQueue) Push(v any)   { *q = append(*q, v.(layoutCell)) }
-func (q *layoutQueue) Pop() any     { old := *q; v := old[len(old)-1]; *q = old[:len(old)-1]; return v }
-
 func (e *Environment) separatedContinentalMask(sample func(float64, float64) float64) {
 	w, h := e.Options.Columns, e.Options.Rows
 	n := w * h
+	small := float64(min(w, h))
 	e.ContinentalStructures = e.layoutNuclei()
-	count := len(e.ContinentalStructures)
-	gap := e.Options.oceanGap()
-	e.Layout = &ContinentalLayout{Count: count, GapCells: gap, RequestedLandPercent: e.Options.LandPercent}
-	owners := make([]int, n)
-	scores := make([]float64, n)
-	seams := make([]int, n)
-	wrap := e.Geography != nil && e.Geography.WrapX
-	// Deform the partition at continental scale before reserving ocean room.
-	// This creates winding basins, not straight Voronoi cuts painted afterward.
-	for i := range owners {
-		x, y := float64(i%w), float64(i/w)
-		angle := x / float64(w) * 2 * math.Pi
-		px := x + (sample(math.Cos(angle)*2+41, math.Sin(angle)*2+y/float64(h)*4+17)-.5)*float64(min(w, h))*.12
-		py := y + (sample(math.Cos(angle)*2+83, math.Sin(angle)*2+y/float64(h)*4+61)-.5)*float64(min(w, h))*.10
-		best := math.Inf(1)
-		for k, s := range e.ContinentalStructures {
-			dx := px - s.Center[0]
-			if wrap {
-				dx = math.Remainder(dx, float64(w))
+	e.Layout = &ContinentalLayout{Version: "filled-union-2", Family: e.layoutFamily(), Count: len(e.ContinentalStructures), GapCells: e.Options.oceanGap(), RequestedLandPercent: e.Options.LandPercent}
+	scores, reserve, owners := make([]float64, n), make([]float64, n), make([]float64, n)
+	evaluate := func() int {
+		positive := 0
+		for i := range scores {
+			x, y := float64(i%w), float64(i/w)
+			v, owner := e.continentalUnion(x, y)
+			edge := math.Min(math.Min(x, float64(w-1)-x), math.Min(y, float64(h-1)-y))
+			// Smooth offshore taper precedes a small safety frame. No allocation
+			// grows toward that frame, and no polygon seam determines the coastline.
+			v -= small * (.6 + .4*sample(x/small*7+317, y/small*9+193)) * math.Exp(-edge/(small*.065))
+			scores[i], owners[i] = v, float64(owner+1)
+			frame := 1.25 + sample(x/small*11+37, y/small*13+91)*.8
+			reserve[i] = 0
+			if edge <= frame {
+				reserve[i] = 1
 			}
-			// Footprint-aware competition follows the actual lobes, bends and
-			// gulfs. A center-only Voronoi partition clipped them into polygons.
-			d := math.Hypot(dx, py-s.Center[1])/math.Sqrt(s.Scale) - 3*s.field(s.Center[0]+dx, py)
-			if d < best {
-				best = d
-				owners[i] = k
+			if v >= 0 && reserve[i] == 0 {
+				positive++
 			}
 		}
-		s := e.ContinentalStructures[owners[i]]
-		sx := x
-		if wrap {
-			sx = s.Center[0] + math.Remainder(x-s.Center[0], float64(w))
-		}
-		scores[i] = s.field(sx, y)
-		{
-			// A smooth polar ocean bias rounds coastlines before the safety margin;
-			// quota growth must not flatten an entire coast against a map edge.
-			edge := math.Min(y, float64(h-1)-y)
-			edge = math.Min(edge, math.Min(x, float64(w-1)-x))
-			scores[i] -= 3 * math.Exp(-edge/(float64(min(w, h))*.055))
-		}
+		return positive
 	}
-	for i := range seams {
-		seams[i] = 1
-		for _, j := range e.neighbors(i) {
-			if owners[i] != owners[j] {
-				seams[i] = 0
-				break
+	present := evaluate()
+	target := float64(n) * e.Options.LandPercent / 100
+	// One bounded scale correction, not recursive repacking or per-owner quotas.
+	correction := clamp(math.Sqrt(target/math.Max(1, float64(present))), .78, 1.50)
+	if math.Abs(correction-1) > .025 {
+		for k := range e.ContinentalStructures {
+			e.ContinentalStructures[k].rescale(correction)
+		}
+		evaluate()
+	}
+	lo, hi := -small*.035, small*.035
+	for step := 0; step < 24; step++ {
+		threshold := (lo + hi) / 2
+		area := 0
+		for i, v := range scores {
+			if reserve[i] == 0 && v >= threshold {
+				area++
 			}
 		}
-	}
-	// Exact Euclidean distance to the boundary, including the longitude seam.
-	boundary := []int{}
-	for i, v := range seams {
-		if v == 0 {
-			boundary = append(boundary, i)
+		if float64(area) > target {
+			lo = threshold
+		} else {
+			hi = threshold
 		}
 	}
-	capacity := make([]int, count)
-	starts := make([]int, count)
-	for k := range starts {
-		starts[k] = -1
-	}
-	eligible := make([]bool, n)
-	e.Fields["oceanReserve"] = make([]float64, n)
-	e.Fields["continentalOwner"] = make([]float64, n)
-	for i := range owners {
-		x, y := i%w, i/w
-		distance := math.Inf(1)
-		for _, j := range boundary {
-			dx := math.Abs(float64(x - j%w))
-			if wrap {
-				dx = math.Min(dx, float64(w)-dx)
-			}
-			dy := float64(y - j/w)
-			distance = math.Min(distance, dx*dx+dy*dy)
-		}
-		// Half a cell extra protects diagonal connections and later shore erosion.
-		reserve := distance < math.Pow(gap*.5+.5, 2)
-		edge := math.Min(float64(y), float64(h-1-y))
-		edge = math.Min(edge, math.Min(float64(x), float64(w-1-x)))
-		// Keep geographic-scale bays in the frame itself when a high land target
-		// grows all the way to it. Sub-cell noise alone quantized into long lines.
-		coarse := sample(float64(x)/float64(w)*9+217, float64(y)/float64(h)*11+193) - .5
-		fine := sample(float64(x)/float64(w)*23+317, float64(y)/float64(h)*21+393) - .5
-		polarRoom := math.Max(2, gap*.55+1+float64(min(w, h))*(.03+.06*coarse+.09*fine))
-		// Map framing is independent of cylindrical physics: wrap distances and
-		// water transport remain valid, but the displayed cut passes through sea.
-		reserve = reserve || edge <= polarRoom
-		eligible[i] = !reserve && edge > polarRoom
-		if reserve {
-			e.Fields["oceanReserve"][i] = 1
-		}
-		e.Fields["continentalOwner"][i] = float64(owners[i] + 1)
-		if eligible[i] {
-			k := owners[i]
-			capacity[k]++
-			if starts[k] < 0 || scores[i] > scores[starts[k]] {
-				starts[k] = i
-			}
-		}
-	}
-	// Allocate coverage to foundations, then grow connected interiors. Oceans
-	// outrank the area target when constraints conflict; report any shortfall.
-	total := 0
-	for _, v := range capacity {
-		total += v
-	}
-	wanted := min(total, int(round(float64(n)*e.Options.LandPercent/100)))
+	threshold := (lo + hi) / 2
 	used := 0
-	visited := make([]bool, n)
-	frontier := &layoutQueue{}
-	heap.Init(frontier)
-	for k, start := range starts {
-		if start < 0 {
-			continue
-		}
-		// Establish each major interior, then allocate the remaining area by
-		// organic footprint score across all continents. Proportional capacity
-		// quotas forced even tiny shapes to fill their Voronoi compartments.
-		quota := min(capacity[k], max(1, int(float64(wanted)/float64(count)*.45)))
-		q := &layoutQueue{{start, scores[start]}}
-		heap.Init(q)
-		visited[start] = true
-		for taken := 0; q.Len() > 0 && taken < quota; taken++ {
-			cell := heap.Pop(q).(layoutCell).cell
-			e.Mask[cell] = 1
+	for i, v := range scores {
+		e.Mask[i] = 0
+		if reserve[i] == 0 && v >= threshold {
+			e.Mask[i] = 1
 			used++
-			for _, j := range e.neighbors(cell) {
-				if eligible[j] && owners[j] == k && !visited[j] {
-					visited[j] = true
-					heap.Push(q, layoutCell{j, scores[j]})
-				}
-			}
-		}
-		for q.Len() > 0 {
-			heap.Push(frontier, heap.Pop(q))
 		}
 	}
-	for frontier.Len() > 0 && used < wanted {
-		cell := heap.Pop(frontier).(layoutCell).cell
-		e.Mask[cell] = 1
-		used++
-		for _, j := range e.neighbors(cell) {
-			if eligible[j] && owners[j] == owners[cell] && !visited[j] {
-				visited[j] = true
-				heap.Push(frontier, layoutCell{j, scores[j]})
-			}
-		}
-	}
-	e.Fields["continentalShape"] = scores
+	e.Fields["continentalShape"], e.Fields["continentalOwner"], e.Fields["oceanReserve"] = scores, owners, reserve
+	e.Layout.SeaThreshold = threshold
 	e.Layout.FoundationLandPercent = float64(used) * 100 / float64(n)
-	// Automatic count is a range, not a promise of six crowded masses. If a
-	// particular set of irregular footprints cannot fit, retry with fewer major
-	// foundations before compromising the requested area or any ocean reserve.
-	if e.Options.MajorContinents == 0 && count > 4 && e.Layout.FoundationLandPercent < e.Options.LandPercent-1 {
-		for reduced := count - 1; reduced >= 4; reduced-- {
-			e.Options.MajorContinents = reduced
-			clear(e.Mask)
-			e.separatedContinentalMask(sample)
-			if e.Layout.FoundationLandPercent >= e.Options.LandPercent-1 {
-				break
-			}
-		}
-		e.Options.MajorContinents = 0
-		return
-	}
-	if e.Layout.FoundationLandPercent < e.Options.LandPercent-.1 {
-		e.Layout.Warning = fmt.Sprintf("Ocean separation and connected continents take priority: requested %.1f%% land, achieved %.1f%% continental foundations. Reduce continent count or ocean separation for more land.", e.Options.LandPercent, e.Layout.FoundationLandPercent)
+	if math.Abs(e.Layout.FoundationLandPercent-e.Options.LandPercent) > 1 {
+		e.Layout.Warning = fmt.Sprintf("Coast shape and ocean framing take priority: requested %.1f%% land, achieved %.1f%% continental foundations. Count and separation are layout preferences; collisions and rifts can merge or divide masses.", e.Options.LandPercent, e.Layout.FoundationLandPercent)
 	}
 }

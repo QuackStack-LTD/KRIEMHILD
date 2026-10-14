@@ -73,16 +73,19 @@ type DetailTile struct {
 }
 
 type DetailModel struct {
-	World     *Environment
-	Seed      uint32
-	Features  []DetailFeature
-	channels  map[int][]int
-	foothills []float64
+	coastDistance []float64
+	coastChannels map[int][][4]float64
+	World         *Environment
+	Seed          uint32
+	Features      []DetailFeature
+	channels      map[int][]int
+	foothills     []float64
 }
 
 func NewDetailModel(e *Environment) *DetailModel {
 	m := &DetailModel{World: e, Seed: Seed(e.Options.Seed) ^ 0x91ab6731}
 	m.buildFoothills()
+	m.buildCoastalDistance()
 	m.buildDrainage()
 	m.refineHydroFeatures()
 	m.indexDrainage()
@@ -90,12 +93,14 @@ func NewDetailModel(e *Environment) *DetailModel {
 }
 
 func (m *DetailModel) field(name string, x, y float64) float64 {
+	return m.values(m.World.Fields[name], x, y)
+}
+func (m *DetailModel) values(f []float64, x, y float64) float64 {
 	w, h := m.World.Options.Columns, m.World.Options.Rows
 	x, y = clamp(x, 0, float64(w-1)), clamp(y, 0, float64(h-1))
 	x0, y0 := int(x), int(y)
 	x1, y1 := min(w-1, x0+1), min(h-1, y0+1)
 	a, b := x-float64(x0), y-float64(y0)
-	f := m.World.Fields[name]
 	if f == nil {
 		return 0
 	}
@@ -116,6 +121,7 @@ func detailHash(seed uint32, x, y, level int) float64 {
 // The continuous parent water footprint is fixed for all refinement levels.
 // Dry endorheic basins never become water merely because elevation is negative.
 func (m *DetailModel) base(x, y float64) DetailPoint {
+	worldX, worldY := x, y
 	biome := m.World.BiomeAt(m.cell(x, y))
 	// A small invertible, cell-interior coordinate warp resolves parent shores
 	// into coves and uneven banks. It fixes every grid edge/node, stays inside
@@ -156,6 +162,30 @@ func (m *DetailModel) base(x, y float64) DetailPoint {
 	if wet > 0 {
 		p.WaterLevel = level / wet
 	}
+	// New coastline recipes add real wet/dry information between parent nodes.
+	// Lakes retain their saved levels; new coastal water connects to ocean ID 1.
+	oldWet := wet
+	wet = m.coastalWet(worldX, worldY, wet, p.WaterBody)
+	if wet != oldWet {
+		seaBed, dryBed := -20., 12.
+		if oldWet > 0 {
+			seaBed = wetGround / oldWet
+		}
+		if oldWet < 1 {
+			dryBed = dryGround / (1 - oldWet)
+		}
+		if oldWet == 1 {
+			dryBed = clamp(math.Abs(seaBed)*.08, 6, 40)
+		}
+		if oldWet == 0 {
+			seaBed = -clamp(math.Abs(dryBed)*.15, 12, 120)
+		}
+		wetGround, dryGround = seaBed*wet, dryBed*(1-wet)
+		if wet > .5 {
+			p.WaterBody = 1
+			p.WaterLevel = 0
+		}
+	}
 	// Passive margins resolve into beaches and tidal lowlands; active/rocky
 	// margins retain steeper profiles. Endpoints stay the original samples.
 	shorePower := 1.0 + .4*(1-clamp(m.field("slope", x, y)*2, 0, 1))
@@ -171,6 +201,27 @@ func (m *DetailModel) base(x, y float64) DetailPoint {
 		}
 	}
 	p.Shore = wet
+	if len(m.coastDistance) > 0 {
+		if p.WaterBody > 0 {
+			p.Biome = "water"
+		} else if p.Biome == "water" {
+			// Emerged coastal fragments inherit the closest terrestrial cover;
+			// water's categorical enum must never color new dry land blue.
+			best := math.Inf(1)
+			p.Biome = "sand"
+			for dy := -3; dy <= 3; dy++ {
+				for dx := -3; dx <= 3; dx++ {
+					j := m.cell(worldX+float64(dx), worldY+float64(dy))
+					b := m.World.BiomeAt(j)
+					d := math.Hypot(float64(j%m.World.Options.Columns)-worldX, float64(j/m.World.Options.Columns)-worldY)
+					if b != "" && b != "water" && d < best {
+						best = d
+						p.Biome = b
+					}
+				}
+			}
+		}
+	}
 	p.Snow = m.field("snow", x, y)
 	p.Wetland = m.field("wetland", x, y)
 	p.Vegetation = clamp(p.Moisture*(1-p.Snow), 0, 1)
@@ -186,6 +237,9 @@ func (m *DetailModel) Sample(x, y float64, level int) DetailPoint {
 	base := p.Elevation
 	r := m.riverAt(x, y)
 	budget := 650.
+	if len(m.coastDistance) > 0 && p.WaterBody == 0 && p.Shore > 0 {
+		budget = math.Min(budget, math.Abs(base-p.WaterLevel)*.65)
+	}
 	if p.WaterBody > 0 {
 		budget = p.WaterDepth * .65
 	} else if m.field("waterDepth", x, y) > 0 {

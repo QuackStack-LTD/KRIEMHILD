@@ -25,8 +25,15 @@ func TestWaterCoverageAcrossLandmasses(t *testing.T) {
 			// Wetlands now require persistent surface saturation, not aquifers alone.
 			// Keep distributed lakes without imposing a minimum flooded area:
 			// kilometre-scaled basins and evaporative losses now make them smaller.
-			if stats.Lakes < int(float64(stats.LandCells)*.0015) || lakeCells < stats.Lakes || lakeCells > stats.LandCells/20 || stats.Wetlands < int(float64(stats.LandCells)*.002) || stats.Springs < int(float64(stats.LandCells)*.01) || stats.CoveragePercent < 7 || stats.CoveragePercent > 25 {
+			// Springs depend on aquifer supply and geological outlets, not a quota
+			// of all land (which can now include a large arid supercontinent).
+			if stats.Lakes < int(float64(stats.LandCells)*.0015) || lakeCells < stats.Lakes || lakeCells > stats.LandCells/20 || stats.Wetlands < int(float64(stats.LandCells)*.002) || stats.Springs == 0 || stats.CoveragePercent < 7 || stats.CoveragePercent > 25 {
 				t.Fatalf("incomplete water coverage: %+v", stats)
+			}
+			for _, spring := range e.Hydrology.Springs {
+				if e.get("groundFlow", spring.Cell) <= .075 || spring.Discharge <= 0 || e.get("waterBody", spring.Cell) != 0 {
+					t.Fatal("spring lacks a supplied terrestrial outlet", spring)
+				}
 			}
 			wetCells := 0
 			for _, wet := range e.Hydrology.Wetlands {

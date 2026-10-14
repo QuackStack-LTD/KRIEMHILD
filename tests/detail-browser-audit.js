@@ -20,12 +20,12 @@ if(typeof document==='undefined'){
     $('fitMap').click();await new Promise(task);
     const c=$('detailMap'),r=c.getBoundingClientRect(),clientX=Math.floor(r.left+r.width*.63),clientY=Math.floor(r.top+r.height*.43),px=clientX-r.left,py=clientY-r.top;
     const point=()=>[(px-Number(c.dataset.offsetX))/Number(c.dataset.scale),(py-Number(c.dataset.offsetY))/Number(c.dataset.scale)];
-    const start=point();c.dispatchEvent(new WheelEvent('wheel',{clientX,clientY,deltaY:-2100,bubbles:true,cancelable:true}));
+    const start=point(),wheelDelta=-Math.log(180/Number(c.dataset.scale))/.0015;c.dispatchEvent(new WheelEvent('wheel',{clientX,clientY,deltaY:wheelDelta,bubbles:true,cancelable:true}));
     await wait(()=>Number(c.dataset.detail)>4,'Regional detail');
     const end=point();assert(Math.hypot(start[0]-end[0],start[1]-end[1])<1e-8,'2D cursor anchor moved');checks.push('2D cursor anchor is invariant');
     await wait(()=>!$('detailStatus').textContent.includes('refining'),'Detail tiles finish loading',90000);
     assert(Number(c.dataset.tiles)>20,'No refinement tiles');checks.push('Visible detail tiles load without regenerating the parent world');
-    c.dispatchEvent(new WheelEvent('wheel',{clientX,clientY,deltaY:2100,bubbles:true,cancelable:true}));await new Promise(task);
+    c.dispatchEvent(new WheelEvent('wheel',{clientX,clientY,deltaY:-wheelDelta,bubbles:true,cancelable:true}));await new Promise(task);
     const back=point();assert(Math.hypot(start[0]-back[0],start[1]-back[1])<1e-8,'Zoom return moved geography');checks.push('Zoom out returns to the same geographic point');
     change('view3d',true);await wait(()=>document.querySelector('canvas.view3d')?.dataset.tiles,'3D tiles');
     const view=document.querySelector('canvas.view3d'),vr=view.getBoundingClientRect();

@@ -7,6 +7,9 @@ import "math"
 // must still supply the vapor that can precipitate.
 func circulationPotential(latitude float64, p ClimateParameters, month int) float64 {
 	decl, _ := climateOrbit(p, month)
+	return circulationAtDeclination(latitude, p, decl)
+}
+func circulationAtDeclination(latitude float64, p ClimateParameters, decl float64) float64 {
 	convergence := decl * 180 / math.Pi * .65
 	tropic := math.Exp(-math.Pow((latitude-convergence)/13, 2))
 	subtropic := math.Exp(-math.Pow((math.Abs(latitude)-29)/9, 2))
@@ -85,14 +88,15 @@ func (e *Environment) precipitation() {
 	n := w * h
 	f, set := e.get, e.set
 	p, _ := e.Options.climateConfiguration()
-	for _, name := range []string{"rainfallPotential", "rainShadow", "moistureSupply"} {
+	orbit := monthlyOrbit(p)
+	for _, name := range []string{"rainfallPotential", "rainShadow", "moistureSupply", "moistureRecycling"} {
 		e.Fields[name] = make([]float64, n)
 	}
 	lifting := make([]float64, n)
 	for i := range e.Mask {
 		potential := 0.
 		for month := 0; month < 12; month++ {
-			potential += math.Max(30, circulationPotential(f("latitude", i), p, month)) / 12
+			potential += math.Max(30, circulationAtDeclination(f("latitude", i), p, orbit[month][0])) / 12
 		}
 		set("rainfallPotential", i, potential)
 		lift, shadow := e.upwindBarrier(i)
@@ -146,6 +150,13 @@ func (e *Environment) precipitation() {
 				upHeight := (1-mix)*math.Max(0, f("elevation", y*w+ux)) + mix*math.Max(0, f("elevation", uy*w+x))
 				ascent := math.Max(0, f("elevation", i)-upHeight) / 1400
 				next[i] = input * retention * math.Exp(-ascent*.35)
+				// Part of deposited water returns through land evaporation and
+				// transpiration. Bound it by both available fallout and warm, wet
+				// growing conditions. This recycles supply; it cannot create vapor
+				// on a disconnected dry path or exceed the incoming water amount.
+				recycled := recycleVapor(input, next[i], f("temperature", i), f("rainfallPotential", i))
+				next[i] += recycled
+				set("moistureRecycling", i, recycled)
 				set("moistureSupply", i, input)
 				coastal := math.Exp(-f("oceanDistance", i) * km / 650)
 				current := 1 + clamp(f("current", i)/10, -.25, .25)*coastal
@@ -161,4 +172,10 @@ func (e *Environment) precipitation() {
 		set("moisture", i, clamp(f("precipitation", i)/1000, 0, 1))
 		set("aridity", i, 1-f("moisture", i))
 	}
+}
+
+func recycleVapor(incoming, remaining, temperature, potential float64) float64 {
+	energy := clamp((temperature+5)/25, 0, 1)
+	waterAccess := clamp(potential/900, 0, 1)
+	return math.Max(0, incoming-remaining) * .55 * energy * waterAccess
 }

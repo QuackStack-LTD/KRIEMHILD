@@ -1,0 +1,81 @@
+[
+  {
+    "cells": 2560,
+    "columns": 64,
+    "layout": {
+      "version": "filled-union-2",
+      "family": "elongated-belt",
+      "count": 7,
+      "gapCells": 3.2,
+      "seaThreshold": -1.3999999165534973,
+      "requestedLandPercent": 42,
+      "foundationLandPercent": 40.6640625,
+      "warning": "Coast shape and ocean framing take priority: requested 42.0% land, achieved 40.7% continental foundations. Count and separation are layout preferences; collisions and rifts can merge or divide masses."
+    },
+    "phases": {
+      "archipelagos": 0.0079993,
+      "climate-budget": 0.0983248,
+      "climate-geology-resources": 0.1347667,
+      "continental-layout": 0.1547846,
+      "geological-surface": 0.0030011,
+      "hydrology-erosion": 0.6498458,
+      "surface-conditioning": 0.0070009,
+      "surface-ecology": 0.0352078,
+      "tectonic-foundation": 0.0029996
+    },
+    "rows": 40,
+    "seconds": 1.0939306
+  },
+  {
+    "cells": 16000,
+    "columns": 160,
+    "layout": {
+      "version": "filled-union-2",
+      "family": "elongated-belt",
+      "count": 7,
+      "gapCells": 8,
+      "seaThreshold": -3.4999997913837437,
+      "requestedLandPercent": 42,
+      "foundationLandPercent": 41.4
+    },
+    "phases": {
+      "archipelagos": 0.1661777,
+      "climate-budget": 0.8007361,
+      "climate-geology-resources": 0.8099542,
+      "continental-layout": 1.0966462,
+      "geological-surface": 0.016044,
+      "hydrology-erosion": 5.1584514,
+      "surface-conditioning": 0.0312824,
+      "surface-ecology": 0.2759627,
+      "tectonic-foundation": 0.0129557
+    },
+    "rows": 100,
+    "seconds": 8.3682104
+  },
+  {
+    "cells": 24576,
+    "columns": 192,
+    "layout": {
+      "version": "filled-union-2",
+      "family": "elongated-belt",
+      "count": 7,
+      "gapCells": 10.24,
+      "seaThreshold": -3.6294942855834966,
+      "requestedLandPercent": 42,
+      "foundationLandPercent": 42.000325520833336
+    },
+    "phases": {
+      "archipelagos": 0.4322144,
+      "climate-budget": 1.2713033,
+      "climate-geology-resources": 1.2426397,
+      "continental-layout": 1.4314392,
+      "geological-surface": 0.0249995,
+      "hydrology-erosion": 10.0368653,
+      "surface-conditioning": 0.0599673,
+      "surface-ecology": 0.3935594,
+      "tectonic-foundation": 0.0200003
+    },
+    "rows": 128,
+    "seconds": 14.9129884
+  }
+]

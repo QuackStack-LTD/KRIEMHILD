@@ -11,7 +11,6 @@ func (e *Environment) measureContinents(r *LandShapeReport, land, water [][]int)
 	r.MajorThreshold = max(16, int(math.Ceil(float64(n)*.01)))
 	sort.Slice(land, func(i, j int) bool { return len(land[i]) > len(land[j]) })
 	shores := [][]int{}
-	allShore := []int{}
 	for _, g := range land {
 		shore := []int{}
 		for _, i := range g {
@@ -22,7 +21,6 @@ func (e *Environment) measureContinents(r *LandShapeReport, land, water [][]int)
 				}
 			}
 		}
-		allShore = append(allShore, shore...)
 		if len(g) >= r.MajorThreshold {
 			r.MajorAreas = append(r.MajorAreas, len(g))
 			shores = append(shores, shore)
@@ -53,6 +51,11 @@ func (e *Environment) measureContinents(r *LandShapeReport, land, water [][]int)
 		r.MinimumGap = 0
 	}
 	sea, open, largest := 0, 0, 0
+	landMask := make([]bool, n)
+	for i, v := range e.Mask {
+		landMask[i] = v != 0
+	}
+	shoreDistance := euclideanDistance(landMask, e.Options.Columns, e.Options.Rows, e.Geography != nil && e.Geography.WrapX)
 	for _, g := range water {
 		largest = max(largest, len(g))
 	}
@@ -64,10 +67,7 @@ func (e *Environment) measureContinents(r *LandShapeReport, land, water [][]int)
 			continue
 		}
 		sea++
-		d := math.Inf(1)
-		for _, j := range allShore {
-			d = math.Min(d, distance(i, j))
-		}
+		d := shoreDistance[i]
 		if d >= e.Options.oceanGap()*.5 {
 			open++
 		}
@@ -77,25 +77,31 @@ func (e *Environment) measureContinents(r *LandShapeReport, land, water [][]int)
 }
 
 type LatitudeBandMetric struct {
-	South      float64 `json:"absoluteLatitudeFrom"`
-	North      float64 `json:"absoluteLatitudeTo"`
-	Land       int     `json:"landCells"`
-	Dry        int     `json:"desertOrSteppeCells"`
-	DryPercent float64 `json:"drylandPercent"`
-	Rain       float64 `json:"meanAnnualRainMM"`
-	AI         float64 `json:"meanAridityIndex"`
+	LargestDryRegion int     `json:"largestDrylandRegionCells"`
+	South            float64 `json:"absoluteLatitudeFrom"`
+	North            float64 `json:"absoluteLatitudeTo"`
+	Land             int     `json:"landCells"`
+	Dry              int     `json:"desertOrSteppeCells"`
+	DryPercent       float64 `json:"drylandPercent"`
+	Rain             float64 `json:"meanAnnualRainMM"`
+	AI               float64 `json:"meanAridityIndex"`
 }
 type ClimateDistribution struct {
-	Bands              []LatitudeBandMetric `json:"latitudeBands"`
-	Biomes             map[string]int       `json:"biomeAreas"`
-	Kinds              map[string]int       `json:"climateAreas"`
-	DryComponents      []int                `json:"drylandComponentAreas"`
-	SmallDryComponents int                  `json:"drylandComponentsAtMostTwoCells"`
-	SmallDryCells      int                  `json:"cellsInSmallDrylandComponents"`
+	LandCells           int                  `json:"landCells"`
+	BiomeShares         map[string]float64   `json:"biomeGroupPercent"`
+	LargestBiomeRegions map[string]int       `json:"largestBiomeGroupRegions"`
+	Bands               []LatitudeBandMetric `json:"latitudeBands"`
+	Biomes              map[string]int       `json:"biomeAreas"`
+	Kinds               map[string]int       `json:"climateAreas"`
+	DryComponents       []int                `json:"drylandComponentAreas"`
+	SmallDryComponents  int                  `json:"drylandComponentsAtMostTwoCells"`
+	SmallDryCells       int                  `json:"cellsInSmallDrylandComponents"`
 }
 
 func (e *Environment) ClimateDiagnostics() ClimateDistribution {
 	r := ClimateDistribution{Biomes: map[string]int{}, Kinds: map[string]int{}}
+	r.BiomeShares = map[string]float64{}
+	r.LargestBiomeRegions = map[string]int{}
 	bounds := []float64{0, 10, 20, 35, 50, 65, 90}
 	for k := 1; k < len(bounds); k++ {
 		r.Bands = append(r.Bands, LatitudeBandMetric{South: bounds[k-1], North: bounds[k]})
@@ -108,6 +114,7 @@ func (e *Environment) ClimateDiagnostics() ClimateDistribution {
 		kind := e.ClimateKind(i)
 		r.Kinds[kind]++
 		r.Biomes[e.BiomeAt(i)]++
+		r.LandCells++
 		dry[i] = kind == "desert" || kind == "steppe"
 		lat := math.Abs(e.climateField("latitude", i))
 		for k := range r.Bands {
@@ -150,5 +157,111 @@ func (e *Environment) ClimateDiagnostics() ClimateDistribution {
 		}
 	}
 	sort.Sort(sort.Reverse(sort.IntSlice(r.DryComponents)))
+	groups := make([]string, len(e.Mask))
+	for i, v := range e.Mask {
+		if v == 0 {
+			continue
+		}
+		b := e.BiomeAt(i)
+		group := "other"
+		switch b {
+		case "desert", "cold_desert", "dunes":
+			group = "desert"
+		case "steppe", "scrubland":
+			group = "semiarid"
+		case "grass", "savanna", "mediterranean":
+			group = "grassland-woodland"
+		case "forest", "jungle", "taiga":
+			group = "forest"
+		case "tundra", "snow", "alpine":
+			group = "cold"
+		}
+		groups[i] = group
+		r.BiomeShares[group] += 100 / float64(max(1, r.LandCells))
+	}
+	seen := make([]bool, len(groups))
+	for i, g := range groups {
+		if g == "" || seen[i] {
+			continue
+		}
+		q := []int{i}
+		seen[i] = true
+		for head := 0; head < len(q); head++ {
+			for _, j := range e.neighbors(q[head]) {
+				if !seen[j] && groups[j] == g {
+					seen[j] = true
+					q = append(q, j)
+				}
+			}
+		}
+		r.LargestBiomeRegions[g] = max(r.LargestBiomeRegions[g], len(q))
+	}
+	for k := range r.Bands {
+		b := &r.Bands[k]
+		clear(seen)
+		eligible := func(i int) bool {
+			lat := math.Abs(e.climateField("latitude", i))
+			kind := e.ClimateKind(i)
+			return e.Mask[i] != 0 && lat >= b.South && lat <= b.North && (kind == "desert" || kind == "steppe")
+		}
+		for i := range e.Mask {
+			if seen[i] || !eligible(i) {
+				continue
+			}
+			q := []int{i}
+			seen[i] = true
+			for head := 0; head < len(q); head++ {
+				for _, j := range e.neighbors(q[head]) {
+					if !seen[j] && eligible(j) {
+						seen[j] = true
+						q = append(q, j)
+					}
+				}
+			}
+			b.LargestDryRegion = max(b.LargestDryRegion, len(q))
+		}
+	}
 	return r
+}
+
+func (e *Environment) measureEmergedIslands(r *LandShapeReport) {
+	r.IslandSizeTiers = map[string]int{"rocks": 0, "small": 0, "medium": 0, "large": 0}
+	f := e.Fields["islandGroup"]
+	if len(f) != len(e.Mask) {
+		return
+	}
+	seen := make([]bool, len(f))
+	groups := map[int]bool{}
+	for i, v := range f {
+		if v == 0 || e.Mask[i] == 0 {
+			continue
+		}
+		r.EmergedIslandCells++
+		groups[int(v)] = true
+		if seen[i] {
+			continue
+		}
+		q := []int{i}
+		seen[i] = true
+		for head := 0; head < len(q); head++ {
+			for _, j := range e.neighbors(q[head]) {
+				if !seen[j] && f[j] > 0 && e.Mask[j] != 0 {
+					seen[j] = true
+					q = append(q, j)
+				}
+			}
+		}
+		r.EmergedIslandSizes = append(r.EmergedIslandSizes, len(q))
+		tier := "large"
+		if len(q) <= 2 {
+			tier = "rocks"
+		} else if len(q) <= 8 {
+			tier = "small"
+		} else if len(q) <= 31 {
+			tier = "medium"
+		}
+		r.IslandSizeTiers[tier]++
+	}
+	r.VisibleArchipelagos = len(groups)
+	sort.Sort(sort.Reverse(sort.IntSlice(r.EmergedIslandSizes)))
 }

@@ -1,6 +1,68 @@
 # Validation record
 
-## 2026-10-13–14 — ocean framing and causal Terrain/Biosphere revision
+## 2026-10-14 — filled continental fields and coastal topology
+
+[Implementation and bounds](COASTLINE_REPAIR.md) · [20-world gallery](landshape-gallery/index.html) · [Final-mask measurements](landshape-gallery/metrics.json) · [Climate ensemble](landshape-gallery/climate-metrics.json) · [Browser audit results](landshape-gallery/browser-audits.json).
+
+This is the current revision. It supersedes the historical requirements for 4–6 separated continents and a hard inter-continent gap. Count and separation are now preferences; merged supercontinents, fragments and natural straits are intentional. The historical sections below describe earlier code, not the current gallery.
+
+The twenty 160 × 100 worlds request 42% land. Final coverage is **37.36–45.01% (mean 41.72%)**, with **1–4 connected major continents**, all five layout families, **14–28 visible archipelagos**, and **86–357 emerged island cells**. Every world has zero land in its protected ocean frame. Open water away from shore occupies **49.5–71.2%** of water; the largest connected ocean contains **97.32–99.81%**. Coverage is deliberately soft: for example, deep cuts can leave a shortfall and merged foundation area can be altered by exposed basins. Foundation shortfalls are reported in layout warnings.
+
+Tests measure the final thresholded mask as well as its source field. They cover shape variety, aspect, solidity, coastal complexity, deep bays, narrow isthmuses and peninsula tips, count variation, ocean edges, multiple resolutions, horizontal wrapping and deterministic generation. Island frequency must increase both emerged area and visible groups; the dense fixture includes medium and large emerged components. No generated island may bridge independently separated major land bodies.
+
+Coastal tests verify an exact linear-time distance transform against brute force, new bays and islets within the bounded band, unchanged coarse anchors/interiors, shared tile edges, repeat sampling, saved/reloaded fields, river junction geometry and cold-server restoration. Lake IDs, authored cover and parent drainage are preserved. Detail categories and hover agree on newly wet/dry coast samples.
+
+### Climate diagnostics
+
+The unchanged climate model was measured on the repaired geography first. A six-seed controlled comparison justified a bounded moisture-recycling correction to downwind transport; PET, dryland thresholds and render categories were not retuned. [Before/after data](landshape-gallery/moisture-recycling-comparison.json) and [the physical assumption](COASTLINE_REPAIR.md#climate-diagnostic-and-limited-transport-correction) record this distinction.
+
+Across the final twenty seeds, mean land shares are **31.4% desert**, **13.5% semiarid steppe/scrub**, **29.8% forest**, **14.1% grassland/woodland**, **6.5% cold cover** and **4.7% other cover**. Mean desert/steppe shares by latitude are 29.4% at 0–10°, 45.6% at 10–20°, 91.5% at 20–35°, 41.9% at 35–50°, 6.4% at 50–65°, and 0% at 65–90° (cold cover is separate). Subtropical drylands remain extensive; these are measured procedural outcomes, not a claim of matching Earth's biome fractions. The eight-seed regression bounds ensemble biome shares, latitude contrasts, largest dryland regions and small disconnected components; it does not impose percentages on generation.
+
+| Seed | Major land bodies | Land | Visible island groups | Desert / semiarid | Largest dryland region | ≤2-cell dryland components |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| KRIEMHILD | 2 | 42.84% | 25 | 36.7% / 14.2% | 2365 cells | 7 |
+| 1 | 2 | 43.12% | 22 | 35.9% / 16.0% | 2863 cells | 3 |
+| 2 | 2 | 38.01% | 27 | 17.2% / 9.2% | 585 cells | 11 |
+| 3 | 1 | 44.32% | 28 | 46.7% / 9.6% | 3991 cells | 8 |
+| 4 | 2 | 43.68% | 27 | 45.4% / 8.8% | 3738 cells | 13 |
+| 5 | 2 | 45.01% | 26 | 42.2% / 11.9% | 3814 cells | 4 |
+| 6 | 1 | 43.36% | 18 | 47.7% / 8.4% | 3783 cells | 4 |
+| 7 | 4 | 37.62% | 24 | 25.1% / 13.5% | 1099 cells | 6 |
+| 8 | 1 | 38.72% | 26 | 30.2% / 16.3% | 1470 cells | 14 |
+| 9 | 2 | 42.53% | 22 | 14.7% / 13.4% | 729 cells | 10 |
+| 10 | 3 | 37.36% | 24 | 21.8% / 13.4% | 805 cells | 4 |
+| 11 | 1 | 43.42% | 26 | 41.1% / 13.5% | 3625 cells | 3 |
+| 12 | 2 | 42.54% | 23 | 28.9% / 17.4% | 1650 cells | 8 |
+| 13 | 1 | 38.17% | 26 | 16.7% / 13.6% | 661 cells | 11 |
+| 14 | 1 | 42.05% | 14 | 32.7% / 13.4% | 1401 cells | 6 |
+| 15 | 2 | 42.49% | 18 | 20.7% / 17.0% | 1332 cells | 15 |
+| 16 | 2 | 40.95% | 22 | 26.7% / 18.2% | 2107 cells | 2 |
+| 17 | 2 | 41.57% | 27 | 36.0% / 11.5% | 2742 cells | 7 |
+| 18 | 2 | 43.35% | 25 | 31.2% / 11.5% | 2405 cells | 13 |
+| 19 | 3 | 43.16% | 24 | 30.1% / 18.5% | 2827 cells | 8 |
+
+### Performance and verification
+
+Same seed and 42% land on this Windows workstation, using the local Go toolchain. These are single-run phase profiles, not statistically rigorous benchmark estimates; hardware load and changed geography affect total time. [Baseline](landshape-gallery/performance-before.json) and [final phase timings](landshape-gallery/performance.json) are retained.
+
+| Grid | Cells | Before | After | Reduction |
+| --- | ---: | ---: | ---: | ---: |
+| 64 × 40 | 2,560 | 1.511 s | 1.094 s | 27.6% |
+| 160 × 100 | 16,000 | 12.030 s | 8.368 s | 30.4% |
+| 192 × 128 | 24,576 | 19.888 s | 14.913 s | 25.0% |
+
+From 160 × 100 to the maximum 192 × 128, area grows 1.54× and runtime 1.78×. The former quadratic boundary scan and recursive layout rebuilds are gone; hydrology/erosion remains the dominant phase. Plate lookup caching, reused monthly orbit terms and direct accumulation slices reduce repeated work. Gradient limiting was a small phase and retains its early exits. Neither the grid limit nor default dimensions were raised.
+
+- **Go:** all **99 terrain tests and their subtests** pass in exhaustive disjoint groups plus targeted repairs. [Exact inventory and results](landshape-gallery/terrain-test-results.json). All auth, Biosphere, history, HTTP API, storage and world suites pass. The initial full `go test ./...` exposed issues; the final coverage was rerun by package/group rather than claiming that initial command passed. The optional PostgreSQL integration test was skipped without its database.
+- **Regression repairs:** cold restore now rebuilds coastal caches; detailed river corridors protect junctions. Salt prerequisites use a controlled evaporite fixture rather than requiring a deposit on one random seed. Spring checks verify actual supplied outlets instead of demanding a fixed percentage of all land. Existing river coverage and length thresholds remain. A fully accepted identical Biosphere preview retains its generation identity, including empty habitats; partial acceptance remains resumable.
+- **Static analysis:** `go vet ./...` passes.
+- **Frontend:** `npm test` passes **129/129**; `npm run build` passes. Largest JavaScript chunk **515.35 kB**, below the unchanged 600 kB warning threshold.
+- **Browser:** T3 collaborative preview with a disposable SQLite server; detail, realism and biome audits pass. They exercise all eight presets in both physical modes, 2D/3D cursor anchoring, tile loading, persisted controls, actual detail API categories, water-budget inspection and hover-size stability. No application exceptions were recorded. A MessageChannel animation scheduler is used where the embedded host pauses native animation frames. Audit zoom targets scale to the viewport; the biome audit explicitly resets 3D view before testing 2D hover.
+- **Evidence:** twenty final worlds include world, continental, regional and local views plus precipitation, AI, climate and biome overlays. Actual UI screenshots accompany the reports. The earlier Biosphere species-count gallery remains historical; its integration and persistence tests were rerun, but that separate species ensemble was not regenerated for this terrain revision.
+- **Repository:** `git diff --check` passes; changed text files are UTF-8 without doubled CR line endings.
+- **Compatibility:** old structure versions and absent coastal recipes remain readable; saved worlds, imported heightfields and authored cover are not silently regenerated.
+
+## Historical: earlier ocean-framing and Terrain/Biosphere revision
 
 [Implementation and compatibility](TERRAIN_BIOSPHERE_PIPELINE.md) · [20-world visual gallery](landshape-gallery/index.html) · [CSV measurements](landshape-gallery/measurements.csv) · [shape/gap JSON](landshape-gallery/metrics.json) · [climate JSON](landshape-gallery/climate-metrics.json).
 

@@ -174,24 +174,25 @@ type Settings struct {
 	Catalogue   []Species      `json:"catalogue,omitempty"`
 }
 type State struct {
-	WrapX          bool          `json:"wrapX,omitempty"`
-	CellKM         float64       `json:"cellKm,omitempty"`
-	CellEastWestKM float64       `json:"cellEastWestKm,omitempty"`
-	LatitudeNorth  float64       `json:"latitudeNorth,omitempty"`
-	LatitudeSouth  float64       `json:"latitudeSouth,omitempty"`
-	ID             string        `json:"id"`
-	AgeID          string        `json:"ageId"`
-	TerrainID      string        `json:"terrainId"`
-	Version        int           `json:"version"`
-	Source         string        `json:"source"`
-	Width          int           `json:"width"`
-	Height         int           `json:"height"`
-	Habitats       []Habitat     `json:"habitats"`
-	Occurrences    []Occurrence  `json:"occurrences"`
-	Interactions   []Interaction `json:"interactions"`
-	Settings       Settings      `json:"settings"`
-	Diagnostics    []string      `json:"diagnostics"`
-	Stale          bool          `json:"stale"`
+	AcceptedGeneration string        `json:"acceptedGeneration,omitempty"`
+	WrapX              bool          `json:"wrapX,omitempty"`
+	CellKM             float64       `json:"cellKm,omitempty"`
+	CellEastWestKM     float64       `json:"cellEastWestKm,omitempty"`
+	LatitudeNorth      float64       `json:"latitudeNorth,omitempty"`
+	LatitudeSouth      float64       `json:"latitudeSouth,omitempty"`
+	ID                 string        `json:"id"`
+	AgeID              string        `json:"ageId"`
+	TerrainID          string        `json:"terrainId"`
+	Version            int           `json:"version"`
+	Source             string        `json:"source"`
+	Width              int           `json:"width"`
+	Height             int           `json:"height"`
+	Habitats           []Habitat     `json:"habitats"`
+	Occurrences        []Occurrence  `json:"occurrences"`
+	Interactions       []Interaction `json:"interactions"`
+	Settings           Settings      `json:"settings"`
+	Diagnostics        []string      `json:"diagnostics"`
+	Stale              bool          `json:"stale"`
 }
 type Preview struct {
 	State      State     `json:"state"`

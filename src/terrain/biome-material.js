@@ -2,6 +2,13 @@ import biomeCatalog from '../../internal/terrain/biomes.json' with {type:'json'}
 export {biomeCatalog};
 export const biomeNames=Object.freeze(Object.fromEntries(biomeCatalog.map(b=>[b.id,b.name])));
 export function categoricalBiome(environment,i){return biomeCatalog[environment?.fields?.biome?.[i]]?.id;}
+// Choose a category from the resolved shoreline's side. Enum IDs are never
+// interpolated, and a newly emerged detail island cannot inherit water cover.
+export function detailBiome(points,weights,waterBody,fallback){
+ let best=-1,biome;
+ for(let k=0;k<points.length;k++)if(Boolean(points[k].waterBody)===Boolean(waterBody)&&points[k].biome&&weights[k]>best){best=weights[k];biome=points[k].biome;}
+ return biome||fallback;
+}
 const clamp=v=>Math.max(0,Math.min(1,v));
 const smooth=v=>{v=clamp(v);return v*v*(3-2*v);};
 export const naturalMaterials=Object.freeze(Object.fromEntries(biomeCatalog.map(b=>[b.id,b.color.match(/\w{2}/g).map(c=>parseInt(c,16))])));

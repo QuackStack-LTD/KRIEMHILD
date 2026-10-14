@@ -28,6 +28,7 @@ type LandSpinePoint struct {
 	Width float64 `json:"width"`
 }
 type LandmassStructure struct {
+	Envelope   []LandEnvelope     `json:"envelope,omitempty"`
 	Version    string             `json:"version"`
 	ID         string             `json:"id"`
 	Formation  string             `json:"formation"`
@@ -43,6 +44,45 @@ type LandmassStructure struct {
 	Cuts       [][]LandSpinePoint `json:"cuts,omitempty"`
 }
 
+// Filled continental cores and accreted lobes. Axes and coordinates are stored
+// in world units so reload and detail evaluation share the same geometry.
+type LandEnvelope struct {
+	Center  [2]float64 `json:"center"`
+	Axes    [2]float64 `json:"axes"`
+	Bearing float64    `json:"bearing"`
+}
+
+func spineDistance(x, y float64, path []LandSpinePoint) float64 {
+	best := math.Inf(-1)
+	for k := 1; k < len(path); k++ {
+		a, b := path[k-1], path[k]
+		dx, dy := b.X-a.X, b.Y-a.Y
+		t := clamp(((x-a.X)*dx+(y-a.Y)*dy)/math.Max(1e-12, dx*dx+dy*dy), 0, 1)
+		best = math.Max(best, a.Width+(b.Width-a.Width)*t-math.Hypot(x-a.X-t*dx, y-a.Y-t*dy))
+	}
+	return best
+}
+
+func (s *LandmassStructure) rescale(factor float64) {
+	s.Scale *= factor
+	for k := range s.Envelope {
+		l := &s.Envelope[k]
+		for d := 0; d < 2; d++ {
+			l.Center[d] = s.Center[d] + (l.Center[d]-s.Center[d])*factor
+			l.Axes[d] *= factor
+		}
+	}
+	for _, paths := range [][][]LandSpinePoint{s.Spines, s.Cuts} {
+		for _, p := range paths {
+			for k := range p {
+				p[k].X = s.Center[0] + (p[k].X-s.Center[0])*factor
+				p[k].Y = s.Center[1] + (p[k].Y-s.Center[1])*factor
+				p[k].Width *= factor
+			}
+		}
+	}
+}
+
 func spineField(x, y float64, path []LandSpinePoint) float64 {
 	best := math.Inf(-1)
 	for k := 1; k < len(path); k++ {
@@ -56,6 +96,14 @@ func spineField(x, y float64, path []LandSpinePoint) float64 {
 }
 
 func (s LandmassStructure) field(x, y float64) float64 {
+	land, cut := s.fieldParts(x, y)
+	strength := 1.8
+	if s.Version == "filled-sdf-2" {
+		strength = 8
+	}
+	return math.Min(land, -cut*strength)
+}
+func (s LandmassStructure) fieldParts(x, y float64) (float64, float64) {
 	r := s.Scale
 	u, v := (x-s.Center[0])/r, (y-s.Center[1])/r
 	// Warps act on the whole formation, before evaluating its spines and cuts.
@@ -72,20 +120,35 @@ func (s LandmassStructure) field(x, y float64) float64 {
 	v += (fine(u0*13+61, v0*13+97) - .5) * .065 * s.Warp.Small
 	x, y = s.Center[0]+u*r, s.Center[1]+v*r
 	land := math.Inf(-1)
+	for _, l := range s.Envelope {
+		dx, dy := x-l.Center[0], y-l.Center[1]
+		cs, sn := math.Cos(l.Bearing), math.Sin(l.Bearing)
+		u, v := (dx*cs+dy*sn)/l.Axes[0], (-dx*sn+dy*cs)/l.Axes[1]
+		land = math.Max(land, (1-math.Hypot(u, v))*math.Min(l.Axes[0], l.Axes[1])/r)
+	}
 	for _, p := range s.Spines {
-		land = math.Max(land, spineField(x, y, p))
+		v := spineField(x, y, p)
+		if s.Version == "filled-sdf-2" {
+			v = spineDistance(x, y, p) / r
+		}
+		land = math.Max(land, v)
 	}
+	cut := math.Inf(-1)
 	for _, p := range s.Cuts {
-		land = math.Min(land, -spineField(x, y, p)*1.8)
+		v := spineField(x, y, p)
+		if s.Version == "filled-sdf-2" {
+			v = spineDistance(x, y, p) / r
+		}
+		cut = math.Max(cut, v)
 	}
-	return land
+	return land, cut
 }
 
 // Geometry is generated in local coordinates, then rotated and translated.
 // Formation choice is varied within tectonic settings, never a copied outline.
 func makeLandmass(seed uint32, formation string, center [2]float64, radius, bearing float64, warp LandShapeOptions) LandmassStructure {
 	rng := RNG(seed)
-	s := LandmassStructure{Version: "organic-spines-1", Formation: formation, Origin: center, Center: center, Scale: radius, Seed: seed, Warp: warp}
+	s := LandmassStructure{Version: "filled-sdf-2", Formation: formation, Origin: center, Center: center, Scale: radius, Seed: seed, Warp: warp}
 	add := func(path []LandSpinePoint, cut bool) {
 		if cut {
 			s.Cuts = append(s.Cuts, path)
@@ -172,7 +235,40 @@ func makeLandmass(seed uint32, formation string, center [2]float64, radius, bear
 			curve([2]float64{x, 1.1}, [2]float64{x + .1, .65}, [2]float64{x - .15, .1}, [2]float64{x - .2, -.15}, .11, .035, true)
 		}
 	}
+	if formation != "enclosed-basin" && formation != "crescent" && formation != "isthmus" {
+		// Unequal, independently oriented drowned arms cut into the filled core.
+		// Their depth is macro geometry, independent of perimeter roughness.
+		for k := 0; k < 1+int(rng.Next()*3); k++ {
+			a := rng.Next() * math.Pi * 2
+			cs, sn := math.Cos(a), math.Sin(a)
+			turn := (rng.Next() - .5) * .65
+			end := .15 + rng.Next()*.5
+			curve([2]float64{cs * 1.65, sn * 1.65}, [2]float64{cs*1.05 - sn*turn, sn*1.05 + cs*turn}, [2]float64{cs*.65 + sn*turn, sn*.65 - cs*turn}, [2]float64{cs * end, sn * end}, .13+rng.Next()*.15, .035+rng.Next()*.065, true)
+		}
+	}
 	cs, sn := math.Cos(bearing), math.Sin(bearing)
+	core := func(x, y, a, b float64) {
+		s.Envelope = append(s.Envelope, LandEnvelope{Center: [2]float64{center[0] + radius*(cs*x-sn*y), center[1] + radius*(sn*x+cs*y)}, Axes: [2]float64{radius * a, radius * b}, Bearing: bearing + (rng.Next()-.5)*.35})
+	}
+	switch formation {
+	case "enclosed-basin": // Preserve the explicitly annular formation.
+	case "crescent":
+		core(.7, 0, .37, .65)
+	case "isthmus":
+		core(-.85, 0, .64, .56)
+		core(.85, 0, .58, .64)
+	case "hook":
+		core(-.45, -.25, .82, .55)
+	case "elongated":
+		core(0, 0, 1.15, .62)
+	default:
+		core(-.12, 0, .92+rng.Next()*.25, .62+rng.Next()*.24)
+		for k := 0; k < 2+int(rng.Next()*3); k++ {
+			a := rng.Next() * math.Pi * 2
+			d := .5 + rng.Next()*.4
+			core(math.Cos(a)*d, math.Sin(a)*d, .3+rng.Next()*.4, .3+rng.Next()*.35)
+		}
+	}
 	for _, paths := range [][][]LandSpinePoint{s.Spines, s.Cuts} {
 		for _, p := range paths {
 			for k := range p {
@@ -189,6 +285,10 @@ func makeLandmass(seed uint32, formation string, center [2]float64, radius, bear
 // Both shape grammar and relief consume the same plate geometry. Wrapping
 // distances avoids a false tectonic boundary at the planetary longitude seam.
 func (e *Environment) platesAt(x, y float64) (a, b int, da, db, convergence, bearing float64) {
+	if x == math.Floor(x) && y == math.Floor(y) && x >= 0 && y >= 0 && x < float64(e.Options.Columns) && y < float64(e.Options.Rows) && len(e.plateCache) > 0 {
+		p := e.plateCache[int(y)*e.Options.Columns+int(x)]
+		return p.a, p.b, p.da, p.db, p.convergence, p.bearing
+	}
 	a, b, da, db = 0, 1, math.Inf(1), math.Inf(1)
 	deltaX := func(dx float64) float64 {
 		if e.Geography != nil && e.Geography.WrapX {
@@ -210,6 +310,20 @@ func (e *Environment) platesAt(x, y float64) (a, b int, da, db, convergence, bea
 	convergence = ((pa.VX-pb.VX)*dx + (pa.VY-pb.VY)*dy) / math.Max(.001, math.Hypot(dx, dy))
 	bearing = math.Atan2(dy, dx) + math.Pi/2
 	return
+}
+
+type plateSample struct {
+	a, b                         int
+	da, db, convergence, bearing float64
+}
+
+func (e *Environment) cachePlates() {
+	values := make([]plateSample, len(e.Mask))
+	for i := range values {
+		a, b, da, db, c, r := e.platesAt(float64(i%e.Options.Columns), float64(i/e.Options.Columns))
+		values[i] = plateSample{a, b, da, db, c, r}
+	}
+	e.plateCache = values
 }
 
 func (e *Environment) continentalNuclei(_ []Point) []LandmassStructure {
@@ -246,8 +360,13 @@ func continentalClearance(x, y float64, w, h, margin int, oceanRoom float64, sam
 }
 
 func validateLandmassStructure(s LandmassStructure) error {
-	if s.ID == "" || s.Version != "organic-spines-1" || !finite(s.Scale) || s.Scale <= 0 || s.Scale > 1024 || len(s.Spines) == 0 || len(s.Spines) > 16 || len(s.Cuts) > 16 {
+	if s.ID == "" || (s.Version != "organic-spines-1" && s.Version != "filled-sdf-2") || !finite(s.Scale) || s.Scale <= 0 || s.Scale > 1024 || len(s.Spines) == 0 || len(s.Spines) > 16 || len(s.Cuts) > 16 || len(s.Envelope) > 16 {
 		return fmt.Errorf("invalid land structure %s", s.ID)
+	}
+	for _, l := range s.Envelope {
+		if !finite(l.Center[0]) || !finite(l.Center[1]) || !finite(l.Axes[0]) || !finite(l.Axes[1]) || !finite(l.Bearing) || l.Axes[0] <= 0 || l.Axes[1] <= 0 || l.Axes[0] > 2048 || l.Axes[1] > 2048 {
+			return fmt.Errorf("invalid land envelope %s", s.ID)
+		}
 	}
 	switch s.Formation {
 	case "compact", "elongated", "curved", "branched", "hook", "isthmus", "crescent", "enclosed-basin", "rifted", "indented":

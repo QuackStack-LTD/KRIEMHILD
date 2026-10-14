@@ -42,6 +42,7 @@ func RestoreDetailModel(e *Environment, s DetailState) (*DetailModel, error) {
 		}
 	}
 	m := &DetailModel{World: e, Seed: s.Seed, foothills: s.Foothills, Features: s.Features}
+	m.buildCoastalDistance()
 	m.indexDrainage()
 	return m, nil
 }
@@ -88,6 +89,9 @@ func RestoreProjectSolver(s *Solver, c Config, e *Environment, edit Snapshot) er
 		}
 	}
 	if e != nil {
+		if c := e.Coastline; c != nil && (c.Version != "coastal-sdf-1" || !finite(c.Band) || !finite(c.Amplitude) || c.Band < .5 || c.Band > 3 || c.Amplitude < 0 || c.Amplitude > 2) {
+			return fmt.Errorf("invalid coastal refinement recipe")
+		}
 		rawOptions := e.Options
 		if rawOptions.Columns != s.W || rawOptions.Rows != s.H || len(e.Mask) != s.N || len(e.Heights) != s.N {
 			return fmt.Errorf("environment dimensions do not match world")

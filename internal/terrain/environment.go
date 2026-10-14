@@ -50,7 +50,7 @@ func DecodeEnvironment(data []byte) (EnvironmentOptions, error) {
 		return o, err
 	}
 	if o.MajorContinents < 0 || o.MajorContinents > 12 {
-		return o, fmt.Errorf("major continents must be 0 (seeded 4–7) or 1–12")
+		return o, fmt.Errorf("major continents must be 0 (automatic layout) or 1–12")
 	}
 	if !finite(o.LapseRate) || o.LapseRate < 0 || o.LapseRate > 12 {
 		return o, fmt.Errorf("lapse rate must be between 0 and 12 C/km")
@@ -120,6 +120,8 @@ type Plate struct {
 	Continental bool    `json:"continental"`
 }
 type Environment struct {
+	plateCache            []plateSample
+	Coastline             *CoastalModel        `json:"coastline,omitempty"`
 	Layout                *ContinentalLayout   `json:"continentalLayout,omitempty"`
 	ContinentalStructures []LandmassStructure  `json:"continentalStructures,omitempty"`
 	Geography             *GeographicScale     `json:"geography,omitempty"`
@@ -198,6 +200,17 @@ func noise(seed uint32) func(float64, float64) float64 {
 	}
 }
 func BuildEnvironment(o EnvironmentOptions) *Environment {
+	return BuildEnvironmentObserved(o, nil)
+}
+
+// BuildEnvironmentObserved reports completed phases without persisting timings
+// or introducing clocks into generation. The observer must not mutate the world.
+func BuildEnvironmentObserved(o EnvironmentOptions, observer func(string)) *Environment {
+	phase := func(name string) {
+		if observer != nil {
+			observer(name)
+		}
+	}
 	w, h := o.Columns, o.Rows
 	n := w * h
 	seed := Seed(o.Seed)
@@ -227,8 +240,10 @@ func BuildEnvironment(o EnvironmentOptions) *Environment {
 	for p := 0; p < o.PlateCount; p++ {
 		e.Plates = append(e.Plates, Plate{rng.Next() * float64(w), rng.Next() * float64(h), rng.Next()*2 - 1, rng.Next()*2 - 1, rng.Next() > .45})
 	}
+	e.cachePlates()
 	if o.Heights == nil {
 		e.generateContinentalMask(nil, sample)
+		e.Coastline = &CoastalModel{Version: "coastal-sdf-1", Seed: seed ^ 0xd13ef773, Band: 1.75, Amplitude: 1.3}
 	} else {
 		// Imported/authored heights already define their continental foundation.
 		for i, height := range o.Heights {
@@ -238,6 +253,7 @@ func BuildEnvironment(o EnvironmentOptions) *Environment {
 		}
 	}
 	hotspots := make([][2]float64, max(1, int(round(3*o.Volcanism))))
+	phase("continental-layout")
 	for p := range hotspots {
 		hotspots[p] = [2]float64{(.15 + rng.Next()*.7) * float64(w), (.15 + rng.Next()*.7) * float64(h)}
 	}
@@ -292,14 +308,18 @@ func BuildEnvironment(o EnvironmentOptions) *Environment {
 		set("mountainCore", i, strength*math.Exp(-math.Pow(gap/(width*.48), 2)))
 	}
 	e.buildCrustFoundation()
+	phase("tectonic-foundation")
 	e.buildGeologicalSurface(sample, hotspots)
+	phase("geological-surface")
 	e.buildArchipelagos(hotspots)
+	phase("archipelagos")
 
 	e.carveDepressions(sample)
 	e.reconcilePlanetSeam()
 	e.limitSurfaceGradients()
 	e.connectOcean()
 	e.buildOceanCurrents()
+	phase("surface-conditioning")
 	for i := 0; i < n; i++ {
 		slope := 0.
 		for _, j := range nb(i, w, h) {
@@ -356,6 +376,7 @@ func BuildEnvironment(o EnvironmentOptions) *Environment {
 	}
 	// The same monthly water budget supplies coarse hydrology and final biomes.
 	e.updateClimateBudget()
+	phase("climate-budget")
 
 	e.prepareHydrology()
 	if e.carveStorageBasins() {
@@ -366,6 +387,7 @@ func BuildEnvironment(o EnvironmentOptions) *Environment {
 	e.hydrology()
 	e.prepareChannelGeology()
 	e.evolveRiverLandscape()
+	phase("hydrology-erosion")
 	e.entities(sample)
 	if o.Realism {
 		e.realisticEntities(sample)
@@ -374,11 +396,14 @@ func BuildEnvironment(o EnvironmentOptions) *Environment {
 	e.buildReefs(sample)
 	e.classifyLandforms()
 	e.Hydrology.Diagnostics = e.ValidateHydrology()
+	phase("surface-ecology")
 	// Final climate reconciles desert/dune habitat before geology records the
 	// depositional environment and resources consume those formations.
 	e.BuildClimate()
 	e.BuildGeologicalHistory()
 	e.BuildNaturalResources()
+	phase("climate-geology-resources")
+	e.plateCache = nil
 	return e
 }
 

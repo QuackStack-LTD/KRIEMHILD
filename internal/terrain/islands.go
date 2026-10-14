@@ -39,6 +39,7 @@ type islandSite struct {
 
 func (e *Environment) buildArchipelagos(hotspots [][2]float64) {
 	e.Archipelagos = nil
+	e.Fields["islandGroup"] = make([]float64, len(e.Mask))
 	if e.Options.Heights != nil || e.Options.IslandFrequency <= 0 {
 		return
 	}
@@ -129,11 +130,11 @@ func (e *Environment) buildArchipelagos(hotspots [][2]float64) {
 		}
 		return sites[i].score > sites[j].score
 	})
-	budget := max(1, int(math.Round(float64(n)/900*e.Options.IslandFrequency)))
+	budget := max(1, int(math.Round(float64(n)/550*e.Options.IslandFrequency)))
 	coastalBudget := int(math.Round(float64(budget) * e.Options.IslandCoastalShare))
 	counts := [2]int{}
 	limits := [2]int{budget - coastalBudget, coastalBudget}
-	landBudget := max(4, int(float64(n)*math.Min(.06, .023*e.Options.IslandFrequency)))
+	landBudget := max(4, int(float64(n)*math.Min(.075, .035*e.Options.IslandFrequency)))
 	added := 0
 	for _, site := range sites {
 		category := 0
@@ -147,7 +148,7 @@ func (e *Environment) buildArchipelagos(hotspots [][2]float64) {
 		x, y := float64(i%w), float64(i/w)
 		clear := true
 		for _, g := range e.Archipelagos {
-			if math.Hypot(x-g.Source[0], y-g.Source[1]) < scale*(8+hash(i, 27)*7) {
+			if math.Hypot(x-g.Source[0], y-g.Source[1]) < scale*(5+hash(i, 27)*8) {
 				clear = false
 				break
 			}
@@ -171,11 +172,11 @@ func (e *Environment) buildArchipelagos(hotspots [][2]float64) {
 			g.Cause = "Erosion left resistant bedrock highs and drowned banks on a submerged continental shelf."
 			g.SeaLevelRise = 30 + 70*hash(i, 31)
 		}
-		members := 3 + int(hash(i, 35)*4)
+		members := 3 + int(hash(i, 35)*9)
 		if site.process == "hotspot-track" && hash(i, 36) > .7 {
 			members = 2
 		} // isolated island with older submerged companion
-		spacing := scale * (2.5 + hash(i, 37)*2.2)
+		spacing := scale * (2.2 + hash(i, 37)*4)
 		bend := (hash(i, 38) - .5) * 1.2
 		if site.process == "subduction-arc" {
 			bend = .65 + hash(i, 38)*.65
@@ -186,7 +187,10 @@ func (e *Environment) buildArchipelagos(hotspots [][2]float64) {
 				u = float64(k)
 			}
 			along := u*spacing + (hash(i, 160+k)-.5)*spacing*.65
-			across := bend*u*u*scale + (hash(i, 50+k)-.5)*scale
+			across := bend*u*u*scale*.5 + (hash(i, 50+k)-.5)*scale*2
+			if hash(i, 39) > .65 && k%3 == 0 {
+				across -= spacing * (1 + hash(i, 180+k)*2)
+			} // branching island seas
 			if site.process == "shelf-remnants" {
 				across += (hash(i, 170+k) - .5) * spacing * 2.5
 			}
@@ -205,9 +209,18 @@ func (e *Environment) buildArchipelagos(hotspots [][2]float64) {
 			if !volcanic && (e.get("shelf", j) < .35 || landDistance[j] > 10*scale) {
 				continue
 			}
-			radius := scale * (.85 + hash(i, 70+k)*.75)
-			if k == members/2 {
-				radius *= 1.3
+			// Independent tiers produce rocks, small/medium islands and occasional
+			// large fragments, instead of a row of equal one-pixel dots.
+			tier := hash(i, 70+k)
+			radius := scale * (.45 + hash(i, 270+k)*.45)
+			if tier > .25 {
+				radius = scale * (1 + hash(i, 270+k)*.8)
+			}
+			if tier > .65 {
+				radius = scale * (2 + hash(i, 270+k)*1.2)
+			}
+			if tier > .93 {
+				radius = scale * (3.6 + hash(i, 270+k)*1.8)
 			}
 			f := IslandFoundation{ID: fmt.Sprintf("%s/%d", g.ID, k), Center: [2]float64{cx, cy}, Radius: radius, Aspect: .65 + hash(i, 90+k)*.7, Bearing: site.bearing + (hash(i, 100+k)-.5)*.8, Summit: 60 + hash(i, 110+k)*260, Age: 10 + hash(i, 120+k)*150, Stage: "eroded-island"}
 			if !volcanic {
@@ -230,25 +243,19 @@ func (e *Environment) buildArchipelagos(hotspots [][2]float64) {
 					f.Summit = -18
 				}
 			}
-			if k != members/2 && hash(i, 130+k) > .72 {
+			if k != members/2 && hash(i, 130+k) > .86 {
 				f.Stage = "submerged-bank"
 				f.Summit = -15 - hash(i, 140+k)*100
 			}
 			e.shapeIslandFoundation(&f, site.process)
 			f.Shape.Plate = site.plate
 			f.Shape.OtherPlate = site.other
-			if e.applyIslandFoundation(f, volcanic, original, landBudget-added, patch) {
+			if count, ok := e.applyIslandFoundationCount(f, volcanic, original, landBudget-added, patch); ok {
+				added += count
 				g.Foundations = append(g.Foundations, f)
 				g.Path = append(g.Path, f.Center)
 			}
-			// Count emerged cells after each member; never truncate a landform to
-			// satisfy a pixel quota. Whole candidates exceeding the budget are skipped.
-			added = 0
-			for at, land := range original {
-				if land == 0 && e.Mask[at] != 0 {
-					added++
-				}
-			}
+
 		}
 		if len(g.Foundations) > 0 {
 			e.Archipelagos = append(e.Archipelagos, g)
@@ -258,6 +265,10 @@ func (e *Environment) buildArchipelagos(hotspots [][2]float64) {
 }
 
 func (e *Environment) applyIslandFoundation(f IslandFoundation, volcanic bool, original []int, remaining int, patch func(float64, float64) float64) bool {
+	_, ok := e.applyIslandFoundationCount(f, volcanic, original, remaining, patch)
+	return ok
+}
+func (e *Environment) applyIslandFoundationCount(f IslandFoundation, volcanic bool, original []int, remaining int, patch func(float64, float64) float64) (int, bool) {
 	w, h := e.Options.Columns, e.Options.Rows
 	base := f.Radius*6 + 2
 	type sample struct {
@@ -317,14 +328,14 @@ func (e *Environment) applyIslandFoundation(f IslandFoundation, volcanic bool, o
 			}
 			if e.Mask[i] == 0 && z >= 4 {
 				if reserve := e.Fields["oceanReserve"]; len(reserve) > i && reserve[i] > 0 {
-					return false
+					return 0, false
 				}
 				// Retain an actual strait, including diagonals: island growth must not
 				// bridge existing continents and change their drainage-area hierarchy.
 				for yy := max(0, y-1); yy <= min(h-1, y+1); yy++ {
 					for xx := max(0, x-1); xx <= min(w-1, x+1); xx++ {
 						if original[yy*w+xx] != 0 {
-							return false
+							return 0, false
 						}
 					}
 				}
@@ -334,11 +345,14 @@ func (e *Environment) applyIslandFoundation(f IslandFoundation, volcanic bool, o
 		}
 	}
 	if emerged > remaining || len(changes) == 0 {
-		return false
+		return 0, false
 	}
 	for _, s := range changes {
 		e.set("elevation", s.i, s.z)
 		if s.z >= 4 {
+			if e.Mask[s.i] == 0 && len(e.Fields["islandGroup"]) == len(e.Mask) {
+				e.Fields["islandGroup"][s.i] = float64(len(e.Archipelagos) + 1)
+			}
 			e.Mask[s.i] = 1
 		}
 		if volcanic {
@@ -352,7 +366,7 @@ func (e *Environment) applyIslandFoundation(f IslandFoundation, volcanic bool, o
 			e.set("shelf", s.i, math.Max(e.get("shelf", s.i), .6))
 		}
 	}
-	return true
+	return emerged, true
 }
 
 // Only mature, stable portions of a subsiding volcanic rim get recruitment.
@@ -455,7 +469,7 @@ func (e *Environment) ValidateArchipelagos() error {
 		return true
 	}
 	for _, g := range e.Archipelagos {
-		if !register(g.ID) || !point(g.Source) || g.Plate < 0 || g.Plate >= len(e.Plates) || g.OtherPlate < 0 || g.OtherPlate >= len(e.Plates) || g.OtherPlate == g.Plate || len(g.Foundations) == 0 || len(g.Foundations) > 8 || len(g.Path) != len(g.Foundations) || !finite(g.SeaLevelRise) || g.SeaLevelRise < 0 || g.SeaLevelRise > 500 {
+		if !register(g.ID) || !point(g.Source) || g.Plate < 0 || g.Plate >= len(e.Plates) || g.OtherPlate < 0 || g.OtherPlate >= len(e.Plates) || g.OtherPlate == g.Plate || len(g.Foundations) == 0 || len(g.Foundations) > 16 || len(g.Path) != len(g.Foundations) || !finite(g.SeaLevelRise) || g.SeaLevelRise < 0 || g.SeaLevelRise > 500 {
 			return fmt.Errorf("invalid archipelago %s", g.ID)
 		}
 		switch g.Setting {

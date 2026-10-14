@@ -1,0 +1,1631 @@
+{
+  "1": {
+    "before": {
+      "landCells": 7051,
+      "biomeGroupPercent": {
+        "cold": 5.2191178556233355,
+        "desert": 47.99319245496794,
+        "forest": 23.003829244079288,
+        "grassland-woodland": 10.849524890086663,
+        "other": 2.5953765423344235,
+        "semiarid": 10.338959012906109
+      },
+      "largestBiomeGroupRegions": {
+        "cold": 213,
+        "desert": 2919,
+        "forest": 515,
+        "grassland-woodland": 340,
+        "other": 46,
+        "semiarid": 106
+      },
+      "latitudeBands": [
+        {
+          "largestDrylandRegionCells": 762,
+          "absoluteLatitudeFrom": 0,
+          "absoluteLatitudeTo": 10,
+          "landCells": 1103,
+          "desertOrSteppeCells": 762,
+          "drylandPercent": 69.08431550317316,
+          "meanAnnualRainMM": 482.0173474892852,
+          "meanAridityIndex": 0.49843421139554245
+        },
+        {
+          "largestDrylandRegionCells": 466,
+          "absoluteLatitudeFrom": 10,
+          "absoluteLatitudeTo": 20,
+          "landCells": 1043,
+          "desertOrSteppeCells": 673,
+          "drylandPercent": 64.52540747842761,
+          "meanAnnualRainMM": 475.38058815706495,
+          "meanAridityIndex": 0.5377159380739731
+        },
+        {
+          "largestDrylandRegionCells": 819,
+          "absoluteLatitudeFrom": 20,
+          "absoluteLatitudeTo": 35,
+          "landCells": 1512,
+          "desertOrSteppeCells": 1400,
+          "drylandPercent": 92.5925925925926,
+          "meanAnnualRainMM": 149.45841997010368,
+          "meanAridityIndex": 0.15425463341498039
+        },
+        {
+          "largestDrylandRegionCells": 724,
+          "absoluteLatitudeFrom": 35,
+          "absoluteLatitudeTo": 50,
+          "landCells": 1971,
+          "desertOrSteppeCells": 1056,
+          "drylandPercent": 53.57686453576864,
+          "meanAnnualRainMM": 487.87574932140967,
+          "meanAridityIndex": 0.7674069841227431
+        },
+        {
+          "largestDrylandRegionCells": 81,
+          "absoluteLatitudeFrom": 50,
+          "absoluteLatitudeTo": 65,
+          "landCells": 1172,
+          "desertOrSteppeCells": 160,
+          "drylandPercent": 13.651877133105803,
+          "meanAnnualRainMM": 779.4143363509976,
+          "meanAridityIndex": 2.099095862896782
+        },
+        {
+          "largestDrylandRegionCells": 0,
+          "absoluteLatitudeFrom": 65,
+          "absoluteLatitudeTo": 90,
+          "landCells": 250,
+          "desertOrSteppeCells": 0,
+          "drylandPercent": 0,
+          "meanAnnualRainMM": 376.1760827331543,
+          "meanAridityIndex": 2.5395023605823517
+        }
+      ],
+      "biomeAreas": {
+        "alpine": 47,
+        "ash": 48,
+        "cold_desert": 158,
+        "desert": 2738,
+        "dunes": 488,
+        "forest": 937,
+        "grass": 305,
+        "jungle": 104,
+        "lava": 18,
+        "mediterranean": 26,
+        "mountain": 2,
+        "savanna": 434,
+        "scrubland": 124,
+        "snow": 63,
+        "steppe": 605,
+        "swamp": 115,
+        "taiga": 581,
+        "tundra": 258
+      },
+      "climateAreas": {
+        "alpine": 57,
+        "boreal": 613,
+        "continental": 756,
+        "desert": 3437,
+        "mediterranean": 26,
+        "monsoon": 307,
+        "oceanic": 196,
+        "polar": 37,
+        "rainforest": 14,
+        "steppe": 614,
+        "subtropical": 520,
+        "tropical-seasonal": 191,
+        "tundra": 283
+      },
+      "drylandComponentAreas": [
+        3311,
+        469,
+        161,
+        101,
+        5,
+        2,
+        2
+      ],
+      "drylandComponentsAtMostTwoCells": 2,
+      "cellsInSmallDrylandComponents": 4
+    },
+    "after": {
+      "landCells": 6900,
+      "biomeGroupPercent": {
+        "cold": 5.333333333333351,
+        "desert": 35.884057971012936,
+        "forest": 27.739130434781515,
+        "grassland-woodland": 11.217391304347672,
+        "other": 3.855072463768127,
+        "semiarid": 15.971014492753199
+      },
+      "largestBiomeGroupRegions": {
+        "cold": 214,
+        "desert": 1348,
+        "forest": 549,
+        "grassland-woodland": 238,
+        "other": 40,
+        "semiarid": 397
+      },
+      "latitudeBands": [
+        {
+          "largestDrylandRegionCells": 521,
+          "absoluteLatitudeFrom": 0,
+          "absoluteLatitudeTo": 10,
+          "landCells": 1047,
+          "desertOrSteppeCells": 580,
+          "drylandPercent": 55.396370582617,
+          "meanAnnualRainMM": 781.1970726721836,
+          "meanAridityIndex": 0.8449920265012044
+        },
+        {
+          "largestDrylandRegionCells": 362,
+          "absoluteLatitudeFrom": 10,
+          "absoluteLatitudeTo": 20,
+          "landCells": 994,
+          "desertOrSteppeCells": 575,
+          "drylandPercent": 57.84708249496982,
+          "meanAnnualRainMM": 660.864556653159,
+          "meanAridityIndex": 0.7993315123115297
+        },
+        {
+          "largestDrylandRegionCells": 518,
+          "absoluteLatitudeFrom": 20,
+          "absoluteLatitudeTo": 35,
+          "landCells": 1488,
+          "desertOrSteppeCells": 1360,
+          "drylandPercent": 91.39784946236558,
+          "meanAnnualRainMM": 174.8841935527581,
+          "meanAridityIndex": 0.18339456552364214
+        },
+        {
+          "largestDrylandRegionCells": 646,
+          "absoluteLatitudeFrom": 35,
+          "absoluteLatitudeTo": 50,
+          "landCells": 1948,
+          "desertOrSteppeCells": 906,
+          "drylandPercent": 46.50924024640657,
+          "meanAnnualRainMM": 622.6344008842289,
+          "meanAridityIndex": 1.0074791772134728
+        },
+        {
+          "largestDrylandRegionCells": 68,
+          "absoluteLatitudeFrom": 50,
+          "absoluteLatitudeTo": 65,
+          "landCells": 1173,
+          "desertOrSteppeCells": 119,
+          "drylandPercent": 10.144927536231885,
+          "meanAnnualRainMM": 910.987510403099,
+          "meanAridityIndex": 2.4368105399400912
+        },
+        {
+          "largestDrylandRegionCells": 0,
+          "absoluteLatitudeFrom": 65,
+          "absoluteLatitudeTo": 90,
+          "landCells": 250,
+          "desertOrSteppeCells": 0,
+          "drylandPercent": 0,
+          "meanAnnualRainMM": 376.1781078796387,
+          "meanAridityIndex": 2.5180164387226105
+        }
+      ],
+      "biomeAreas": {
+        "alpine": 43,
+        "ash": 48,
+        "cold_desert": 86,
+        "desert": 2042,
+        "dunes": 348,
+        "forest": 1168,
+        "grass": 280,
+        "jungle": 162,
+        "lava": 16,
+        "mediterranean": 28,
+        "mountain": 2,
+        "oasis": 10,
+        "savanna": 466,
+        "scrubland": 156,
+        "snow": 68,
+        "steppe": 946,
+        "swamp": 190,
+        "taiga": 584,
+        "tundra": 257
+      },
+      "climateAreas": {
+        "alpine": 58,
+        "boreal": 632,
+        "continental": 854,
+        "desert": 2554,
+        "mediterranean": 28,
+        "monsoon": 352,
+        "oceanic": 244,
+        "polar": 37,
+        "rainforest": 17,
+        "steppe": 986,
+        "subtropical": 618,
+        "tropical-seasonal": 236,
+        "tundra": 284
+      },
+      "drylandComponentAreas": [
+        2863,
+        421,
+        104,
+        83,
+        35,
+        24,
+        5,
+        2,
+        2,
+        1
+      ],
+      "drylandComponentsAtMostTwoCells": 3,
+      "cellsInSmallDrylandComponents": 5
+    }
+  },
+  "2": {
+    "before": {
+      "landCells": 6094,
+      "biomeGroupPercent": {
+        "cold": 12.356416147029952,
+        "desert": 21.80833606826427,
+        "forest": 27.338365605514213,
+        "grassland-woodland": 19.297669839186405,
+        "other": 4.446997046275036,
+        "semiarid": 14.752215293731707
+      },
+      "largestBiomeGroupRegions": {
+        "cold": 474,
+        "desert": 421,
+        "forest": 279,
+        "grassland-woodland": 406,
+        "other": 24,
+        "semiarid": 189
+      },
+      "latitudeBands": [
+        {
+          "largestDrylandRegionCells": 213,
+          "absoluteLatitudeFrom": 0,
+          "absoluteLatitudeTo": 10,
+          "landCells": 1050,
+          "desertOrSteppeCells": 266,
+          "drylandPercent": 25.333333333333332,
+          "meanAnnualRainMM": 1247.0915494355702,
+          "meanAridityIndex": 1.3014428612376963
+        },
+        {
+          "largestDrylandRegionCells": 121,
+          "absoluteLatitudeFrom": 10,
+          "absoluteLatitudeTo": 20,
+          "landCells": 743,
+          "desertOrSteppeCells": 247,
+          "drylandPercent": 33.24360699865411,
+          "meanAnnualRainMM": 1002.3550271076598,
+          "meanAridityIndex": 0.9639969609005936
+        },
+        {
+          "largestDrylandRegionCells": 283,
+          "absoluteLatitudeFrom": 20,
+          "absoluteLatitudeTo": 35,
+          "landCells": 1070,
+          "desertOrSteppeCells": 1002,
+          "drylandPercent": 93.64485981308411,
+          "meanAnnualRainMM": 167.64485484773869,
+          "meanAridityIndex": 0.15930555907957186
+        },
+        {
+          "largestDrylandRegionCells": 255,
+          "absoluteLatitudeFrom": 35,
+          "absoluteLatitudeTo": 50,
+          "landCells": 1658,
+          "desertOrSteppeCells": 631,
+          "drylandPercent": 38.057901085645355,
+          "meanAnnualRainMM": 636.4999139725946,
+          "meanAridityIndex": 1.0838223771092148
+        },
+        {
+          "largestDrylandRegionCells": 20,
+          "absoluteLatitudeFrom": 50,
+          "absoluteLatitudeTo": 65,
+          "landCells": 1212,
+          "desertOrSteppeCells": 35,
+          "drylandPercent": 2.887788778877888,
+          "meanAnnualRainMM": 775.3749270801104,
+          "meanAridityIndex": 2.7510387268495244
+        },
+        {
+          "largestDrylandRegionCells": 0,
+          "absoluteLatitudeFrom": 65,
+          "absoluteLatitudeTo": 90,
+          "landCells": 361,
+          "desertOrSteppeCells": 0,
+          "drylandPercent": 0,
+          "meanAnnualRainMM": 325.7412436741541,
+          "meanAridityIndex": 3.1435555370725754
+        }
+      ],
+      "biomeAreas": {
+        "alpine": 114,
+        "ash": 41,
+        "cold_desert": 8,
+        "desert": 1092,
+        "dunes": 229,
+        "forest": 823,
+        "grass": 371,
+        "jungle": 254,
+        "lava": 27,
+        "mediterranean": 67,
+        "savanna": 738,
+        "scrubland": 171,
+        "snow": 218,
+        "steppe": 728,
+        "swamp": 203,
+        "taiga": 589,
+        "tundra": 421
+      },
+      "climateAreas": {
+        "alpine": 146,
+        "boreal": 616,
+        "continental": 478,
+        "desert": 1427,
+        "mediterranean": 68,
+        "monsoon": 532,
+        "oceanic": 273,
+        "polar": 153,
+        "rainforest": 46,
+        "steppe": 754,
+        "subtropical": 841,
+        "tropical-seasonal": 305,
+        "tundra": 455
+      },
+      "drylandComponentAreas": [
+        803,
+        649,
+        550,
+        38,
+        21,
+        18,
+        18,
+        17,
+        17,
+        9,
+        7,
+        5,
+        4,
+        3,
+        3,
+        3,
+        3,
+        3,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "drylandComponentsAtMostTwoCells": 10,
+      "cellsInSmallDrylandComponents": 10
+    },
+    "after": {
+      "landCells": 6082,
+      "biomeGroupPercent": {
+        "cold": 12.347911871095125,
+        "desert": 17.165406116409233,
+        "forest": 35.71193686287447,
+        "grassland-woodland": 19.82900361723137,
+        "other": 5.787569878329496,
+        "semiarid": 9.15817165406121
+      },
+      "largestBiomeGroupRegions": {
+        "cold": 474,
+        "desert": 310,
+        "forest": 401,
+        "grassland-woodland": 483,
+        "other": 98,
+        "semiarid": 93
+      },
+      "latitudeBands": [
+        {
+          "largestDrylandRegionCells": 16,
+          "absoluteLatitudeFrom": 0,
+          "absoluteLatitudeTo": 10,
+          "landCells": 1048,
+          "desertOrSteppeCells": 19,
+          "drylandPercent": 1.8129770992366412,
+          "meanAnnualRainMM": 1806.747844696045,
+          "meanAridityIndex": 1.9399780466413226
+        },
+        {
+          "largestDrylandRegionCells": 92,
+          "absoluteLatitudeFrom": 10,
+          "absoluteLatitudeTo": 20,
+          "landCells": 743,
+          "desertOrSteppeCells": 181,
+          "drylandPercent": 24.3606998654105,
+          "meanAnnualRainMM": 1238.1071518375607,
+          "meanAridityIndex": 1.2017102958496615
+        },
+        {
+          "largestDrylandRegionCells": 280,
+          "absoluteLatitudeFrom": 20,
+          "absoluteLatitudeTo": 35,
+          "landCells": 1069,
+          "desertOrSteppeCells": 990,
+          "drylandPercent": 92.60991580916745,
+          "meanAnnualRainMM": 185.3636798591007,
+          "meanAridityIndex": 0.17711616022611634
+        },
+        {
+          "largestDrylandRegionCells": 198,
+          "absoluteLatitudeFrom": 35,
+          "absoluteLatitudeTo": 50,
+          "landCells": 1648,
+          "desertOrSteppeCells": 447,
+          "drylandPercent": 27.12378640776699,
+          "meanAnnualRainMM": 799.8019114836906,
+          "meanAridityIndex": 1.396752481663021
+        },
+        {
+          "largestDrylandRegionCells": 2,
+          "absoluteLatitudeFrom": 50,
+          "absoluteLatitudeTo": 65,
+          "landCells": 1213,
+          "desertOrSteppeCells": 4,
+          "drylandPercent": 0.3297609233305853,
+          "meanAnnualRainMM": 895.4600675257394,
+          "meanAridityIndex": 3.105479520972072
+        },
+        {
+          "largestDrylandRegionCells": 0,
+          "absoluteLatitudeFrom": 65,
+          "absoluteLatitudeTo": 90,
+          "landCells": 361,
+          "desertOrSteppeCells": 0,
+          "drylandPercent": 0,
+          "meanAnnualRainMM": 325.7515784393057,
+          "meanAridityIndex": 3.120660993283475
+        }
+      ],
+      "biomeAreas": {
+        "alpine": 105,
+        "ash": 41,
+        "cold_desert": 2,
+        "desert": 876,
+        "dunes": 166,
+        "forest": 1194,
+        "grass": 305,
+        "jungle": 364,
+        "lava": 26,
+        "mediterranean": 71,
+        "oasis": 2,
+        "savanna": 830,
+        "scrubland": 116,
+        "snow": 226,
+        "steppe": 441,
+        "swamp": 283,
+        "taiga": 614,
+        "tundra": 420
+      },
+      "climateAreas": {
+        "alpine": 145,
+        "boreal": 633,
+        "continental": 473,
+        "desert": 1152,
+        "mediterranean": 72,
+        "monsoon": 694,
+        "oceanic": 339,
+        "polar": 153,
+        "rainforest": 66,
+        "steppe": 489,
+        "subtropical": 977,
+        "tropical-seasonal": 434,
+        "tundra": 455
+      },
+      "drylandComponentAreas": [
+        585,
+        503,
+        449,
+        17,
+        17,
+        13,
+        9,
+        7,
+        7,
+        5,
+        3,
+        3,
+        3,
+        3,
+        3,
+        2,
+        2,
+        2,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "drylandComponentsAtMostTwoCells": 11,
+      "cellsInSmallDrylandComponents": 14
+    }
+  },
+  "3": {
+    "before": {
+      "landCells": 7193,
+      "biomeGroupPercent": {
+        "cold": 8.994856110107087,
+        "desert": 54.0247462811049,
+        "forest": 15.695815376059834,
+        "grassland-woodland": 7.618518003614693,
+        "other": 4.309745585986362,
+        "semiarid": 9.356318643125284
+      },
+      "largestBiomeGroupRegions": {
+        "cold": 299,
+        "desert": 3840,
+        "forest": 251,
+        "grassland-woodland": 273,
+        "other": 32,
+        "semiarid": 175
+      },
+      "latitudeBands": [
+        {
+          "largestDrylandRegionCells": 939,
+          "absoluteLatitudeFrom": 0,
+          "absoluteLatitudeTo": 10,
+          "landCells": 1270,
+          "desertOrSteppeCells": 940,
+          "drylandPercent": 74.01574803149606,
+          "meanAnnualRainMM": 492.081298688453,
+          "meanAridityIndex": 0.46380485007392724
+        },
+        {
+          "largestDrylandRegionCells": 457,
+          "absoluteLatitudeFrom": 10,
+          "absoluteLatitudeTo": 20,
+          "landCells": 1147,
+          "desertOrSteppeCells": 901,
+          "drylandPercent": 78.55274629468178,
+          "meanAnnualRainMM": 304.8476539111283,
+          "meanAridityIndex": 0.2906604568086688
+        },
+        {
+          "largestDrylandRegionCells": 819,
+          "absoluteLatitudeFrom": 20,
+          "absoluteLatitudeTo": 35,
+          "landCells": 1730,
+          "desertOrSteppeCells": 1667,
+          "drylandPercent": 96.35838150289017,
+          "meanAnnualRainMM": 82.58710782155825,
+          "meanAridityIndex": 0.08318145823734947
+        },
+        {
+          "largestDrylandRegionCells": 586,
+          "absoluteLatitudeFrom": 35,
+          "absoluteLatitudeTo": 50,
+          "landCells": 1584,
+          "desertOrSteppeCells": 917,
+          "drylandPercent": 57.89141414141414,
+          "meanAnnualRainMM": 400.626016613811,
+          "meanAridityIndex": 0.7455640604835347
+        },
+        {
+          "largestDrylandRegionCells": 57,
+          "absoluteLatitudeFrom": 50,
+          "absoluteLatitudeTo": 65,
+          "landCells": 1201,
+          "desertOrSteppeCells": 156,
+          "drylandPercent": 12.98917568692756,
+          "meanAnnualRainMM": 865.6923392849302,
+          "meanAridityIndex": 3.1642623494730504
+        },
+        {
+          "largestDrylandRegionCells": 0,
+          "absoluteLatitudeFrom": 65,
+          "absoluteLatitudeTo": 90,
+          "landCells": 261,
+          "desertOrSteppeCells": 0,
+          "drylandPercent": 0,
+          "meanAnnualRainMM": 451.0400400855989,
+          "meanAridityIndex": 3.375041574353916
+        }
+      ],
+      "biomeAreas": {
+        "alpine": 118,
+        "ash": 76,
+        "cold_desert": 192,
+        "desert": 3162,
+        "dunes": 532,
+        "forest": 469,
+        "grass": 149,
+        "jungle": 131,
+        "lava": 64,
+        "mediterranean": 29,
+        "mountain": 14,
+        "oasis": 1,
+        "savanna": 370,
+        "scrubland": 119,
+        "snow": 154,
+        "steppe": 554,
+        "swamp": 155,
+        "taiga": 529,
+        "tundra": 375
+      },
+      "climateAreas": {
+        "alpine": 153,
+        "boreal": 589,
+        "continental": 311,
+        "desert": 3988,
+        "mediterranean": 30,
+        "monsoon": 258,
+        "oceanic": 134,
+        "polar": 88,
+        "rainforest": 24,
+        "steppe": 593,
+        "subtropical": 428,
+        "tropical-seasonal": 159,
+        "tundra": 438
+      },
+      "drylandComponentAreas": [
+        4546,
+        21,
+        3,
+        3,
+        2,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "drylandComponentsAtMostTwoCells": 7,
+      "cellsInSmallDrylandComponents": 8
+    },
+    "after": {
+      "landCells": 7092,
+      "biomeGroupPercent": {
+        "cold": 9.094754653130286,
+        "desert": 46.65820642977851,
+        "forest": 19.063733784545903,
+        "grassland-woodland": 10.25098702763672,
+        "other": 5.287648054145515,
+        "semiarid": 9.644670050761395
+      },
+      "largestBiomeGroupRegions": {
+        "cold": 300,
+        "desert": 2714,
+        "forest": 286,
+        "grassland-woodland": 213,
+        "other": 44,
+        "semiarid": 126
+      },
+      "latitudeBands": [
+        {
+          "largestDrylandRegionCells": 701,
+          "absoluteLatitudeFrom": 0,
+          "absoluteLatitudeTo": 10,
+          "landCells": 1225,
+          "desertOrSteppeCells": 708,
+          "drylandPercent": 57.795918367346935,
+          "meanAnnualRainMM": 781.165686138698,
+          "meanAridityIndex": 0.7491445123351046
+        },
+        {
+          "largestDrylandRegionCells": 305,
+          "absoluteLatitudeFrom": 10,
+          "absoluteLatitudeTo": 20,
+          "landCells": 1123,
+          "desertOrSteppeCells": 758,
+          "drylandPercent": 67.49777382012466,
+          "meanAnnualRainMM": 439.24363941055054,
+          "meanAridityIndex": 0.42992597770440133
+        },
+        {
+          "largestDrylandRegionCells": 611,
+          "absoluteLatitudeFrom": 20,
+          "absoluteLatitudeTo": 35,
+          "landCells": 1710,
+          "desertOrSteppeCells": 1633,
+          "drylandPercent": 95.49707602339181,
+          "meanAnnualRainMM": 94.96698838953387,
+          "meanAridityIndex": 0.09714369484528419
+        },
+        {
+          "largestDrylandRegionCells": 472,
+          "absoluteLatitudeFrom": 35,
+          "absoluteLatitudeTo": 50,
+          "landCells": 1575,
+          "desertOrSteppeCells": 838,
+          "drylandPercent": 53.20634920634921,
+          "meanAnnualRainMM": 510.56923655282884,
+          "meanAridityIndex": 1.0082522205171722
+        },
+        {
+          "largestDrylandRegionCells": 55,
+          "absoluteLatitudeFrom": 50,
+          "absoluteLatitudeTo": 65,
+          "landCells": 1198,
+          "desertOrSteppeCells": 87,
+          "drylandPercent": 7.262103505843072,
+          "meanAnnualRainMM": 968.3719308117594,
+          "meanAridityIndex": 3.5529123026386324
+        },
+        {
+          "largestDrylandRegionCells": 0,
+          "absoluteLatitudeFrom": 65,
+          "absoluteLatitudeTo": 90,
+          "landCells": 261,
+          "desertOrSteppeCells": 0,
+          "drylandPercent": 0,
+          "meanAnnualRainMM": 451.0496478610569,
+          "meanAridityIndex": 3.3550142173109383
+        }
+      ],
+      "biomeAreas": {
+        "alpine": 117,
+        "ash": 76,
+        "cold_desert": 132,
+        "desert": 2647,
+        "dunes": 530,
+        "forest": 582,
+        "grass": 168,
+        "jungle": 210,
+        "lava": 61,
+        "mediterranean": 29,
+        "mountain": 14,
+        "oasis": 6,
+        "savanna": 530,
+        "scrubland": 109,
+        "snow": 153,
+        "steppe": 575,
+        "swamp": 218,
+        "taiga": 560,
+        "tundra": 375
+      },
+      "climateAreas": {
+        "alpine": 154,
+        "boreal": 641,
+        "continental": 350,
+        "desert": 3413,
+        "mediterranean": 30,
+        "monsoon": 393,
+        "oceanic": 156,
+        "polar": 87,
+        "rainforest": 37,
+        "steppe": 611,
+        "subtropical": 583,
+        "tropical-seasonal": 200,
+        "tundra": 437
+      },
+      "drylandComponentAreas": [
+        3991,
+        21,
+        3,
+        2,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "drylandComponentsAtMostTwoCells": 8,
+      "cellsInSmallDrylandComponents": 9
+    }
+  },
+  "4": {
+    "before": {
+      "landCells": 7006,
+      "biomeGroupPercent": {
+        "cold": 5.53811019126466,
+        "desert": 51.570082786179654,
+        "forest": 24.793034541821836,
+        "grassland-woodland": 7.507850413930998,
+        "other": 2.7833285755067023,
+        "semiarid": 7.807593491293267
+      },
+      "largestBiomeGroupRegions": {
+        "cold": 140,
+        "desert": 3610,
+        "forest": 502,
+        "grassland-woodland": 124,
+        "other": 14,
+        "semiarid": 112
+      },
+      "latitudeBands": [
+        {
+          "largestDrylandRegionCells": 688,
+          "absoluteLatitudeFrom": 0,
+          "absoluteLatitudeTo": 10,
+          "landCells": 1102,
+          "desertOrSteppeCells": 688,
+          "drylandPercent": 62.43194192377496,
+          "meanAnnualRainMM": 611.087300051362,
+          "meanAridityIndex": 0.5807716244279818
+        },
+        {
+          "largestDrylandRegionCells": 354,
+          "absoluteLatitudeFrom": 10,
+          "absoluteLatitudeTo": 20,
+          "landCells": 854,
+          "desertOrSteppeCells": 657,
+          "drylandPercent": 76.93208430913349,
+          "meanAnnualRainMM": 343.1699311984507,
+          "meanAridityIndex": 0.359960615360647
+        },
+        {
+          "largestDrylandRegionCells": 627,
+          "absoluteLatitudeFrom": 20,
+          "absoluteLatitudeTo": 35,
+          "landCells": 1369,
+          "desertOrSteppeCells": 1292,
+          "drylandPercent": 94.3754565376187,
+          "meanAnnualRainMM": 93.55394669672796,
+          "meanAridityIndex": 0.09612238052123552
+        },
+        {
+          "largestDrylandRegionCells": 604,
+          "absoluteLatitudeFrom": 35,
+          "absoluteLatitudeTo": 50,
+          "landCells": 1729,
+          "desertOrSteppeCells": 1200,
+          "drylandPercent": 69.40427993059572,
+          "meanAnnualRainMM": 330.8419368624205,
+          "meanAridityIndex": 0.5261556611820827
+        },
+        {
+          "largestDrylandRegionCells": 250,
+          "absoluteLatitudeFrom": 50,
+          "absoluteLatitudeTo": 65,
+          "landCells": 1397,
+          "desertOrSteppeCells": 359,
+          "drylandPercent": 25.697924123120973,
+          "meanAnnualRainMM": 582.4356470285524,
+          "meanAridityIndex": 1.4624228869820162
+        },
+        {
+          "largestDrylandRegionCells": 0,
+          "absoluteLatitudeFrom": 65,
+          "absoluteLatitudeTo": 90,
+          "landCells": 555,
+          "desertOrSteppeCells": 0,
+          "drylandPercent": 0,
+          "meanAnnualRainMM": 331.290752898895,
+          "meanAridityIndex": 1.6075183022129642
+        }
+      ],
+      "biomeAreas": {
+        "alpine": 15,
+        "ash": 49,
+        "cold_desert": 385,
+        "desert": 2837,
+        "dunes": 391,
+        "forest": 413,
+        "grass": 207,
+        "jungle": 172,
+        "lava": 35,
+        "mediterranean": 26,
+        "savanna": 293,
+        "scrubland": 70,
+        "snow": 12,
+        "steppe": 477,
+        "swamp": 111,
+        "taiga": 1152,
+        "tundra": 361
+      },
+      "climateAreas": {
+        "alpine": 15,
+        "boreal": 1214,
+        "continental": 347,
+        "desert": 3710,
+        "mediterranean": 26,
+        "monsoon": 53,
+        "oceanic": 31,
+        "polar": 11,
+        "steppe": 486,
+        "subtropical": 353,
+        "tropical-seasonal": 390,
+        "tundra": 370
+      },
+      "drylandComponentAreas": [
+        4145,
+        5,
+        4,
+        4,
+        4,
+        4,
+        4,
+        3,
+        3,
+        3,
+        2,
+        2,
+        2,
+        2,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "drylandComponentsAtMostTwoCells": 13,
+      "cellsInSmallDrylandComponents": 17
+    },
+    "after": {
+      "landCells": 6989,
+      "biomeGroupPercent": {
+        "cold": 5.465731864358308,
+        "desert": 45.428530548002,
+        "forest": 29.03133495492807,
+        "grassland-woodland": 7.92674202317933,
+        "other": 3.3767348690799994,
+        "semiarid": 8.770925740449284
+      },
+      "largestBiomeGroupRegions": {
+        "cold": 139,
+        "desert": 3169,
+        "forest": 540,
+        "grassland-woodland": 88,
+        "other": 19,
+        "semiarid": 111
+      },
+      "latitudeBands": [
+        {
+          "largestDrylandRegionCells": 534,
+          "absoluteLatitudeFrom": 0,
+          "absoluteLatitudeTo": 10,
+          "landCells": 1101,
+          "desertOrSteppeCells": 534,
+          "drylandPercent": 48.50136239782017,
+          "meanAnnualRainMM": 845.3280926027913,
+          "meanAridityIndex": 0.8246591667391759
+        },
+        {
+          "largestDrylandRegionCells": 332,
+          "absoluteLatitudeFrom": 10,
+          "absoluteLatitudeTo": 20,
+          "landCells": 853,
+          "desertOrSteppeCells": 609,
+          "drylandPercent": 71.39507620164126,
+          "meanAnnualRainMM": 455.74296985449575,
+          "meanAridityIndex": 0.49463067136340255
+        },
+        {
+          "largestDrylandRegionCells": 623,
+          "absoluteLatitudeFrom": 20,
+          "absoluteLatitudeTo": 35,
+          "landCells": 1368,
+          "desertOrSteppeCells": 1280,
+          "drylandPercent": 93.5672514619883,
+          "meanAnnualRainMM": 110.58204557498296,
+          "meanAridityIndex": 0.11576180131894902
+        },
+        {
+          "largestDrylandRegionCells": 540,
+          "absoluteLatitudeFrom": 35,
+          "absoluteLatitudeTo": 50,
+          "landCells": 1720,
+          "desertOrSteppeCells": 1072,
+          "drylandPercent": 62.325581395348834,
+          "meanAnnualRainMM": 415.79460884332656,
+          "meanAridityIndex": 0.6696696790395478
+        },
+        {
+          "largestDrylandRegionCells": 215,
+          "absoluteLatitudeFrom": 50,
+          "absoluteLatitudeTo": 65,
+          "landCells": 1392,
+          "desertOrSteppeCells": 293,
+          "drylandPercent": 21.048850574712645,
+          "meanAnnualRainMM": 655.864572460624,
+          "meanAridityIndex": 1.625264856881387
+        },
+        {
+          "largestDrylandRegionCells": 0,
+          "absoluteLatitudeFrom": 65,
+          "absoluteLatitudeTo": 90,
+          "landCells": 555,
+          "desertOrSteppeCells": 0,
+          "drylandPercent": 0,
+          "meanAnnualRainMM": 331.30246818473745,
+          "meanAridityIndex": 1.5880163818866282
+        }
+      ],
+      "biomeAreas": {
+        "alpine": 15,
+        "ash": 49,
+        "cold_desert": 250,
+        "desert": 2532,
+        "dunes": 393,
+        "forest": 563,
+        "grass": 231,
+        "jungle": 250,
+        "lava": 35,
+        "mediterranean": 26,
+        "savanna": 297,
+        "scrubland": 110,
+        "snow": 10,
+        "steppe": 503,
+        "swamp": 152,
+        "taiga": 1216,
+        "tundra": 357
+      },
+      "climateAreas": {
+        "alpine": 15,
+        "boreal": 1282,
+        "continental": 469,
+        "desert": 3260,
+        "mediterranean": 26,
+        "monsoon": 73,
+        "oceanic": 53,
+        "polar": 9,
+        "steppe": 528,
+        "subtropical": 456,
+        "tropical-seasonal": 452,
+        "tundra": 366
+      },
+      "drylandComponentAreas": [
+        3738,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        3,
+        3,
+        3,
+        2,
+        2,
+        2,
+        2,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "drylandComponentsAtMostTwoCells": 13,
+      "cellsInSmallDrylandComponents": 17
+    }
+  },
+  "5": {
+    "before": {
+      "landCells": 7292,
+      "biomeGroupPercent": {
+        "cold": 3.2775644541963858,
+        "desert": 50.32912781130205,
+        "forest": 19.692814042786548,
+        "grassland-woodland": 11.354909489851954,
+        "other": 2.838727372462975,
+        "semiarid": 12.506856829402194
+      },
+      "largestBiomeGroupRegions": {
+        "cold": 47,
+        "desert": 3630,
+        "forest": 332,
+        "grassland-woodland": 242,
+        "other": 53,
+        "semiarid": 203
+      },
+      "latitudeBands": [
+        {
+          "largestDrylandRegionCells": 468,
+          "absoluteLatitudeFrom": 0,
+          "absoluteLatitudeTo": 10,
+          "landCells": 1426,
+          "desertOrSteppeCells": 839,
+          "drylandPercent": 58.835904628330994,
+          "meanAnnualRainMM": 628.7445349629764,
+          "meanAridityIndex": 0.6077251157528742
+        },
+        {
+          "largestDrylandRegionCells": 313,
+          "absoluteLatitudeFrom": 10,
+          "absoluteLatitudeTo": 20,
+          "landCells": 1143,
+          "desertOrSteppeCells": 724,
+          "drylandPercent": 63.342082239720035,
+          "meanAnnualRainMM": 443.9857407851065,
+          "meanAridityIndex": 0.4171572122119908
+        },
+        {
+          "largestDrylandRegionCells": 967,
+          "absoluteLatitudeFrom": 20,
+          "absoluteLatitudeTo": 35,
+          "landCells": 1774,
+          "desertOrSteppeCells": 1668,
+          "drylandPercent": 94.02480270574972,
+          "meanAnnualRainMM": 122.5937585879071,
+          "meanAridityIndex": 0.1177328362968554
+        },
+        {
+          "largestDrylandRegionCells": 738,
+          "absoluteLatitudeFrom": 35,
+          "absoluteLatitudeTo": 50,
+          "landCells": 1711,
+          "desertOrSteppeCells": 1136,
+          "drylandPercent": 66.39392168322618,
+          "meanAnnualRainMM": 378.7212571470728,
+          "meanAridityIndex": 0.5679866975651807
+        },
+        {
+          "largestDrylandRegionCells": 88,
+          "absoluteLatitudeFrom": 50,
+          "absoluteLatitudeTo": 65,
+          "landCells": 1016,
+          "desertOrSteppeCells": 160,
+          "drylandPercent": 15.748031496062993,
+          "meanAnnualRainMM": 823.5682667803577,
+          "meanAridityIndex": 1.8885620264153136
+        },
+        {
+          "largestDrylandRegionCells": 0,
+          "absoluteLatitudeFrom": 65,
+          "absoluteLatitudeTo": 90,
+          "landCells": 222,
+          "desertOrSteppeCells": 0,
+          "drylandPercent": 0,
+          "meanAnnualRainMM": 465.68228438093854,
+          "meanAridityIndex": 2.2488330938257612
+        }
+      ],
+      "biomeAreas": {
+        "alpine": 44,
+        "ash": 77,
+        "cold_desert": 249,
+        "desert": 2925,
+        "dunes": 496,
+        "forest": 599,
+        "grass": 240,
+        "jungle": 161,
+        "lava": 54,
+        "mediterranean": 35,
+        "mountain": 35,
+        "savanna": 553,
+        "scrubland": 180,
+        "snow": 17,
+        "steppe": 732,
+        "swamp": 41,
+        "taiga": 676,
+        "tundra": 178
+      },
+      "climateAreas": {
+        "alpine": 44,
+        "boreal": 745,
+        "continental": 539,
+        "desert": 3777,
+        "mediterranean": 35,
+        "monsoon": 252,
+        "oceanic": 26,
+        "polar": 7,
+        "steppe": 750,
+        "subtropical": 695,
+        "tropical-seasonal": 233,
+        "tundra": 189
+      },
+      "drylandComponentAreas": [
+        4430,
+        57,
+        26,
+        9,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "drylandComponentsAtMostTwoCells": 5,
+      "cellsInSmallDrylandComponents": 5
+    },
+    "after": {
+      "landCells": 7202,
+      "biomeGroupPercent": {
+        "cold": 3.2907525687309067,
+        "desert": 42.23826714801325,
+        "forest": 25.978894751457787,
+        "grassland-woodland": 12.079977783949158,
+        "other": 4.540405442932517,
+        "semiarid": 11.871702304915543
+      },
+      "largestBiomeGroupRegions": {
+        "cold": 47,
+        "desert": 2224,
+        "forest": 404,
+        "grassland-woodland": 141,
+        "other": 53,
+        "semiarid": 189
+      },
+      "latitudeBands": [
+        {
+          "largestDrylandRegionCells": 283,
+          "absoluteLatitudeFrom": 0,
+          "absoluteLatitudeTo": 10,
+          "landCells": 1365,
+          "desertOrSteppeCells": 519,
+          "drylandPercent": 38.02197802197802,
+          "meanAnnualRainMM": 958.8029359552013,
+          "meanAridityIndex": 0.9646113552224751
+        },
+        {
+          "largestDrylandRegionCells": 308,
+          "absoluteLatitudeFrom": 10,
+          "absoluteLatitudeTo": 20,
+          "landCells": 1123,
+          "desertOrSteppeCells": 652,
+          "drylandPercent": 58.058771148708814,
+          "meanAnnualRainMM": 608.9872434769798,
+          "meanAridityIndex": 0.5866721783190774
+        },
+        {
+          "largestDrylandRegionCells": 964,
+          "absoluteLatitudeFrom": 20,
+          "absoluteLatitudeTo": 35,
+          "landCells": 1770,
+          "desertOrSteppeCells": 1640,
+          "drylandPercent": 92.65536723163842,
+          "meanAnnualRainMM": 141.4267045646064,
+          "meanAridityIndex": 0.1374618772940847
+        },
+        {
+          "largestDrylandRegionCells": 699,
+          "absoluteLatitudeFrom": 35,
+          "absoluteLatitudeTo": 50,
+          "landCells": 1707,
+          "desertOrSteppeCells": 1011,
+          "drylandPercent": 59.22671353251318,
+          "meanAnnualRainMM": 479.2446230124086,
+          "meanAridityIndex": 0.7291928739376982
+        },
+        {
+          "largestDrylandRegionCells": 59,
+          "absoluteLatitudeFrom": 50,
+          "absoluteLatitudeTo": 65,
+          "landCells": 1015,
+          "desertOrSteppeCells": 77,
+          "drylandPercent": 7.586206896551724,
+          "meanAnnualRainMM": 929.1678668806705,
+          "meanAridityIndex": 2.0972958482948725
+        },
+        {
+          "largestDrylandRegionCells": 0,
+          "absoluteLatitudeFrom": 65,
+          "absoluteLatitudeTo": 90,
+          "landCells": 222,
+          "desertOrSteppeCells": 0,
+          "drylandPercent": 0,
+          "meanAnnualRainMM": 465.6950126854149,
+          "meanAridityIndex": 2.2457092262066163
+        }
+      ],
+      "biomeAreas": {
+        "alpine": 44,
+        "ash": 77,
+        "cold_desert": 207,
+        "desert": 2461,
+        "dunes": 374,
+        "forest": 921,
+        "grass": 271,
+        "jungle": 219,
+        "lava": 52,
+        "mediterranean": 36,
+        "mountain": 35,
+        "oasis": 9,
+        "savanna": 563,
+        "scrubland": 151,
+        "snow": 17,
+        "steppe": 704,
+        "swamp": 154,
+        "taiga": 731,
+        "tundra": 176
+      },
+      "climateAreas": {
+        "alpine": 44,
+        "boreal": 785,
+        "continental": 692,
+        "desert": 3146,
+        "mediterranean": 36,
+        "monsoon": 299,
+        "oceanic": 65,
+        "polar": 7,
+        "steppe": 753,
+        "subtropical": 881,
+        "tropical-seasonal": 307,
+        "tundra": 187
+      },
+      "drylandComponentAreas": [
+        3814,
+        49,
+        22,
+        9,
+        2,
+        1,
+        1,
+        1
+      ],
+      "drylandComponentsAtMostTwoCells": 4,
+      "cellsInSmallDrylandComponents": 5
+    }
+  },
+  "KRIEMHILD": {
+    "before": {
+      "landCells": 6901,
+      "biomeGroupPercent": {
+        "cold": 4.013911027387362,
+        "desert": 44.31241849007405,
+        "forest": 17.924938414722494,
+        "grassland-woodland": 14.664541370816002,
+        "other": 3.0140559339226325,
+        "semiarid": 16.070134763078006
+      },
+      "largestBiomeGroupRegions": {
+        "cold": 79,
+        "desert": 2623,
+        "forest": 276,
+        "grassland-woodland": 256,
+        "other": 9,
+        "semiarid": 178
+      },
+      "latitudeBands": [
+        {
+          "largestDrylandRegionCells": 849,
+          "absoluteLatitudeFrom": 0,
+          "absoluteLatitudeTo": 10,
+          "landCells": 1490,
+          "desertOrSteppeCells": 850,
+          "drylandPercent": 57.04697986577181,
+          "meanAnnualRainMM": 655.8168061749247,
+          "meanAridityIndex": 0.6275483604104902
+        },
+        {
+          "largestDrylandRegionCells": 443,
+          "absoluteLatitudeFrom": 10,
+          "absoluteLatitudeTo": 20,
+          "landCells": 1177,
+          "desertOrSteppeCells": 733,
+          "drylandPercent": 62.27697536108751,
+          "meanAnnualRainMM": 473.7817631707722,
+          "meanAridityIndex": 0.45195931584408905
+        },
+        {
+          "largestDrylandRegionCells": 775,
+          "absoluteLatitudeFrom": 20,
+          "absoluteLatitudeTo": 35,
+          "landCells": 1720,
+          "desertOrSteppeCells": 1606,
+          "drylandPercent": 93.37209302325581,
+          "meanAnnualRainMM": 154.99336567063665,
+          "meanAridityIndex": 0.15906111468496018
+        },
+        {
+          "largestDrylandRegionCells": 568,
+          "absoluteLatitudeFrom": 35,
+          "absoluteLatitudeTo": 50,
+          "landCells": 1562,
+          "desertOrSteppeCells": 829,
+          "drylandPercent": 53.0729833546735,
+          "meanAnnualRainMM": 493.89531597498893,
+          "meanAridityIndex": 0.7990295934102113
+        },
+        {
+          "largestDrylandRegionCells": 20,
+          "absoluteLatitudeFrom": 50,
+          "absoluteLatitudeTo": 65,
+          "landCells": 771,
+          "desertOrSteppeCells": 48,
+          "drylandPercent": 6.22568093385214,
+          "meanAnnualRainMM": 909.0205899051809,
+          "meanAridityIndex": 2.383989175653566
+        },
+        {
+          "largestDrylandRegionCells": 0,
+          "absoluteLatitudeFrom": 65,
+          "absoluteLatitudeTo": 90,
+          "landCells": 181,
+          "desertOrSteppeCells": 0,
+          "drylandPercent": 0,
+          "meanAnnualRainMM": 421.36339105426936,
+          "meanAridityIndex": 2.921153206851601
+        }
+      ],
+      "biomeAreas": {
+        "alpine": 45,
+        "ash": 49,
+        "cold_desert": 71,
+        "desert": 2646,
+        "dunes": 341,
+        "forest": 628,
+        "grass": 256,
+        "jungle": 203,
+        "lava": 19,
+        "mediterranean": 23,
+        "oasis": 1,
+        "savanna": 733,
+        "scrubland": 190,
+        "snow": 35,
+        "steppe": 919,
+        "swamp": 139,
+        "taiga": 406,
+        "tundra": 197
+      },
+      "climateAreas": {
+        "alpine": 45,
+        "boreal": 466,
+        "continental": 390,
+        "desert": 3115,
+        "mediterranean": 24,
+        "monsoon": 338,
+        "oceanic": 208,
+        "polar": 32,
+        "rainforest": 28,
+        "steppe": 951,
+        "subtropical": 669,
+        "tropical-seasonal": 420,
+        "tundra": 215
+      },
+      "drylandComponentAreas": [
+        3851,
+        114,
+        92,
+        2,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "drylandComponentsAtMostTwoCells": 8,
+      "cellsInSmallDrylandComponents": 9
+    },
+    "after": {
+      "landCells": 6855,
+      "biomeGroupPercent": {
+        "cold": 4.011670313639666,
+        "desert": 36.688548504739366,
+        "forest": 23.90955506929202,
+        "grassland-woodland": 17.024070021882032,
+        "other": 4.186725018234856,
+        "semiarid": 14.179431072210312
+      },
+      "largestBiomeGroupRegions": {
+        "cold": 78,
+        "desert": 1859,
+        "forest": 331,
+        "grassland-woodland": 279,
+        "other": 21,
+        "semiarid": 110
+      },
+      "latitudeBands": [
+        {
+          "largestDrylandRegionCells": 452,
+          "absoluteLatitudeFrom": 0,
+          "absoluteLatitudeTo": 10,
+          "landCells": 1447,
+          "desertOrSteppeCells": 510,
+          "drylandPercent": 35.245335176226675,
+          "meanAnnualRainMM": 987.9156492983957,
+          "meanAridityIndex": 0.9695605494177874
+        },
+        {
+          "largestDrylandRegionCells": 424,
+          "absoluteLatitudeFrom": 10,
+          "absoluteLatitudeTo": 20,
+          "landCells": 1175,
+          "desertOrSteppeCells": 598,
+          "drylandPercent": 50.8936170212766,
+          "meanAnnualRainMM": 646.1051801701809,
+          "meanAridityIndex": 0.6325445633718466
+        },
+        {
+          "largestDrylandRegionCells": 772,
+          "absoluteLatitudeFrom": 20,
+          "absoluteLatitudeTo": 35,
+          "landCells": 1719,
+          "desertOrSteppeCells": 1554,
+          "drylandPercent": 90.40139616055846,
+          "meanAnnualRainMM": 178.78593573062625,
+          "meanAridityIndex": 0.18638452503601563
+        },
+        {
+          "largestDrylandRegionCells": 488,
+          "absoluteLatitudeFrom": 35,
+          "absoluteLatitudeTo": 50,
+          "landCells": 1562,
+          "desertOrSteppeCells": 714,
+          "drylandPercent": 45.710627400768246,
+          "meanAnnualRainMM": 598.3679418936276,
+          "meanAridityIndex": 0.9870507602950155
+        },
+        {
+          "largestDrylandRegionCells": 17,
+          "absoluteLatitudeFrom": 50,
+          "absoluteLatitudeTo": 65,
+          "landCells": 771,
+          "desertOrSteppeCells": 29,
+          "drylandPercent": 3.761348897535668,
+          "meanAnnualRainMM": 1005.7021303090295,
+          "meanAridityIndex": 2.6097991039780792
+        },
+        {
+          "largestDrylandRegionCells": 0,
+          "absoluteLatitudeFrom": 65,
+          "absoluteLatitudeTo": 90,
+          "landCells": 181,
+          "desertOrSteppeCells": 0,
+          "drylandPercent": 0,
+          "meanAnnualRainMM": 421.38092374011296,
+          "meanAridityIndex": 2.912493414641744
+        }
+      ],
+      "biomeAreas": {
+        "alpine": 45,
+        "ash": 49,
+        "cold_desert": 36,
+        "desert": 2168,
+        "dunes": 311,
+        "forest": 883,
+        "grass": 234,
+        "jungle": 326,
+        "lava": 18,
+        "mediterranean": 25,
+        "oasis": 4,
+        "savanna": 908,
+        "scrubland": 171,
+        "snow": 35,
+        "steppe": 801,
+        "swamp": 216,
+        "taiga": 430,
+        "tundra": 195
+      },
+      "climateAreas": {
+        "alpine": 45,
+        "boreal": 504,
+        "continental": 464,
+        "desert": 2568,
+        "mediterranean": 26,
+        "monsoon": 519,
+        "oceanic": 241,
+        "polar": 32,
+        "rainforest": 38,
+        "steppe": 837,
+        "subtropical": 806,
+        "tropical-seasonal": 561,
+        "tundra": 214
+      },
+      "drylandComponentAreas": [
+        2365,
+        458,
+        378,
+        100,
+        83,
+        13,
+        2,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "drylandComponentsAtMostTwoCells": 7,
+      "cellsInSmallDrylandComponents": 8
+    }
+  }
+}

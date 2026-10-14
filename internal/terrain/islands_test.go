@@ -54,6 +54,13 @@ func TestArchipelagoProcessesDensityAndDeterminism(t *testing.T) {
 			}
 			o.IslandFrequency = 2.5
 			dense := BuildEnvironment(o)
+			visible, denser := e.LandShapeDiagnostics(), dense.LandShapeDiagnostics()
+			if denser.EmergedIslandCells <= visible.EmergedIslandCells || denser.VisibleArchipelagos <= visible.VisibleArchipelagos {
+				t.Fatalf("frequency did not increase visible islands: cells %d -> %d, groups %d -> %d", visible.EmergedIslandCells, denser.EmergedIslandCells, visible.VisibleArchipelagos, denser.VisibleArchipelagos)
+			}
+			if denser.IslandSizeTiers["medium"] == 0 || denser.IslandSizeTiers["large"] == 0 {
+				t.Fatal("dense archipelagos lack visible medium and large members", denser.IslandSizeTiers)
+			}
 			landArea := func(world *Environment) int {
 				count := 0
 				for _, land := range world.Mask {

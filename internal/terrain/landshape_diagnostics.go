@@ -8,13 +8,15 @@ import (
 // Cell-scale diagnostics separate structural concavity from pixel roughness.
 // Hull bays count substantial connected indentations, not every coast pixel.
 type LandmassMetric struct {
-	Area            int     `json:"areaCells"`
-	Perimeter       int     `json:"perimeterCellEdges"`
-	Aspect          float64 `json:"principalAspectRatio"`
-	Solidity        float64 `json:"convexHullSolidity"`
-	CoastComplexity float64 `json:"coastComplexity"`
-	Bays            int     `json:"majorBays"`
-	BayDepth        float64 `json:"deepestBayCells"`
+	NarrowIsthmusCells int     `json:"narrowIsthmusCells"`
+	PeninsulaTips      int     `json:"peninsulaTipCells"`
+	Area               int     `json:"areaCells"`
+	Perimeter          int     `json:"perimeterCellEdges"`
+	Aspect             float64 `json:"principalAspectRatio"`
+	Solidity           float64 `json:"convexHullSolidity"`
+	CoastComplexity    float64 `json:"coastComplexity"`
+	Bays               int     `json:"majorBays"`
+	BayDepth           float64 `json:"deepestBayCells"`
 }
 type OceanGapMetric struct {
 	A   int     `json:"continentA"`
@@ -22,6 +24,10 @@ type OceanGapMetric struct {
 	Gap float64 `json:"waterGapCells"`
 }
 type LandShapeReport struct {
+	EmergedIslandCells   int                `json:"emergedIslandCells"`
+	VisibleArchipelagos  int                `json:"visibleArchipelagos"`
+	EmergedIslandSizes   []int              `json:"emergedIslandComponentSizes"`
+	IslandSizeTiers      map[string]int     `json:"islandSizeTiers"`
 	MajorAreas           []int              `json:"majorContinentAreas"`
 	MajorCount           int                `json:"majorContinentCount"`
 	MajorThreshold       int                `json:"majorAreaThresholdCells"`
@@ -74,6 +80,7 @@ func (e *Environment) LandShapeDiagnostics() LandShapeReport {
 	w, h := e.Options.Columns, e.Options.Rows
 	n := w * h
 	r := LandShapeReport{Formations: map[string]int{}}
+	e.measureEmergedIslands(&r)
 	for _, s := range e.ContinentalStructures {
 		r.Formations[s.Formation]++
 	}
@@ -154,6 +161,24 @@ func (e *Environment) LandShapeDiagnostics() LandShapeReport {
 			continue
 		}
 		m := LandmassMetric{Area: len(g)}
+		for _, i := range g {
+			if i%w == 0 || i%w == w-1 || i/w == 0 || i/w == h-1 {
+				continue
+			}
+			l, r, u, d := e.Mask[i-1] != 0, e.Mask[i+1] != 0, e.Mask[i-w] != 0, e.Mask[i+w] != 0
+			if l && r && !u && !d || u && d && !l && !r {
+				m.NarrowIsthmusCells++
+			}
+			count := 0
+			for _, v := range []bool{l, r, u, d} {
+				if v {
+					count++
+				}
+			}
+			if count == 1 {
+				m.PeninsulaTips++
+			}
+		}
 		// Unwrap each component across its longest empty longitude interval before
 		// measuring hulls/covariance; the map seam is not a coast or a giant gulf.
 		cut := 0

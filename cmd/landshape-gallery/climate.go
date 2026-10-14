@@ -28,20 +28,46 @@ func writeClimateGallery(out string, k int, e *terrain.Environment, page *string
 	}
 	climate := map[string]string{"rainforest": "jungle", "monsoon": "savanna", "tropical-seasonal": "savanna", "desert": "desert", "steppe": "steppe", "mediterranean": "mediterranean", "subtropical": "forest", "oceanic": "forest", "continental": "grass", "boreal": "taiga", "tundra": "tundra", "alpine": "alpine", "polar": "snow"}
 	model := terrain.NewDetailModel(e)
-	for _, layer := range []string{"climate", "precipitation", "aridityIndex", "biome", "continental-zoom", "regional-zoom"} {
+	center := e.ContinentalStructures[0].Center
+	focus := center
+	nearest := math.Inf(1)
+	for i, land := range e.Mask {
+		if land == 0 {
+			continue
+		}
+		x, y := i%w, i/w
+		coastal := false
+		for _, j := range []int{i - 1, i + 1, i - w, i + w} {
+			if j >= 0 && j < len(e.Mask) && e.Fields["waterBody"][j] == 1 {
+				coastal = true
+			}
+		}
+		if coastal {
+			d := math.Hypot(float64(x)-center[0], float64(y)-center[1])
+			if d < nearest {
+				nearest = d
+				focus = [2]float64{float64(x), float64(y)}
+			}
+		}
+	}
+	for _, layer := range []string{"climate", "precipitation", "aridityIndex", "biome", "continental-zoom", "regional-zoom", "local-zoom"} {
 		img := image.NewRGBA(image.Rect(0, 0, w*3, h*3))
 		for y := 0; y < h; y++ {
 			for x := 0; x < w; x++ {
 				wx, wy := float64(x), float64(y)
 				level := 0
-				if layer == "continental-zoom" || layer == "regional-zoom" {
+				if layer == "continental-zoom" || layer == "regional-zoom" || layer == "local-zoom" {
 					fraction := .5
 					level = 1
 					if layer == "regional-zoom" {
 						fraction = .2
 						level = 3
 					}
-					center := e.ContinentalStructures[0].Center
+					if layer == "local-zoom" {
+						fraction = .04
+						level = 6
+					}
+					center := focus
 					wx = center[0] + (float64(x)-float64(w)/2)*fraction
 					wy = center[1] + (float64(y)-float64(h)/2)*fraction
 					wx = math.Mod(wx+float64(w), float64(w))
@@ -85,7 +111,7 @@ func writeClimateGallery(out string, k int, e *terrain.Environment, page *string
 		}
 		name := fmt.Sprintf("seed-%02d-%s.png", k+1, layer)
 		writePNG(filepath.Join(out, name), img)
-		fmt.Fprintf(page, `<figure><img src="%s" alt="Seed %s, %s"><figcaption>%s — same seed and categorical parent cover.`, name, e.Options.Seed, layer, layer)
+		fmt.Fprintf(page, `<figure><img src="%s" alt="Seed %s, %s"><figcaption>%s — same seed; coastal zooms share focus (%.1f, %.1f).`, name, e.Options.Seed, layer, layer, focus[0], focus[1])
 		if layer == "aridityIndex" {
 			page.WriteString(" Brown: AI 0; blue: AI ≥2. Desert <0.25; steppe 0.25–0.50; dry subhumid 0.50–0.65.")
 		}

@@ -106,18 +106,30 @@ func (e *Environment) accumulateWater() []int {
 	maxOrder := make([]int, n)
 	ties := make([]int, n)
 	q := []int{}
-	f, set := e.get, e.set
+	accumulation := e.Fields["accumulation"]
+	baseflow := e.Fields["baseflow"]
+	catchmentArea := e.Fields["catchmentArea"]
+	catchmentKM2 := e.Fields["catchmentKM2"]
+	dischargeM3s := e.Fields["dischargeM3s"]
+	dryDischarge := e.Fields["dryDischarge"]
+	dryRunoff := e.Fields["dryRunoff"]
+	flow := e.Fields["flow"]
+	groundFlow := e.Fields["groundFlow"]
+	hydroLoss := e.Fields["hydroLoss"]
+	runoff := e.Fields["runoff"]
+	streamOrder := e.Fields["streamOrder"]
+	watershed := e.Fields["watershed"]
 	for i := 0; i < n; i++ {
-		set("accumulation", i, f("runoff", i))
-		set("dryDischarge", i, f("dryRunoff", i))
-		set("groundFlow", i, f("baseflow", i))
-		set("catchmentArea", i, 1)
+		accumulation[i] = f32(runoff[i])
+		dryDischarge[i] = f32(dryRunoff[i])
+		groundFlow[i] = f32(baseflow[i])
+		catchmentArea[i] = f32(1)
 		if e.Geography != nil {
-			set("catchmentKM2", i, e.cellArea(i))
-			set("dischargeM3s", i, f("runoff", i)/e.areaWeight(i)*e.cellArea(i)*1e6/(365.25*86400))
+			catchmentKM2[i] = f32(e.cellArea(i))
+			dischargeM3s[i] = f32(runoff[i] / e.areaWeight(i) * e.cellArea(i) * 1e6 / (365.25 * 86400))
 		}
-		set("streamOrder", i, 1)
-		if j := int(f("flow", i)); j >= 0 {
+		streamOrder[i] = f32(1)
+		if j := int(flow[i]); j >= 0 {
 			degree[j]++
 		}
 	}
@@ -132,17 +144,17 @@ func (e *Environment) accumulateWater() []int {
 		if ties[i] > 1 {
 			order++
 		}
-		set("streamOrder", i, float64(order))
-		if j := int(f("flow", i)); j >= 0 {
-			loss := math.Min(f("accumulation", i), f("hydroLoss", i))
-			ratio := 1 - loss/math.Max(1e-12, f("accumulation", i))
-			set("accumulation", j, f("accumulation", j)+f("accumulation", i)-loss)
-			set("dryDischarge", j, f("dryDischarge", j)+f("dryDischarge", i)*ratio)
-			set("groundFlow", j, f("groundFlow", j)+f("groundFlow", i)*ratio)
-			set("catchmentArea", j, f("catchmentArea", j)+f("catchmentArea", i))
+		streamOrder[i] = f32(float64(order))
+		if j := int(flow[i]); j >= 0 {
+			loss := math.Min(accumulation[i], hydroLoss[i])
+			ratio := 1 - loss/math.Max(1e-12, accumulation[i])
+			accumulation[j] = f32(accumulation[j] + accumulation[i] - loss)
+			dryDischarge[j] = f32(dryDischarge[j] + dryDischarge[i]*ratio)
+			groundFlow[j] = f32(groundFlow[j] + groundFlow[i]*ratio)
+			catchmentArea[j] = f32(catchmentArea[j] + catchmentArea[i])
 			if e.Geography != nil {
-				set("catchmentKM2", j, f("catchmentKM2", j)+f("catchmentKM2", i))
-				set("dischargeM3s", j, f("dischargeM3s", j)+f("dischargeM3s", i)*ratio)
+				catchmentKM2[j] = f32(catchmentKM2[j] + catchmentKM2[i])
+				dischargeM3s[j] = f32(dischargeM3s[j] + dischargeM3s[i]*ratio)
 			}
 			if order > maxOrder[j] {
 				maxOrder[j] = order
@@ -158,12 +170,12 @@ func (e *Environment) accumulateWater() []int {
 	}
 	for k := len(q) - 1; k >= 0; k-- {
 		i := q[k]
-		j := int(f("flow", i))
+		j := int(flow[i])
 		root := float64(i)
 		if j >= 0 {
-			root = f("watershed", j)
+			root = watershed[j]
 		}
-		set("watershed", i, root)
+		watershed[i] = f32(root)
 	}
 	return q
 }

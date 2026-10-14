@@ -30,6 +30,16 @@ func climateOrbit(p ClimateParameters, month int) (declination, forcing float64)
 }
 
 func (e *Environment) climateMonths(i int, p ClimateParameters, scale ClimateScale, waterDistance []float64) ([12]ClimateMonth, ClimateModifiers) {
+	return e.climateMonthsWithOrbit(i, p, scale, waterDistance, monthlyOrbit(p))
+}
+func monthlyOrbit(p ClimateParameters) [12][2]float64 {
+	var result [12][2]float64
+	for month := range result {
+		result[month][0], result[month][1] = climateOrbit(p, month)
+	}
+	return result
+}
+func (e *Environment) climateMonthsWithOrbit(i int, p ClimateParameters, scale ClimateScale, waterDistance []float64, orbit [12][2]float64) ([12]ClimateMonth, ClimateModifiers) {
 	f := e.climateField
 	lat := f("latitude", i)
 	r := lat * math.Pi / 180
@@ -71,7 +81,7 @@ func (e *Environment) climateMonths(i int, p ClimateParameters, scale ClimateSca
 	var seasonalWinds [12][2]float64
 	meanDelta, weight := 0., 0.
 	for month := range out {
-		decl, forcing := climateOrbit(p, month)
+		decl, forcing := orbit[month][0], orbit[month][1]
 		season := 0.
 		if p.AxialTilt > 1e-8 {
 			season = math.Sin(decl) / math.Sin(p.AxialTilt*math.Pi/180)
@@ -87,7 +97,7 @@ func (e *Environment) climateMonths(i int, p ClimateParameters, scale ClimateSca
 		itcz := p.AxialTilt * .65 * season
 		belt := math.Exp(-math.Pow((lat-itcz)/13, 2))
 		med := math.Exp(-math.Pow((math.Abs(lat)-36)/8, 2)) * maritime * p.Circulation
-		rainWeights[month] = math.Max(.06, 1+monsoon*1.05*local-med*.85*local+(belt-.5)*.5*p.Circulation) * circulationPotential(lat, p, month)
+		rainWeights[month] = math.Max(.06, 1+monsoon*1.05*local-med*.85*local+(belt-.5)*.5*p.Circulation) * circulationAtDeclination(lat, p, decl)
 		seasonalWind := monsoon * local
 		wx, wy := f("windX", i)*(1-1.7*math.Max(0, seasonalWind)), f("windY", i)+seasonalWind*.8
 		length := math.Max(.01, math.Hypot(wx, wy))
@@ -244,9 +254,10 @@ func (e *Environment) simulateClimate(p ClimateParameters, scale ClimateScale, f
 	}
 	var representative [12]ClimateMonth
 	landCount := 0
+	orbit := monthlyOrbit(p)
 	for i := range state.Cells {
 		c := &state.Cells[i]
-		c.Months, c.Modifiers = e.climateMonths(i, p, scale, waterDistance)
+		c.Months, c.Modifiers = e.climateMonthsWithOrbit(i, p, scale, waterDistance, orbit)
 		if final {
 			c.Seasons, c.Estimate = climateSeasons(c.Months, c.Modifiers, p)
 		}
@@ -276,7 +287,7 @@ func (e *Environment) simulateClimate(p ClimateParameters, scale ClimateScale, f
 		e.set("climateDryYield", i, minimumYield*12)
 		summerRain, winterRain := 0., 0.
 		for month, m := range c.Months {
-			decl, _ := climateOrbit(p, month)
+			decl := orbit[month][0]
 			warm := decl >= 0
 			if c.Modifiers.Latitude < 0 {
 				warm = !warm

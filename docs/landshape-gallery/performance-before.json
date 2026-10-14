@@ -1,0 +1,72 @@
+[
+  {
+    "cells": 2560,
+    "columns": 64,
+    "layout": {
+      "count": 4,
+      "gapCells": 3.2,
+      "requestedLandPercent": 42,
+      "foundationLandPercent": 38.7109375,
+      "warning": "Ocean separation and connected continents take priority: requested 42.0% land, achieved 38.7% continental foundations. Reduce continent count or ocean separation for more land."
+    },
+    "phases": {
+      "archipelagos": 0.0030168,
+      "climate-budget": 0.166962,
+      "climate-geology-resources": 0.1812427,
+      "continental-layout": 0.1875494,
+      "geological-surface": 0.0029817,
+      "hydrology-erosion": 0.9263735,
+      "surface-conditioning": 0.0050023,
+      "surface-ecology": 0.0336273,
+      "tectonic-foundation": 0.0039952
+    },
+    "rows": 40,
+    "seconds": 1.5107509000000001
+  },
+  {
+    "cells": 16000,
+    "columns": 160,
+    "layout": {
+      "count": 6,
+      "gapCells": 8,
+      "requestedLandPercent": 42,
+      "foundationLandPercent": 42
+    },
+    "phases": {
+      "archipelagos": 0.035902,
+      "climate-budget": 1.1636296,
+      "climate-geology-resources": 1.1373997,
+      "continental-layout": 0.6819989,
+      "geological-surface": 0.0163646,
+      "hydrology-erosion": 8.6701575,
+      "surface-conditioning": 0.0340978,
+      "surface-ecology": 0.2631266,
+      "tectonic-foundation": 0.026929
+    },
+    "rows": 100,
+    "seconds": 12.0296057
+  },
+  {
+    "cells": 24576,
+    "columns": 192,
+    "layout": {
+      "count": 6,
+      "gapCells": 10.24,
+      "requestedLandPercent": 42,
+      "foundationLandPercent": 42.000325520833336
+    },
+    "phases": {
+      "archipelagos": 0.0569747,
+      "climate-budget": 1.8024832,
+      "climate-geology-resources": 1.7652152,
+      "continental-layout": 1.1792109,
+      "geological-surface": 0.0248889,
+      "hydrology-erosion": 14.5770621,
+      "surface-conditioning": 0.0526328,
+      "surface-ecology": 0.3907614,
+      "tectonic-foundation": 0.0390012
+    },
+    "rows": 128,
+    "seconds": 19.8882304
+  }
+]

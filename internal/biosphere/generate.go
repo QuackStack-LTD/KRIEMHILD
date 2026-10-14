@@ -88,6 +88,13 @@ func depsFor(b Lifeform, available []Species) ([]Species, bool) {
 	}
 	return targets, true
 }
+
+// GenerationKey identifies a fully accepted preview, including empty habitats.
+func GenerationKey(source string, settings Settings) string {
+	raw, _ := json.Marshal(settings)
+	return Stable(source, string(raw))
+}
+
 func Generate(base State, settings Settings, existing []Species) (Preview, error) {
 	if err := ValidateSettings(settings); err != nil {
 		return Preview{}, err
@@ -95,6 +102,11 @@ func Generate(base State, settings Settings, existing []Species) (Preview, error
 	oldOccurrences := append([]Occurrence(nil), base.Occurrences...)
 	oldInteractions := append([]Interaction(nil), base.Interactions...)
 	previousSeed := base.Settings.Seed
+	// An accepted whole-world preview includes intentional empty habitats.
+	// Replaying it must not populate those habitats using species that only
+	// became available when the previous preview was accepted. Missing-only,
+	// changed settings and explicit variants remain available for new work.
+	replayAcceptedWorld := settings.Scope == "entire" && !base.Stale && base.AcceptedGeneration == GenerationKey(base.Source, settings)
 	base.Settings = Clone(settings)
 	base.Version = Version
 	base.Diagnostics = []string{}
@@ -137,7 +149,7 @@ func Generate(base State, settings Settings, existing []Species) (Preview, error
 			continue
 		}
 		if settings.Scope != "missing" && previousSeed == settings.Seed {
-			confirmed, variant := false, false
+			confirmed, variant := replayAcceptedWorld, false
 			for _, o := range oldOccurrences {
 				if o.HabitatID == h.ID && (o.Confirmed || o.Locked) {
 					confirmed = true

@@ -1,0 +1,52 @@
+{
+  "appErrors": [],
+  "biome": {
+    "checks": [
+      "Major continent count and wide ocean separation reach the physical layout; legacy count stays separate",
+      "Steppe and scrubland agree between base fields, actual detail tiles and hover labels",
+      "Hover reports the water budget and keeps canvas/document dimensions fixed"
+    ],
+    "hovered": [
+      "56.36°N, 41.82°E · 13665.2 km east of west edge, 3741.1 km south of north edge · Semi-arid steppe · Semi-arid steppe · 1084 m · -2.4 °C · 144 mm/yr · AI 0.40 · summer/winter rain 76/76 mm · PET 375 mm · soil water 3% · drought 5/12 months · growing season 0/12 · ",
+      "47.61°N, 42.46°W · 10311.4 km east of west edge, 4714.0 km south of north edge · Xeric scrubland · Continental · 387 m · 10.7 °C · 371 mm/yr · AI 0.58 · summer/winter rain 194/197 mm · PET 674 mm · soil water 8% · drought 5/12 months · growing season 2/12 · "
+    ],
+    "layout": {
+      "count": 5,
+      "family": "elongated-belt",
+      "foundationLandPercent": 40.7421875,
+      "gapCells": 4.8,
+      "requestedLandPercent": 42,
+      "seaThreshold": -1.3999999165534973,
+      "version": "filled-union-2",
+      "warning": "Coast shape and ocean framing take priority: requested 42.0% land, achieved 40.7% continental foundations. Count and separation are layout preferences; collisions and rifts can merge or divide masses."
+    }
+  },
+  "date": "2026-10-14",
+  "detail": {
+    "anchorError": 9.33975119465913e-15,
+    "checks": [
+      "2D cursor anchor is invariant",
+      "Visible detail tiles load without regenerating the parent world",
+      "Zoom out returns to the same geographic point",
+      "3D zoom preserves the raycast terrain point"
+    ],
+    "detail": "World · 3D · refining…"
+  },
+  "host": "T3 collaborative preview",
+  "realism": {
+    "checks": [
+      "Switch enables real Go environmental pipeline and completes generation",
+      "Every environmental field has an overlay; climate and wind render",
+      "Both earlier modes remain available",
+      "Realism fills missing biome types when enabled from a reduced preset",
+      "All eight presets compose with both physical modes and preserve profiles, weights and radius",
+      "Disabling physics retains the preset and restores its original palette",
+      "Realism setting persisted for reload"
+    ],
+    "status": "Done · 64×40 · seed 4139746970 · 2.58 s"
+  },
+  "viewport": [
+    1280,
+    800
+  ]
+}

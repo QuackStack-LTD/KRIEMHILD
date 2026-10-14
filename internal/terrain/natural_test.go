@@ -152,7 +152,19 @@ func TestNaturalResourcePrerequisitesAndValidation(t *testing.T) {
 			}
 		}
 	}
-	for _, id := range []string{"coal", "crude-oil", "halite", "groundwater-aquifer", "timber", "solar-energy", "wind-energy"} {
+	// A seed need not contain an evaporite basin. Exercise salt's positive and
+	// negative prerequisites explicitly instead of requiring a random deposit.
+	salt := contexts[0]
+	salt.cover = &GeologicalFormation{Strata: []RockStratum{{Rock: "evaporite", Top: 20, Bottom: 100}}}
+	salt.p.History.Evaporative = true
+	if resourceEligibility("halite", salt).Score <= 0 {
+		t.Fatal("evaporite history does not support salt")
+	}
+	salt.p.History.Evaporative = false
+	if resourceEligibility("halite", salt).Score != 0 {
+		t.Fatal("salt without evaporative history")
+	}
+	for _, id := range []string{"coal", "crude-oil", "groundwater-aquifer", "timber", "solar-energy", "wind-energy"} {
 		if !checked[id] {
 			t.Fatal("missing resource rule coverage", id)
 		}
