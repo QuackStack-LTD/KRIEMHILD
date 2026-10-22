@@ -63,6 +63,30 @@ func TestTilesOrderHalosAndParentCoordinates(t *testing.T) {
 	if err != nil || image.Bounds().Dx() != 256 || image.Bounds().Dy() != 256 {
 		t.Fatal("invalid tile resolution", err)
 	}
+	// Authored terrain replaces the original water boundary in illustrator ink.
+	// A synthetic half-tile shore must leave no ink from the saved base coast.
+	ink, err := tiles.Render(context.Background(), p, 0, 0, 0, 256, "shore-ink", func(s model.Sample, lon, lat float64) model.Sample {
+		s.Water = "dry"
+		if lon < -math.Pi/2 {
+			s.Water = "lake"
+		}
+		return s
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	shore, err := png.Decode(bytes.NewReader(ink))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for y := 1; y < 255; y++ {
+		for x := 1; x < 255; x++ {
+			_, _, _, alpha := shore.At(x, y).RGBA()
+			if (alpha != 0) != (x == 127 || x == 128) {
+				t.Fatalf("edited shoreline disagrees with water boundary at %d,%d", x, y)
+			}
+		}
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	if _, err = tiles.Render(ctx, p, 0, 0, 0, 256, "natural", nil); err != context.Canceled {

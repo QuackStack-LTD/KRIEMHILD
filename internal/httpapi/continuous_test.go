@@ -156,6 +156,11 @@ func TestContinuousJobCancellationAndValidation(t *testing.T) {
 		t.Fatal("invalid spec accepted", response.Code)
 	}
 	response = httptest.NewRecorder()
+	s.ServeHTTP(response, httptest.NewRequest("POST", "/api/terrain/generation-jobs", bytes.NewBufferString(`{"spec":{"version":"unsupported"}}`)))
+	if response.Code != 400 {
+		t.Fatal("unsupported generator accepted", response.Code)
+	}
+	response = httptest.NewRecorder()
 	s.ServeHTTP(response, httptest.NewRequest("POST", "/api/terrain/generation-jobs", bytes.NewBufferString(`{}`)))
 	if response.Code != 202 {
 		t.Fatal(response.Code, response.Body.String())

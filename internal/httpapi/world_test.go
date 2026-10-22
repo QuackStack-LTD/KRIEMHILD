@@ -13,6 +13,27 @@ import (
 	"testing"
 )
 
+func TestWorldCommandReportsTerrainEdits(t *testing.T) {
+	s := New(t.TempDir())
+	v := projectFixture(t)
+	v.authored().Header.Version = 2
+	s.sessions["map"] = v
+	command := func(kind string, stale bool) {
+		t.Helper()
+		body, _ := json.Marshal(map[string]any{
+			"kind": kind, "revision": v.authored().Header.Revision,
+			"operation": world.Operation{ID: "lake", Kind: "water", Layer: "water", Center: [2]float64{10, 10}, Radius: 2, Target: 1000},
+		})
+		result := autoRequest(t, s, "POST", "/api/sessions/map/world", string(body))
+		if result["analysisStale"] != stale {
+			t.Fatalf("%s returned stale terrain analysis flag %v, want %v", kind, result["analysisStale"], stale)
+		}
+	}
+	command("operation", true)
+	command("undo", false)
+	command("redo", true)
+}
+
 func TestBuilderPersistenceLocalInvalidationAndPortableArchive(t *testing.T) {
 	dir := t.TempDir()
 	db, err := storage.Open(context.Background(), dir, "")
