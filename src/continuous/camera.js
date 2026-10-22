@@ -15,7 +15,25 @@ export function normalizeCamera(value) {
     h: value.h,
   };
 }
-export function visibleTiles(camera, width, dpr = 1) {
+// SVG xMidYMid meet paints beyond the viewBox into its letterboxed margins.
+// Request those pixels too, using exactly the scale used for entity placement.
+export function visibleViewport(
+  camera,
+  width,
+  height = (width * camera.h) / camera.w,
+) {
+  const scale = Math.min(width / camera.w, height / camera.h);
+  const w = width / scale,
+    h = height / scale;
+  return {
+    x: camera.x - (w - camera.w) / 2,
+    y: camera.y - (h - camera.h) / 2,
+    w,
+    h,
+  };
+}
+export function visibleTiles(camera, width, dpr = 1, height) {
+  camera = visibleViewport(camera, width, height);
   const size = width * dpr > 1536 ? 512 : 256;
   const z = Math.max(
     0,
@@ -28,12 +46,13 @@ export function visibleTiles(camera, width, dpr = 1) {
     tiles = [];
   for (
     let y = Math.max(0, Math.floor(camera.y / span));
-    y <= Math.min(2 ** z - 1, Math.floor((camera.y + camera.h) / span));
+    y <= Math.min(2 ** z - 1, Math.ceil((camera.y + camera.h) / span) - 1);
     y++
   )
     for (
       let x = Math.max(0, Math.floor(camera.x / span));
-      x <= Math.min(2 ** (z + 1) - 1, Math.floor((camera.x + camera.w) / span));
+      x <=
+      Math.min(2 ** (z + 1) - 1, Math.ceil((camera.x + camera.w) / span) - 1);
       x++
     )
       tiles.push({ z, x, y, span, size });

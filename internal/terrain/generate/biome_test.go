@@ -21,6 +21,7 @@ func TestBiomeUsesAnnualAridityAndSeasonalFields(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			p := &model.Planet{Spec: model.DefaultSpec(), Grid: model.Grid{Width: 2, Height: 2, Fields: map[string][]float64{}}}
+			p.Spec.ClimateVersion = 0 // Frozen classification contract for existing worlds.
 			for k, v := range map[string]float64{"temperature": tc.temp, "precipitation": tc.rain, "pet": tc.pet, "soil": tc.soil, "dryMonths": tc.dry, "warmDry": tc.warm, "coldRain": tc.cold, "bed": 100} {
 				p.Grid.Fields[k] = []float64{v, v, v, v}
 			}

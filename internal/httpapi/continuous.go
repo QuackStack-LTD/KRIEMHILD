@@ -65,6 +65,7 @@ func (s *Server) startTerrainJob(w http.ResponseWriter, r *http.Request) {
 	}
 	// Old versions remain readable; all valid new jobs use the fully materialized path.
 	req.Spec.Version = model.Version
+	req.Spec.ClimateVersion = model.ClimateVersion
 	select {
 	case s.slots <- struct{}{}:
 	default:
@@ -271,12 +272,14 @@ func (s *Server) continuousTile(w http.ResponseWriter, r *http.Request) {
 		w.Write(data)
 		return
 	}
+	queueStart := time.Now()
 	select {
 	case s.detailSlots <- struct{}{}:
 		defer func() { <-s.detailSlots }()
 	case <-r.Context().Done():
 		return
 	}
+	queueMS := float64(time.Since(queueStart).Microseconds()) / 1000
 	if data, ok := s.terrainTileCache.Get(key); ok {
 		w.Header().Set("X-Terrain-Cache", "hit")
 		w.Write(data)
@@ -291,7 +294,7 @@ func (s *Server) continuousTile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.terrainTileCache.Put(key, data)
-	w.Header().Set("Server-Timing", fmt.Sprintf("terrain;dur=%.2f", float64(time.Since(start).Microseconds())/1000))
+	w.Header().Set("Server-Timing", fmt.Sprintf("terrain-queue;dur=%.2f, terrain;dur=%.2f", queueMS, float64(time.Since(start).Microseconds())/1000))
 	w.Header().Set("X-Terrain-Cache", "miss")
 	w.Header().Set("Content-Type", "image/png")
 	w.Header().Set("X-Terrain-Version", p.Spec.Version)

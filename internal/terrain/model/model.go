@@ -10,29 +10,34 @@ import (
 
 const Version = "continuous-3"
 const Schema = 1
+const ClimateVersion = 1
 const Tau = 2 * math.Pi
 
 type Spec struct {
-	Version       string  `json:"version"`
-	Seed          string  `json:"seed"`
-	Preset        string  `json:"preset"`
-	RadiusKM      float64 `json:"radiusKm"`
-	LandCoverage  float64 `json:"landCoverage"`
-	Continents    int     `json:"continents"`
-	Complexity    float64 `json:"complexity"`
-	Islands       float64 `json:"islands"`
-	Relief        float64 `json:"relief"`
-	Rainfall      float64 `json:"rainfall"`
-	Tilt          float64 `json:"tilt"`
-	LayoutVariant int     `json:"layoutVariant"`
-	TileSize      int     `json:"tileSize"`
-	SurfaceWidth  int     `json:"surfaceWidth,omitempty"`
+	ClimateVersion int     `json:"climateVersion,omitempty"`
+	Version        string  `json:"version"`
+	Seed           string  `json:"seed"`
+	Preset         string  `json:"preset"`
+	RadiusKM       float64 `json:"radiusKm"`
+	LandCoverage   float64 `json:"landCoverage"`
+	Continents     int     `json:"continents"`
+	Complexity     float64 `json:"complexity"`
+	Islands        float64 `json:"islands"`
+	Relief         float64 `json:"relief"`
+	Rainfall       float64 `json:"rainfall"`
+	Tilt           float64 `json:"tilt"`
+	LayoutVariant  int     `json:"layoutVariant"`
+	TileSize       int     `json:"tileSize"`
+	SurfaceWidth   int     `json:"surfaceWidth,omitempty"`
 }
 
 func DefaultSpec() Spec {
-	return Spec{Version: Version, Seed: "Kriemhild", Preset: "earthlike", RadiusKM: 6371, LandCoverage: .32, Continents: 5, Complexity: 1, Islands: 1, Relief: .8, Rainfall: 1.65, Tilt: 23.4, TileSize: 256, SurfaceWidth: 4096}
+	return Spec{Version: Version, ClimateVersion: ClimateVersion, Seed: "Kriemhild", Preset: "earthlike", RadiusKM: 6371, LandCoverage: .32, Continents: 5, Complexity: 1, Islands: 1, Relief: .8, Rainfall: 1.65, Tilt: 23.4, TileSize: 256, SurfaceWidth: 4096}
 }
 func (s Spec) Validate() error {
+	if s.ClimateVersion < 0 || s.ClimateVersion > ClimateVersion {
+		return fmt.Errorf("unsupported climate version")
+	}
 	if s.Version != Version && s.Version != "continuous-1" && s.Version != "continuous-2" {
 		return fmt.Errorf("unsupported terrain generator %q", s.Version)
 	}

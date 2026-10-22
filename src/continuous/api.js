@@ -23,6 +23,7 @@ export async function request(
 }
 export const defaults = {
   version: "continuous-3",
+  climateVersion: 1,
   seed: "",
   preset: "earthlike",
   radiusKm: 6371,

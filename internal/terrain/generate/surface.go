@@ -77,6 +77,9 @@ func materialize(ctx context.Context, p *model.Planet) error {
 		g.Fields["flow"][i] = -1
 	}
 	p.Grid = g
+	if p.Spec.ClimateVersion >= 1 {
+		summarizeSeasons(&p.Grid)
+	}
 	return nil
 }
 

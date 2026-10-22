@@ -81,7 +81,8 @@ export default function Studio({ initialState, onExit }) {
     ),
     [style, setStyle] = useState(savedView.style || "natural");
   const [camera, setCamera] = useState(normalizeCamera(savedView.camera)),
-    [width, setWidth] = useState(1000);
+    [width, setWidth] = useState(1000),
+    [height, setHeight] = useState(500);
   const [entities, setEntities] = useState([]),
     [rivers, setRivers] = useState([]),
     [coasts, setCoasts] = useState(null),
@@ -251,9 +252,10 @@ export default function Studio({ initialState, onExit }) {
     };
   }, [state?.id, refresh]);
   useEffect(() => {
-    const observer = new ResizeObserver((entries) =>
-      setWidth(entries[0].contentRect.width),
-    );
+    const observer = new ResizeObserver((entries) => {
+      setWidth(entries[0].contentRect.width);
+      setHeight(entries[0].contentRect.height);
+    });
     if (stage.current) observer.observe(stage.current);
     return () => observer.disconnect();
   }, []);
@@ -1088,6 +1090,7 @@ export default function Studio({ initialState, onExit }) {
                   identity={`${state.worldId}:${state.id}`}
                   camera={camera}
                   width={width}
+                  height={height}
                   onLoading={setLoading}
                 />
                 {hillshade > 0 && !illustrating && (
@@ -1105,6 +1108,7 @@ export default function Studio({ initialState, onExit }) {
                       identity={`${state.worldId}:${state.id}`}
                       camera={camera}
                       width={width}
+                      height={height}
                     />
                   </g>
                 )}
@@ -1184,6 +1188,7 @@ export default function Studio({ initialState, onExit }) {
                           identity={`${state.worldId}:${state.id}`}
                           camera={camera}
                           width={width}
+                          height={height}
                         />
                       ) : null
                     }
@@ -1202,6 +1207,7 @@ export default function Studio({ initialState, onExit }) {
                           identity={`${state.worldId}:${state.id}`}
                           camera={camera}
                           width={width}
+                          height={height}
                         />
                       </g>
                     }

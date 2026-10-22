@@ -1,0 +1,450 @@
+{
+  "baselineCoverage": {
+    "tested": 2173,
+    "missingAtFinestLOD": 742,
+    "finestSpan": 0.03125
+  },
+  "afterCoverage": {
+    "missing": 0
+  },
+  "legacyImages": [
+    {
+      "name": "gallery-001-aridity.png",
+      "before": "0f8b47d54613fce338fe5271263d6180fb9a083e3437a442365fc4a3859744b1",
+      "regenerated": "0f8b47d54613fce338fe5271263d6180fb9a083e3437a442365fc4a3859744b1"
+    },
+    {
+      "name": "gallery-001-biome.png",
+      "before": "0a6b521764bd901fad700dfdb72b6610e1a7bb77700aea46e2323050aaddc0ad",
+      "regenerated": "0a6b521764bd901fad700dfdb72b6610e1a7bb77700aea46e2323050aaddc0ad"
+    },
+    {
+      "name": "gallery-001-elevation.png",
+      "before": "a3f256a580473e66270e4b6131b2befe81a695b57b065a0744f748d5db622133",
+      "regenerated": "a3f256a580473e66270e4b6131b2befe81a695b57b065a0744f748d5db622133"
+    },
+    {
+      "name": "gallery-001-precipitation.png",
+      "before": "00023c4a02532a3674a06db47c1f178c8aa994544e511bf87fb5151962eff459",
+      "regenerated": "00023c4a02532a3674a06db47c1f178c8aa994544e511bf87fb5151962eff459"
+    },
+    {
+      "name": "gallery-001-seasonality.png",
+      "before": "14dafc73f0b4df02bc77d6a6c7a3fac7416db7654415e329bbc828062c95245e",
+      "regenerated": "14dafc73f0b4df02bc77d6a6c7a3fac7416db7654415e329bbc828062c95245e"
+    },
+    {
+      "name": "gallery-001-temperature.png",
+      "before": "e111d2577a37aa278f3d0d71770319ca723cfb85055e681ca96edcccf751ae23",
+      "regenerated": "e111d2577a37aa278f3d0d71770319ca723cfb85055e681ca96edcccf751ae23"
+    },
+    {
+      "name": "gallery-002-aridity.png",
+      "before": "606f66eef7d80df1f35225217f55b07d915f39307e6d44f8a365486747aed573",
+      "regenerated": "606f66eef7d80df1f35225217f55b07d915f39307e6d44f8a365486747aed573"
+    },
+    {
+      "name": "gallery-002-biome.png",
+      "before": "4a38299f048a72cc4a069a9444d26b1f6026635b2ca248c763a892e5421686ef",
+      "regenerated": "4a38299f048a72cc4a069a9444d26b1f6026635b2ca248c763a892e5421686ef"
+    },
+    {
+      "name": "gallery-002-elevation.png",
+      "before": "e546ca1319245936e87ed25b2a69c9d7d29d3b8a5661c30cb74666cd9e73dd84",
+      "regenerated": "e546ca1319245936e87ed25b2a69c9d7d29d3b8a5661c30cb74666cd9e73dd84"
+    },
+    {
+      "name": "gallery-002-precipitation.png",
+      "before": "8d9065b645bd1f80ebc004957927245880ec06caa2a363978242f7f9290bf1c7",
+      "regenerated": "8d9065b645bd1f80ebc004957927245880ec06caa2a363978242f7f9290bf1c7"
+    },
+    {
+      "name": "gallery-002-seasonality.png",
+      "before": "9bacf81ed1ea2027d42b2c2589a572df98e5a37ae1e48193c590956a26d8e306",
+      "regenerated": "9bacf81ed1ea2027d42b2c2589a572df98e5a37ae1e48193c590956a26d8e306"
+    },
+    {
+      "name": "gallery-002-temperature.png",
+      "before": "47a97ceda969b5112e3af0a9a7e0b2bc17f31f84c9a6856dd06b745d95fe3520",
+      "regenerated": "47a97ceda969b5112e3af0a9a7e0b2bc17f31f84c9a6856dd06b745d95fe3520"
+    },
+    {
+      "name": "Kriemhild-aridity.png",
+      "before": "478949a70953c4519dfe3c0d6933999d8b7b3af38b78f3f49e37442d667a14c2",
+      "regenerated": "478949a70953c4519dfe3c0d6933999d8b7b3af38b78f3f49e37442d667a14c2"
+    },
+    {
+      "name": "Kriemhild-biome.png",
+      "before": "83a69b0da2c63fa51211d1d9cb060683be2431491941243984cd8f222fbba57b",
+      "regenerated": "83a69b0da2c63fa51211d1d9cb060683be2431491941243984cd8f222fbba57b"
+    },
+    {
+      "name": "Kriemhild-elevation.png",
+      "before": "afe370361a622dc8b624af70424ec5f644522d7878995ff9ac9c12533cffb906",
+      "regenerated": "afe370361a622dc8b624af70424ec5f644522d7878995ff9ac9c12533cffb906"
+    },
+    {
+      "name": "Kriemhild-precipitation.png",
+      "before": "d7f192874b1daa6cc105bf85938e3fdf98b18c921b0bfaec827fc6446e066ed9",
+      "regenerated": "d7f192874b1daa6cc105bf85938e3fdf98b18c921b0bfaec827fc6446e066ed9"
+    },
+    {
+      "name": "Kriemhild-seasonality.png",
+      "before": "85cba23e48bfebb0d381da5ea079eb2c25483d7d144cd4e6f9d40f6cbf1511f1",
+      "regenerated": "85cba23e48bfebb0d381da5ea079eb2c25483d7d144cd4e6f9d40f6cbf1511f1"
+    },
+    {
+      "name": "Kriemhild-temperature.png",
+      "before": "80086b15275f85ca963e30623747bcb3dd3af210a3821e3e01504ab55309db1d",
+      "regenerated": "80086b15275f85ca963e30623747bcb3dd3af210a3821e3e01504ab55309db1d"
+    }
+  ],
+  "seeds": [
+    {
+      "seed": "Kriemhild",
+      "biomePercent": {
+        "alpine": [
+          0,
+          0.7146203362571841
+        ],
+        "desert": [
+          2.316785508297386,
+          1.3495350078449728
+        ],
+        "forest": [
+          8.40255999063834,
+          11.900686480471897
+        ],
+        "grassland": [
+          7.252793140454473,
+          8.584755643784488
+        ],
+        "ice": [
+          5.660892162984557,
+          3.473974439675737
+        ],
+        "rainforest": [
+          14.573427683901723,
+          13.117536363250357
+        ],
+        "savanna": [
+          4.395370617919656,
+          5.61412735812385
+        ],
+        "shrubland": [
+          3.44115267941726,
+          8.559326450400572
+        ],
+        "steppe": [
+          14.34262635240724,
+          7.8331261448624385
+        ],
+        "taiga": [
+          8.383030116015975,
+          1.1751992544324419
+        ],
+        "temperate-rainforest": [
+          4.395439093041942,
+          5.045353991486526
+        ],
+        "tropical-woodland": [
+          5.326814176116664,
+          9.191802768767323
+        ],
+        "tundra": [
+          10.950296652700496,
+          11.220601178255153
+        ],
+        "wetland": [
+          6.738547650760241,
+          7.224889332498926
+        ],
+        "woodland": [
+          3.820264175348951,
+          4.9944652498912205
+        ]
+      },
+      "generationSeconds": [
+        36.954218999999995,
+        37.47342
+      ],
+      "heapMiB": [
+        198.83686065673828,
+        206.06910705566406
+      ],
+      "landPercent": [
+        26.999274212476326,
+        26.99993388955174
+      ],
+      "dryLandPercent": [
+        23.338423784070432,
+        22.96745847919058
+      ],
+      "lakePercent": [
+        3.6608504284046597,
+        4.03247541036039
+      ],
+      "medianRain": [
+        1110.7870734264523,
+        1451.6670562570584
+      ],
+      "medianAridity": [
+        1.0823760131146667,
+        1.2145090173491875
+      ],
+      "largestForestLandPercent": [
+        0.35417749778074564,
+        0.7468937933231511
+      ],
+      "tileTimes": [
+        [
+          480.308,
+          18.998,
+          20.531
+        ],
+        [
+          582.59,
+          19.594,
+          22
+        ]
+      ]
+    },
+    {
+      "seed": "gallery-001",
+      "biomePercent": {
+        "alpine": [
+          0.01858387649686836,
+          0.43825918338993003
+        ],
+        "desert": [
+          3.284920234267631,
+          2.650826684200209
+        ],
+        "forest": [
+          8.74687445197931,
+          11.112282239572743
+        ],
+        "grassland": [
+          7.193181846771039,
+          5.2003808330690795
+        ],
+        "ice": [
+          5.516328350024231,
+          3.909522439463959
+        ],
+        "rainforest": [
+          19.944652215622128,
+          17.445978159221713
+        ],
+        "savanna": [
+          5.965138508469852,
+          7.716686749292806
+        ],
+        "shrubland": [
+          3.0977456924375275,
+          7.380431892946128
+        ],
+        "steppe": [
+          9.751792645222285,
+          5.667190314510417
+        ],
+        "taiga": [
+          5.188994695804408,
+          0.48318482145500596
+        ],
+        "temperate-rainforest": [
+          5.801633868736217,
+          6.742560483144823
+        ],
+        "tropical-woodland": [
+          6.377918366120746,
+          12.230095069695333
+        ],
+        "tundra": [
+          6.144525604310977,
+          6.198848990737967
+        ],
+        "wetland": [
+          8.774876048311537,
+          9.053072293126393
+        ],
+        "woodland": [
+          4.19283359542543,
+          3.7706798461735804
+        ]
+      },
+      "generationSeconds": [
+        39.472799,
+        40.142542999999996
+      ],
+      "heapMiB": [
+        474.54566192626953,
+        490.6807861328125
+      ],
+      "landPercent": [
+        22.43182611803324,
+        22.43182611803324
+      ],
+      "dryLandPercent": [
+        19.00778694673395,
+        18.85492529088125
+      ],
+      "lakePercent": [
+        3.4240391712998903,
+        3.5769008271526097
+      ],
+      "medianRain": [
+        1530.6895518128701,
+        1900.6033266222196
+      ],
+      "medianAridity": [
+        1.2913257940094705,
+        1.393068407658422
+      ],
+      "largestForestLandPercent": [
+        0.43492541156460757,
+        1.0045434680676635
+      ],
+      "tileTimes": [
+        [
+          118.382,
+          15.001,
+          13.999
+        ],
+        [
+          92.523,
+          12.505,
+          12.997
+        ]
+      ]
+    },
+    {
+      "seed": "gallery-002",
+      "biomePercent": {
+        "alpine": [
+          0,
+          1.41675874413138
+        ],
+        "desert": [
+          5.718589892234732,
+          3.9739245324073655
+        ],
+        "forest": [
+          4.245101269259916,
+          6.564304664377681
+        ],
+        "grassland": [
+          3.901616496256949,
+          6.034646473831393
+        ],
+        "ice": [
+          18.393337523295948,
+          13.999785087826206
+        ],
+        "rainforest": [
+          12.919725994242143,
+          12.011692549392604
+        ],
+        "savanna": [
+          2.1829055126475922,
+          3.134519622384704
+        ],
+        "shrubland": [
+          1.3720258457803884,
+          5.798911391482192
+        ],
+        "steppe": [
+          12.658761961449471,
+          9.512348201253667
+        ],
+        "taiga": [
+          8.045198530891417,
+          1.1346151841006338
+        ],
+        "temperate-rainforest": [
+          3.745958409556556,
+          4.00842483903242
+        ],
+        "tropical-woodland": [
+          3.7439102015773025,
+          6.858890390139022
+        ],
+        "tundra": [
+          15.131337649754734,
+          16.340092256415982
+        ],
+        "wetland": [
+          6.18207958547067,
+          6.6089503883716025
+        ],
+        "woodland": [
+          1.7594511275847329,
+          2.6021356748524775
+        ]
+      },
+      "generationSeconds": [
+        43.56858999999999,
+        40.690341000000004
+      ],
+      "heapMiB": [
+        745.6015396118164,
+        770.3817901611328
+      ],
+      "landPercent": [
+        26.67274041018372,
+        26.673350199844002
+      ],
+      "dryLandPercent": [
+        23.10746447108984,
+        22.7344227664287
+      ],
+      "lakePercent": [
+        3.5652759390956454,
+        3.9389274334178013
+      ],
+      "medianRain": [
+        619.5235763285032,
+        875.2249572714895
+      ],
+      "medianAridity": [
+        1.1305502680300825,
+        1.2388227832962295
+      ],
+      "largestForestLandPercent": [
+        0.4090525419130151,
+        0.7080055291340782
+      ],
+      "tileTimes": [
+        [
+          82.566,
+          12.534,
+          12.997
+        ],
+        [
+          58.542,
+          13.003,
+          12.537
+        ]
+      ]
+    }
+  ],
+  "network": {
+    "before": {
+      "requests": 144,
+      "hits": 0,
+      "httpFailures": 0,
+      "cancellationsOrTransportErrors": 18,
+      "successfulDurationMedian": 1268,
+      "successfulDurationP95": 2244.39999999851
+    },
+    "after": {
+      "requests": 962,
+      "hits": 799,
+      "httpFailures": 1,
+      "cancellationsOrTransportErrors": 69,
+      "successfulDurationMedian": 85,
+      "successfulDurationP95": 3117
+    },
+    "note": "Different sequence lengths/cache states; network figures are observational, not a controlled speed benchmark."
+  }
+}

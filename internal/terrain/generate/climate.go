@@ -36,6 +36,13 @@ func climate(ctx context.Context, p *model.Planet) error {
 			lat, bed := pt[1], g.Fields["bed"][i]
 			continental := 1 - math.Exp(-math.Max(0, g.Fields["coast"][i])/700)
 			ts[i] = 29 - 48*math.Pow(math.Sin(lat), 2) - math.Max(0, bed)*.0065 + decl*math.Sin(lat)*(12+26*continental)
+			if p.Spec.ClimateVersion >= 1 && p.Spec.Version == model.Version {
+				// Reduced maritime heat redistribution. The old model damped coastal
+				// summers around the same frigid mean as the interior, leaving 50-degree
+				// coasts below the forest growing-season limit even at sea level.
+				// Tapers inland, and to zero at equator/poles; no biome or area targets.
+				ts[i] += 8 * (1 - continental) * math.Pow(math.Sin(2*lat), 2)
+			}
 			// Trade winds, midlatitude westerlies and polar easterlies.
 			// Meridional transport converges on the moving tropical rain belt.
 			latitude := lat - decl*.35
@@ -150,6 +157,9 @@ func climate(ctx context.Context, p *model.Planet) error {
 			variance += v * v / 12
 		}
 		g.Fields["seasonality"][i] = math.Sqrt(variance) / math.Max(1, mean)
+	}
+	if p.Spec.ClimateVersion >= 1 && p.Spec.Version == model.Version {
+		summarizeSeasons(g)
 	}
 	return nil
 }

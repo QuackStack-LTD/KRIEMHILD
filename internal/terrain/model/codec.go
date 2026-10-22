@@ -119,7 +119,11 @@ func Decode(meta, fields []byte) (*Planet, error) {
 	io.ReadFull(r, magic)
 	var count uint32
 	binary.Read(r, binary.LittleEndian, &count)
-	if string(magic) != "KTF1" || count < 14 || count > 64 {
+	fieldLimit := uint32(64)
+	if p.Spec.ClimateVersion >= 1 {
+		fieldLimit += 7 // Persisted monthly extrema and seasonal rainfall summaries.
+	}
+	if string(magic) != "KTF1" || count < 14 || count > fieldLimit {
 		return nil, fmt.Errorf("invalid terrain field header")
 	}
 	p.Grid.Fields = map[string][]float64{}
@@ -187,6 +191,21 @@ func Decode(meta, fields []byte) (*Planet, error) {
 		for _, key := range []string{"soil", "aridity", "rainShadow", "exposure", "seasonality", "dryMonths", "warmDry", "coldRain", "slope"} {
 			if len(p.Grid.Fields[key]) != n {
 				return nil, fmt.Errorf("missing climate field %s", key)
+			}
+		}
+		if p.Spec.ClimateVersion >= 1 && p.Spec.Version == Version {
+			for _, key := range []string{"coldest", "warmest", "rainDriest", "summerDriest", "winterWettest", "summerRain", "winterRain"} {
+				if len(p.Grid.Fields[key]) != n {
+					return nil, fmt.Errorf("missing seasonal field %s", key)
+				}
+			}
+			for month := 0; month < 12; month++ {
+				for _, prefix := range []string{"temperature", "rainfall", "pet"} {
+					key := fmt.Sprintf("%s-%02d", prefix, month)
+					if len(p.Grid.Fields[key]) != n {
+						return nil, fmt.Errorf("missing monthly field %s", key)
+					}
+				}
 			}
 		}
 	}
