@@ -1,0 +1,390 @@
+{
+  "reference": {
+    "name": "extreme",
+    "duration": 144237.10000000894,
+    "camera": [
+      1.2999476365618068,
+      0.2199907984591787,
+      0.00008,
+      0.00004
+    ],
+    "viewport": {
+      "width": 892,
+      "height": 695
+    },
+    "dpr": 1,
+    "footer": "Equirectangular · 6371 km radius\nMove over the map\n14.6× detail\n0.3 km ━━━━━\nReady",
+    "heap": 40502619,
+    "images": [
+      {
+        "style": "natural",
+        "generation": "30",
+        "revision": "0",
+        "lod": "16",
+        "bounds": [
+          1.2999476365618068,
+          0.2199796325398962,
+          0.00008,
+          0.00006233183856502242
+        ]
+      },
+      {
+        "style": "hillshade",
+        "generation": "30",
+        "revision": "0",
+        "lod": "16",
+        "bounds": [
+          1.2999476365618068,
+          0.2199796325398962,
+          0.00008,
+          0.00006233183856502242
+        ]
+      }
+    ],
+    "log": [
+      {
+        "time": 179257.39999999106,
+        "event": "request",
+        "generation": 27,
+        "session": "970aa8dc7767546285332ce26f7b488b",
+        "identity": "977d134ee5aadc480e1410ade3c84587:970aa8dc7767546285332ce26f7b488b",
+        "revision": 0,
+        "styles": [
+          "natural",
+          "hillshade"
+        ],
+        "bounds": {
+          "x": 1.29986842829416,
+          "y": 0.21994895126285446,
+          "w": 0.00020109601381069177,
+          "h": 0.00015668355336146948
+        },
+        "pixels": {
+          "width": 892,
+          "height": 695
+        },
+        "z": 15,
+        "size": 256
+      },
+      {
+        "time": 186046.5,
+        "event": "frame",
+        "generation": 27,
+        "phase": "coarse",
+        "revision": 0,
+        "bounds": {
+          "x": 1.29986842829416,
+          "y": 0.21994895126285446,
+          "w": 0.00020109601381069177,
+          "h": 0.00015668355336146948
+        },
+        "z": 13,
+        "pixels": {
+          "width": 223,
+          "height": 174
+        },
+        "duration": 5866.9000000059605,
+        "bytes": 3006,
+        "cacheBytes": 2340481,
+        "workingCanvasBytes": 2514504,
+        "decodedFrameBytes": 310416,
+        "hits": 18,
+        "misses": 325,
+        "evictions": 0
+      },
+      {
+        "time": 202622.79999999702,
+        "event": "frame",
+        "generation": 27,
+        "phase": "final",
+        "revision": 0,
+        "bounds": {
+          "x": 1.29986842829416,
+          "y": 0.21994895126285446,
+          "w": 0.00020109601381069177,
+          "h": 0.00015668355336146948
+        },
+        "z": 15,
+        "pixels": {
+          "width": 892,
+          "height": 695
+        },
+        "duration": 22443.20000000298,
+        "bytes": 29883,
+        "cacheBytes": 2435793,
+        "workingCanvasBytes": 13489808,
+        "decodedFrameBytes": 4959520,
+        "hits": 18,
+        "misses": 409,
+        "evictions": 0
+      },
+      {
+        "time": 239255.59999999404,
+        "event": "request",
+        "generation": 28,
+        "session": "970aa8dc7767546285332ce26f7b488b",
+        "identity": "977d134ee5aadc480e1410ade3c84587:970aa8dc7767546285332ce26f7b488b",
+        "revision": 0,
+        "styles": [
+          "natural",
+          "hillshade"
+        ],
+        "bounds": {
+          "x": 1.2999117593930698,
+          "y": 0.21996574856706308,
+          "w": 0.0001347986892351665,
+          "h": 0.00010502812670228779
+        },
+        "pixels": {
+          "width": 892,
+          "height": 695
+        },
+        "z": 15,
+        "size": 256
+      },
+      {
+        "time": 242262,
+        "event": "frame",
+        "generation": 28,
+        "phase": "coarse",
+        "revision": 0,
+        "bounds": {
+          "x": 1.2999117593930698,
+          "y": 0.21996574856706308,
+          "w": 0.0001347986892351665,
+          "h": 0.00010502812670228779
+        },
+        "z": 13,
+        "pixels": {
+          "width": 223,
+          "height": 174
+        },
+        "duration": 2077.6000000089407,
+        "bytes": 3008,
+        "cacheBytes": 2435793,
+        "workingCanvasBytes": 1203784,
+        "decodedFrameBytes": 310416,
+        "hits": 26,
+        "misses": 409,
+        "evictions": 0
+      },
+      {
+        "time": 244384.39999999106,
+        "event": "frame",
+        "generation": 28,
+        "phase": "final",
+        "revision": 0,
+        "bounds": {
+          "x": 1.2999117593930698,
+          "y": 0.21996574856706308,
+          "w": 0.0001347986892351665,
+          "h": 0.00010502812670228779
+        },
+        "z": 15,
+        "pixels": {
+          "width": 892,
+          "height": 695
+        },
+        "duration": 4200,
+        "bytes": 29880,
+        "cacheBytes": 2435793,
+        "workingCanvasBytes": 9033360,
+        "decodedFrameBytes": 4959520,
+        "hits": 76,
+        "misses": 409,
+        "evictions": 0
+      },
+      {
+        "time": 299318.299999997,
+        "event": "request",
+        "generation": 29,
+        "session": "970aa8dc7767546285332ce26f7b488b",
+        "identity": "977d134ee5aadc480e1410ade3c84587:970aa8dc7767546285332ce26f7b488b",
+        "revision": 0,
+        "styles": [
+          "natural",
+          "hillshade"
+        ],
+        "bounds": {
+          "x": 1.2999408549183908,
+          "y": 0.21997700813679347,
+          "w": 0.00009035826357366065,
+          "h": 0.00007040245872611452
+        },
+        "pixels": {
+          "width": 892,
+          "height": 695
+        },
+        "z": 16,
+        "size": 256
+      },
+      {
+        "time": 302280.59999999404,
+        "event": "frame",
+        "generation": 29,
+        "phase": "coarse",
+        "revision": 0,
+        "bounds": {
+          "x": 1.2999408549183908,
+          "y": 0.21997700813679347,
+          "w": 0.00009035826357366065,
+          "h": 0.00007040245872611452
+        },
+        "z": 14,
+        "pixels": {
+          "width": 223,
+          "height": 174
+        },
+        "duration": 2093.8999999910593,
+        "bytes": 2997,
+        "cacheBytes": 2435793,
+        "workingCanvasBytes": 1203784,
+        "decodedFrameBytes": 310416,
+        "hits": 84,
+        "misses": 409,
+        "evictions": 0
+      },
+      {
+        "time": 312700.5,
+        "event": "frame",
+        "generation": 29,
+        "phase": "final",
+        "revision": 0,
+        "bounds": {
+          "x": 1.2999408549183908,
+          "y": 0.21997700813679347,
+          "w": 0.00009035826357366065,
+          "h": 0.00007040245872611452
+        },
+        "z": 16,
+        "pixels": {
+          "width": 892,
+          "height": 695
+        },
+        "duration": 12513.79999999702,
+        "bytes": 29862,
+        "cacheBytes": 2530965,
+        "workingCanvasBytes": 13489808,
+        "decodedFrameBytes": 4959520,
+        "hits": 84,
+        "misses": 493,
+        "evictions": 0
+      },
+      {
+        "time": 321250.799999997,
+        "event": "request",
+        "generation": 30,
+        "session": "970aa8dc7767546285332ce26f7b488b",
+        "identity": "977d134ee5aadc480e1410ade3c84587:970aa8dc7767546285332ce26f7b488b",
+        "revision": 0,
+        "styles": [
+          "natural",
+          "hillshade"
+        ],
+        "bounds": {
+          "x": 1.2999476365618068,
+          "y": 0.2199796325398962,
+          "w": 0.00008,
+          "h": 0.00006233183856502242
+        },
+        "pixels": {
+          "width": 892,
+          "height": 695
+        },
+        "z": 16,
+        "size": 256
+      },
+      {
+        "time": 323221.59999999404,
+        "event": "frame",
+        "generation": 30,
+        "phase": "coarse",
+        "revision": 0,
+        "bounds": {
+          "x": 1.2999476365618068,
+          "y": 0.2199796325398962,
+          "w": 0.00008,
+          "h": 0.00006233183856502242
+        },
+        "z": 14,
+        "pixels": {
+          "width": 223,
+          "height": 174
+        },
+        "duration": 1890.4000000059605,
+        "bytes": 2997,
+        "cacheBytes": 2530965,
+        "workingCanvasBytes": 1203784,
+        "decodedFrameBytes": 310416,
+        "hits": 92,
+        "misses": 493,
+        "evictions": 0
+      },
+      {
+        "time": 323325.39999999106,
+        "event": "frame",
+        "generation": 30,
+        "phase": "final",
+        "revision": 0,
+        "bounds": {
+          "x": 1.2999476365618068,
+          "y": 0.2199796325398962,
+          "w": 0.00008,
+          "h": 0.00006233183856502242
+        },
+        "z": 16,
+        "pixels": {
+          "width": 892,
+          "height": 695
+        },
+        "duration": 1994.2999999970198,
+        "bytes": 29862,
+        "cacheBytes": 2530965,
+        "workingCanvasBytes": 10344080,
+        "decodedFrameBytes": 4959520,
+        "hits": 152,
+        "misses": 493,
+        "evictions": 0
+      }
+    ],
+    "network": []
+  },
+  "actual": {
+    "camera": [
+      1.2999476365618068,
+      0.2199907984591787,
+      0.00008,
+      0.00004
+    ],
+    "viewport": {
+      "width": 892,
+      "height": 695
+    },
+    "images": [
+      {
+        "generation": "2",
+        "revision": "0",
+        "lod": "16",
+        "style": "natural",
+        "bounds": [
+          1.2999476365618068,
+          0.2199796325398962,
+          0.00008,
+          0.00006233183856502242
+        ]
+      },
+      {
+        "generation": "2",
+        "revision": "0",
+        "lod": "16",
+        "style": "hillshade",
+        "bounds": [
+          1.2999476365618068,
+          0.2199796325398962,
+          0.00008,
+          0.00006233183856502242
+        ]
+      }
+    ]
+  }
+}

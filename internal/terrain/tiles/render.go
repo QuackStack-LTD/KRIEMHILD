@@ -10,9 +10,13 @@ import (
 	"image/png"
 	"kriemhild/internal/terrain/model"
 	"math"
+	"time"
 )
 
 type Transform func(s model.Sample, lon, lat float64) model.Sample
+
+// Raster fixes invalidate derived disk images without changing saved terrain.
+const RenderingVersion = "raster-2"
 
 func Valid(z, x, y, size int) bool {
 	return z >= 0 && z <= 18 && x >= 0 && x < (2<<z) && y >= 0 && y < (1<<z) && (size == 256 || size == 512)
@@ -20,7 +24,24 @@ func Valid(z, x, y, size int) bool {
 func Coordinate(z, x, y, size, i, j int) (float64, float64) {
 	return -math.Pi + model.Tau*(float64(x*size+i)+.5)/float64((2<<z)*size), math.Pi/2 - math.Pi*(float64(y*size+j)+.5)/float64((1<<z)*size)
 }
+
+// Canonicalize the integer sample address before floating-point conversion.
+// Wrapping radians after conversion can produce different values for the same
+// halo pixel at +/-pi, enough to cross a discrete biome threshold. Coordinate
+// stays unwrapped for geographic bounding boxes and authored-operation queries.
+func sampleCoordinate(z, x, y, size, i, j int) (float64, float64) {
+	width := (2 << z) * size
+	pixel := ((x*size+i)%width + width) % width
+	return Coordinate(z, 0, y, size, pixel, j)
+}
 func Render(ctx context.Context, p *model.Planet, z, x, y, size int, style string, transform Transform) ([]byte, error) {
+	return RenderMeasured(ctx, p, z, x, y, size, style, transform, nil)
+}
+
+// Optional timings include cache wait in sampling, and keep raster/PNG costs separate.
+type RenderTiming struct{ SamplingMS, TransformMS, RasterMS, EncodeMS float64 }
+
+func RenderMeasured(ctx context.Context, p *model.Planet, z, x, y, size int, style string, transform Transform, timing *RenderTiming) ([]byte, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -33,11 +54,16 @@ func Render(ctx context.Context, p *model.Planet, z, x, y, size int, style strin
 		return nil, fmt.Errorf("unknown terrain style")
 	}
 	stride := size + 2
+	started := time.Now()
 	base, err := physicalSamples(ctx, p, z, x, y, size)
+	if timing != nil {
+		timing.SamplingMS = float64(time.Since(started).Microseconds()) / 1000
+	}
 	if err != nil {
 		return nil, err
 	}
 	samples := base
+	started = time.Now()
 	if transform != nil {
 		samples = append([]model.Sample(nil), base...)
 	}
@@ -46,7 +72,7 @@ func Render(ctx context.Context, p *model.Planet, z, x, y, size int, style strin
 			return nil, err
 		}
 		for i := -1; i <= size; i++ {
-			lon, lat := Coordinate(z, x, y, size, i, j)
+			lon, lat := sampleCoordinate(z, x, y, size, i, j)
 			s := base[(j+1)*stride+i+1]
 			if transform != nil {
 				s = transform(s, lon, lat)
@@ -55,6 +81,10 @@ func Render(ctx context.Context, p *model.Planet, z, x, y, size int, style strin
 		}
 	}
 	img := image.NewNRGBA(image.Rect(0, 0, size, size))
+	if timing != nil {
+		timing.TransformMS = float64(time.Since(started).Microseconds()) / 1000
+	}
+	started = time.Now()
 	for j := 0; j < size; j++ {
 		for i := 0; i < size; i++ {
 			at := (j+1)*stride + i + 1
@@ -130,7 +160,14 @@ func Render(ctx context.Context, p *model.Planet, z, x, y, size int, style strin
 		}
 	}
 	var b bytes.Buffer
+	if timing != nil {
+		timing.RasterMS = float64(time.Since(started).Microseconds()) / 1000
+	}
+	started = time.Now()
 	err = png.Encode(&b, img)
+	if timing != nil {
+		timing.EncodeMS = float64(time.Since(started).Microseconds()) / 1000
+	}
 	return b.Bytes(), err
 }
 func palette(s model.Sample, style string, shade float64) color.NRGBA {

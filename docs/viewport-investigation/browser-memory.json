@@ -1,0 +1,306 @@
+[
+  {
+    "renderer": "tiles",
+    "dpr": 1,
+    "complete": true,
+    "process": [
+      {
+        "Id": 2104,
+        "ProcessName": "chrome",
+        "WorkingSet64": 88023040,
+        "PeakWorkingSet64": 88027136,
+        "PrivateMemorySize64": 51789824
+      },
+      {
+        "Id": 7784,
+        "ProcessName": "chrome",
+        "WorkingSet64": 39157760,
+        "PeakWorkingSet64": 41148416,
+        "PrivateMemorySize64": 17403904
+      },
+      {
+        "Id": 7988,
+        "ProcessName": "chrome",
+        "WorkingSet64": 371752960,
+        "PeakWorkingSet64": 374296576,
+        "PrivateMemorySize64": 317796352
+      },
+      {
+        "Id": 12360,
+        "ProcessName": "chrome",
+        "WorkingSet64": 182525952,
+        "PeakWorkingSet64": 182972416,
+        "PrivateMemorySize64": 156389376
+      },
+      {
+        "Id": 14344,
+        "ProcessName": "chrome",
+        "WorkingSet64": 110235648,
+        "PeakWorkingSet64": 110239744,
+        "PrivateMemorySize64": 40468480
+      },
+      {
+        "Id": 15956,
+        "ProcessName": "chrome",
+        "WorkingSet64": 31870976,
+        "PeakWorkingSet64": 31875072,
+        "PrivateMemorySize64": 17215488
+      },
+      {
+        "Id": 16236,
+        "ProcessName": "chrome",
+        "WorkingSet64": 19628032,
+        "PeakWorkingSet64": 19632128,
+        "PrivateMemorySize64": 10067968
+      }
+    ],
+    "memory": {
+      "jsHeap": 29790475,
+      "images": 94,
+      "status": "Equirectangular · 6371 km radius\nMove over the map\n6.3× detail\n99.4 km ━━━━━\nReady",
+      "failures": []
+    },
+    "note": "Working set after completion; per-process lifetime peaks are upper bounds, not simultaneous aggregate peaks. Warm server caches."
+  },
+  {
+    "renderer": "tiles",
+    "dpr": 3,
+    "complete": true,
+    "process": [
+      {
+        "Id": 7288,
+        "ProcessName": "chrome",
+        "WorkingSet64": 33746944,
+        "PeakWorkingSet64": 35008512,
+        "PrivateMemorySize64": 22462464
+      },
+      {
+        "Id": 10104,
+        "ProcessName": "chrome",
+        "WorkingSet64": 19582976,
+        "PeakWorkingSet64": 19832832,
+        "PrivateMemorySize64": 9916416
+      },
+      {
+        "Id": 10880,
+        "ProcessName": "chrome",
+        "WorkingSet64": 184852480,
+        "PeakWorkingSet64": 416292864,
+        "PrivateMemorySize64": 134377472
+      },
+      {
+        "Id": 12436,
+        "ProcessName": "chrome",
+        "WorkingSet64": 80506880,
+        "PeakWorkingSet64": 92114944,
+        "PrivateMemorySize64": 42221568
+      },
+      {
+        "Id": 14216,
+        "ProcessName": "chrome",
+        "WorkingSet64": 39841792,
+        "PeakWorkingSet64": 41172992,
+        "PrivateMemorySize64": 14921728
+      },
+      {
+        "Id": 15304,
+        "ProcessName": "chrome",
+        "WorkingSet64": 200372224,
+        "PeakWorkingSet64": 208076800,
+        "PrivateMemorySize64": 176775168
+      },
+      {
+        "Id": 16304,
+        "ProcessName": "chrome",
+        "WorkingSet64": 123203584,
+        "PeakWorkingSet64": 125399040,
+        "PrivateMemorySize64": 47112192
+      }
+    ],
+    "memory": {
+      "jsHeap": 40541277,
+      "images": 304,
+      "status": "Equirectangular · 6371 km radius\nMove over the map\n6.3× detail\n99.4 km ━━━━━\nReady",
+      "failures": []
+    },
+    "note": "Working set after completion; per-process lifetime peaks are upper bounds, not simultaneous aggregate peaks. Warm server caches."
+  },
+  {
+    "renderer": "viewport",
+    "dpr": 1,
+    "complete": true,
+    "process": [
+      {
+        "Id": 1988,
+        "ProcessName": "chrome",
+        "WorkingSet64": 87879680,
+        "PeakWorkingSet64": 87883776,
+        "PrivateMemorySize64": 51593216
+      },
+      {
+        "Id": 2204,
+        "ProcessName": "chrome",
+        "WorkingSet64": 110792704,
+        "PeakWorkingSet64": 111026176,
+        "PrivateMemorySize64": 40427520
+      },
+      {
+        "Id": 6740,
+        "ProcessName": "chrome",
+        "WorkingSet64": 39157760,
+        "PeakWorkingSet64": 41156608,
+        "PrivateMemorySize64": 17195008
+      },
+      {
+        "Id": 9324,
+        "ProcessName": "chrome",
+        "WorkingSet64": 256622592,
+        "PeakWorkingSet64": 257167360,
+        "PrivateMemorySize64": 201170944
+      },
+      {
+        "Id": 10808,
+        "ProcessName": "chrome",
+        "WorkingSet64": 237322240,
+        "PeakWorkingSet64": 246841344,
+        "PrivateMemorySize64": 143216640
+      },
+      {
+        "Id": 14744,
+        "ProcessName": "chrome",
+        "WorkingSet64": 19705856,
+        "PeakWorkingSet64": 19709952,
+        "PrivateMemorySize64": 10080256
+      },
+      {
+        "Id": 14980,
+        "ProcessName": "chrome",
+        "WorkingSet64": 31932416,
+        "PeakWorkingSet64": 31936512,
+        "PrivateMemorySize64": 17199104
+      }
+    ],
+    "memory": {
+      "jsHeap": 46591967,
+      "frame": {
+        "time": 1927.7000000029802,
+        "event": "frame",
+        "generation": 2,
+        "phase": "final",
+        "revision": 9,
+        "bounds": {
+          "x": 0.8281558006258212,
+          "y": 0.3382047325266064,
+          "w": 0.0248262723041915,
+          "h": 0.015800010115265477
+        },
+        "z": 8,
+        "pixels": {
+          "width": 1532,
+          "height": 975
+        },
+        "duration": 723.2999999970198,
+        "bytes": 266595,
+        "cacheBytes": 259156,
+        "workingCanvasBytes": 15149840,
+        "decodedFrameBytes": 11949600,
+        "hits": 0,
+        "misses": 78,
+        "evictions": 0
+      },
+      "images": 2,
+      "status": "Equirectangular · 6371 km radius\nMove over the map\n6.3× detail\n99.4 km ━━━━━\nReady",
+      "failures": []
+    },
+    "note": "Working set after completion; per-process lifetime peaks are upper bounds, not simultaneous aggregate peaks. Warm server caches."
+  },
+  {
+    "renderer": "viewport",
+    "dpr": 3,
+    "complete": false,
+    "process": [
+      {
+        "Id": 5628,
+        "ProcessName": "chrome",
+        "WorkingSet64": 1083592704,
+        "PeakWorkingSet64": 1101479936,
+        "PrivateMemorySize64": 833163264
+      },
+      {
+        "Id": 7508,
+        "ProcessName": "chrome",
+        "WorkingSet64": 20348928,
+        "PeakWorkingSet64": 20455424,
+        "PrivateMemorySize64": 10153984
+      },
+      {
+        "Id": 7544,
+        "ProcessName": "chrome",
+        "WorkingSet64": 35237888,
+        "PeakWorkingSet64": 35274752,
+        "PrivateMemorySize64": 22777856
+      },
+      {
+        "Id": 8376,
+        "ProcessName": "chrome",
+        "WorkingSet64": 127012864,
+        "PeakWorkingSet64": 128221184,
+        "PrivateMemorySize64": 49557504
+      },
+      {
+        "Id": 11868,
+        "ProcessName": "chrome",
+        "WorkingSet64": 81195008,
+        "PeakWorkingSet64": 88649728,
+        "PrivateMemorySize64": 41377792
+      },
+      {
+        "Id": 14324,
+        "ProcessName": "chrome",
+        "WorkingSet64": 502829056,
+        "PeakWorkingSet64": 549396480,
+        "PrivateMemorySize64": 116277248
+      },
+      {
+        "Id": 15996,
+        "ProcessName": "chrome",
+        "WorkingSet64": 40263680,
+        "PeakWorkingSet64": 41164800,
+        "PrivateMemorySize64": 17088512
+      }
+    ],
+    "memory": {
+      "jsHeap": 29699843,
+      "frame": {
+        "time": 70202.29999999702,
+        "event": "frame",
+        "generation": 2,
+        "phase": "final",
+        "revision": 9,
+        "bounds": {
+          "x": 0.8281558006258212,
+          "y": 0.3382047325266064,
+          "w": 0.0248262723041915,
+          "h": 0.015800010115265477
+        },
+        "z": 9,
+        "pixels": {
+          "width": 4596,
+          "height": 2925
+        },
+        "duration": 68869.70000000298,
+        "bytes": 1273605,
+        "cacheBytes": 1761670,
+        "workingCanvasBytes": 176456592,
+        "decodedFrameBytes": 107546400,
+        "hits": 0,
+        "misses": 261,
+        "evictions": 0
+      },
+      "images": 2,
+      "status": "Equirectangular · 6371 km radius\nMove over the map\n6.3× detail\n99.4 km ━━━━━\nReady",
+      "failures": []
+    },
+    "note": "Working set after completion; per-process lifetime peaks are upper bounds, not simultaneous aggregate peaks. Warm server caches."
+  }
+]

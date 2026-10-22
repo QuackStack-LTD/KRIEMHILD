@@ -1,0 +1,11 @@
+{
+  "candidateClimateVersion": 2,
+  "diagnosticOnly": true,
+  "gridWaterMasksUnchanged": true,
+  "riversUnchanged": true,
+  "sourceClimateVersion": 1,
+  "sourceSeed": "d1feae98-6510-4a72-951b-44e93a01ae86",
+  "surfaceBedSHA256": "b73a1055b128f7b5e73097fce746b11accbf865910e6977231bb431d88257f98",
+  "surfaceCoastSHA256": "7a545b2495982f5a75014acba5696151b1cccbfef00981b7f25eb5c1e6d4df81",
+  "surfaceLakeSHA256": "c52604a52db47cbd7c9c3471e7592ebf92dabe1c954deda4b29073eab2808f2d"
+}

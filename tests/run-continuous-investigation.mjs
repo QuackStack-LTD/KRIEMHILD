@@ -3,10 +3,13 @@
 import { chromium } from "@playwright/test";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import assert from "node:assert/strict";
+import { visibleTiles } from "../src/continuous/camera.js";
 const base = process.env.KRIEMHILD_AUDIT_URL || "http://127.0.0.1:8125";
 const world =
   process.env.KRIEMHILD_AUDIT_WORLD || "47d7f3ae6edf78298c34a8b8f334ae6f";
-const out = "docs/terrain-investigation/browser";
+const out =
+  process.env.KRIEMHILD_AUDIT_OUT || "docs/terrain-investigation/browser";
+const renderer = process.env.KRIEMHILD_AUDIT_RENDERER || "tiles";
 await mkdir(out, { recursive: true });
 const browser = await chromium.launch({
   headless: true,
@@ -58,6 +61,27 @@ async function settled() {
   );
   await page.waitForLoadState("networkidle", { timeout: 90000 });
 }
+async function historyAction(name) {
+  const response = page.waitForResponse(
+    (r) =>
+      r.request().method() === "POST" &&
+      r.url().endsWith("/world") &&
+      r.request().postDataJSON()?.kind === name.toLowerCase(),
+  );
+  await page.getByRole("button", { name, exact: true }).click();
+  const r = await response,
+    body = await r.json();
+  assert.equal(r.status(), 200, JSON.stringify(body));
+  if (renderer === "viewport")
+    await page.waitForFunction(
+      (revision) =>
+        document.querySelector('[data-phase="final"]')?.dataset.revision ===
+        String(revision),
+      body.project.revision,
+      { timeout: 180000 },
+    );
+  await settled();
+}
 async function stage(name) {
   await settled();
   const state = await page.evaluate(() => {
@@ -72,7 +96,14 @@ async function stage(name) {
   return state;
 }
 async function load() {
-  await page.goto(`${base}/world/${world}/build?tileDebug=1`);
+  await page.goto(
+    `${base}/world/${world}/build?tileDebug=1&terrainRenderer=${renderer}`,
+  );
+  await page.waitForSelector("g[data-terrain-style] image", { timeout: 90000 });
+  await page
+    .locator("select")
+    .filter({ hasText: "watersheds" })
+    .selectOption("natural");
   await page.waitForSelector('g[data-terrain-style="natural"] image', {
     timeout: 90000,
   });
@@ -99,16 +130,47 @@ let session, placement, edit, settlement;
 try {
   await load();
   session = await page.evaluate(
-    () => window.__terrainTileLog.find((e) => e.url).url.split("/")[3],
+    () =>
+      (window.__terrainViewportLog || window.__terrainTileLog)
+        .find((e) => e.url)
+        .url.split("/")[3],
   );
   await page.getByRole("button", { name: "Fit world", exact: true }).click();
   await stage("01-fit");
   await zoom(6);
   await stage("02-gradual");
   let failure;
+  const demand = await page.evaluate(() => {
+    const s = document.querySelector(".studio-stage svg"),
+      [x, y, w, h] = s.getAttribute("viewBox").split(/\s+/).map(Number);
+    const r = window.__terrainViewportLog?.findLast(
+      (e) => e.event === "request",
+    );
+    return {
+      camera: { x, y, w, h },
+      width: s.clientWidth,
+      height: s.clientHeight,
+      density: r?.preview?.effectiveScale ?? Math.min(3, devicePixelRatio || 1),
+    };
+  });
+  const zoomFactor = Math.exp(-266 * 0.0015) ** 4;
+  const failureZoom = visibleTiles(
+    {
+      ...demand.camera,
+      w: Math.max(0.00008, demand.camera.w * zoomFactor),
+      h: demand.camera.h * zoomFactor,
+    },
+    demand.width,
+    demand.density,
+    demand.height,
+  )[0].z;
   await page.route("**/terrain/tiles/**", async (route) => {
     const url = route.request().url();
-    if (!failure && url.includes("style=natural") && /tiles\/7\//.test(url)) {
+    if (
+      !failure &&
+      url.includes("style=natural") &&
+      url.includes(`/tiles/${failureZoom}/`)
+    ) {
       failure = url;
       await route.fulfill({ status: 503, body: "temporary fixture failure" });
       return;
@@ -190,12 +252,16 @@ try {
   );
   edit = { map, before, after };
   await stage("09-terrain-edit");
-  await page.getByRole("button", { name: "Undo", exact: true }).click();
-  await settled();
+  await historyAction("Undo");
   const undone = await (await page.request.get(sampleURL)).json();
   assert.ok(Math.abs(undone.bed - before.bed) < 1e-6);
   edit.undone = undone;
   await stage("10-undo");
+  await historyAction("Redo");
+  edit.redone = await (await page.request.get(sampleURL)).json();
+  assert.ok(Math.abs(edit.redone.bed - after.bed) < 1e-6);
+  await stage("10b-redo");
+  await historyAction("Undo");
   await page
     .getByRole("button", { name: "Settlement Builder", exact: true })
     .click();

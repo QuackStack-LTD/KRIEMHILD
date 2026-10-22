@@ -27,7 +27,7 @@ func sampleWith(p *model.Planet, lon, lat float64, surface func(float64, float64
 		bed, coast = conditioned(p, lon, lat, bed, coast)
 	}
 	g := p.Grid
-	temp := g.At("temperature", lon, lat) - (bed-g.At("bed", lon, lat))*.0065
+	temp := g.At("temperature", lon, lat) - p.AtmosphericLapse(lon, lat, bed)
 	rain, pet := g.At("precipitation", lon, lat), g.At("pet", lon, lat)
 	s := model.Sample{Bed: bed, CoastDistance: coast * p.Spec.RadiusKM, Temperature: temp, Precipitation: rain, PET: pet, Moisture: model.Clamp(rain/math.Max(100, pet)*.6, 0, 1), Roughness: rough, Water: "dry"}
 	if coast <= 0 {

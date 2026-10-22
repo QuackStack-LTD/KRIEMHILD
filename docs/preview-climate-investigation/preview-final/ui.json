@@ -1,0 +1,258 @@
+{
+  "result": {
+    "status": "complete",
+    "stages": [
+      {
+        "name": "performance",
+        "camera": "1.29985 0.219925 0.0003 0.00015",
+        "generation": "4",
+        "revision": "12",
+        "pixels": [
+          "446",
+          "348"
+        ],
+        "resolution": "Preview: 446 × 348 · Performance",
+        "request": {
+          "time": 5469.199999988079,
+          "event": "request",
+          "generation": 4,
+          "session": "bb46da122ae1917787b90568aa26864c",
+          "identity": "977d134ee5aadc480e1410ade3c84587:bb46da122ae1917787b90568aa26864c",
+          "revision": 12,
+          "styles": [
+            "natural",
+            "hillshade"
+          ],
+          "bounds": {
+            "x": 1.29985,
+            "y": 0.2198831278026906,
+            "w": 0.0003,
+            "h": 0.00023374439461883406
+          },
+          "pixels": {
+            "width": 446,
+            "height": 348
+          },
+          "z": 13,
+          "size": 256,
+          "preview": {
+            "preset": "performance",
+            "label": "Performance",
+            "requestedScale": 0.5,
+            "effectiveScale": 0.5,
+            "clamped": false,
+            "hillshade": 0.55
+          }
+        }
+      },
+      {
+        "name": "balanced",
+        "camera": "1.29985 0.219925 0.0003 0.00015",
+        "generation": "5",
+        "revision": "12",
+        "pixels": [
+          "669",
+          "521"
+        ],
+        "resolution": "Preview: 669 × 521 · Balanced",
+        "request": {
+          "time": 6281.5,
+          "event": "request",
+          "generation": 5,
+          "session": "bb46da122ae1917787b90568aa26864c",
+          "identity": "977d134ee5aadc480e1410ade3c84587:bb46da122ae1917787b90568aa26864c",
+          "revision": 12,
+          "styles": [
+            "natural",
+            "hillshade"
+          ],
+          "bounds": {
+            "x": 1.29985,
+            "y": 0.2198831278026906,
+            "w": 0.0003,
+            "h": 0.00023374439461883406
+          },
+          "pixels": {
+            "width": 669,
+            "height": 521
+          },
+          "z": 14,
+          "size": 256,
+          "preview": {
+            "preset": "balanced",
+            "label": "Balanced",
+            "requestedScale": 0.75,
+            "effectiveScale": 0.75,
+            "clamped": false,
+            "hillshade": 0.55
+          }
+        }
+      },
+      {
+        "name": "high",
+        "camera": "1.29985 0.219925 0.0003 0.00015",
+        "generation": "6",
+        "revision": "12",
+        "pixels": [
+          "892",
+          "695"
+        ],
+        "resolution": "Preview: 892 × 695 · High quality",
+        "request": {
+          "time": 6559.5,
+          "event": "request",
+          "generation": 6,
+          "session": "bb46da122ae1917787b90568aa26864c",
+          "identity": "977d134ee5aadc480e1410ade3c84587:bb46da122ae1917787b90568aa26864c",
+          "revision": 12,
+          "styles": [
+            "natural",
+            "hillshade"
+          ],
+          "bounds": {
+            "x": 1.29985,
+            "y": 0.2198831278026906,
+            "w": 0.0003,
+            "h": 0.00023374439461883406
+          },
+          "pixels": {
+            "width": 892,
+            "height": 695
+          },
+          "z": 14,
+          "size": 256,
+          "preview": {
+            "preset": "high",
+            "label": "High quality",
+            "requestedScale": 1,
+            "effectiveScale": 1,
+            "clamped": false,
+            "hillshade": 0.55
+          }
+        }
+      },
+      {
+        "name": "custom",
+        "camera": "1.29985 0.219925 0.0003 0.00015",
+        "generation": "7",
+        "revision": "12",
+        "pixels": [
+          "1338",
+          "1043"
+        ],
+        "resolution": "Preview: 1338 × 1043 · Custom",
+        "request": {
+          "time": 7018.5,
+          "event": "request",
+          "generation": 7,
+          "session": "bb46da122ae1917787b90568aa26864c",
+          "identity": "977d134ee5aadc480e1410ade3c84587:bb46da122ae1917787b90568aa26864c",
+          "revision": 12,
+          "styles": [
+            "natural",
+            "hillshade"
+          ],
+          "bounds": {
+            "x": 1.29985,
+            "y": 0.2198831278026906,
+            "w": 0.0003,
+            "h": 0.00023374439461883406
+          },
+          "pixels": {
+            "width": 1338,
+            "height": 1043
+          },
+          "z": 15,
+          "size": 256,
+          "preview": {
+            "preset": "custom",
+            "label": "Custom",
+            "requestedScale": 1.5,
+            "effectiveScale": 1.5,
+            "clamped": false,
+            "hillshade": 0.55
+          }
+        }
+      },
+      {
+        "name": "rapid-quality-final",
+        "camera": "1.29985 0.219925 0.0003 0.00015",
+        "generation": "10",
+        "revision": "12",
+        "pixels": [
+          "669",
+          "521"
+        ],
+        "resolution": "Preview: 669 × 521 · Balanced",
+        "request": {
+          "time": 16071.39999999106,
+          "event": "request",
+          "generation": 10,
+          "session": "bb46da122ae1917787b90568aa26864c",
+          "identity": "977d134ee5aadc480e1410ade3c84587:bb46da122ae1917787b90568aa26864c",
+          "revision": 12,
+          "styles": [
+            "natural",
+            "hillshade"
+          ],
+          "bounds": {
+            "x": 1.29985,
+            "y": 0.2198831278026906,
+            "w": 0.0003,
+            "h": 0.00023374439461883406
+          },
+          "pixels": {
+            "width": 669,
+            "height": 521
+          },
+          "z": 14,
+          "size": 256,
+          "preview": {
+            "preset": "balanced",
+            "label": "Balanced",
+            "requestedScale": 0.75,
+            "effectiveScale": 0.75,
+            "clamped": false,
+            "hillshade": 0.55
+          }
+        }
+      },
+      {
+        "name": "illustrator",
+        "camera": "0 0 2 1",
+        "generation": "12",
+        "revision": "13",
+        "pixels": [
+          "2676",
+          "2085"
+        ],
+        "request": {
+          "time": 17010.59999999404,
+          "event": "request",
+          "generation": 12,
+          "session": "bb46da122ae1917787b90568aa26864c",
+          "identity": "977d134ee5aadc480e1410ade3c84587:bb46da122ae1917787b90568aa26864c",
+          "revision": 13,
+          "styles": [
+            "atlas",
+            "hillshade",
+            "shore-ink"
+          ],
+          "bounds": {
+            "x": 0,
+            "y": -0.27914798206278024,
+            "w": 2,
+            "h": 1.5582959641255605
+          },
+          "pixels": {
+            "width": 2676,
+            "height": 2085
+          },
+          "z": 2,
+          "size": 512
+        }
+      }
+    ]
+  },
+  "errors": []
+}

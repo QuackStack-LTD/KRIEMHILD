@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"kriemhild/internal/history"
 	"kriemhild/internal/legacyterrain"
@@ -70,12 +71,20 @@ func TestContinuousArchiveRoundTrip(t *testing.T) {
 	if restored.planet == nil || !reflect.DeepEqual(v.planet.Grid, restored.planet.Grid) || !reflect.DeepEqual(v.planet.Masses, restored.planet.Masses) || restored.world.Entities["town"].Name != "Old town" {
 		t.Fatal("archive lost terrain or authored identity")
 	}
+	if restored.planet.Spec.ClimateVersion != 1 || len(restored.planet.Grid.Fields["coldest"]) == 0 || len(restored.planet.Grid.Fields["rainfall-11"]) == 0 {
+		t.Fatal("archive lost active climate version or monthly summaries")
+	}
 	if !reflect.DeepEqual(restored.world.Header.Illustrations[art.ID], art) {
 		t.Fatal("archive lost editable illustration")
 	}
 }
 
 func TestContinuousAgeIsolationAndColdRestart(t *testing.T) {
+	for _, version := range []int{2, 3} {
+		t.Run(fmt.Sprintf("climate-%d", version), func(t *testing.T) { testContinuousAgeIsolationAndColdRestart(t, version) })
+	}
+}
+func testContinuousAgeIsolationAndColdRestart(t *testing.T, climateVersion int) {
 	ctx := context.Background()
 	db, err := storage.Open(ctx, t.TempDir(), "")
 	if err != nil {
@@ -84,6 +93,7 @@ func TestContinuousAgeIsolationAndColdRestart(t *testing.T) {
 	defer db.Close()
 	spec := model.DefaultSpec()
 	spec.SurfaceWidth = 1024
+	spec.ClimateVersion = climateVersion // Experimental monthly climate must survive actual project storage.
 	p, err := generate.Generate(ctx, spec, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -142,6 +152,9 @@ func TestContinuousAgeIsolationAndColdRestart(t *testing.T) {
 	}
 	if cold.planet == nil || len(cold.world.Operations) != 1 || !reflect.DeepEqual(cold.planet.Grid, p.Grid) {
 		t.Fatal("cold restore lost terrain or edits")
+	}
+	if cold.planet.Spec.ClimateVersion != p.Spec.ClimateVersion {
+		t.Fatal("cold restart changed climate version")
 	}
 	if detail.Sample(cold.planet, .3, .4) != detail.Sample(p, .3, .4) {
 		t.Fatal("sampling changed on restart")

@@ -11,6 +11,10 @@ import (
 const Version = "continuous-3"
 const Schema = 1
 const ClimateVersion = 1
+
+// Versions 2 and 3 remain explicit experimental new-world options. Saved worlds
+// retain their original version; the default is still version 1.
+const MaxClimateVersion = 3
 const Tau = 2 * math.Pi
 
 type Spec struct {
@@ -35,11 +39,14 @@ func DefaultSpec() Spec {
 	return Spec{Version: Version, ClimateVersion: ClimateVersion, Seed: "Kriemhild", Preset: "earthlike", RadiusKM: 6371, LandCoverage: .32, Continents: 5, Complexity: 1, Islands: 1, Relief: .8, Rainfall: 1.65, Tilt: 23.4, TileSize: 256, SurfaceWidth: 4096}
 }
 func (s Spec) Validate() error {
-	if s.ClimateVersion < 0 || s.ClimateVersion > ClimateVersion {
+	if s.ClimateVersion < 0 || s.ClimateVersion > MaxClimateVersion {
 		return fmt.Errorf("unsupported climate version")
 	}
 	if s.Version != Version && s.Version != "continuous-1" && s.Version != "continuous-2" {
 		return fmt.Errorf("unsupported terrain generator %q", s.Version)
+	}
+	if s.ClimateVersion >= 2 && s.Version != Version {
+		return fmt.Errorf("climate version %d requires the continuous-3 terrain generator", s.ClimateVersion)
 	}
 	if len(s.Seed) == 0 || len(s.Seed) > 1200 || s.Continents < 1 || s.Continents > 12 || s.LayoutVariant < 0 || s.LayoutVariant > 1000000 {
 		return fmt.Errorf("invalid seed or continent settings")
@@ -100,6 +107,7 @@ type Grid struct {
 	Fields map[string][]float64 `json:"-"`
 }
 type Diagnostics struct {
+	ClimateBudget       []ClimateWaterBudget          `json:"climateWaterBudget,omitempty"`
 	Hydrology           *HydrologyDiagnostics         `json:"hydrology,omitempty"`
 	CoastLengthKM       float64                       `json:"macroCoastLengthKm"`
 	Compactness         float64                       `json:"macroSilhouetteCompactness"`
@@ -117,6 +125,18 @@ type Diagnostics struct {
 	BiomeShares         map[string]float64            `json:"biomeShares"`
 	Warnings            []string                      `json:"warnings"`
 	Timings             map[string]float64            `json:"timingsMs"`
+}
+
+// Monthly water quantities are mm over the WHOLE planet, area weighted. They
+// expose the supply terms separately; mass conservation alone cannot validate
+// the magnitude of free-water evaporation.
+type ClimateWaterBudget struct {
+	Month            int     `json:"month"`
+	OceanEvaporation float64 `json:"oceanEvaporation"`
+	LandEvaporation  float64 `json:"landEvaporation"`
+	OceanPotential   float64 `json:"oceanPotential"`
+	Precipitation    float64 `json:"precipitation"`
+	StorageChange    float64 `json:"storageChange"`
 }
 type Planet struct {
 	Surface     *Surface    `json:"surface,omitempty"`

@@ -1,0 +1,435 @@
+{
+  "stages": [
+    {
+      "name": "baseline",
+      "camera": "1.285 0.2125 0.03 0.015",
+      "request": {
+        "time": 6616.0999999940395,
+        "event": "request",
+        "generation": 3,
+        "session": "ddb6a9ca7d77e16b5dad825d0f4648d3",
+        "identity": "977d134ee5aadc480e1410ade3c84587:ddb6a9ca7d77e16b5dad825d0f4648d3",
+        "revision": 12,
+        "styles": [
+          "natural",
+          "hillshade"
+        ],
+        "bounds": {
+          "x": 1.285,
+          "y": 0.20831278026905828,
+          "w": 0.03,
+          "h": 0.023374439461883407
+        },
+        "pixels": {
+          "width": 669,
+          "height": 521
+        },
+        "z": 7,
+        "size": 256,
+        "preview": {
+          "preset": "balanced",
+          "label": "Balanced",
+          "requestedScale": 0.75,
+          "effectiveScale": 0.75,
+          "clamped": false,
+          "hillshade": 0.55
+        }
+      },
+      "images": [
+        {
+          "generation": "3",
+          "revision": "12",
+          "lod": "7",
+          "rasterStyle": "natural",
+          "x": "1.285",
+          "y": "0.20831278026905828",
+          "w": "0.03",
+          "h": "0.023374439461883407"
+        }
+      ]
+    },
+    {
+      "name": "performance",
+      "camera": "1.285 0.2125 0.03 0.015",
+      "request": {
+        "time": 7145.399999991059,
+        "event": "request",
+        "generation": 4,
+        "session": "ddb6a9ca7d77e16b5dad825d0f4648d3",
+        "identity": "977d134ee5aadc480e1410ade3c84587:ddb6a9ca7d77e16b5dad825d0f4648d3",
+        "revision": 12,
+        "styles": [
+          "natural",
+          "hillshade"
+        ],
+        "bounds": {
+          "x": 1.285,
+          "y": 0.20831278026905828,
+          "w": 0.03,
+          "h": 0.023374439461883407
+        },
+        "pixels": {
+          "width": 446,
+          "height": 348
+        },
+        "z": 6,
+        "size": 256,
+        "preview": {
+          "preset": "performance",
+          "label": "Performance",
+          "requestedScale": 0.5,
+          "effectiveScale": 0.5,
+          "clamped": false,
+          "hillshade": 0.55
+        }
+      },
+      "images": [
+        {
+          "generation": "4",
+          "revision": "12",
+          "lod": "6",
+          "rasterStyle": "natural",
+          "x": "1.285",
+          "y": "0.20831278026905828",
+          "w": "0.03",
+          "h": "0.023374439461883407"
+        }
+      ]
+    },
+    {
+      "name": "high",
+      "camera": "1.285 0.2125 0.03 0.015",
+      "request": {
+        "time": 11224.20000000298,
+        "event": "request",
+        "generation": 5,
+        "session": "ddb6a9ca7d77e16b5dad825d0f4648d3",
+        "identity": "977d134ee5aadc480e1410ade3c84587:ddb6a9ca7d77e16b5dad825d0f4648d3",
+        "revision": 12,
+        "styles": [
+          "natural",
+          "hillshade"
+        ],
+        "bounds": {
+          "x": 1.285,
+          "y": 0.20831278026905828,
+          "w": 0.03,
+          "h": 0.023374439461883407
+        },
+        "pixels": {
+          "width": 892,
+          "height": 695
+        },
+        "z": 7,
+        "size": 256,
+        "preview": {
+          "preset": "high",
+          "label": "High quality",
+          "requestedScale": 1,
+          "effectiveScale": 1,
+          "clamped": false,
+          "hillshade": 0.55
+        }
+      },
+      "images": [
+        {
+          "generation": "5",
+          "revision": "12",
+          "lod": "7",
+          "rasterStyle": "natural",
+          "x": "1.285",
+          "y": "0.20831278026905828",
+          "w": "0.03",
+          "h": "0.023374439461883407"
+        }
+      ]
+    },
+    {
+      "name": "balanced",
+      "camera": "1.285 0.2125 0.03 0.015",
+      "request": {
+        "time": 14881,
+        "event": "request",
+        "generation": 6,
+        "session": "ddb6a9ca7d77e16b5dad825d0f4648d3",
+        "identity": "977d134ee5aadc480e1410ade3c84587:ddb6a9ca7d77e16b5dad825d0f4648d3",
+        "revision": 12,
+        "styles": [
+          "natural",
+          "hillshade"
+        ],
+        "bounds": {
+          "x": 1.285,
+          "y": 0.20831278026905828,
+          "w": 0.03,
+          "h": 0.023374439461883407
+        },
+        "pixels": {
+          "width": 669,
+          "height": 521
+        },
+        "z": 7,
+        "size": 256,
+        "preview": {
+          "preset": "balanced",
+          "label": "Balanced",
+          "requestedScale": 0.75,
+          "effectiveScale": 0.75,
+          "clamped": false,
+          "hillshade": 0.55
+        }
+      },
+      "images": [
+        {
+          "generation": "6",
+          "revision": "12",
+          "lod": "7",
+          "rasterStyle": "natural",
+          "x": "1.285",
+          "y": "0.20831278026905828",
+          "w": "0.03",
+          "h": "0.023374439461883407"
+        }
+      ]
+    },
+    {
+      "name": "preference-reopened",
+      "camera": "1.285 0.2125 0.03 0.015",
+      "request": {
+        "time": 905.6999999880791,
+        "event": "request",
+        "generation": 2,
+        "session": "ddb6a9ca7d77e16b5dad825d0f4648d3",
+        "identity": "977d134ee5aadc480e1410ade3c84587:ddb6a9ca7d77e16b5dad825d0f4648d3",
+        "revision": 12,
+        "styles": [
+          "natural",
+          "hillshade"
+        ],
+        "bounds": {
+          "x": 1.285,
+          "y": 0.20831278026905828,
+          "w": 0.03,
+          "h": 0.023374439461883407
+        },
+        "pixels": {
+          "width": 446,
+          "height": 348
+        },
+        "z": 6,
+        "size": 256,
+        "preview": {
+          "preset": "performance",
+          "label": "Performance",
+          "requestedScale": 0.5,
+          "effectiveScale": 0.5,
+          "clamped": false,
+          "hillshade": 0.55
+        }
+      },
+      "images": [
+        {
+          "generation": "2",
+          "revision": "12",
+          "lod": "6",
+          "rasterStyle": "natural",
+          "x": "1.285",
+          "y": "0.20831278026905828",
+          "w": "0.03",
+          "h": "0.023374439461883407"
+        }
+      ]
+    },
+    {
+      "name": "edit-and-quality-while-pending",
+      "camera": "1.285 0.2125 0.03 0.015",
+      "request": {
+        "time": 2469.699999988079,
+        "event": "request",
+        "generation": 5,
+        "session": "ddb6a9ca7d77e16b5dad825d0f4648d3",
+        "identity": "977d134ee5aadc480e1410ade3c84587:ddb6a9ca7d77e16b5dad825d0f4648d3",
+        "revision": 13,
+        "styles": [
+          "exposure",
+          "hillshade"
+        ],
+        "bounds": {
+          "x": 1.285,
+          "y": 0.20831278026905828,
+          "w": 0.03,
+          "h": 0.023374439461883407
+        },
+        "pixels": {
+          "width": 892,
+          "height": 695
+        },
+        "z": 7,
+        "size": 256,
+        "preview": {
+          "preset": "high",
+          "label": "High quality",
+          "requestedScale": 1,
+          "effectiveScale": 1,
+          "clamped": false,
+          "hillshade": 0.55
+        }
+      },
+      "images": [
+        {
+          "generation": "5",
+          "revision": "13",
+          "lod": "7",
+          "rasterStyle": "exposure",
+          "x": "1.285",
+          "y": "0.20831278026905828",
+          "w": "0.03",
+          "h": "0.023374439461883407"
+        }
+      ]
+    },
+    {
+      "name": "undo",
+      "camera": "1.285 0.2125 0.03 0.015",
+      "request": {
+        "time": 4347.79999999702,
+        "event": "request",
+        "generation": 6,
+        "session": "ddb6a9ca7d77e16b5dad825d0f4648d3",
+        "identity": "977d134ee5aadc480e1410ade3c84587:ddb6a9ca7d77e16b5dad825d0f4648d3",
+        "revision": 14,
+        "styles": [
+          "exposure",
+          "hillshade"
+        ],
+        "bounds": {
+          "x": 1.285,
+          "y": 0.20831278026905828,
+          "w": 0.03,
+          "h": 0.023374439461883407
+        },
+        "pixels": {
+          "width": 892,
+          "height": 695
+        },
+        "z": 7,
+        "size": 256,
+        "preview": {
+          "preset": "high",
+          "label": "High quality",
+          "requestedScale": 1,
+          "effectiveScale": 1,
+          "clamped": false,
+          "hillshade": 0.55
+        }
+      },
+      "images": [
+        {
+          "generation": "6",
+          "revision": "14",
+          "lod": "7",
+          "rasterStyle": "exposure",
+          "x": "1.285",
+          "y": "0.20831278026905828",
+          "w": "0.03",
+          "h": "0.023374439461883407"
+        }
+      ]
+    },
+    {
+      "name": "redo",
+      "camera": "1.285 0.2125 0.03 0.015",
+      "request": {
+        "time": 4903.199999988079,
+        "event": "request",
+        "generation": 7,
+        "session": "ddb6a9ca7d77e16b5dad825d0f4648d3",
+        "identity": "977d134ee5aadc480e1410ade3c84587:ddb6a9ca7d77e16b5dad825d0f4648d3",
+        "revision": 15,
+        "styles": [
+          "exposure",
+          "hillshade"
+        ],
+        "bounds": {
+          "x": 1.285,
+          "y": 0.20831278026905828,
+          "w": 0.03,
+          "h": 0.023374439461883407
+        },
+        "pixels": {
+          "width": 892,
+          "height": 695
+        },
+        "z": 7,
+        "size": 256,
+        "preview": {
+          "preset": "high",
+          "label": "High quality",
+          "requestedScale": 1,
+          "effectiveScale": 1,
+          "clamped": false,
+          "hillshade": 0.55
+        }
+      },
+      "images": [
+        {
+          "generation": "7",
+          "revision": "15",
+          "lod": "7",
+          "rasterStyle": "exposure",
+          "x": "1.285",
+          "y": "0.20831278026905828",
+          "w": "0.03",
+          "h": "0.023374439461883407"
+        }
+      ]
+    }
+  ],
+  "exports": [
+    {
+      "preset": "performance",
+      "format": "SVG",
+      "path": "docs/preview-climate-investigation/preview-integration/performance.svg",
+      "bytes": 2767002,
+      "sha256": "547799310168337887c8d036ff05dea5ea35d5c9702e45bfa6d0e14dc02c2c0f"
+    },
+    {
+      "preset": "performance",
+      "format": "PNG",
+      "path": "docs/preview-climate-investigation/preview-integration/performance.png",
+      "bytes": 259301,
+      "sha256": "e6917e8dda6b800570d3440b8f0d2f678e7e3bebef623275a2734ad44c59cfe5"
+    },
+    {
+      "preset": "high",
+      "format": "SVG",
+      "path": "docs/preview-climate-investigation/preview-integration/high.svg",
+      "bytes": 2767002,
+      "sha256": "547799310168337887c8d036ff05dea5ea35d5c9702e45bfa6d0e14dc02c2c0f"
+    },
+    {
+      "preset": "high",
+      "format": "PNG",
+      "path": "docs/preview-climate-investigation/preview-integration/high.png",
+      "bytes": 259301,
+      "sha256": "e6917e8dda6b800570d3440b8f0d2f678e7e3bebef623275a2734ad44c59cfe5"
+    },
+    {
+      "preset": "balanced",
+      "format": "SVG",
+      "path": "docs/preview-climate-investigation/preview-integration/balanced.svg",
+      "bytes": 2767002,
+      "sha256": "547799310168337887c8d036ff05dea5ea35d5c9702e45bfa6d0e14dc02c2c0f"
+    },
+    {
+      "preset": "balanced",
+      "format": "PNG",
+      "path": "docs/preview-climate-investigation/preview-integration/balanced.png",
+      "bytes": 259301,
+      "sha256": "e6917e8dda6b800570d3440b8f0d2f678e7e3bebef623275a2734ad44c59cfe5"
+    }
+  ],
+  "generationJobs": 0,
+  "status": "complete",
+  "errors": []
+}

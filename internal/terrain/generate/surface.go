@@ -57,6 +57,10 @@ func materialize(ctx context.Context, p *model.Planet) error {
 	// Drainage has its own finer grid. Climate is conservative at its original
 	// resolution; resampling does not run weather or add terrain during zoom.
 	old := p.Grid
+	var sea model.Grid
+	if p.Spec.ClimateVersion >= 2 {
+		sea = seaLevelClimate(old)
+	}
 	g := model.Grid{Width: 512, Height: 256, Fields: map[string][]float64{}}
 	for key := range old.Fields {
 		g.Fields[key] = make([]float64, g.Width*g.Height)
@@ -72,11 +76,21 @@ func materialize(ctx context.Context, p *model.Planet) error {
 		for month := 0; month < 12; month++ {
 			g.Fields[fmt.Sprintf("temperature-%02d", month)][i] -= delta
 		}
+		if p.Spec.ClimateVersion >= 2 {
+			lapse := math.Max(0, g.Fields["bed"][i]) * .0065
+			g.Fields["temperature"][i] = sea.At("temperature", pt[0], pt[1]) - lapse
+			for _, key := range temperatureMonths {
+				g.Fields[key][i] = sea.At(key, pt[0], pt[1]) - lapse
+			}
+		}
 		g.Fields["coast"][i] = s.At(s.Coast, pt[0], pt[1])
 		g.Fields["roughness"][i] = s.At(s.Roughness, pt[0], pt[1])
 		g.Fields["flow"][i] = -1
 	}
 	p.Grid = g
+	if p.Spec.ClimateVersion >= 2 {
+		materializedMoisture(&p.Grid, p.Spec)
+	}
 	if p.Spec.ClimateVersion >= 1 {
 		summarizeSeasons(&p.Grid)
 	}

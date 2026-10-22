@@ -4,7 +4,9 @@ import assert from "node:assert/strict";
 const base = process.env.KRIEMHILD_AUDIT_URL || "http://127.0.0.1:8125";
 const world =
   process.env.KRIEMHILD_AUDIT_WORLD || "47d7f3ae6edf78298c34a8b8f334ae6f";
-const out = "docs/terrain-investigation/browser";
+const out =
+  process.env.KRIEMHILD_AUDIT_OUT || "docs/terrain-investigation/browser";
+const renderer = process.env.KRIEMHILD_AUDIT_RENDERER || "tiles";
 await mkdir(out, { recursive: true });
 const browser = await chromium.launch({
   headless: true,
@@ -26,7 +28,9 @@ const settle = async () => {
   await page.waitForLoadState("networkidle", { timeout: 90000 });
 };
 try {
-  await page.goto(`${base}/world/${world}/build?tileDebug=1`);
+  await page.goto(
+    `${base}/world/${world}/build?tileDebug=1&terrainRenderer=${renderer}`,
+  );
   await page.waitForSelector("image", { timeout: 90000 });
   await settle();
   await page.evaluate(
@@ -35,6 +39,19 @@ try {
   await page
     .getByRole("button", { name: "Settlement Builder", exact: true })
     .click();
+  if (process.env.KRIEMHILD_AUDIT_SITE) {
+    const [x, y] = process.env.KRIEMHILD_AUDIT_SITE.split(",").map(Number);
+    await page.evaluate(
+      ([x, y]) =>
+        window.dispatchEvent(
+          new CustomEvent("terrain-diagnostic-camera", {
+            detail: { x: x - 0.02, y: y - 0.01, w: 0.04, h: 0.02 },
+          }),
+        ),
+      [x, y],
+    );
+    await settle();
+  }
   await page.getByRole("button", { name: /^site$/i }).click();
   const rect = await page.locator(".studio-stage svg").boundingBox(),
     click = [rect.x + rect.width / 2, rect.y + rect.height / 2];

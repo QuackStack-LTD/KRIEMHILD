@@ -50,7 +50,7 @@ func (s *Server) continuousMesh(w http.ResponseWriter, r *http.Request) {
 	p := v.planet
 	box := world.Bounds{X: (b[0] + math.Pi) / model.Tau * float64(v.solver.W-1), Y: (.5 - b[3]/math.Pi) * float64(v.solver.H-1), Width: (b[2] - b[0]) / model.Tau * float64(v.solver.W-1), Height: (b[3] - b[1]) / math.Pi * float64(v.solver.H-1)}
 	ops := append([]world.Operation(nil), v.authored().Ops(box.Expand(.1))...)
-	transform := continuousTransform(ops, v.solver.W, v.solver.H)
+	transform := continuousTransform(ops, v.solver.W, v.solver.H, p)
 	if v.tileIdentity == "" {
 		meta, fields, err := p.Encode()
 		if err != nil {

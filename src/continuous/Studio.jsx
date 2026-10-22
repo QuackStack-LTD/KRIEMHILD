@@ -9,7 +9,8 @@ import {
 } from "react";
 import { request, defaults, presets } from "./api.js";
 import TileSurface from "./TileSurface.jsx";
-import { normalizeCamera, visibleTiles } from "./camera.js";
+import ViewportSurface, { ViewportLayer } from "./ViewportSurface.jsx";
+import { normalizeCamera, visibleTiles, reliefResolution } from "./camera.js";
 import {
   screenToMap,
   viewport,
@@ -19,6 +20,13 @@ import {
 } from "./geometry.js";
 import { riverFeatures, riverWidth, riverVisible } from "./rivers.js";
 import { generationSpec } from "./seed.js";
+import {
+  readPreviewQuality,
+  savePreviewQuality,
+  previewRequest,
+  previewPresets,
+  previewHelp,
+} from "./preview-quality.js";
 import { bounds as geometryBounds } from "./geometry.js";
 import { newIllustration, buildIllustration } from "./illustration.js";
 import IllustrationScene from "./IllustrationScene.jsx";
@@ -52,6 +60,11 @@ const pointsText = (points, state) =>
 export default function Studio({ initialState, onExit }) {
   const [show3D, setShow3D] = useState(false);
   const [exportWidth, setExportWidth] = useState(2048);
+  const [previewQuality, setPreviewQuality] = useState(readPreviewQuality);
+  const [previewSaved, setPreviewSaved] = useState(true);
+  useEffect(() => {
+    setPreviewSaved(savePreviewQuality(previewQuality));
+  }, [previewQuality]);
   const [state, setState] = useState(initialState || null),
     [spec, setSpec] = useState({
       ...defaults,
@@ -118,8 +131,21 @@ export default function Studio({ initialState, onExit }) {
     inspectAbort = useRef(null);
   active.current = state;
   const query = useRef(new URLSearchParams(location.search));
+  useEffect(() => {
+    if (query.current.get("tileDebug") !== "1") return;
+    // Reproducible geographic views for diagnostics, independent of event timing.
+    const restore = (event) => setCamera(normalizeCamera(event.detail));
+    window.addEventListener("terrain-diagnostic-camera", restore);
+    return () =>
+      window.removeEventListener("terrain-diagnostic-camera", restore);
+  }, []);
+  // Keep the original path only as an explicit regression comparison tool.
+  const viewportRenderer = query.current.get("terrainRenderer") !== "tiles";
+  const [renderRetry, setRenderRetry] = useState(0);
+  const [renderError, setRenderError] = useState("");
   const base = `sessions/${state?.id}`;
   const displayStyle = illustrating ? "atlas" : style;
+  const previewInfo = previewRequest({ camera, width, height }, previewQuality);
   const artObjects = useMemo(
     () =>
       art && state
@@ -690,9 +716,14 @@ export default function Studio({ initialState, onExit }) {
   }
   function zoom(e) {
     e.preventDefault();
-    const p = position(e),
+    const rect = svg.current.getBoundingClientRect(),
+      x = e.clientX,
+      y = e.clientY,
       factor = Math.exp(Math.max(-0.4, Math.min(0.4, e.deltaY * 0.0015)));
     setCamera((c) => {
+      // Batched wheel events can share a listener from an earlier render. Use
+      // the SAME current camera for both pointer conversion and zooming.
+      const p = screenToMap(x, y, rect, c);
       const w = Math.max(0.00008, Math.min(3, c.w * factor)),
         f = w / c.w;
       return {
@@ -717,6 +748,17 @@ export default function Studio({ initialState, onExit }) {
     clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
     clone.setAttribute("width", String(exportWidth));
     clone.setAttribute("height", String((exportWidth * camera.h) / camera.w));
+    // Preview transactions are editor state, not export quality or content.
+    for (const frame of clone.querySelectorAll(
+      '[aria-label="Committed terrain viewport"]',
+    ))
+      for (const key of [
+        "data-generation",
+        "data-phase",
+        "data-pixel-width",
+        "data-pixel-height",
+      ])
+        frame.removeAttribute(key);
     for (const selected of clone.querySelectorAll(
       '[aria-label="Illustration selection"], [data-editor-handle]',
     ))
@@ -759,6 +801,15 @@ export default function Studio({ initialState, onExit }) {
         }
       };
       await Promise.all([worker(), worker(), worker()]);
+      // PNG edge coverage must not depend on which network worker finishes
+      // first. Export the same geographic tile sequence at every preview quality.
+      terrain.replaceChildren(
+        ...[...terrain.children].sort(
+          (a, b) =>
+            +a.getAttribute("y") - +b.getAttribute("y") ||
+            +a.getAttribute("x") - +b.getAttribute("x"),
+        ),
+      );
     }
     for (const img of clone.querySelectorAll("image")) {
       const blob = await (await fetch(img.getAttribute("href"))).blob();
@@ -1080,36 +1131,66 @@ export default function Studio({ initialState, onExit }) {
           >
             <rect x="-100" y="-100" width="200" height="200" fill="#101d2a" />
             {state && (
-              <>
-                <TileSurface
-                  enabled={!show3D}
-                  session={state.id}
-                  revision={state.project.revision}
-                  invalidations={invalidations}
-                  style={displayStyle}
-                  identity={`${state.worldId}:${state.id}`}
-                  camera={camera}
-                  width={width}
-                  height={height}
-                  onLoading={setLoading}
-                />
+              <ViewportSurface
+                active={viewportRenderer}
+                enabled={!show3D}
+                session={state.id}
+                revision={state.project.revision}
+                invalidations={invalidations}
+                identity={`${state.worldId}:${state.id}`}
+                camera={camera}
+                width={width}
+                height={height}
+                previewQuality={illustrating ? undefined : previewQuality}
+                previewHillshade={illustrating ? undefined : hillshade}
+                retry={renderRetry}
+                onLoading={setLoading}
+                onError={setRenderError}
+                styles={[
+                  displayStyle,
+                  ...(hillshade > 0 || illustrating ? ["hillshade"] : []),
+                  ...(illustrating && state.continuous.analysisStale
+                    ? ["shore-ink"]
+                    : []),
+                ]}
+              >
+                {viewportRenderer ? (
+                  <ViewportLayer style={displayStyle} primary />
+                ) : (
+                  <TileSurface
+                    enabled={!show3D}
+                    session={state.id}
+                    revision={state.project.revision}
+                    invalidations={invalidations}
+                    style={displayStyle}
+                    identity={`${state.worldId}:${state.id}`}
+                    camera={camera}
+                    width={width}
+                    height={height}
+                    onLoading={setLoading}
+                  />
+                )}
                 {hillshade > 0 && !illustrating && (
                   <g
                     style={{ mixBlendMode: "multiply" }}
                     opacity={hillshade}
                     pointerEvents="none"
                   >
-                    <TileSurface
-                      enabled={!show3D}
-                      session={state.id}
-                      revision={state.project.revision}
-                      invalidations={invalidations}
-                      style="hillshade"
-                      identity={`${state.worldId}:${state.id}`}
-                      camera={camera}
-                      width={width}
-                      height={height}
-                    />
+                    {viewportRenderer ? (
+                      <ViewportLayer style="hillshade" />
+                    ) : (
+                      <TileSurface
+                        enabled={!show3D}
+                        session={state.id}
+                        revision={state.project.revision}
+                        invalidations={invalidations}
+                        style="hillshade"
+                        identity={`${state.worldId}:${state.id}`}
+                        camera={camera}
+                        width={width}
+                        height={height}
+                      />
+                    )}
                   </g>
                 )}
                 {showRivers && !illustrating && (
@@ -1179,17 +1260,21 @@ export default function Studio({ initialState, onExit }) {
                     pixel={art.bounds[2] / 1200}
                     coastOverlay={
                       state.continuous.analysisStale ? (
-                        <TileSurface
-                          enabled={!show3D}
-                          session={state.id}
-                          revision={state.project.revision}
-                          invalidations={invalidations}
-                          style="shore-ink"
-                          identity={`${state.worldId}:${state.id}`}
-                          camera={camera}
-                          width={width}
-                          height={height}
-                        />
+                        viewportRenderer ? (
+                          <ViewportLayer style="shore-ink" />
+                        ) : (
+                          <TileSurface
+                            enabled={!show3D}
+                            session={state.id}
+                            revision={state.project.revision}
+                            invalidations={invalidations}
+                            style="shore-ink"
+                            identity={`${state.worldId}:${state.id}`}
+                            camera={camera}
+                            width={width}
+                            height={height}
+                          />
+                        )
                       ) : null
                     }
                     relief={
@@ -1198,17 +1283,21 @@ export default function Studio({ initialState, onExit }) {
                         opacity={hillshade}
                         pointerEvents="none"
                       >
-                        <TileSurface
-                          enabled={!show3D}
-                          session={state.id}
-                          revision={state.project.revision}
-                          invalidations={invalidations}
-                          style="hillshade"
-                          identity={`${state.worldId}:${state.id}`}
-                          camera={camera}
-                          width={width}
-                          height={height}
-                        />
+                        {viewportRenderer ? (
+                          <ViewportLayer style="hillshade" />
+                        ) : (
+                          <TileSurface
+                            enabled={!show3D}
+                            session={state.id}
+                            revision={state.project.revision}
+                            invalidations={invalidations}
+                            style="hillshade"
+                            identity={`${state.worldId}:${state.id}`}
+                            camera={camera}
+                            width={width}
+                            height={height}
+                          />
+                        )}
                       </g>
                     }
                   />
@@ -1258,7 +1347,7 @@ export default function Studio({ initialState, onExit }) {
                       pointerEvents="none"
                     />
                   )}
-              </>
+              </ViewportSurface>
             )}
           </svg>
           {!state && (
@@ -1448,6 +1537,33 @@ export default function Studio({ initialState, onExit }) {
                 </label>
                 <details>
                   <summary>Climate & scale</summary>
+                  <label>
+                    Climate model
+                    <select
+                      value={spec.climateVersion || 1}
+                      onChange={(e) =>
+                        setSpec({ ...spec, climateVersion: +e.target.value })
+                      }
+                    >
+                      <option value={1}>Version 1</option>
+                      <option value={2}>
+                        Version 2 — corrected elevation and moisture
+                        (experimental)
+                      </option>
+                      <option value={3}>
+                        Version 3 — seasonal heat and rain uplift (experimental)
+                      </option>
+                    </select>
+                    {state?.continuous?.spec && (
+                      <small>
+                        Displayed terrain: {state.continuous.spec.version},
+                        climate version{" "}
+                        {state.continuous.spec.climateVersion || 0}. Selecting a
+                        model applies to the next generated preview; it does not
+                        migrate saved terrain.
+                      </small>
+                    )}
+                  </label>
                   <label>
                     Rainfall multiplier
                     <input
@@ -1833,6 +1949,66 @@ export default function Studio({ initialState, onExit }) {
             )}
             <section>
               <h3>Map appearance</h3>
+              {!illustrating && viewportRenderer && (
+                <div title={previewHelp}>
+                  <label>
+                    Preview Quality
+                    <select
+                      aria-label="Preview Quality"
+                      value={previewQuality.preset}
+                      onChange={(e) =>
+                        setPreviewQuality((q) => ({
+                          ...q,
+                          preset: e.target.value,
+                        }))
+                      }
+                    >
+                      {Object.entries(previewPresets).map(([key, p]) => (
+                        <option key={key} value={key}>
+                          {p.label} ({p.scale.toFixed(2)}×)
+                        </option>
+                      ))}
+                      <option value="custom">Custom</option>
+                    </select>
+                  </label>
+                  {previewQuality.preset === "custom" && (
+                    <label>
+                      Custom preview scale (
+                      {previewQuality.customScale.toFixed(2)}×)
+                      <input
+                        type="range"
+                        min="0.5"
+                        max="1.5"
+                        step="0.05"
+                        value={previewQuality.customScale}
+                        onChange={(e) =>
+                          setPreviewQuality((q) => ({
+                            ...q,
+                            customScale: +e.target.value,
+                          }))
+                        }
+                      />
+                    </label>
+                  )}
+                  <p
+                    className="studio-muted"
+                    aria-label="Effective preview resolution"
+                  >
+                    Preview: {previewInfo.pixels.width} ×{" "}
+                    {previewInfo.pixels.height} · {previewInfo.preview.label}
+                    {previewInfo.preview.clamped &&
+                      ` · limited to ${previewInfo.preview.effectiveScale.toFixed(2)}× by render budgets`}
+                  </p>
+                  <p className="studio-muted">
+                    2D preview only; saved terrain and exports are unchanged.
+                  </p>
+                  {!previewSaved && (
+                    <p role="status">
+                      This browser could not save the preview preference.
+                    </p>
+                  )}
+                </div>
+              )}
               <div className="studio-actions">
                 <button
                   onClick={() => {
@@ -2169,18 +2345,42 @@ export default function Studio({ initialState, onExit }) {
             ? `${(cursor[0] * 180 - 180).toFixed(3)}° E, ${(90 - cursor[1] * 180).toFixed(3)}° N`
             : "Move over the map"}
         </span>
-        <span>{Math.max(0, Math.log2(2 / camera.w)).toFixed(1)}× detail</span>
+        <span title="Camera magnification relative to the full world">
+          {(2 / camera.w).toFixed(1)}× zoom
+        </span>
+        {reliefResolution(
+          state?.continuous.spec,
+          camera,
+          width,
+          height,
+          Math.min(3, devicePixelRatio || 1),
+        )?.resolved && (
+          <span
+            title={`Base relief uses approximately ${reliefResolution(state.continuous.spec, camera, width, height).spacingKM.toFixed(1)} km north–south sample spacing. Closer zoom interpolates relief and reveals saved river and authored geometry; it does not generate new landforms. Preview Quality controls rendering cost, not geography. Finer relief requires a separate local-refinement system.`}
+          >
+            Base relief resolution limit
+          </span>
+        )}
         <span>
           {state
             ? `${((camera.w / 5) * Math.PI * state.continuous.spec.radiusKm).toFixed(1)} km ━━━━━`
             : ""}
         </span>
-        <span role="status">
+        <span role="status" title={loading < 0 ? renderError : undefined}>
           {loading > 0
-            ? `Sampling ${loading} tiles…`
+            ? viewportRenderer
+              ? "Rendering terrain…"
+              : `Sampling ${loading} tiles…`
             : loading < 0
-              ? "Tile loading failed"
+              ? viewportRenderer
+                ? "Terrain render failed"
+                : "Tile loading failed"
               : "Ready"}
+          {loading < 0 && viewportRenderer && (
+            <button onClick={() => setRenderRetry((v) => v + 1)}>
+              Retry terrain
+            </button>
+          )}
         </span>
       </footer>
     </div>

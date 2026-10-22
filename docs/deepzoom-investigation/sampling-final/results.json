@@ -1,0 +1,694 @@
+{
+  "climateGrid": [
+    512,
+    256
+  ],
+  "heapAlloc": 486737784,
+  "heapSys": 763199488,
+  "renders": [
+    {
+      "bytes": 47344,
+      "ms": 187.238,
+      "repeat": 0,
+      "style": "natural",
+      "x": 2,
+      "y": 0,
+      "z": 1
+    },
+    {
+      "bytes": 18742,
+      "ms": 15.018,
+      "repeat": 0,
+      "style": "hillshade",
+      "x": 2,
+      "y": 0,
+      "z": 1
+    },
+    {
+      "bytes": 8160,
+      "ms": 14.999,
+      "repeat": 0,
+      "style": "biome",
+      "x": 2,
+      "y": 0,
+      "z": 1
+    },
+    {
+      "bytes": 32143,
+      "ms": 84.707,
+      "repeat": 0,
+      "style": "natural",
+      "x": 20,
+      "y": 3,
+      "z": 4
+    },
+    {
+      "bytes": 31517,
+      "ms": 17.513,
+      "repeat": 0,
+      "style": "hillshade",
+      "x": 20,
+      "y": 3,
+      "z": 4
+    },
+    {
+      "bytes": 2916,
+      "ms": 16.999,
+      "repeat": 0,
+      "style": "biome",
+      "x": 20,
+      "y": 3,
+      "z": 4
+    },
+    {
+      "bytes": 7541,
+      "ms": 81.509,
+      "repeat": 0,
+      "style": "natural",
+      "x": 166,
+      "y": 28,
+      "z": 7
+    },
+    {
+      "bytes": 4658,
+      "ms": 16.715,
+      "repeat": 0,
+      "style": "hillshade",
+      "x": 166,
+      "y": 28,
+      "z": 7
+    },
+    {
+      "bytes": 1134,
+      "ms": 16.265,
+      "repeat": 0,
+      "style": "biome",
+      "x": 166,
+      "y": 28,
+      "z": 7
+    },
+    {
+      "bytes": 1778,
+      "ms": 79.659,
+      "repeat": 0,
+      "style": "natural",
+      "x": 1331,
+      "y": 225,
+      "z": 10
+    },
+    {
+      "bytes": 2076,
+      "ms": 16,
+      "repeat": 0,
+      "style": "hillshade",
+      "x": 1331,
+      "y": 225,
+      "z": 10
+    },
+    {
+      "bytes": 1134,
+      "ms": 15.999,
+      "repeat": 0,
+      "style": "biome",
+      "x": 1331,
+      "y": 225,
+      "z": 10
+    },
+    {
+      "bytes": 1134,
+      "ms": 78.852,
+      "repeat": 0,
+      "style": "natural",
+      "x": 10649,
+      "y": 1802,
+      "z": 13
+    },
+    {
+      "bytes": 1132,
+      "ms": 15.001,
+      "repeat": 0,
+      "style": "hillshade",
+      "x": 10649,
+      "y": 1802,
+      "z": 13
+    },
+    {
+      "bytes": 1134,
+      "ms": 15.509,
+      "repeat": 0,
+      "style": "biome",
+      "x": 10649,
+      "y": 1802,
+      "z": 13
+    },
+    {
+      "bytes": 1134,
+      "ms": 78.508,
+      "repeat": 0,
+      "style": "natural",
+      "x": 85196,
+      "y": 14417,
+      "z": 16
+    },
+    {
+      "bytes": 1132,
+      "ms": 15.999,
+      "repeat": 0,
+      "style": "hillshade",
+      "x": 85196,
+      "y": 14417,
+      "z": 16
+    },
+    {
+      "bytes": 1134,
+      "ms": 16,
+      "repeat": 0,
+      "style": "biome",
+      "x": 85196,
+      "y": 14417,
+      "z": 16
+    },
+    {
+      "bytes": 47344,
+      "ms": 17.021,
+      "repeat": 1,
+      "style": "natural",
+      "x": 2,
+      "y": 0,
+      "z": 1
+    },
+    {
+      "bytes": 18742,
+      "ms": 15.001,
+      "repeat": 1,
+      "style": "hillshade",
+      "x": 2,
+      "y": 0,
+      "z": 1
+    },
+    {
+      "bytes": 8160,
+      "ms": 15.998,
+      "repeat": 1,
+      "style": "biome",
+      "x": 2,
+      "y": 0,
+      "z": 1
+    },
+    {
+      "bytes": 32143,
+      "ms": 20.024,
+      "repeat": 1,
+      "style": "natural",
+      "x": 20,
+      "y": 3,
+      "z": 4
+    },
+    {
+      "bytes": 31517,
+      "ms": 17.997,
+      "repeat": 1,
+      "style": "hillshade",
+      "x": 20,
+      "y": 3,
+      "z": 4
+    },
+    {
+      "bytes": 2916,
+      "ms": 17.001,
+      "repeat": 1,
+      "style": "biome",
+      "x": 20,
+      "y": 3,
+      "z": 4
+    },
+    {
+      "bytes": 7541,
+      "ms": 16.998,
+      "repeat": 1,
+      "style": "natural",
+      "x": 166,
+      "y": 28,
+      "z": 7
+    },
+    {
+      "bytes": 4658,
+      "ms": 16,
+      "repeat": 1,
+      "style": "hillshade",
+      "x": 166,
+      "y": 28,
+      "z": 7
+    },
+    {
+      "bytes": 1134,
+      "ms": 15.51,
+      "repeat": 1,
+      "style": "biome",
+      "x": 166,
+      "y": 28,
+      "z": 7
+    },
+    {
+      "bytes": 1778,
+      "ms": 16.51,
+      "repeat": 1,
+      "style": "natural",
+      "x": 1331,
+      "y": 225,
+      "z": 10
+    },
+    {
+      "bytes": 2076,
+      "ms": 15.043,
+      "repeat": 1,
+      "style": "hillshade",
+      "x": 1331,
+      "y": 225,
+      "z": 10
+    },
+    {
+      "bytes": 1134,
+      "ms": 15.998,
+      "repeat": 1,
+      "style": "biome",
+      "x": 1331,
+      "y": 225,
+      "z": 10
+    },
+    {
+      "bytes": 1134,
+      "ms": 15.998,
+      "repeat": 1,
+      "style": "natural",
+      "x": 10649,
+      "y": 1802,
+      "z": 13
+    },
+    {
+      "bytes": 1132,
+      "ms": 13.999,
+      "repeat": 1,
+      "style": "hillshade",
+      "x": 10649,
+      "y": 1802,
+      "z": 13
+    },
+    {
+      "bytes": 1134,
+      "ms": 15.001,
+      "repeat": 1,
+      "style": "biome",
+      "x": 10649,
+      "y": 1802,
+      "z": 13
+    },
+    {
+      "bytes": 1134,
+      "ms": 16,
+      "repeat": 1,
+      "style": "natural",
+      "x": 85196,
+      "y": 14417,
+      "z": 16
+    },
+    {
+      "bytes": 1132,
+      "ms": 13.999,
+      "repeat": 1,
+      "style": "hillshade",
+      "x": 85196,
+      "y": 14417,
+      "z": 16
+    },
+    {
+      "bytes": 1134,
+      "ms": 14.999,
+      "repeat": 1,
+      "style": "biome",
+      "x": 85196,
+      "y": 14417,
+      "z": 16
+    },
+    {
+      "bytes": 47344,
+      "ms": 17,
+      "repeat": 2,
+      "style": "natural",
+      "x": 2,
+      "y": 0,
+      "z": 1
+    },
+    {
+      "bytes": 18742,
+      "ms": 15.022,
+      "repeat": 2,
+      "style": "hillshade",
+      "x": 2,
+      "y": 0,
+      "z": 1
+    },
+    {
+      "bytes": 8160,
+      "ms": 15.642,
+      "repeat": 2,
+      "style": "biome",
+      "x": 2,
+      "y": 0,
+      "z": 1
+    },
+    {
+      "bytes": 32143,
+      "ms": 20.024,
+      "repeat": 2,
+      "style": "natural",
+      "x": 20,
+      "y": 3,
+      "z": 4
+    },
+    {
+      "bytes": 31517,
+      "ms": 18.509,
+      "repeat": 2,
+      "style": "hillshade",
+      "x": 20,
+      "y": 3,
+      "z": 4
+    },
+    {
+      "bytes": 2916,
+      "ms": 17,
+      "repeat": 2,
+      "style": "biome",
+      "x": 20,
+      "y": 3,
+      "z": 4
+    },
+    {
+      "bytes": 7541,
+      "ms": 18,
+      "repeat": 2,
+      "style": "natural",
+      "x": 166,
+      "y": 28,
+      "z": 7
+    },
+    {
+      "bytes": 4658,
+      "ms": 15.509,
+      "repeat": 2,
+      "style": "hillshade",
+      "x": 166,
+      "y": 28,
+      "z": 7
+    },
+    {
+      "bytes": 1134,
+      "ms": 15.999,
+      "repeat": 2,
+      "style": "biome",
+      "x": 166,
+      "y": 28,
+      "z": 7
+    },
+    {
+      "bytes": 1778,
+      "ms": 16.509,
+      "repeat": 2,
+      "style": "natural",
+      "x": 1331,
+      "y": 225,
+      "z": 10
+    },
+    {
+      "bytes": 2076,
+      "ms": 14.519,
+      "repeat": 2,
+      "style": "hillshade",
+      "x": 1331,
+      "y": 225,
+      "z": 10
+    },
+    {
+      "bytes": 1134,
+      "ms": 15.998,
+      "repeat": 2,
+      "style": "biome",
+      "x": 1331,
+      "y": 225,
+      "z": 10
+    },
+    {
+      "bytes": 1134,
+      "ms": 15.019,
+      "repeat": 2,
+      "style": "natural",
+      "x": 10649,
+      "y": 1802,
+      "z": 13
+    },
+    {
+      "bytes": 1132,
+      "ms": 14.999,
+      "repeat": 2,
+      "style": "hillshade",
+      "x": 10649,
+      "y": 1802,
+      "z": 13
+    },
+    {
+      "bytes": 1134,
+      "ms": 15.207,
+      "repeat": 2,
+      "style": "biome",
+      "x": 10649,
+      "y": 1802,
+      "z": 13
+    },
+    {
+      "bytes": 1134,
+      "ms": 15.999,
+      "repeat": 2,
+      "style": "natural",
+      "x": 85196,
+      "y": 14417,
+      "z": 16
+    },
+    {
+      "bytes": 1132,
+      "ms": 13.999,
+      "repeat": 2,
+      "style": "hillshade",
+      "x": 85196,
+      "y": 14417,
+      "z": 16
+    },
+    {
+      "bytes": 1134,
+      "ms": 15.002,
+      "repeat": 2,
+      "style": "biome",
+      "x": 85196,
+      "y": 14417,
+      "z": 16
+    }
+  ],
+  "samples": [
+    {
+      "density": 256,
+      "fixed": {
+        "bed": 1094.3925634765612,
+        "waterSurface": 0,
+        "waterDepth": 0,
+        "water": "dry",
+        "coastDistanceKm": 313.9890362548826,
+        "temperature": -1.3356157678532015,
+        "precipitation": 120.83063359060664,
+        "pet": 531.8259385384026,
+        "moisture": 0.1363197521986396,
+        "roughness": 0.2193419197201716,
+        "biome": "tundra"
+      },
+      "last": {
+        "bed": 1094.51480675141,
+        "waterSurface": 0,
+        "waterDepth": 0,
+        "water": "dry",
+        "coastDistanceKm": 313.96182118703217,
+        "temperature": -1.3355039036636462,
+        "precipitation": 120.82314444680429,
+        "pet": 531.8688760778188,
+        "moisture": 0.13630029868015034,
+        "roughness": 0.21867924687044432,
+        "biome": "tundra"
+      },
+      "ms": 0,
+      "sampleSpacingRadians": 3.90625e-7
+    },
+    {
+      "density": 512,
+      "fixed": {
+        "bed": 1094.3925634765612,
+        "waterSurface": 0,
+        "waterDepth": 0,
+        "water": "dry",
+        "coastDistanceKm": 313.9890362548826,
+        "temperature": -1.3356157678532015,
+        "precipitation": 120.83063359060664,
+        "pet": 531.8259385384026,
+        "moisture": 0.1363197521986396,
+        "roughness": 0.2193419197201716,
+        "biome": "tundra"
+      },
+      "last": {
+        "bed": 1094.5152880241476,
+        "waterSurface": 0,
+        "waterDepth": 0,
+        "water": "dry",
+        "coastDistanceKm": 313.96171404109526,
+        "temperature": -1.3355034632534493,
+        "precipitation": 120.82311496198605,
+        "pet": 531.8690451232503,
+        "moisture": 0.13630022209770185,
+        "roughness": 0.21867663792220654,
+        "biome": "tundra"
+      },
+      "ms": 0,
+      "sampleSpacingRadians": 1.953125e-7
+    },
+    {
+      "density": 1024,
+      "fixed": {
+        "bed": 1094.3925634765612,
+        "waterSurface": 0,
+        "waterDepth": 0,
+        "water": "dry",
+        "coastDistanceKm": 313.9890362548826,
+        "temperature": -1.3356157678532015,
+        "precipitation": 120.83063359060664,
+        "pet": 531.8259385384026,
+        "moisture": 0.1363197521986396,
+        "roughness": 0.2193419197201716,
+        "biome": "tundra"
+      },
+      "last": {
+        "bed": 1094.515528660513,
+        "waterSurface": 0,
+        "waterDepth": 0,
+        "water": "dry",
+        "coastDistanceKm": 313.9616604681276,
+        "temperature": -1.3355032430483547,
+        "precipitation": 120.82310021957713,
+        "pet": 531.8691296459647,
+        "moisture": 0.13630018380649644,
+        "roughness": 0.21867533344810633,
+        "biome": "tundra"
+      },
+      "ms": 2,
+      "sampleSpacingRadians": 9.765625e-8
+    },
+    {
+      "density": 2048,
+      "fixed": {
+        "bed": 1094.3925634765612,
+        "waterSurface": 0,
+        "waterDepth": 0,
+        "water": "dry",
+        "coastDistanceKm": 313.9890362548826,
+        "temperature": -1.3356157678532015,
+        "precipitation": 120.83063359060664,
+        "pet": 531.8259385384026,
+        "moisture": 0.1363197521986396,
+        "roughness": 0.2193419197201716,
+        "biome": "tundra"
+      },
+      "last": {
+        "bed": 1094.5156489786982,
+        "waterSurface": 0,
+        "waterDepth": 0,
+        "water": "dry",
+        "coastDistanceKm": 313.96163368164326,
+        "temperature": -1.3355031329458051,
+        "precipitation": 120.82309284837253,
+        "pet": 531.8691719073229,
+        "moisture": 0.1363001646608979,
+        "roughness": 0.21867468121104222,
+        "biome": "tundra"
+      },
+      "ms": 0.999,
+      "sampleSpacingRadians": 4.8828125e-8
+    }
+  ],
+  "source": [
+    4096,
+    2048
+  ],
+  "sourceSpacingEquatorialKM": 9.77299159961942,
+  "spec": {
+    "climateVersion": 1,
+    "version": "continuous-3",
+    "seed": "d1feae98-6510-4a72-951b-44e93a01ae86",
+    "preset": "earthlike",
+    "radiusKm": 6371,
+    "landCoverage": 0.32,
+    "continents": 5,
+    "complexity": 1,
+    "islands": 1,
+    "relief": 0.8,
+    "rainfall": 1.65,
+    "tilt": 23.4,
+    "layoutVariant": 0,
+    "tileSize": 256,
+    "surfaceWidth": 4096
+  },
+  "styleOrder": [
+    {
+      "identicalPNGs": true,
+      "ms": 7272.522,
+      "nodes": 16,
+      "order": "grouped",
+      "repeat": 0,
+      "size": 256
+    },
+    {
+      "identicalPNGs": true,
+      "ms": 4400.634,
+      "nodes": 16,
+      "order": "adjacent",
+      "repeat": 0,
+      "size": 256
+    },
+    {
+      "identicalPNGs": true,
+      "ms": 8418.033,
+      "nodes": 16,
+      "order": "grouped",
+      "repeat": 1,
+      "size": 256
+    },
+    {
+      "identicalPNGs": true,
+      "ms": 3753.112,
+      "nodes": 16,
+      "order": "adjacent",
+      "repeat": 1,
+      "size": 256
+    },
+    {
+      "identicalPNGs": true,
+      "ms": 7019.982,
+      "nodes": 16,
+      "order": "grouped",
+      "repeat": 2,
+      "size": 256
+    },
+    {
+      "identicalPNGs": true,
+      "ms": 3760.87,
+      "nodes": 16,
+      "order": "adjacent",
+      "repeat": 2,
+      "size": 256
+    }
+  ]
+}

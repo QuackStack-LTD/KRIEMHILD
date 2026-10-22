@@ -1,0 +1,33 @@
+﻿vite v7.3.7 building client environment for production...
+transforming...
+✓ 396 modules transformed.
+rendering chunks...
+computing gzip size...
+.cache/preview-reference-dist/index.html                                 0.52 kB │ gzip:   0.31 kB
+.cache/preview-reference-dist/assets/SystemDesigner-D4yhqrXK.css         2.94 kB │ gzip:   1.01 kB
+.cache/preview-reference-dist/assets/Library-u0dlh4IA.css                3.55 kB │ gzip:   1.18 kB
+.cache/preview-reference-dist/assets/biosphere-CGEx-e_9.css              3.55 kB │ gzip:   1.19 kB
+.cache/preview-reference-dist/assets/Studio-BIDfP7A-.css                 5.76 kB │ gzip:   1.90 kB
+.cache/preview-reference-dist/assets/Writing-9O-dAFPg.css                8.76 kB │ gzip:   2.30 kB
+.cache/preview-reference-dist/assets/index-C3nbivlp.css                 44.96 kB │ gzip:  10.85 kB
+.cache/preview-reference-dist/assets/vendor-runtime-CqkleIqs.js          0.12 kB │ gzip:   0.13 kB
+.cache/preview-reference-dist/assets/TerrainRouter-FDyaDhN3.js           2.76 kB │ gzip:   1.37 kB
+.cache/preview-reference-dist/assets/ArchivedTerrain-BAP_c2p5.js         4.81 kB │ gzip:   2.19 kB
+.cache/preview-reference-dist/assets/Terrain3D-D8TsPxj3.js               7.60 kB │ gzip:   3.70 kB
+.cache/preview-reference-dist/assets/vendor-archives-D_J1AtNE.js        12.50 kB │ gzip:   6.12 kB
+.cache/preview-reference-dist/assets/LifeformProfile-2hIP42fG.js        12.98 kB │ gzip:   3.81 kB
+.cache/preview-reference-dist/assets/biosphere-rwCqmIa0.js              15.34 kB │ gzip:   4.88 kB
+.cache/preview-reference-dist/assets/Biosphere-BMOtB_75.js              21.74 kB │ gzip:   7.24 kB
+.cache/preview-reference-dist/assets/SystemDesigner-D7metvnd.js         26.34 kB │ gzip:   8.45 kB
+.cache/preview-reference-dist/assets/Library-BKdtjNgw.js                41.93 kB │ gzip:  13.23 kB
+.cache/preview-reference-dist/assets/Writing-96G6Is11.js                54.98 kB │ gzip:  17.72 kB
+.cache/preview-reference-dist/assets/Studio-DbSrFE8u.js                 71.98 kB │ gzip:  24.93 kB
+.cache/preview-reference-dist/assets/vendor-collaboration-Cj4tj27j.js  110.01 kB │ gzip:  34.76 kB
+.cache/preview-reference-dist/assets/index-k7UlWZcm.js                 188.43 kB │ gzip:  51.27 kB
+.cache/preview-reference-dist/assets/vendor-react-F7BGGuOQ.js          194.38 kB │ gzip:  61.13 kB
+.cache/preview-reference-dist/assets/vendor-prosemirror-CK_HP5vy.js    218.10 kB │ gzip:  67.58 kB
+.cache/preview-reference-dist/assets/vendor-editor-2PmefJOZ.js         246.93 kB │ gzip:  80.35 kB
+.cache/preview-reference-dist/assets/vendor-pdf-z3ZsLBKw.js            437.87 kB │ gzip: 181.22 kB
+.cache/preview-reference-dist/assets/vendor-three-L7k1HsUR.js          485.92 kB │ gzip: 121.51 kB
+.cache/preview-reference-dist/assets/vendor-spreadsheets-YQ4lDkt_.js   499.54 kB │ gzip: 162.96 kB
+✓ built in 12.61s

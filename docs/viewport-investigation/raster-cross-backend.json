@@ -1,0 +1,35 @@
+{
+    "pixels":  [
+                   {
+                       "bounds":  {
+                                      "x":  0,
+                                      "y":  0,
+                                      "w":  2,
+                                      "h":  1
+                                  },
+                       "max":  11,
+                       "different":  8053
+                   },
+                   {
+                       "bounds":  {
+                                      "x":  0.33,
+                                      "y":  0.21,
+                                      "w":  0.9,
+                                      "h":  0.6
+                                  },
+                       "max":  10,
+                       "different":  14340
+                   },
+                   {
+                       "bounds":  {
+                                      "x":  -0.1,
+                                      "y":  -0.15,
+                                      "w":  1.4,
+                                      "h":  1.2
+                                  },
+                       "max":  10,
+                       "different":  6168
+                   }
+               ],
+    "note":  "CPU-backed assembled viewport compared with GPU-backed monolithic resampling; differences measure raster filter implementations, not shared-edge geography."
+}

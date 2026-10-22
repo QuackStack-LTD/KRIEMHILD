@@ -23,6 +23,13 @@ func climate(ctx context.Context, p *model.Planet) error {
 		area[i] = math.Cos(g.Point(i%g.Width, i/g.Width)[1])
 		soil[i] = 80
 	}
+	var seasonal [][12]float64
+	if p.Spec.ClimateVersion >= 3 {
+		seasonal = make([][12]float64, n)
+		for i := range seasonal {
+			seasonal[i] = seasonalThermalAnomaly(g.Point(i%g.Width, i/g.Width)[1], g.Fields["coast"][i], g.Fields["bed"][i], p.Spec.Tilt)
+		}
+	}
 	for month := 0; month < 12; month++ {
 		ts, rs, es := make([]float64, n), make([]float64, n), make([]float64, n)
 		vapor, next := make([]float64, n), make([]float64, n)
@@ -36,6 +43,9 @@ func climate(ctx context.Context, p *model.Planet) error {
 			lat, bed := pt[1], g.Fields["bed"][i]
 			continental := 1 - math.Exp(-math.Max(0, g.Fields["coast"][i])/700)
 			ts[i] = 29 - 48*math.Pow(math.Sin(lat), 2) - math.Max(0, bed)*.0065 + decl*math.Sin(lat)*(12+26*continental)
+			if p.Spec.ClimateVersion >= 3 {
+				ts[i] = 29 - 48*math.Pow(math.Sin(lat), 2) - math.Max(0, bed)*.0065 + seasonal[i][month]
+			}
 			if p.Spec.ClimateVersion >= 1 && p.Spec.Version == model.Version {
 				// Reduced maritime heat redistribution. The old model damped coastal
 				// summers around the same frigid mean as the interior, leaving 50-degree
@@ -66,10 +76,16 @@ func climate(ctx context.Context, p *model.Planet) error {
 			fluxX[i] = .52 * math.Abs(wx)
 			fluxY[i] = .28 * math.Abs(wy)
 			upwind := y*g.Width + (x-dx+g.Width)%g.Width
-			uplift := math.Max(0, bed-g.Fields["bed"][upwind])
+			height, upwindHeight := bed, g.Fields["bed"][upwind]
+			if p.Spec.ClimateVersion >= 3 {
+				// Air crosses the sea surface, never the sea floor. Keep the
+				// historical rule in saved versions 0/1/2 for reproducibility.
+				height, upwindHeight = math.Max(0, height), math.Max(0, upwindHeight)
+			}
+			uplift := math.Max(0, height-upwindHeight)
 			g.Fields["exposure"][i] += uplift / 12000
-			g.Fields["rainShadow"][i] += math.Max(0, g.Fields["bed"][upwind]-bed) / 12000
-			g.Fields["slope"][i] = math.Max(g.Fields["slope"][i], math.Abs(bed-g.Fields["bed"][upwind])/(p.Spec.RadiusKM*1000*model.Tau/float64(g.Width)*math.Max(.1, math.Cos(lat))))
+			g.Fields["rainShadow"][i] += math.Max(0, upwindHeight-height) / 12000
+			g.Fields["slope"][i] = math.Max(g.Fields["slope"][i], math.Abs(height-upwindHeight)/(p.Spec.RadiusKM*1000*model.Tau/float64(g.Width)*math.Max(.1, math.Cos(lat))))
 			convection := math.Exp(-math.Pow((lat-decl*.6)/.19, 2))
 			storm := math.Exp(-math.Pow((math.Abs(latitude)-.88)/.23, 2))
 			subsidence := math.Exp(-math.Pow((math.Abs(latitude)-.49)/.18, 2))
@@ -81,6 +97,13 @@ func climate(ctx context.Context, p *model.Planet) error {
 		// Six-hour steps: spin up the circulation, then record 30 days. Scattering
 		// mass preserves it across the seam and unequal latitude cell areas.
 		initial, added, removed := 0., 0., 0.
+		oceanAdded, landAdded, oceanPotential, planetArea := 0., 0., 0., 0.
+		for i, weight := range area {
+			planetArea += weight
+			if g.Fields["bed"][i] <= 0 && (p.Spec.Version == "continuous-1" || g.Fields["coast"][i] <= 0) {
+				oceanPotential += es[i] * weight
+			}
+		}
 		for step := 0; step < 216; step++ {
 			if step%8 == 0 {
 				if err := ctx.Err(); err != nil {
@@ -101,7 +124,8 @@ func climate(ctx context.Context, p *model.Planet) error {
 			for i := range vapor {
 				q := next[i] / area[i]
 				evap := 0.
-				if g.Fields["bed"][i] <= 0 && (p.Spec.Version == "continuous-1" || g.Fields["coast"][i] <= 0) {
+				ocean := g.Fields["bed"][i] <= 0 && (p.Spec.Version == "continuous-1" || g.Fields["coast"][i] <= 0)
+				if ocean {
 					evap = math.Max(0, capacity[i]-q) * .18
 				} else if ts[i] > 0 {
 					// Soil-limited transpiration returns part of prior rain to
@@ -116,6 +140,11 @@ func climate(ctx context.Context, p *model.Planet) error {
 				}
 				vapor[i] = (q - rain) * area[i]
 				if step >= 96 {
+					if ocean {
+						oceanAdded += evap * area[i]
+					} else {
+						landAdded += evap * area[i]
+					}
 					rs[i] += rain
 					added += evap * area[i]
 					removed += rain * area[i]
@@ -127,6 +156,9 @@ func climate(ctx context.Context, p *model.Planet) error {
 			remaining += v
 		}
 		residual := math.Abs(initial+added-removed-remaining) / math.Max(1, initial+added)
+		if p.Spec.ClimateVersion >= 3 {
+			p.Diagnostics.ClimateBudget = append(p.Diagnostics.ClimateBudget, model.ClimateWaterBudget{Month: month, OceanEvaporation: oceanAdded / planetArea, LandEvaporation: landAdded / planetArea, OceanPotential: oceanPotential / planetArea, Precipitation: removed / planetArea, StorageChange: (remaining - initial) / planetArea})
+		}
 		p.Diagnostics.MoistureBudgetError = math.Max(p.Diagnostics.MoistureBudgetError, residual)
 		for i := range ts {
 			g.Fields["soil"][i] += soil[i] / 12

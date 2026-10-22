@@ -18,8 +18,10 @@
         x: +e.getAttribute("x"),
         y: +e.getAttribute("y"),
         span: +e.getAttribute("width"),
+        height: +e.getAttribute("height"),
+        z: +(e.dataset.lod ?? e.dataset.tile?.split("/")[0]),
       }));
-      const maxZ = Math.max(...tiles.map((t) => +t.tile?.split("/")[0]));
+      const maxZ = Math.max(...tiles.map((t) => t.z));
       let missing = 0;
       for (let y = 1; y < r.height; y += 17)
         for (let x = 1; x < r.width; x += 17) {
@@ -28,11 +30,11 @@
           if (
             !tiles.some(
               (t) =>
-                +t.tile?.split("/")[0] === maxZ &&
+                t.z === maxZ &&
                 p.x >= t.x &&
                 p.x < t.x + t.span &&
                 p.y >= t.y &&
-                p.y < t.y + t.span,
+                p.y < t.y + t.height,
             )
           )
             missing++;
@@ -44,7 +46,7 @@
         missing,
         tiles,
         footer: document.querySelector("footer")?.innerText,
-        log: window.__terrainTileLog || [],
+        log: window.__terrainViewportLog || window.__terrainTileLog || [],
         fault: window.auditFault,
       };
     },

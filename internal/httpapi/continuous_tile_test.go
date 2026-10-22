@@ -6,10 +6,30 @@ import (
 	"kriemhild/internal/legacyterrain"
 	"kriemhild/internal/terrain/model"
 	"kriemhild/internal/world"
+	"math"
 	"net/http/httptest"
 	"testing"
 	"time"
 )
+
+func TestCorrectedClimateAuthoredAtmosphericElevation(t *testing.T) {
+	for _, version := range []int{0, 1, 2} {
+		p := &model.Planet{Spec: model.DefaultSpec()}
+		p.Spec.ClimateVersion = version
+		for _, amount := range []float64{50, 300} {
+			ops := []world.Operation{{ID: "raise", Kind: "raise", Layer: "elevation", Center: [2]float64{50, 50}, Radius: 2, Amount: amount}}
+			f := continuousTransform(ops, 101, 101, p)
+			s := f(model.Sample{Bed: -100, Temperature: 20, Water: "dry", Biome: "forest"}, 0, 0)
+			want := 20 - amount*.0065
+			if version == 2 {
+				want = 20 - math.Max(0, -100+amount)*.0065
+			}
+			if math.Abs(s.Temperature-want) > 1e-10 {
+				t.Fatalf("version %d amount %g: got %g want %g", version, amount, s.Temperature, want)
+			}
+		}
+	}
+}
 
 func TestContinuousTileRevisionAndContentCache(t *testing.T) {
 	spec := model.DefaultSpec()

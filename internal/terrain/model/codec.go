@@ -188,6 +188,9 @@ func Decode(meta, fields []byte) (*Planet, error) {
 		return nil, fmt.Errorf("extra terrain field data")
 	}
 	if p.Spec.Version != "continuous-1" {
+		if p.Spec.ClimateVersion >= 2 && len(p.Grid.Fields["climateElevation"]) != n {
+			return nil, fmt.Errorf("missing atmospheric reference elevation")
+		}
 		for _, key := range []string{"soil", "aridity", "rainShadow", "exposure", "seasonality", "dryMonths", "warmDry", "coldRain", "slope"} {
 			if len(p.Grid.Fields[key]) != n {
 				return nil, fmt.Errorf("missing climate field %s", key)

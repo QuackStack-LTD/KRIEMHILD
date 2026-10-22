@@ -1,0 +1,110 @@
+KRIEMHILD / Atlas
+Terrain · Kriemhild
+New World · First Age
+Terrain Generator
+Map Builder
+Settlement Builder
+Unsaved changes
+Save
+3D Terrain
+Medieval Illustrator
+☷
+Site
+Select
+Road
+House
+Landmark
+Fit World
+Undo
+Redo
+New feature
+New feature
+SETTLEMENT BUILDER
+A place to belong
+Settlement name
+Size
+village
+town
+city
+capital
+Layout
+organic
+market
+fortified
+port
+planned
+
+Choose Site, then click dry land to preview districts, streets and building footprints.
+
+Map appearance
+Flat
+Relief
+3D Terrain
+Hillshade strength
+Style
+natural
+elevation
+biome
+atlas
+mask
+bathymetry
+temperature
+precipitation
+moisture
+pet
+aridity
+soil
+seasonality
+rainShadow
+exposure
+slope
+contours
+watersheds
+flow-accumulation
+river-network
+wetlands
+Rivers
+
+Styles change presentation without regenerating terrain.
+
+Layers & objects
+Geographic inspection
+Surface
+shrubland · dry
+Landmass
+continent-3 · split
+Bed elevation
+-449 m
+Water depth
+0.0 m
+Temperature
+18.3 °C
+Rainfall
+458 mm/year
+Moisture
+18%
+Evaporative demand
+1485 mm/year
+Soil water
+24 mm
+Precipitation / PET
+0.31
+Dry months
+8.8
+Seasonality (CV)
+0.81
+Save & export
+Export width
+1024 pixels
+2048 pixels
+4096 pixels
+Autosave accepted terrain after 30 seconds
+PNG
+SVG
+PDF
+World ZIP
+Equirectangular · 6371 km radius
+-30.280° E, 29.212° N
+6.9× detail
+66.7 km ━━━━━
+Ready

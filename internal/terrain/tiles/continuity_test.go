@@ -34,11 +34,39 @@ func patternedPlanet() *model.Planet {
 }
 
 func TestIndependentHalosAgreeIncludingLongitudeSeam(t *testing.T) {
+	for _, version := range []string{model.Version, "continuous-1"} {
+		t.Run(version, func(t *testing.T) { independentHalos(t, version) })
+	}
+}
+
+func TestWrappedHaloAddressesAreIdenticalAtMaximumLOD(t *testing.T) {
+	for _, z := range []int{1, 16, 18} {
+		for _, size := range []int{256, 512} {
+			a, ay := sampleCoordinate(z, (2<<z)-1, 0, size, size, 0)
+			b, by := sampleCoordinate(z, 0, 0, size, 0, 0)
+			if a != b || ay != by {
+				t.Fatalf("z%d size%d: wrapped sample differs", z, size)
+			}
+			// Bounds must remain unwrapped so edits on the last tile have positive width.
+			west, _ := Coordinate(z, (2<<z)-1, 0, size, -1, 0)
+			east, _ := Coordinate(z, (2<<z)-1, 0, size, size, 0)
+			if east <= west {
+				t.Fatal("authored-operation bounding box wrapped")
+			}
+		}
+	}
+}
+func independentHalos(t *testing.T, version string) {
 	p := patternedPlanet()
+	p.Spec.Version = version
+	if version == "continuous-1" {
+		p.Surface = nil
+		p.Spec.ClimateVersion = 0
+	}
 	ctx := context.Background()
 	const size = 256
 	const stride = size + 2
-	for _, pair := range [][6]int{{2, 3, 1, 2, 4, 1}, {2, 3, 1, 2, 3, 2}, {2, 7, 1, 2, 0, 1}} {
+	for _, pair := range [][6]int{{2, 3, 1, 2, 4, 1}, {2, 3, 1, 2, 3, 2}, {2, 7, 1, 2, 0, 1}, {16, 85196, 14417, 16, 85197, 14417}, {16, 85196, 14417, 16, 85196, 14418}, {18, 524287, 100000, 18, 0, 100000}} {
 		a, err := physicalSamples(ctx, p, pair[0], pair[1], pair[2], size)
 		if err != nil {
 			t.Fatal(err)
@@ -62,7 +90,17 @@ func TestIndependentHalosAgreeIncludingLongitudeSeam(t *testing.T) {
 }
 
 func TestParentIsExactlyFourChildrenAtEqualSampleDensity(t *testing.T) {
+	for _, version := range []string{model.Version, "continuous-1"} {
+		t.Run(version, func(t *testing.T) { parentChildren(t, version) })
+	}
+}
+func parentChildren(t *testing.T, version string) {
 	p := patternedPlanet()
+	p.Spec.Version = version
+	if version == "continuous-1" {
+		p.Surface = nil
+		p.Spec.ClimateVersion = 0
+	}
 	for _, style := range []string{"natural", "biome", "mask", "elevation", "hillshade", "shore-ink"} {
 		parent, err := Render(context.Background(), p, 1, 1, 0, 512, style, nil)
 		if err != nil {

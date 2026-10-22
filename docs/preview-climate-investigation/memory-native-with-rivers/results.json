@@ -1,0 +1,218 @@
+[
+  {
+    "repeat": 0,
+    "dpr": 3,
+    "preset": "balanced",
+    "complete": true,
+    "frame": {
+      "time": 3274.199999988079,
+      "event": "frame",
+      "generation": 2,
+      "phase": "final",
+      "revision": 0,
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 0.00008,
+        "h": 0.00005091383812010444
+      },
+      "z": 16,
+      "pixels": {
+        "width": 1149,
+        "height": 731
+      },
+      "timings": {
+        "fetch": 1751.199999988079,
+        "decode": 75.70000000298023,
+        "assemble": 10.300000011920929,
+        "resample": 9.399999991059303,
+        "encode": 20.80000001192093,
+        "publish": 19.899999991059303
+      },
+      "nodes": 24,
+      "duration": 1689.8999999910593,
+      "bytes": 38716,
+      "cacheBytes": 58916,
+      "workingCanvasBytes": 9651132,
+      "decodedFrameBytes": 6719352,
+      "hits": 26,
+      "misses": 52,
+      "evictions": 0
+    },
+    "samples": [
+      {
+        "time": 1792683394194,
+        "workingSet": 1336143872,
+        "privateBytes": 1069051904,
+        "processes": [
+          {
+            "Id": 4324,
+            "WorkingSet64": 84721664,
+            "PrivateMemorySize64": 45608960
+          },
+          {
+            "Id": 5636,
+            "WorkingSet64": 278331392,
+            "PrivateMemorySize64": 206852096
+          },
+          {
+            "Id": 5724,
+            "WorkingSet64": 728625152,
+            "PrivateMemorySize64": 693456896
+          },
+          {
+            "Id": 13968,
+            "WorkingSet64": 38731776,
+            "PrivateMemorySize64": 16646144
+          },
+          {
+            "Id": 14012,
+            "WorkingSet64": 19968000,
+            "PrivateMemorySize64": 10080256
+          },
+          {
+            "Id": 15484,
+            "WorkingSet64": 32047104,
+            "PrivateMemorySize64": 17182720
+          },
+          {
+            "Id": 16028,
+            "WorkingSet64": 153718784,
+            "PrivateMemorySize64": 79224832
+          }
+        ],
+        "processTypes": {
+          "4324": "renderer",
+          "5636": "renderer",
+          "5724": "GPU",
+          "13968": "network.mojom.NetworkService",
+          "14012": "storage.mojom.StorageService",
+          "15484": "renderer",
+          "16028": "browser"
+        }
+      }
+    ],
+    "afterGC": {
+      "time": 1792683395776,
+      "workingSet": 1313611776,
+      "privateBytes": 1052704768,
+      "processes": [
+        {
+          "Id": 4324,
+          "WorkingSet64": 84721664,
+          "PrivateMemorySize64": 45608960
+        },
+        {
+          "Id": 5636,
+          "WorkingSet64": 187400192,
+          "PrivateMemorySize64": 114393088
+        },
+        {
+          "Id": 5724,
+          "WorkingSet64": 796618752,
+          "PrivateMemorySize64": 769486848
+        },
+        {
+          "Id": 13968,
+          "WorkingSet64": 38772736,
+          "PrivateMemorySize64": 16666624
+        },
+        {
+          "Id": 14012,
+          "WorkingSet64": 20115456,
+          "PrivateMemorySize64": 10096640
+        },
+        {
+          "Id": 15484,
+          "WorkingSet64": 32047104,
+          "PrivateMemorySize64": 17182720
+        },
+        {
+          "Id": 16028,
+          "WorkingSet64": 153935872,
+          "PrivateMemorySize64": 79269888
+        }
+      ],
+      "processTypes": {
+        "4324": "renderer",
+        "5636": "renderer",
+        "5724": "GPU",
+        "13968": "network.mojom.NetworkService",
+        "14012": "storage.mojom.StorageService",
+        "15484": "renderer",
+        "16028": "browser"
+      }
+    },
+    "heap": {
+      "usedSize": 32941900,
+      "totalSize": 33820672,
+      "embedderHeapUsedSize": 4700720,
+      "backingStorageSize": 462164
+    },
+    "dom": {
+      "documents": 1,
+      "nodes": 3272,
+      "jsEventListeners": 238
+    },
+    "resources": [
+      {
+        "url": "http://127.0.0.1:8127/assets/index-ByM0BpsJ.js",
+        "bytes": 188427
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/vendor-runtime-CqkleIqs.js",
+        "bytes": 116
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/vendor-react-F7BGGuOQ.js",
+        "bytes": 194375
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/index-C3nbivlp.css",
+        "bytes": 44957
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/me",
+        "bytes": 315
+      },
+      {
+        "url": "http://127.0.0.1:8127/favicon.ico",
+        "bytes": 0
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/TerrainRouter-xg4uyXBY.js",
+        "bytes": 2762
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/projects/977d134ee5aadc480e1410ade3c84587/open",
+        "bytes": 6812236
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/Studio-DcE7KUqS.js",
+        "bytes": 72126
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/Studio-BIDfP7A-.css",
+        "bytes": 5760
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/sessions/32669b252d9f3a592abef39ae865a3ac/world/entities?detail=8&all=1",
+        "bytes": 47
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/sessions/32669b252d9f3a592abef39ae865a3ac/terrain/features",
+        "bytes": 14893634
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/sessions/32669b252d9f3a592abef39ae865a3ac/view",
+        "bytes": 62
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/sessions/32669b252d9f3a592abef39ae865a3ac/view",
+        "bytes": 62
+      }
+    ],
+    "sampledPeakWorkingSet": 1336143872,
+    "note": "New browser per case; real DPR; 1920x1080 window; same camera/styles; periodic simultaneous OS working-set samples, not an exact instantaneous peak. Timings from this instrumented run are not used for latency comparisons."
+  }
+]

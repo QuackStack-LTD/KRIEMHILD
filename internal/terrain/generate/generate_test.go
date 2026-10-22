@@ -65,6 +65,32 @@ func TestCancelledGeneration(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestVersionZeroSavedClimateIsNotMigrated(t *testing.T) {
+	spec := model.DefaultSpec()
+	spec.ClimateVersion, spec.SurfaceWidth = 0, 1024
+	p, err := generate.Generate(context.Background(), spec, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	meta, fields, err := p.Encode()
+	if err != nil {
+		t.Fatal(err)
+	}
+	q, err := model.Decode(meta, fields)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if q.Spec.ClimateVersion != 0 || !reflect.DeepEqual(p.Grid, q.Grid) {
+		t.Fatal("legacy climate migrated on load")
+	}
+	for i := 0; i < 100; i++ {
+		lon, lat := float64(i)*.061-3, float64(i%50)*.06-1.5
+		if detail.Sample(p, lon, lat) != detail.Sample(q, lon, lat) {
+			t.Fatal("legacy sampled climate changed")
+		}
+	}
+}
 func TestMalformedArchive(t *testing.T) {
 	spec := model.DefaultSpec()
 	spec.SurfaceWidth = 1024

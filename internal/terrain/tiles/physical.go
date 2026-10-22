@@ -72,7 +72,7 @@ func physicalSamples(ctx context.Context, p *model.Planet, z, x, y, size int) ([
 			break
 		}
 		for i := -1; i <= size; i++ {
-			lon, lat := Coordinate(z, x, y, size, i, j)
+			lon, lat := sampleCoordinate(z, x, y, size, i, j)
 			samples[(j+1)*stride+i+1] = sampler.Sample(lon, lat)
 		}
 	}

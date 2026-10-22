@@ -1,0 +1,687 @@
+[
+  {
+    "renderer": "reference",
+    "name": "global",
+    "camera": "0 0 2 1",
+    "request": {
+      "time": 5088.399999991059,
+      "event": "request",
+      "generation": 2,
+      "session": "89dc4b7df774fea9059d01818e7b7ce7",
+      "identity": "977d134ee5aadc480e1410ade3c84587:89dc4b7df774fea9059d01818e7b7ce7",
+      "revision": 0,
+      "styles": [
+        "natural",
+        "hillshade"
+      ],
+      "bounds": {
+        "x": 0,
+        "y": -0.27914798206278024,
+        "w": 2,
+        "h": 1.5582959641255605
+      },
+      "pixels": {
+        "width": 892,
+        "height": 695
+      },
+      "z": 1,
+      "size": 256
+    },
+    "frame": {
+      "time": 8533.5,
+      "event": "frame",
+      "generation": 2,
+      "phase": "final",
+      "revision": 0,
+      "bounds": {
+        "x": 0,
+        "y": -0.27914798206278024,
+        "w": 2,
+        "h": 1.5582959641255605
+      },
+      "z": 1,
+      "pixels": {
+        "width": 892,
+        "height": 695
+      },
+      "timings": {
+        "fetch": 4962.499999970198,
+        "decode": 29.200000017881393,
+        "assemble": 3,
+        "resample": 5.100000008940697,
+        "encode": 43.599999994039536,
+        "publish": 19.400000005960464
+      },
+      "nodes": 8,
+      "duration": 3364.1000000089407,
+      "bytes": 585902,
+      "cacheBytes": 600529,
+      "workingCanvasBytes": 4576912,
+      "decodedFrameBytes": 4959520,
+      "hits": 10,
+      "misses": 20,
+      "evictions": 0
+    }
+  },
+  {
+    "renderer": "reference",
+    "name": "continental",
+    "camera": "1.175 0.1575 0.25 0.125",
+    "request": {
+      "time": 8735.29999999702,
+      "event": "request",
+      "generation": 3,
+      "session": "89dc4b7df774fea9059d01818e7b7ce7",
+      "identity": "977d134ee5aadc480e1410ade3c84587:89dc4b7df774fea9059d01818e7b7ce7",
+      "revision": 0,
+      "styles": [
+        "natural",
+        "hillshade"
+      ],
+      "bounds": {
+        "x": 1.175,
+        "y": 0.12260650224215247,
+        "w": 0.25,
+        "h": 0.19478699551569506
+      },
+      "pixels": {
+        "width": 892,
+        "height": 695
+      },
+      "z": 4,
+      "size": 256
+    },
+    "frame": {
+      "time": 16217.79999999702,
+      "event": "frame",
+      "generation": 3,
+      "phase": "final",
+      "revision": 0,
+      "bounds": {
+        "x": 1.175,
+        "y": 0.12260650224215247,
+        "w": 0.25,
+        "h": 0.19478699551569506
+      },
+      "z": 4,
+      "pixels": {
+        "width": 892,
+        "height": 695
+      },
+      "timings": {
+        "fetch": 17026.900000035763,
+        "decode": 90.1000000089407,
+        "assemble": 10.099999979138374,
+        "resample": 7.899999991059303,
+        "encode": 52.400000005960464,
+        "publish": 29.900000005960464
+      },
+      "nodes": 25,
+      "duration": 7395.100000008941,
+      "bytes": 869110,
+      "cacheBytes": 1919451,
+      "workingCanvasBytes": 9033360,
+      "decodedFrameBytes": 4959520,
+      "hits": 39,
+      "misses": 78,
+      "evictions": 0
+    }
+  },
+  {
+    "renderer": "reference",
+    "name": "regional",
+    "camera": "1.2850000000000001 0.2125 0.03 0.015",
+    "request": {
+      "time": 16612.89999999106,
+      "event": "request",
+      "generation": 4,
+      "session": "89dc4b7df774fea9059d01818e7b7ce7",
+      "identity": "977d134ee5aadc480e1410ade3c84587:89dc4b7df774fea9059d01818e7b7ce7",
+      "revision": 0,
+      "styles": [
+        "natural",
+        "hillshade"
+      ],
+      "bounds": {
+        "x": 1.2850000000000001,
+        "y": 0.20831278026905828,
+        "w": 0.03,
+        "h": 0.023374439461883407
+      },
+      "pixels": {
+        "width": 892,
+        "height": 695
+      },
+      "z": 7,
+      "size": 256
+    },
+    "frame": {
+      "time": 21661.79999999702,
+      "event": "frame",
+      "generation": 4,
+      "phase": "final",
+      "revision": 0,
+      "bounds": {
+        "x": 1.2850000000000001,
+        "y": 0.20831278026905828,
+        "w": 0.03,
+        "h": 0.023374439461883407
+      },
+      "z": 7,
+      "pixels": {
+        "width": 892,
+        "height": 695
+      },
+      "timings": {
+        "fetch": 10517.499999955297,
+        "decode": 58.00000002980232,
+        "assemble": 7.400000020861626,
+        "resample": 6.999999985098839,
+        "encode": 31.299999997019768,
+        "publish": 14.799999997019768
+      },
+      "nodes": 20,
+      "duration": 4519.5999999940395,
+      "bytes": 349945,
+      "cacheBytes": 2347519,
+      "workingCanvasBytes": 7722640,
+      "decodedFrameBytes": 4959520,
+      "hits": 63,
+      "misses": 126,
+      "evictions": 0
+    }
+  },
+  {
+    "renderer": "reference",
+    "name": "local",
+    "camera": "1.2985 0.21925 0.003 0.0015",
+    "request": {
+      "time": 21908.39999999106,
+      "event": "request",
+      "generation": 5,
+      "session": "89dc4b7df774fea9059d01818e7b7ce7",
+      "identity": "977d134ee5aadc480e1410ade3c84587:89dc4b7df774fea9059d01818e7b7ce7",
+      "revision": 0,
+      "styles": [
+        "natural",
+        "hillshade"
+      ],
+      "bounds": {
+        "x": 1.2985,
+        "y": 0.21883127802690583,
+        "w": 0.003,
+        "h": 0.002337443946188341
+      },
+      "pixels": {
+        "width": 892,
+        "height": 695
+      },
+      "z": 11,
+      "size": 256
+    },
+    "frame": {
+      "time": 28199.89999999106,
+      "event": "frame",
+      "generation": 5,
+      "phase": "final",
+      "revision": 0,
+      "bounds": {
+        "x": 1.2985,
+        "y": 0.21883127802690583,
+        "w": 0.003,
+        "h": 0.002337443946188341
+      },
+      "z": 11,
+      "pixels": {
+        "width": 892,
+        "height": 695
+      },
+      "timings": {
+        "fetch": 14203.999999925494,
+        "decode": 109.40000005066395,
+        "assemble": 13.5,
+        "resample": 9.399999991059303,
+        "encode": 21.80000001192093,
+        "publish": 8.099999994039536
+      },
+      "nodes": 35,
+      "duration": 6210.5999999940395,
+      "bytes": 60325,
+      "cacheBytes": 2499732,
+      "workingCanvasBytes": 11654800,
+      "decodedFrameBytes": 4959520,
+      "hits": 104,
+      "misses": 208,
+      "evictions": 0
+    }
+  },
+  {
+    "renderer": "reference",
+    "name": "extreme",
+    "camera": "1.29996 0.21998 0.00008 0.00004",
+    "request": {
+      "time": 28435.79999999702,
+      "event": "request",
+      "generation": 6,
+      "session": "89dc4b7df774fea9059d01818e7b7ce7",
+      "identity": "977d134ee5aadc480e1410ade3c84587:89dc4b7df774fea9059d01818e7b7ce7",
+      "revision": 0,
+      "styles": [
+        "natural",
+        "hillshade"
+      ],
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.2199688340807175,
+        "w": 0.00008,
+        "h": 0.00006233183856502242
+      },
+      "pixels": {
+        "width": 892,
+        "height": 695
+      },
+      "z": 16,
+      "size": 256
+    },
+    "frame": {
+      "time": 35351.39999999106,
+      "event": "frame",
+      "generation": 6,
+      "phase": "final",
+      "revision": 0,
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.2199688340807175,
+        "w": 0.00008,
+        "h": 0.00006233183856502242
+      },
+      "z": 16,
+      "pixels": {
+        "width": 892,
+        "height": 695
+      },
+      "timings": {
+        "fetch": 15119.200000017881,
+        "decode": 75.59999999403954,
+        "assemble": 12.199999988079071,
+        "resample": 9.200000002980232,
+        "encode": 23.400000005960464,
+        "publish": 9.399999991059303
+      },
+      "nodes": 30,
+      "duration": 6824,
+      "bytes": 29895,
+      "cacheBytes": 2576936,
+      "workingCanvasBytes": 10344080,
+      "decodedFrameBytes": 4959520,
+      "hits": 138,
+      "misses": 276,
+      "evictions": 0
+    }
+  },
+  {
+    "renderer": "balanced",
+    "name": "global",
+    "camera": "0 0 2 1",
+    "request": {
+      "time": 1625.7000000029802,
+      "event": "request",
+      "generation": 2,
+      "session": "89dc4b7df774fea9059d01818e7b7ce7",
+      "identity": "977d134ee5aadc480e1410ade3c84587:89dc4b7df774fea9059d01818e7b7ce7",
+      "revision": 0,
+      "styles": [
+        "natural",
+        "hillshade"
+      ],
+      "bounds": {
+        "x": 0,
+        "y": -0.27914798206278024,
+        "w": 2,
+        "h": 1.5582959641255605
+      },
+      "pixels": {
+        "width": 669,
+        "height": 521
+      },
+      "z": 1,
+      "size": 256,
+      "preview": {
+        "preset": "balanced",
+        "label": "Balanced",
+        "requestedScale": 0.75,
+        "effectiveScale": 0.75,
+        "clamped": false,
+        "hillshade": 0.55
+      }
+    },
+    "frame": {
+      "time": 2888.8999999910593,
+      "event": "frame",
+      "generation": 2,
+      "phase": "final",
+      "revision": 0,
+      "bounds": {
+        "x": 0,
+        "y": -0.27914798206278024,
+        "w": 2,
+        "h": 1.5582959641255605
+      },
+      "z": 1,
+      "pixels": {
+        "width": 669,
+        "height": 521
+      },
+      "timings": {
+        "fetch": 422.20000003278255,
+        "decode": 30.299999997019768,
+        "assemble": 3.2999999821186066,
+        "resample": 3.5999999940395355,
+        "encode": 20.900000005960464,
+        "publish": 40.69999998807907
+      },
+      "nodes": 8,
+      "duration": 1181.699999988079,
+      "bytes": 360852,
+      "cacheBytes": 600529,
+      "workingCanvasBytes": 3491348,
+      "decodedFrameBytes": 1394196,
+      "publishedBytes": 275101,
+      "hits": 10,
+      "misses": 20,
+      "evictions": 0
+    }
+  },
+  {
+    "renderer": "balanced",
+    "name": "continental",
+    "camera": "1.175 0.1575 0.25 0.125",
+    "request": {
+      "time": 3120.3999999910593,
+      "event": "request",
+      "generation": 3,
+      "session": "89dc4b7df774fea9059d01818e7b7ce7",
+      "identity": "977d134ee5aadc480e1410ade3c84587:89dc4b7df774fea9059d01818e7b7ce7",
+      "revision": 0,
+      "styles": [
+        "natural",
+        "hillshade"
+      ],
+      "bounds": {
+        "x": 1.175,
+        "y": 0.12260650224215247,
+        "w": 0.25,
+        "h": 0.19478699551569506
+      },
+      "pixels": {
+        "width": 669,
+        "height": 521
+      },
+      "z": 4,
+      "size": 256,
+      "preview": {
+        "preset": "balanced",
+        "label": "Balanced",
+        "requestedScale": 0.75,
+        "effectiveScale": 0.75,
+        "clamped": false,
+        "hillshade": 0.55
+      }
+    },
+    "frame": {
+      "time": 4080.8999999910593,
+      "event": "frame",
+      "generation": 3,
+      "phase": "final",
+      "revision": 0,
+      "bounds": {
+        "x": 1.175,
+        "y": 0.12260650224215247,
+        "w": 0.25,
+        "h": 0.19478699551569506
+      },
+      "z": 4,
+      "pixels": {
+        "width": 669,
+        "height": 521
+      },
+      "timings": {
+        "fetch": 1595.2000000029802,
+        "decode": 93.60000003874302,
+        "assemble": 10.399999976158142,
+        "resample": 6.200000002980232,
+        "encode": 36.5,
+        "publish": 47
+      },
+      "nodes": 25,
+      "duration": 877,
+      "bytes": 557267,
+      "cacheBytes": 1919451,
+      "workingCanvasBytes": 7947796,
+      "decodedFrameBytes": 1394196,
+      "publishedBytes": 427539,
+      "hits": 39,
+      "misses": 78,
+      "evictions": 0
+    }
+  },
+  {
+    "renderer": "balanced",
+    "name": "regional",
+    "camera": "1.2850000000000001 0.2125 0.03 0.015",
+    "request": {
+      "time": 4484.5,
+      "event": "request",
+      "generation": 4,
+      "session": "89dc4b7df774fea9059d01818e7b7ce7",
+      "identity": "977d134ee5aadc480e1410ade3c84587:89dc4b7df774fea9059d01818e7b7ce7",
+      "revision": 0,
+      "styles": [
+        "natural",
+        "hillshade"
+      ],
+      "bounds": {
+        "x": 1.2850000000000001,
+        "y": 0.20831278026905828,
+        "w": 0.03,
+        "h": 0.023374439461883407
+      },
+      "pixels": {
+        "width": 669,
+        "height": 521
+      },
+      "z": 7,
+      "size": 256,
+      "preview": {
+        "preset": "balanced",
+        "label": "Balanced",
+        "requestedScale": 0.75,
+        "effectiveScale": 0.75,
+        "clamped": false,
+        "hillshade": 0.55
+      }
+    },
+    "frame": {
+      "time": 5603.20000000298,
+      "event": "frame",
+      "generation": 4,
+      "phase": "final",
+      "revision": 0,
+      "bounds": {
+        "x": 1.2850000000000001,
+        "y": 0.20831278026905828,
+        "w": 0.03,
+        "h": 0.023374439461883407
+      },
+      "z": 7,
+      "pixels": {
+        "width": 669,
+        "height": 521
+      },
+      "timings": {
+        "fetch": 2162.5999999940395,
+        "decode": 109.69999998807907,
+        "assemble": 8.100000023841858,
+        "resample": 5.700000002980232,
+        "encode": 22.200000002980232,
+        "publish": 25.30000001192093
+      },
+      "nodes": 20,
+      "duration": 1027.300000011921,
+      "bytes": 233562,
+      "cacheBytes": 2347519,
+      "workingCanvasBytes": 6637076,
+      "decodedFrameBytes": 1394196,
+      "publishedBytes": 188952,
+      "hits": 63,
+      "misses": 126,
+      "evictions": 0
+    }
+  },
+  {
+    "renderer": "balanced",
+    "name": "local",
+    "camera": "1.2985 0.21925 0.003 0.0015",
+    "request": {
+      "time": 5877.399999991059,
+      "event": "request",
+      "generation": 5,
+      "session": "89dc4b7df774fea9059d01818e7b7ce7",
+      "identity": "977d134ee5aadc480e1410ade3c84587:89dc4b7df774fea9059d01818e7b7ce7",
+      "revision": 0,
+      "styles": [
+        "natural",
+        "hillshade"
+      ],
+      "bounds": {
+        "x": 1.2985,
+        "y": 0.21883127802690583,
+        "w": 0.003,
+        "h": 0.002337443946188341
+      },
+      "pixels": {
+        "width": 669,
+        "height": 521
+      },
+      "z": 10,
+      "size": 256,
+      "preview": {
+        "preset": "balanced",
+        "label": "Balanced",
+        "requestedScale": 0.75,
+        "effectiveScale": 0.75,
+        "clamped": false,
+        "hillshade": 0.55
+      }
+    },
+    "frame": {
+      "time": 9610.70000000298,
+      "event": "frame",
+      "generation": 5,
+      "phase": "final",
+      "revision": 0,
+      "bounds": {
+        "x": 1.2985,
+        "y": 0.21883127802690583,
+        "w": 0.003,
+        "h": 0.002337443946188341
+      },
+      "z": 10,
+      "pixels": {
+        "width": 669,
+        "height": 521
+      },
+      "timings": {
+        "fetch": 8980.799999937415,
+        "decode": 32.500000044703484,
+        "assemble": 4.699999988079071,
+        "resample": 4.199999988079071,
+        "encode": 11.700000002980232,
+        "publish": 20.200000002980232
+      },
+      "nodes": 12,
+      "duration": 3651.800000011921,
+      "bytes": 40390,
+      "cacheBytes": 2411409,
+      "workingCanvasBytes": 4539924,
+      "decodedFrameBytes": 1394196,
+      "publishedBytes": 27812,
+      "hits": 77,
+      "misses": 154,
+      "evictions": 0
+    }
+  },
+  {
+    "renderer": "balanced",
+    "name": "extreme",
+    "camera": "1.29996 0.21998 0.00008 0.00004",
+    "request": {
+      "time": 9789.39999999106,
+      "event": "request",
+      "generation": 6,
+      "session": "89dc4b7df774fea9059d01818e7b7ce7",
+      "identity": "977d134ee5aadc480e1410ade3c84587:89dc4b7df774fea9059d01818e7b7ce7",
+      "revision": 0,
+      "styles": [
+        "natural",
+        "hillshade"
+      ],
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.2199688340807175,
+        "w": 0.00008,
+        "h": 0.00006233183856502242
+      },
+      "pixels": {
+        "width": 669,
+        "height": 521
+      },
+      "z": 15,
+      "size": 256,
+      "preview": {
+        "preset": "balanced",
+        "label": "Balanced",
+        "requestedScale": 0.75,
+        "effectiveScale": 0.75,
+        "clamped": false,
+        "hillshade": 0.55
+      }
+    },
+    "frame": {
+      "time": 12242.79999999702,
+      "event": "frame",
+      "generation": 6,
+      "phase": "final",
+      "revision": 0,
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.2199688340807175,
+        "w": 0.00008,
+        "h": 0.00006233183856502242
+      },
+      "z": 15,
+      "pixels": {
+        "width": 669,
+        "height": 521
+      },
+      "timings": {
+        "fetch": 5535.29999999702,
+        "decode": 21.099999979138374,
+        "assemble": 3.9000000208616257,
+        "resample": 3.699999988079071,
+        "encode": 10.599999994039536,
+        "publish": 19.799999997019768
+      },
+      "nodes": 9,
+      "duration": 2372.0999999940395,
+      "bytes": 18039,
+      "cacheBytes": 2436415,
+      "workingCanvasBytes": 3753492,
+      "decodedFrameBytes": 1394196,
+      "publishedBytes": 9034,
+      "hits": 88,
+      "misses": 176,
+      "evictions": 0
+    }
+  }
+]

@@ -58,3 +58,18 @@ export function visibleTiles(camera, width, dpr = 1, height) {
       tiles.push({ z, x, y, span, size });
   return tiles;
 }
+
+// Source resolution is independent of requested raster LOD. Rivers and authored
+// geometry can be finer than the fixed base relief; never cap their display LOD.
+export function reliefResolution(spec, camera, width, height, dpr = 1) {
+  if (spec?.version !== "continuous-3") return null;
+  const sourceWidth = spec.surfaceWidth || 4096;
+  const spacing = 2 / sourceWidth;
+  const scale = Math.min(width / camera.w, height / camera.h) * dpr;
+  return {
+    sourceWidth,
+    pixelsPerSample: spacing * scale,
+    spacingKM: (2 * Math.PI * spec.radiusKm) / sourceWidth,
+    resolved: spacing * scale >= 1,
+  };
+}

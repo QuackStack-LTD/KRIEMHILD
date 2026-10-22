@@ -1,0 +1,20 @@
+﻿0 1 reference true 1184 MiB
+node.exe : node:internal/modules/run_main:107
+At C:\Users\tomyi\worldbuilding\KRIEMHILD\tests\preview-climate-validate.ps1:11 char:3
++   & $File @Arguments 2>&1 | Out-File -LiteralPath (Join-Path $evidenc ...
++   ~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (node:internal/modules/run_main:107:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+    triggerUncaughtException(
+    ^
+
+locator.uncheck: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for getByLabel('Autosave accepted terrain after 30 seconds')[22m
+
+    at C:\Users\tomyi\worldbuilding\KRIEMHILD\tests\preview-quality-memory.mjs:83:12 {
+  name: 'TimeoutError'
+}
+
+Node.js v24.21.0

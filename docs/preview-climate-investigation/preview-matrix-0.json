@@ -1,0 +1,1004 @@
+[
+  {
+    "actualDeviceDPR": 1,
+    "browserHeap": {
+      "total": 22224920,
+      "used": 16757572
+    },
+    "cache": "cold-browser",
+    "camera": {
+      "h": 1,
+      "w": 2,
+      "x": 0,
+      "y": 0
+    },
+    "dpr": 1,
+    "elapsed": 12772.20000000298,
+    "frames": [
+      {
+        "bounds": {
+          "h": 1.3333333333333333,
+          "w": 2,
+          "x": 0,
+          "y": -0.16666666666666663
+        },
+        "bytes": 92588,
+        "cacheBytes": 147978,
+        "decodedFrameBytes": 480000,
+        "duration": 2643.5999999940395,
+        "event": "frame",
+        "evictions": 0,
+        "hits": 2,
+        "misses": 4,
+        "nodes": 2,
+        "phase": "coarse",
+        "pixels": {
+          "height": 200,
+          "width": 300
+        },
+        "revision": 0,
+        "timings": {
+          "assemble": 2.999999985098839,
+          "decode": 23.399999991059303,
+          "encode": 2037.4000000059605,
+          "fetch": 1141,
+          "publish": 6.5,
+          "resample": 5
+        },
+        "workingCanvasBytes": 764288,
+        "z": 0
+      },
+      {
+        "bounds": {
+          "h": 1.3333333333333333,
+          "w": 2,
+          "x": 0,
+          "y": -0.16666666666666663
+        },
+        "bytes": 951372,
+        "cacheBytes": 1498958,
+        "decodedFrameBytes": 7680000,
+        "duration": 12771.70000000298,
+        "event": "frame",
+        "evictions": 0,
+        "hits": 34,
+        "misses": 68,
+        "nodes": 32,
+        "phase": "final",
+        "pixels": {
+          "height": 800,
+          "width": 1200
+        },
+        "revision": 0,
+        "timings": {
+          "assemble": 12.300000011920929,
+          "decode": 122.19999998807907,
+          "encode": 2114.300000011921,
+          "fetch": 23246.5,
+          "publish": 30.700000002980232,
+          "resample": 11.799999997019768
+        },
+        "workingCanvasBytes": 12228608,
+        "z": 2
+      }
+    ],
+    "hits": 34,
+    "misses": 68,
+    "network": {
+      "bytes": 1498958,
+      "cache": {
+        "miss": 68
+      },
+      "requests": 68,
+      "serverTimingTotals": {
+        "edits": 2.45,
+        "png": 288.40999999999997,
+        "raster": 734.5199999999999,
+        "sampling": 7172.97,
+        "terrain": 8439.239999999998,
+        "terrain-queue": 0
+      }
+    },
+    "obsolete": 0,
+    "preset": "reference",
+    "repeat": 0,
+    "request": {
+      "bounds": {
+        "h": 1.3333333333333333,
+        "w": 2,
+        "x": 0,
+        "y": -0.16666666666666663
+      },
+      "identity": "20cf1cf798566ff7b839a34a878e8017",
+      "pixels": {
+        "height": 800,
+        "width": 1200
+      },
+      "revision": 0,
+      "session": "20cf1cf798566ff7b839a34a878e8017",
+      "size": 256,
+      "styles": [
+        "natural",
+        "hillshade"
+      ],
+      "z": 2
+    }
+  },
+  {
+    "actualDeviceDPR": 1,
+    "browserHeap": {
+      "total": 22224920,
+      "used": 16908540
+    },
+    "cache": "warm-browser",
+    "camera": {
+      "h": 1,
+      "w": 2,
+      "x": 0,
+      "y": 0
+    },
+    "dpr": 1,
+    "elapsed": 2173.7000000029802,
+    "frames": [
+      {
+        "bounds": {
+          "h": 1.3333333333333333,
+          "w": 2,
+          "x": 0,
+          "y": -0.16666666666666663
+        },
+        "bytes": 951372,
+        "cacheBytes": 1498958,
+        "decodedFrameBytes": 7680000,
+        "duration": 2173.7000000029802,
+        "event": "frame",
+        "evictions": 0,
+        "hits": 130,
+        "misses": 68,
+        "nodes": 32,
+        "phase": "final",
+        "pixels": {
+          "height": 800,
+          "width": 1200
+        },
+        "revision": 0,
+        "timings": {
+          "assemble": 12.200000002980232,
+          "decode": 133.50000002980232,
+          "encode": 2087.6000000089407,
+          "fetch": 2.2999999821186066,
+          "publish": 21.099999994039536,
+          "resample": 10.799999997019768
+        },
+        "workingCanvasBytes": 12228608,
+        "z": 2
+      }
+    ],
+    "hits": 130,
+    "misses": 68,
+    "network": {
+      "bytes": 0,
+      "cache": {},
+      "requests": 0,
+      "serverTimingTotals": {}
+    },
+    "obsolete": 0,
+    "preset": "reference",
+    "repeat": 0,
+    "request": {
+      "bounds": {
+        "h": 1.3333333333333333,
+        "w": 2,
+        "x": 0,
+        "y": -0.16666666666666663
+      },
+      "identity": "20cf1cf798566ff7b839a34a878e8017",
+      "pixels": {
+        "height": 800,
+        "width": 1200
+      },
+      "revision": 0,
+      "session": "20cf1cf798566ff7b839a34a878e8017",
+      "size": 256,
+      "styles": [
+        "natural",
+        "hillshade"
+      ],
+      "z": 2
+    }
+  },
+  {
+    "actualDeviceDPR": 1,
+    "browserHeap": {
+      "total": 10695776,
+      "used": 9024220
+    },
+    "cache": "cold-browser",
+    "camera": {
+      "h": 1,
+      "w": 2,
+      "x": 0,
+      "y": 0
+    },
+    "dpr": 1,
+    "elapsed": 4113.0999999940395,
+    "frames": [
+      {
+        "bounds": {
+          "h": 1.3333333333333333,
+          "w": 2,
+          "x": 0,
+          "y": -0.16666666666666663
+        },
+        "bytes": 294306,
+        "cacheBytes": 452551,
+        "decodedFrameBytes": 1920000,
+        "duration": 4113,
+        "event": "frame",
+        "evictions": 0,
+        "hits": 8,
+        "misses": 16,
+        "nodes": 8,
+        "phase": "final",
+        "pixels": {
+          "height": 400,
+          "width": 600
+        },
+        "revision": 0,
+        "timings": {
+          "assemble": 3.3999999910593033,
+          "decode": 36.90000005066395,
+          "encode": 2055.7000000029802,
+          "fetch": 5432.999999985099,
+          "publish": 8.200000002980232,
+          "resample": 4.700000002980232
+        },
+        "workingCanvasBytes": 3057152,
+        "z": 1
+      }
+    ],
+    "hits": 8,
+    "misses": 16,
+    "network": {
+      "bytes": 452551,
+      "cache": {
+        "miss": 16
+      },
+      "requests": 16,
+      "serverTimingTotals": {
+        "edits": 0,
+        "png": 78.07,
+        "raster": 171.11999999999998,
+        "sampling": 1688.41,
+        "terrain": 2007.5,
+        "terrain-queue": 0
+      }
+    },
+    "obsolete": 0,
+    "preset": "performance",
+    "repeat": 0,
+    "request": {
+      "bounds": {
+        "h": 1.3333333333333333,
+        "w": 2,
+        "x": 0,
+        "y": -0.16666666666666663
+      },
+      "identity": "20cf1cf798566ff7b839a34a878e8017",
+      "pixels": {
+        "height": 400,
+        "width": 600
+      },
+      "preview": {
+        "clamped": false,
+        "effectiveScale": 0.5,
+        "label": "Performance",
+        "preset": "performance",
+        "requestedScale": 0.5
+      },
+      "revision": 0,
+      "session": "20cf1cf798566ff7b839a34a878e8017",
+      "size": 256,
+      "styles": [
+        "natural",
+        "hillshade"
+      ],
+      "z": 1
+    }
+  },
+  {
+    "actualDeviceDPR": 1,
+    "browserHeap": {
+      "total": 10695834,
+      "used": 9080458
+    },
+    "cache": "warm-browser",
+    "camera": {
+      "h": 1,
+      "w": 2,
+      "x": 0,
+      "y": 0
+    },
+    "dpr": 1,
+    "elapsed": 2084.4000000059605,
+    "frames": [
+      {
+        "bounds": {
+          "h": 1.3333333333333333,
+          "w": 2,
+          "x": 0,
+          "y": -0.16666666666666663
+        },
+        "bytes": 294306,
+        "cacheBytes": 452551,
+        "decodedFrameBytes": 1920000,
+        "duration": 2084.1000000089407,
+        "event": "frame",
+        "evictions": 0,
+        "hits": 32,
+        "misses": 16,
+        "nodes": 8,
+        "phase": "final",
+        "pixels": {
+          "height": 400,
+          "width": 600
+        },
+        "revision": 0,
+        "timings": {
+          "assemble": 4.299999982118607,
+          "decode": 53.099999994039536,
+          "encode": 2050.4000000059605,
+          "fetch": 1.5000000298023224,
+          "publish": 6.199999988079071,
+          "resample": 4.899999991059303
+        },
+        "workingCanvasBytes": 3057152,
+        "z": 1
+      }
+    ],
+    "hits": 32,
+    "misses": 16,
+    "network": {
+      "bytes": 0,
+      "cache": {},
+      "requests": 0,
+      "serverTimingTotals": {}
+    },
+    "obsolete": 0,
+    "preset": "performance",
+    "repeat": 0,
+    "request": {
+      "bounds": {
+        "h": 1.3333333333333333,
+        "w": 2,
+        "x": 0,
+        "y": -0.16666666666666663
+      },
+      "identity": "20cf1cf798566ff7b839a34a878e8017",
+      "pixels": {
+        "height": 400,
+        "width": 600
+      },
+      "preview": {
+        "clamped": false,
+        "effectiveScale": 0.5,
+        "label": "Performance",
+        "preset": "performance",
+        "requestedScale": 0.5
+      },
+      "revision": 0,
+      "session": "20cf1cf798566ff7b839a34a878e8017",
+      "size": 256,
+      "styles": [
+        "natural",
+        "hillshade"
+      ],
+      "z": 1
+    }
+  },
+  {
+    "actualDeviceDPR": 1,
+    "browserHeap": {
+      "total": 10695853,
+      "used": 9199465
+    },
+    "cache": "cold-browser",
+    "camera": {
+      "h": 1,
+      "w": 2,
+      "x": 0,
+      "y": 0
+    },
+    "dpr": 1,
+    "elapsed": 2456.699999988079,
+    "frames": [
+      {
+        "bounds": {
+          "h": 1.3333333333333333,
+          "w": 2,
+          "x": 0,
+          "y": -0.16666666666666663
+        },
+        "bytes": 584870,
+        "cacheBytes": 452551,
+        "decodedFrameBytes": 4320000,
+        "duration": 2456.3999999910593,
+        "event": "frame",
+        "evictions": 0,
+        "hits": 8,
+        "misses": 16,
+        "nodes": 8,
+        "phase": "final",
+        "pixels": {
+          "height": 600,
+          "width": 900
+        },
+        "revision": 0,
+        "timings": {
+          "assemble": 4.5,
+          "decode": 69.30000002682209,
+          "encode": 2353.9000000059605,
+          "fetch": 165.2000000178814,
+          "publish": 10.399999991059303,
+          "resample": 5.5
+        },
+        "workingCanvasBytes": 4257152,
+        "z": 1
+      }
+    ],
+    "hits": 8,
+    "misses": 16,
+    "network": {
+      "bytes": 452551,
+      "cache": {
+        "hit": 16
+      },
+      "requests": 16,
+      "serverTimingTotals": {}
+    },
+    "obsolete": 0,
+    "preset": "balanced",
+    "repeat": 0,
+    "request": {
+      "bounds": {
+        "h": 1.3333333333333333,
+        "w": 2,
+        "x": 0,
+        "y": -0.16666666666666663
+      },
+      "identity": "20cf1cf798566ff7b839a34a878e8017",
+      "pixels": {
+        "height": 600,
+        "width": 900
+      },
+      "preview": {
+        "clamped": false,
+        "effectiveScale": 0.75,
+        "label": "Balanced",
+        "preset": "balanced",
+        "requestedScale": 0.75
+      },
+      "revision": 0,
+      "session": "20cf1cf798566ff7b839a34a878e8017",
+      "size": 256,
+      "styles": [
+        "natural",
+        "hillshade"
+      ],
+      "z": 1
+    }
+  },
+  {
+    "actualDeviceDPR": 1,
+    "browserHeap": {
+      "total": 10695853,
+      "used": 9243701
+    },
+    "cache": "warm-browser",
+    "camera": {
+      "h": 1,
+      "w": 2,
+      "x": 0,
+      "y": 0
+    },
+    "dpr": 1,
+    "elapsed": 2112.7000000029802,
+    "frames": [
+      {
+        "bounds": {
+          "h": 1.3333333333333333,
+          "w": 2,
+          "x": 0,
+          "y": -0.16666666666666663
+        },
+        "bytes": 584870,
+        "cacheBytes": 452551,
+        "decodedFrameBytes": 4320000,
+        "duration": 2112.7000000029802,
+        "event": "frame",
+        "evictions": 0,
+        "hits": 32,
+        "misses": 16,
+        "nodes": 8,
+        "phase": "final",
+        "pixels": {
+          "height": 600,
+          "width": 900
+        },
+        "revision": 0,
+        "timings": {
+          "assemble": 3.5999999940395355,
+          "decode": 41.09999996423721,
+          "encode": 2075.800000011921,
+          "fetch": 2.400000035762787,
+          "publish": 12.300000011920929,
+          "resample": 5.299999997019768
+        },
+        "workingCanvasBytes": 4257152,
+        "z": 1
+      }
+    ],
+    "hits": 32,
+    "misses": 16,
+    "network": {
+      "bytes": 0,
+      "cache": {},
+      "requests": 0,
+      "serverTimingTotals": {}
+    },
+    "obsolete": 0,
+    "preset": "balanced",
+    "repeat": 0,
+    "request": {
+      "bounds": {
+        "h": 1.3333333333333333,
+        "w": 2,
+        "x": 0,
+        "y": -0.16666666666666663
+      },
+      "identity": "20cf1cf798566ff7b839a34a878e8017",
+      "pixels": {
+        "height": 600,
+        "width": 900
+      },
+      "preview": {
+        "clamped": false,
+        "effectiveScale": 0.75,
+        "label": "Balanced",
+        "preset": "balanced",
+        "requestedScale": 0.75
+      },
+      "revision": 0,
+      "session": "20cf1cf798566ff7b839a34a878e8017",
+      "size": 256,
+      "styles": [
+        "natural",
+        "hillshade"
+      ],
+      "z": 1
+    }
+  },
+  {
+    "actualDeviceDPR": 1,
+    "browserHeap": {
+      "total": 10695779,
+      "used": 9117139
+    },
+    "cache": "cold-browser",
+    "camera": {
+      "h": 1,
+      "w": 2,
+      "x": 0,
+      "y": 0
+    },
+    "dpr": 1,
+    "elapsed": 4335.0999999940395,
+    "frames": [
+      {
+        "bounds": {
+          "h": 1.3333333333333333,
+          "w": 2,
+          "x": 0,
+          "y": -0.16666666666666663
+        },
+        "bytes": 92588,
+        "cacheBytes": 147978,
+        "decodedFrameBytes": 480000,
+        "duration": 2040,
+        "event": "frame",
+        "evictions": 0,
+        "hits": 2,
+        "misses": 4,
+        "nodes": 2,
+        "phase": "coarse",
+        "pixels": {
+          "height": 200,
+          "width": 300
+        },
+        "revision": 0,
+        "timings": {
+          "assemble": 0.7999999970197678,
+          "decode": 7.0999999940395355,
+          "encode": 2023.3999999910593,
+          "fetch": 17.599999994039536,
+          "publish": 2.2999999970197678,
+          "resample": 0.6000000089406967
+        },
+        "workingCanvasBytes": 764288,
+        "z": 0
+      },
+      {
+        "bounds": {
+          "h": 1.3333333333333333,
+          "w": 2,
+          "x": 0,
+          "y": -0.16666666666666663
+        },
+        "bytes": 951372,
+        "cacheBytes": 1498958,
+        "decodedFrameBytes": 7680000,
+        "duration": 4335.0999999940395,
+        "event": "frame",
+        "evictions": 0,
+        "hits": 34,
+        "misses": 68,
+        "nodes": 32,
+        "phase": "final",
+        "pixels": {
+          "height": 800,
+          "width": 1200
+        },
+        "revision": 0,
+        "timings": {
+          "assemble": 11.69999997317791,
+          "decode": 168.00000001490116,
+          "encode": 2086.2000000029802,
+          "fetch": 319.99999998509884,
+          "publish": 21.100000008940697,
+          "resample": 12.200000002980232
+        },
+        "workingCanvasBytes": 12228608,
+        "z": 2
+      }
+    ],
+    "hits": 34,
+    "misses": 68,
+    "network": {
+      "bytes": 1498958,
+      "cache": {
+        "hit": 68
+      },
+      "requests": 68,
+      "serverTimingTotals": {}
+    },
+    "obsolete": 0,
+    "preset": "high",
+    "repeat": 0,
+    "request": {
+      "bounds": {
+        "h": 1.3333333333333333,
+        "w": 2,
+        "x": 0,
+        "y": -0.16666666666666663
+      },
+      "identity": "20cf1cf798566ff7b839a34a878e8017",
+      "pixels": {
+        "height": 800,
+        "width": 1200
+      },
+      "preview": {
+        "clamped": false,
+        "effectiveScale": 1,
+        "label": "High quality",
+        "preset": "high",
+        "requestedScale": 1
+      },
+      "revision": 0,
+      "session": "20cf1cf798566ff7b839a34a878e8017",
+      "size": 256,
+      "styles": [
+        "natural",
+        "hillshade"
+      ],
+      "z": 2
+    }
+  },
+  {
+    "actualDeviceDPR": 1,
+    "browserHeap": {
+      "total": 10695779,
+      "used": 9264767
+    },
+    "cache": "warm-browser",
+    "camera": {
+      "h": 1,
+      "w": 2,
+      "x": 0,
+      "y": 0
+    },
+    "dpr": 1,
+    "elapsed": 2130.7999999970198,
+    "frames": [
+      {
+        "bounds": {
+          "h": 1.3333333333333333,
+          "w": 2,
+          "x": 0,
+          "y": -0.16666666666666663
+        },
+        "bytes": 951372,
+        "cacheBytes": 1498958,
+        "decodedFrameBytes": 7680000,
+        "duration": 2130.699999988079,
+        "event": "frame",
+        "evictions": 0,
+        "hits": 130,
+        "misses": 68,
+        "nodes": 32,
+        "phase": "final",
+        "pixels": {
+          "height": 800,
+          "width": 1200
+        },
+        "revision": 0,
+        "timings": {
+          "assemble": 11.599999994039536,
+          "decode": 140.99999994039536,
+          "encode": 2047.5,
+          "fetch": 1.8000000417232513,
+          "publish": 16.599999994039536,
+          "resample": 11.200000002980232
+        },
+        "workingCanvasBytes": 12228608,
+        "z": 2
+      }
+    ],
+    "hits": 130,
+    "misses": 68,
+    "network": {
+      "bytes": 0,
+      "cache": {},
+      "requests": 0,
+      "serverTimingTotals": {}
+    },
+    "obsolete": 0,
+    "preset": "high",
+    "repeat": 0,
+    "request": {
+      "bounds": {
+        "h": 1.3333333333333333,
+        "w": 2,
+        "x": 0,
+        "y": -0.16666666666666663
+      },
+      "identity": "20cf1cf798566ff7b839a34a878e8017",
+      "pixels": {
+        "height": 800,
+        "width": 1200
+      },
+      "preview": {
+        "clamped": false,
+        "effectiveScale": 1,
+        "label": "High quality",
+        "preset": "high",
+        "requestedScale": 1
+      },
+      "revision": 0,
+      "session": "20cf1cf798566ff7b839a34a878e8017",
+      "size": 256,
+      "styles": [
+        "natural",
+        "hillshade"
+      ],
+      "z": 2
+    }
+  },
+  {
+    "actualDeviceDPR": 1,
+    "browserHeap": {
+      "total": 11495169,
+      "used": 9165689
+    },
+    "cache": "cold-browser",
+    "camera": {
+      "h": 0.125,
+      "w": 0.25,
+      "x": 1.175,
+      "y": 0.1575
+    },
+    "dpr": 1,
+    "elapsed": 19110.5,
+    "frames": [
+      {
+        "bounds": {
+          "h": 0.16666666666666666,
+          "w": 0.25,
+          "x": 1.175,
+          "y": 0.13666666666666666
+        },
+        "bytes": 127674,
+        "cacheBytes": 338954,
+        "decodedFrameBytes": 480000,
+        "duration": 4122.699999988079,
+        "event": "frame",
+        "evictions": 0,
+        "hits": 6,
+        "misses": 12,
+        "nodes": 6,
+        "phase": "coarse",
+        "pixels": {
+          "height": 200,
+          "width": 300
+        },
+        "revision": 0,
+        "timings": {
+          "assemble": 3.500000014901161,
+          "decode": 248.1999999731779,
+          "encode": 2025.7000000178814,
+          "fetch": 5973.500000014901,
+          "publish": 3.3999999910593033,
+          "resample": 1.8999999910593033
+        },
+        "workingCanvasBytes": 1812864,
+        "z": 3
+      },
+      {
+        "bounds": {
+          "h": 0.16666666666666666,
+          "w": 0.25,
+          "x": 1.175,
+          "y": 0.13666666666666666
+        },
+        "bytes": 1291359,
+        "cacheBytes": 2362230,
+        "decodedFrameBytes": 7680000,
+        "duration": 19110.5,
+        "event": "frame",
+        "evictions": 0,
+        "hits": 60,
+        "misses": 120,
+        "nodes": 54,
+        "phase": "final",
+        "pixels": {
+          "height": 800,
+          "width": 1200
+        },
+        "revision": 0,
+        "timings": {
+          "assemble": 21.799999997019768,
+          "decode": 230.0000001192093,
+          "encode": 2087.199999988079,
+          "fetch": 38270.99999988079,
+          "publish": 26.400000005960464,
+          "resample": 14.800000011920929
+        },
+        "workingCanvasBytes": 17995776,
+        "z": 5
+      }
+    ],
+    "hits": 60,
+    "misses": 120,
+    "network": {
+      "bytes": 2362230,
+      "cache": {
+        "miss": 120
+      },
+      "requests": 120,
+      "serverTimingTotals": {
+        "edits": 1,
+        "png": 518.2399999999999,
+        "raster": 1644.9699999999996,
+        "sampling": 11988.250000000002,
+        "terrain": 14711.839999999998,
+        "terrain-queue": 0
+      }
+    },
+    "obsolete": 0,
+    "preset": "reference",
+    "repeat": 0,
+    "request": {
+      "bounds": {
+        "h": 0.16666666666666666,
+        "w": 0.25,
+        "x": 1.175,
+        "y": 0.13666666666666666
+      },
+      "identity": "20cf1cf798566ff7b839a34a878e8017",
+      "pixels": {
+        "height": 800,
+        "width": 1200
+      },
+      "revision": 0,
+      "session": "20cf1cf798566ff7b839a34a878e8017",
+      "size": 256,
+      "styles": [
+        "natural",
+        "hillshade"
+      ],
+      "z": 5
+    }
+  },
+  {
+    "actualDeviceDPR": 1,
+    "browserHeap": {
+      "total": 11495169,
+      "used": 9406393
+    },
+    "cache": "warm-browser",
+    "camera": {
+      "h": 0.125,
+      "w": 0.25,
+      "x": 1.175,
+      "y": 0.1575
+    },
+    "dpr": 1,
+    "elapsed": 2248,
+    "frames": [
+      {
+        "bounds": {
+          "h": 0.16666666666666666,
+          "w": 0.25,
+          "x": 1.175,
+          "y": 0.13666666666666666
+        },
+        "bytes": 1291359,
+        "cacheBytes": 2362230,
+        "decodedFrameBytes": 7680000,
+        "duration": 2248,
+        "event": "frame",
+        "evictions": 0,
+        "hits": 222,
+        "misses": 120,
+        "nodes": 54,
+        "phase": "final",
+        "pixels": {
+          "height": 800,
+          "width": 1200
+        },
+        "revision": 0,
+        "timings": {
+          "assemble": 25.799999967217445,
+          "decode": 265,
+          "encode": 2101,
+          "fetch": 2.800000011920929,
+          "publish": 23.799999997019768,
+          "resample": 19.00000001490116
+        },
+        "workingCanvasBytes": 17995776,
+        "z": 5
+      }
+    ],
+    "hits": 222,
+    "misses": 120,
+    "network": {
+      "bytes": 0,
+      "cache": {},
+      "requests": 0,
+      "serverTimingTotals": {}
+    },
+    "obsolete": 0,
+    "preset": "reference",
+    "repeat": 0,
+    "request": {
+      "bounds": {
+        "h": 0.16666666666666666,
+        "w": 0.25,
+        "x": 1.175,
+        "y": 0.13666666666666666
+      },
+      "identity": "20cf1cf798566ff7b839a34a878e8017",
+      "pixels": {
+        "height": 800,
+        "width": 1200
+      },
+      "revision": 0,
+      "session": "20cf1cf798566ff7b839a34a878e8017",
+      "size": 256,
+      "styles": [
+        "natural",
+        "hillshade"
+      ],
+      "z": 5
+    }
+  }
+]
