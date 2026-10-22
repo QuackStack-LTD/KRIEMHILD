@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-21",
+  "browser": "T3 collaborative preview",
+  "surfaceWidth": 4096,
+  "reloadBetweenActions": false,
+  "afterWaterEdit": {
+    "shoreTileRequests": 10,
+    "renderedShoreTiles": 10,
+    "savedVectorCoasts": 0
+  },
+  "afterUndo": {
+    "renderedShoreTiles": 0,
+    "savedVectorCoasts": 1343
+  },
+  "afterRedo": {
+    "renderedShoreTilesAtObservation": 6,
+    "savedVectorCoasts": 0
+  },
+  "pixelBoundaryRegression": "TestTilesOrderHalosAndParentCoordinates passed",
+  "editStatusRegression": "TestWorldCommandReportsTerrainEdits passed"
+}

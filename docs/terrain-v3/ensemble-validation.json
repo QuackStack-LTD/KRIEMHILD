@@ -1,0 +1,148 @@
+[
+  {
+    "seed": "repair-00",
+    "surfaceWidth": 1024,
+    "biomeShares": {
+      "alpine": 0.00010355814147417648,
+      "desert": 0.027574884343205857,
+      "forest": 0.06080679972966047,
+      "grassland": 0.04945252288792889,
+      "ice": 0.04904146454446133,
+      "rainforest": 0.11937556074157737,
+      "savanna": 0.02254570159097634,
+      "shrubland": 0.024066065249188577,
+      "steppe": 0.13071443873222385,
+      "taiga": 0.09448626965212066,
+      "temperate-rainforest": 0.03461481755803089,
+      "tropical-woodland": 0.039263666841558735,
+      "tundra": 0.14458081671446366,
+      "water": 0.11960819622315465,
+      "wetland": 0.060567820961278926,
+      "woodland": 0.023197416088722757
+    },
+    "rivers": 2137,
+    "classes": {
+      "distributary": {
+        "count": 17,
+        "lengthKm": 625.897545466746
+      },
+      "major": {
+        "count": 111,
+        "lengthKm": 99048.30716656474
+      },
+      "regional": {
+        "count": 504,
+        "lengthKm": 155779.0409420481
+      },
+      "stream": {
+        "count": 1505,
+        "lengthKm": 136683.06649182522
+      }
+    },
+    "longestRiverKm": 6271.983638539299,
+    "lowlandHeadwaters": 1595,
+    "lakes": 736,
+    "wetlands": 497,
+    "springs": 1238,
+    "networkCoverage": 0.2520366555496212,
+    "invalidTerminations": 0
+  },
+  {
+    "seed": "repair-01",
+    "surfaceWidth": 1024,
+    "biomeShares": {
+      "desert": 0.068389883515846,
+      "forest": 0.054475507056504675,
+      "grassland": 0.03705594653348041,
+      "ice": 0.09243440693979794,
+      "rainforest": 0.13895460202073287,
+      "savanna": 0.03575777108473848,
+      "shrubland": 0.013474549727187007,
+      "steppe": 0.11348071111831548,
+      "taiga": 0.053907274407255075,
+      "temperate-rainforest": 0.041877923531422244,
+      "tropical-woodland": 0.04427710516593479,
+      "tundra": 0.07834862939514188,
+      "water": 0.14014914129482467,
+      "wetland": 0.05957075659347661,
+      "woodland": 0.027845791615436377
+    },
+    "rivers": 2135,
+    "classes": {
+      "distributary": {
+        "count": 20,
+        "lengthKm": 879.043134466288
+      },
+      "major": {
+        "count": 113,
+        "lengthKm": 109014.14100735642
+      },
+      "regional": {
+        "count": 535,
+        "lengthKm": 192852.3223987739
+      },
+      "stream": {
+        "count": 1467,
+        "lengthKm": 147302.89000354847
+      }
+    },
+    "longestRiverKm": 6665.013197110142,
+    "lowlandHeadwaters": 1604,
+    "lakes": 821,
+    "wetlands": 539,
+    "springs": 1211,
+    "networkCoverage": 0.23599841584710446,
+    "invalidTerminations": 0
+  },
+  {
+    "seed": "repair-02",
+    "surfaceWidth": 1024,
+    "biomeShares": {
+      "desert": 0.03102568734054443,
+      "forest": 0.05578961570133763,
+      "grassland": 0.04935088445466409,
+      "ice": 0.10430848613046753,
+      "rainforest": 0.12320507134384039,
+      "savanna": 0.037539372743626225,
+      "shrubland": 0.020194103455456063,
+      "steppe": 0.12433530601149337,
+      "taiga": 0.06536866953868077,
+      "temperate-rainforest": 0.030155713155961432,
+      "tropical-woodland": 0.042762733696831756,
+      "tundra": 0.0953578708686712,
+      "water": 0.13377947803423465,
+      "wetland": 0.05639780716482326,
+      "woodland": 0.03042920035948237
+    },
+    "rivers": 2669,
+    "classes": {
+      "distributary": {
+        "count": 13,
+        "lengthKm": 588.3150593867299
+      },
+      "ephemeral": {
+        "count": 3,
+        "lengthKm": 1661.451624301676
+      },
+      "major": {
+        "count": 102,
+        "lengthKm": 117225.71900321642
+      },
+      "regional": {
+        "count": 621,
+        "lengthKm": 239454.81334461365
+      },
+      "stream": {
+        "count": 1930,
+        "lengthKm": 203908.2286670721
+      }
+    },
+    "longestRiverKm": 9327.45415514327,
+    "lowlandHeadwaters": 2055,
+    "lakes": 1147,
+    "wetlands": 729,
+    "springs": 1498,
+    "networkCoverage": 0.25453708450948515,
+    "invalidTerminations": 0
+  }
+]

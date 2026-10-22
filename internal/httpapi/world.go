@@ -37,10 +37,19 @@ func (v *session) authored() *world.State {
 	v.world.PrepareLegacyRivers(v.solver.Environment)
 	return v.world
 }
+func (v *session) terrainAnalysisStale() bool {
+	for _, operation := range v.authored().Operations {
+		if !operation.Deleted {
+			return true
+		}
+	}
+	return false
+}
+
 func sessionState(v *session) map[string]any {
 	out := view(v.solver, true)
 	if v.planet != nil {
-		out["continuous"] = map[string]any{"schema": v.planet.Schema, "spec": v.planet.Spec, "diagnostics": v.planet.Diagnostics, "analysisStale": len(v.authored().Operations) > 0}
+		out["continuous"] = map[string]any{"schema": v.planet.Schema, "spec": v.planet.Spec, "diagnostics": v.planet.Diagnostics, "analysisStale": v.terrainAnalysisStale()}
 	}
 	e := v.authored().Environment(v.solver.Environment)
 	if e != nil {
@@ -296,7 +305,7 @@ func (s *Server) worldCommand(w http.ResponseWriter, r *http.Request) {
 	} else if req.Kind != "view" || !sameJSON(previousView, req.View) {
 		v.unsaved = true
 	}
-	respond(w, 200, map[string]any{"unsaved": v.unsaved, "project": model.Header, "dirty": dirty, "entityId": req.Entity.ID, "operationId": req.Operation.ID})
+	respond(w, 200, map[string]any{"unsaved": v.unsaved, "project": model.Header, "dirty": dirty, "entityId": req.Entity.ID, "operationId": req.Operation.ID, "analysisStale": v.terrainAnalysisStale()})
 }
 
 // The generated tile store stays immutable; only intersecting composed tiles

@@ -59,12 +59,12 @@ func (s *Server) startTerrainJob(w http.ResponseWriter, r *http.Request) {
 	if req.Spec.Seed == "" {
 		req.Spec.Seed = token()
 	}
-	// Old versions remain readable; all new jobs use the fully materialized path.
-	req.Spec.Version = model.Version
 	if err := req.Spec.Validate(); err != nil {
 		fail(w, 400, err.Error())
 		return
 	}
+	// Old versions remain readable; all valid new jobs use the fully materialized path.
+	req.Spec.Version = model.Version
 	select {
 	case s.slots <- struct{}{}:
 	default:

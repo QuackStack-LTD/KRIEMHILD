@@ -303,6 +303,9 @@ export default function Studio({ initialState, onExit }) {
     setState((v) => ({
       ...v,
       project: result.project || v.project,
+      continuous: v.continuous
+        ? { ...v.continuous, analysisStale: result.analysisStale }
+        : v.continuous,
       unsaved: true,
     }));
     await refresh(s);
