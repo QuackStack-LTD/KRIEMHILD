@@ -58,7 +58,9 @@ try {
     names.add(folded);
   }
   report.archive = path.join(destination, 'KRIEMHILD-source.zip');
-  if (run('archive', 'git', ['archive', '--format=zip', `--output=${report.archive}`, commit]).status !== 0) throw Error('Archive creation failed.');
+  // Windows Git can convert archive text using the host's core.autocrlf.
+  // Override that setting for this command; do not change the user's config.
+  if (run('archive', 'git', ['-c', 'core.autocrlf=false', '-c', 'core.eol=lf', 'archive', '--format=zip', `--output=${report.archive}`, commit]).status !== 0) throw Error('Archive creation failed.');
   report.bytes = fs.statSync(report.archive).size;
   report.sha256 = crypto.createHash('sha256').update(fs.readFileSync(report.archive)).digest('hex');
   if (run('list', 'tar', ['-tf', report.archive]).status !== 0) throw Error('Archive listing failed.');

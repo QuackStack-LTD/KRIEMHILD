@@ -84,3 +84,16 @@ frozen npm installation, JS tests and frontend build. It saves complete output,
 exit codes, timings, commit, size and SHA-256 in `verification.json` and log files.
 The default Go package test limit is 10m; `KRIEMHILD_TEST_TIMEOUT` overrides it.
 It never archives uncommitted work or deletes an existing destination.
+
+## Windows line-ending follow-up
+
+Final blob-by-blob verification identified a separate host-dependent behavior:
+this installation's system Git config sets `core.autocrlf=true`, and local
+`git archive` converts text entries to CRLF. A controlled `.dockerignore` archive
+produced 464 bytes/hash `5a369f71a36960dd4b355a4456c98b05d663d270` with that default,
+versus its canonical 433-byte Git blob
+`b81a4ac2cf74a547b53fe1b87e7d52012047b7fb` when conversion is disabled.
+This is not ZIP corruption; the supplied GitHub ZIP contains canonical bytes.
+The verifier now uses `git -c core.autocrlf=false -c core.eol=lf archive` to
+produce platform-independent source bytes without changing global Git settings.
+The failed strict verification output is preserved separately from the final ZIP.
