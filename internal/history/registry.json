@@ -60,6 +60,21 @@
       "spatial": true,
       "label": "City"
     },
+    "capital": {
+      "category": "settlements",
+      "spatial": true,
+      "label": "Capital"
+    },
+    "border": {
+      "category": "politics",
+      "spatial": true,
+      "label": "Border"
+    },
+    "label": {
+      "category": "settlements",
+      "spatial": true,
+      "label": "Map label"
+    },
     "town": {
       "category": "settlements",
       "spatial": true,
@@ -541,6 +556,7 @@
     "capital-of": {
       "family": "political",
       "sources": [
+        "capital",
         "city",
         "town"
       ],

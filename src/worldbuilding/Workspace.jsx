@@ -172,13 +172,18 @@ export function Atlas({
         : collection === "empires"
           ? e.kind === "empire"
           : collection === "capitals"
-            ? doc.relations.some(
+            ? e.kind === "capital" ||
+              doc.relations.some(
                 (r) =>
                   r.ageId === e.ageId &&
                   r.kind === "capital-of" &&
                   r.source === e.id,
               )
-            : e.kind === (collection === "cities" ? "city" : "village");
+            : collection === "cities"
+              ? ["city", "capital"].includes(e.kind)
+              : collection === "places"
+                ? registry.types[e.kind]?.spatial && e.terrainId
+                : e.kind === (collection === "towns" ? "town" : "village");
   const rows = entities
     .map((entity) => ({ entity }))
     .filter(
@@ -189,6 +194,8 @@ export function Atlas({
     countries: "country",
     empires: "empire",
     cities: "city",
+    towns: "town",
+    places: "landmark",
     villages: "village",
     capitals: "city",
     natural: naturalKind,
@@ -226,9 +233,11 @@ export function Atlas({
               ["countries", "Countries or States"],
               ["empires", "Empires"],
               ["cities", "Cities"],
+              ["towns", "Towns"],
               ["villages", "Villages"],
               ["capitals", "Capitals"],
               ["natural", "Natural Features"],
+              ["places", "All mapped places and infrastructure"],
             ].map(([v, n]) => (
               <option key={v} value={v}>
                 {n}

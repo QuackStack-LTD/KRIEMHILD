@@ -197,3 +197,85 @@ test("decoded layers commit together; obsolete decode cannot replace the latest 
   }
   assert.equal(live.size, 0);
 });
+
+test("zooming out retains a bounded world overview underneath the last close-up until replacement commits", async () => {
+  const root = createRoot(document.getElementById("root"));
+  let loading;
+  globalThis.fetch = async () =>
+    new Response(new Blob(["png"]), { headers: { "X-Terrain-Revision": "1" } });
+  decode = async () => {};
+  const props = {
+    identity: "overview-regression",
+    session: "s",
+    revision: 1,
+    styles: ["natural"],
+    camera: { x: 1, y: 0.4, w: 0.001, h: 0.0005 },
+    width: 256,
+    height: 128,
+    previewQuality: { preset: "balanced" },
+    onLoading: (n) => (loading = n),
+  };
+  const render = async (camera) => {
+    props.camera = camera;
+    await act(() =>
+      root.render(
+        React.createElement(
+          "svg",
+          null,
+          React.createElement(
+            Surface,
+            props,
+            React.createElement(ViewportLayer, {
+              style: "natural",
+              primary: true,
+            }),
+          ),
+        ),
+      ),
+    );
+  };
+  let release;
+  try {
+    await render(props.camera);
+    await until(() => loading === 0);
+    const closeup = document.querySelector("image").getAttribute("href");
+    assert.equal(
+      live.size,
+      2,
+      "one overview plus one close-up should be retained",
+    );
+    const held = new Promise((r) => (release = r));
+    let heldCount = 0;
+    decode = async () => {
+      heldCount++;
+      await held;
+    };
+    await render({ x: 0.8, y: 0.3, w: 0.4, h: 0.2 });
+    await until(() => heldCount > 0);
+    const overview = document.querySelector('image[data-overview="true"]');
+    assert.ok(overview, "newly exposed terrain is black while detail loads");
+    assert.equal(overview.getAttribute("x"), "0");
+    assert.equal(overview.getAttribute("width"), "2");
+    assert.equal(overview.getAttribute("height"), "1");
+    assert.ok(
+      [...document.querySelectorAll("image")].some(
+        (i) => i.getAttribute("href") === closeup,
+      ),
+      "last coherent close-up disappeared",
+    );
+    decode = async () => {};
+    await act(async () => {
+      release();
+      await pause(20);
+    });
+    await until(() => loading === 0);
+    assert.equal(document.querySelectorAll("image").length, 1);
+    assert.equal(document.querySelector("image").getAttribute("width"), "0.4");
+    assert.equal(live.size, 2, "obsolete overview/close-up URLs leaked");
+  } finally {
+    release?.();
+    decode = async () => {};
+    await act(() => root.unmount());
+  }
+  assert.equal(live.size, 0);
+});

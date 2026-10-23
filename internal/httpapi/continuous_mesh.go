@@ -48,6 +48,14 @@ func (s *Server) continuousMesh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	p := v.planet
+	if raw := r.URL.Query().Get("revision"); raw != "" {
+		wanted, err := strconv.Atoi(raw)
+		if err != nil || wanted != v.authored().Header.Revision {
+			v.mu.Unlock()
+			fail(w, 409, "Terrain revision changed; refresh the mesh")
+			return
+		}
+	}
 	box := world.Bounds{X: (b[0] + math.Pi) / model.Tau * float64(v.solver.W-1), Y: (.5 - b[3]/math.Pi) * float64(v.solver.H-1), Width: (b[2] - b[0]) / model.Tau * float64(v.solver.W-1), Height: (b[3] - b[1]) / math.Pi * float64(v.solver.H-1)}
 	ops := append([]world.Operation(nil), v.authored().Ops(box.Expand(.1))...)
 	transform := continuousTransform(ops, v.solver.W, v.solver.H, p)
@@ -64,7 +72,7 @@ func (s *Server) continuousMesh(w http.ResponseWriter, r *http.Request) {
 		v.tileIdentity = fmt.Sprintf("%x", hash.Sum(nil))
 	}
 	opData, _ := json.Marshal(ops)
-	key := fmt.Sprintf("mesh/%s/%v/%d/%d/%x", v.tileIdentity, b, columns, rows, sha256.Sum256(opData))
+	key := fmt.Sprintf("mesh-2/%s/%v/%d/%d/%x", v.tileIdentity, b, columns, rows, sha256.Sum256(opData))
 	v.mu.Unlock()
 	if data, ok := s.terrainTileCache.Get(key); ok {
 		w.Header().Set("Content-Type", "application/json")

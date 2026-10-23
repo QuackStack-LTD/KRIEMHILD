@@ -144,17 +144,22 @@ export async function renderViewport(
     throw Error(
       "Viewport exceeds the 32-megapixel render budget. Reduce display pixel density or window size.",
     );
-  async function level(z, phase) {
+  async function level(z, phase, overview = false) {
+    const levelRequest = overview
+      ? { ...r, bounds: { x: 0, y: 0, w: 2, h: 1 } }
+      : r;
     signal.throwIfAborted();
     // A coarse preview needs coarse output pixels too. Upscaling it into a full
     // DPR raster would retain a second full-size decoded frame during refinement.
     // The final transaction always uses the complete requested output density.
     const scale = phase === "coarse" ? 2 ** (r.z - z) : 1;
-    const pixels = {
-      width: Math.max(1, Math.round(r.pixels.width / scale)),
-      height: Math.max(1, Math.round(r.pixels.height / scale)),
-    };
-    const nodes = pyramidNodes(r, z),
+    const pixels = overview
+      ? { width: 512, height: 256 }
+      : {
+          width: Math.max(1, Math.round(r.pixels.width / scale)),
+          height: Math.max(1, Math.round(r.pixels.height / scale)),
+        };
+    const nodes = pyramidNodes(levelRequest, z),
       span = 2 ** -z;
     const minX = Math.min(...nodes.map((n) => n.x)),
       maxX = Math.max(...nodes.map((n) => n.x));
@@ -252,10 +257,14 @@ export async function renderViewport(
         if (nodes.length)
           dest.drawImage(
             atlas,
-            ((minX * span - r.bounds.x) / r.bounds.w) * pixels.width,
-            ((minY * span - r.bounds.y) / r.bounds.h) * pixels.height,
-            (((atlasWidth / r.size) * span) / r.bounds.w) * pixels.width,
-            (((atlasHeight / r.size) * span) / r.bounds.h) * pixels.height,
+            ((minX * span - levelRequest.bounds.x) / levelRequest.bounds.w) *
+              pixels.width,
+            ((minY * span - levelRequest.bounds.y) / levelRequest.bounds.h) *
+              pixels.height,
+            (((atlasWidth / r.size) * span) / levelRequest.bounds.w) *
+              pixels.width,
+            (((atlasHeight / r.size) * span) / levelRequest.bounds.h) *
+              pixels.height,
           );
         timings.resample += performance.now() - startedStage;
         startedStage = performance.now();
@@ -269,7 +278,7 @@ export async function renderViewport(
       }
     }
     const frame = {
-      bounds: r.bounds,
+      bounds: levelRequest.bounds,
       revision: r.revision,
       identity: r.identity,
       generation: r.generation,
@@ -288,7 +297,7 @@ export async function renderViewport(
       generation: r.generation,
       phase,
       revision: r.revision,
-      bounds: r.bounds,
+      bounds: levelRequest.bounds,
       z,
       pixels,
       timings,
@@ -313,6 +322,18 @@ export async function renderViewport(
     r.styles.every((style) => pyramid.cache.has(pyramid.key(r, n, style))),
   );
   if (r.z > 0 && !fineCached) {
+    if (r.preview) {
+      try {
+        await level(0, "overview", true);
+      } catch (error) {
+        if (signal.aborted) throw error;
+        record({
+          event: "overview-failed",
+          generation: r.generation,
+          message: error.message,
+        });
+      }
+    }
     try {
       await level(Math.max(0, r.z - 2), "coarse");
     } catch (error) {

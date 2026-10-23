@@ -77,7 +77,11 @@ func (d *Document) Sync(m Map, state *world.State) {
 				break
 			}
 		}
-		if shape.Deleted || !world.HasAuthoredName(shape.Name) {
+		if !shape.Deleted && shape.Name == "" {
+			shape.Name = world.RecordName(shape)
+			state.Entities[shapeID] = shape
+		}
+		if shape.Deleted {
 			if ei >= 0 {
 				remaining := false
 				for _, r := range d.Representations {

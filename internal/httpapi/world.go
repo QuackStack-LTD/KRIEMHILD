@@ -10,6 +10,7 @@ import (
 	"kriemhild/internal/world"
 	"math"
 	"net/http"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -64,6 +65,9 @@ func sessionState(v *session) map[string]any {
 	out["historyWorldId"] = v.historyWorld
 	out["unsaved"] = v.unsaved
 	out["project"] = v.authored().Header
+	if count := v.authored().RecoveredParts(); count > 0 {
+		out["recoveredEntityParts"] = count
+	}
 	return out
 }
 func (s *Server) worldSession(w http.ResponseWriter, r *http.Request) *session {
@@ -162,12 +166,14 @@ func (s *Server) worldCommand(w http.ResponseWriter, r *http.Request) {
 		fail(w, 409, "Finish generation before building.")
 		return
 	}
-	changedEntity := req.Entity.ID
-	if req.Kind == "undo" && model.Header.Cursor > 0 {
-		changedEntity = strings.TrimPrefix(model.Header.History[model.Header.Cursor-1].Key, "entity/")
-	}
-	if req.Kind == "redo" && model.Header.Cursor < len(model.Header.History) {
-		changedEntity = strings.TrimPrefix(model.Header.History[model.Header.Cursor].Key, "entity/")
+	publishEntities := req.Kind == "entity" || req.Kind == "move-family" || req.Kind == "undo" || req.Kind == "redo"
+	var previous *world.State
+	if publishEntities && v.historical != nil {
+		previous, err = model.Clone()
+		if err != nil {
+			fail(w, 500, "Could not prepare entity transaction")
+			return
+		}
 	}
 	previousView := append(json.RawMessage(nil), model.Header.View...)
 	switch req.Kind {
@@ -187,9 +193,8 @@ func (s *Server) worldCommand(w http.ResponseWriter, r *http.Request) {
 		if req.Entity.ID == "" {
 			req.Entity.ID = token()
 		}
-		changedEntity = req.Entity.ID
 		if strings.TrimSpace(req.Entity.Name) == "" {
-			req.Entity.Name = "example-" + req.Entity.ID
+			req.Entity.Name = world.RecordName(req.Entity)
 		}
 		req.Entity.River = nil // Capture authoritative terrain-following geometry.
 		if req.Entity.Color == "" {
@@ -253,35 +258,20 @@ func (s *Server) worldCommand(w http.ResponseWriter, r *http.Request) {
 	}
 	// Publish entity identity and representation immediately. Terrain, explored
 	// tiles and artwork still use the explicit Save action.
-	if v.historical != nil && (req.Kind == "entity" || req.Kind == "undo" || req.Kind == "redo") {
-		if shape, ok := model.Entities[changedEntity]; ok {
-			revision := -1
-			if s.auth != nil {
-				revision = v.historyRevision
+	if publishEntities && v.historical != nil {
+		changes := world.New(v.solver.W, v.solver.H)
+		for id, shape := range model.Entities {
+			if old, exists := previous.Entities[id]; !exists || !reflect.DeepEqual(old, shape) {
+				changes.Entities[id] = shape
 			}
-			var updated *history.Document
-			updated, err = s.projects.UpdateHistory(storage.WithActor(context.Background(), v.actorID), v.historyWorld, revision, func(d *history.Document) error {
-				m := d.Map(v.historical.AgeID, v.historical.ID)
-				if m == nil {
-					return fmt.Errorf("map no longer exists in this Age")
-				}
-				if shape.LogicalID != "" {
-					e := d.Entity(m.AgeID, shape.LogicalID)
-					if e == nil || e.Deleted || e.Kind != shape.Kind {
-						return fmt.Errorf("invalid logical entity reference")
-					}
-				}
-				changes := world.New(v.solver.W, v.solver.H)
-				changes.Entities[shape.ID] = shape
-				d.Sync(*m, changes)
-				return nil
-			})
-			if err != nil {
-				v.unsaved = true
-				fail(w, 503, "Could not persist entity: "+err.Error())
-				return
-			}
-			v.historyRevision = updated.World.Revision
+		}
+		if len(changes.Entities) > 0 {
+			err = s.publishBuilderEntities(v, changes)
+		}
+		if err != nil {
+			*model = *previous
+			fail(w, 503, "Could not persist entities: "+err.Error())
+			return
 		}
 	}
 
@@ -306,6 +296,38 @@ func (s *Server) worldCommand(w http.ResponseWriter, r *http.Request) {
 		v.unsaved = true
 	}
 	respond(w, 200, map[string]any{"unsaved": v.unsaved, "project": model.Header, "dirty": dirty, "entityId": req.Entity.ID, "operationId": req.Operation.ID, "analysisStale": v.terrainAnalysisStale()})
+}
+
+// One publication path for individual drawings, generated settlements, grouped
+// moves and undo/redo. All members of a batch reach the World/Age atomically.
+func (s *Server) publishBuilderEntities(v *session, state *world.State) error {
+	if v.historical == nil {
+		return nil
+	}
+	revision := -1
+	if s.auth != nil {
+		revision = v.historyRevision
+	}
+	updated, err := s.projects.UpdateHistory(storage.WithActor(context.Background(), v.actorID), v.historyWorld, revision, func(d *history.Document) error {
+		m := d.Map(v.historical.AgeID, v.historical.ID)
+		if m == nil {
+			return fmt.Errorf("map no longer exists in this Age")
+		}
+		for _, shape := range state.Entities {
+			if shape.LogicalID != "" && !shape.Deleted {
+				e := d.Entity(m.AgeID, shape.LogicalID)
+				if e == nil || e.Deleted || e.Kind != shape.Kind {
+					return fmt.Errorf("invalid logical entity reference")
+				}
+			}
+		}
+		d.Sync(*m, state)
+		return nil
+	})
+	if err == nil {
+		v.historyRevision = updated.World.Revision
+	}
+	return err
 }
 
 // The generated tile store stays immutable; only intersecting composed tiles

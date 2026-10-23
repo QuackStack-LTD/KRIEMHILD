@@ -25,24 +25,38 @@ export function ViewportLayer({ style, primary = false }) {
         pointerEvents="none"
       />
     );
+  const underlay = frame.underlay;
+  const underlayImage =
+    underlay?.images.find((i) => i.style === style) ||
+    (primary && underlay?.images[0]);
+  const layers = underlayImage
+    ? [
+        { ...underlay, image: underlayImage },
+        { ...frame, image },
+      ]
+    : [{ ...frame, image }];
   return (
     <g
       aria-label="Continuous terrain tiles"
       data-terrain-style={style}
       pointerEvents="none"
     >
-      <image
-        href={image.url}
-        x={frame.bounds.x}
-        y={frame.bounds.y}
-        width={frame.bounds.w}
-        height={frame.bounds.h}
-        preserveAspectRatio="none"
-        data-generation={frame.generation}
-        data-revision={frame.revision}
-        data-lod={frame.z}
-        data-raster-style={image.style}
-      />
+      {layers.map((layer) => (
+        <image
+          key={layer.image.url}
+          href={layer.image.url}
+          x={layer.bounds.x}
+          y={layer.bounds.y}
+          width={layer.bounds.w}
+          height={layer.bounds.h}
+          preserveAspectRatio="none"
+          data-generation={layer.generation}
+          data-revision={layer.revision}
+          data-lod={layer.z}
+          data-raster-style={layer.image.style}
+          data-overview={layer.phase === "overview" ? "true" : undefined}
+        />
+      ))}
     </g>
   );
 }
@@ -75,8 +89,11 @@ export default function ViewportSurface({
   onDiagnostics,
 }) {
   const [frame, setFrame] = useState(null),
+    [overview, setOverview] = useState(null),
     generation = useRef(0),
-    committed = useRef(null),
+    owned = useRef(new Set()),
+    staging = useRef(new Set()),
+    latest = useRef({ frame: null, overview: null }),
     counters = useRef({ cancelled: 0, outstanding: 0 });
   const options = {
     session,
@@ -179,10 +196,12 @@ export default function ViewportSurface({
               });
             const next = {
               ...displayed,
-              images: displayed.images.map((i) => ({
-                style: i.style,
-                url: URL.createObjectURL(i.blob),
-              })),
+              images: displayed.images.map((i) => {
+                const url = URL.createObjectURL(i.blob);
+                owned.current.add(url);
+                staging.current.add(url);
+                return { style: i.style, url };
+              }),
             };
             try {
               // Decode every layer before one React commit, not one load event each.
@@ -195,16 +214,26 @@ export default function ViewportSurface({
               );
               if (!live || generation.current !== current) {
                 release(next);
+                next.images.forEach((i) => owned.current.delete(i.url));
                 return;
               }
-              setFrame(next);
+              if (next.phase === "overview") {
+                latest.current.overview = next;
+                setOverview(next);
+              } else {
+                latest.current.frame = next;
+                setFrame(next);
+              }
               return {
                 layers: next.images.length,
                 bytes: displayed.images.reduce((n, i) => n + i.blob.size, 0),
               };
             } catch (error) {
               release(next);
+              next.images.forEach((i) => owned.current.delete(i.url));
               throw error;
+            } finally {
+              next.images.forEach((i) => staging.current.delete(i.url));
             }
           },
         },
@@ -241,15 +270,48 @@ export default function ViewportSurface({
     };
   }, [signature]);
   useEffect(() => {
-    const previous = committed.current;
-    committed.current = frame;
-    release(previous);
-  }, [frame]);
-  useEffect(() => () => release(committed.current), []);
+    const retained = new Set(
+      [frame, overview, latest.current.frame, latest.current.overview].flatMap(
+        (f) => f?.images.map((i) => i.url) || [],
+      ),
+    );
+    for (const url of owned.current)
+      if (!retained.has(url) && !staging.current.has(url)) {
+        URL.revokeObjectURL(url);
+        owned.current.delete(url);
+      }
+  }, [frame, overview]);
+  useEffect(
+    () => () => {
+      for (const url of owned.current) URL.revokeObjectURL(url);
+      owned.current.clear();
+    },
+    [],
+  );
   if (!active) return children;
-  const current = frame?.identity === identity ? frame : null;
+  const current =
+    frame?.identity === identity
+      ? frame
+      : overview?.identity === identity
+        ? overview
+        : null;
+  const b = request.bounds,
+    a = current?.bounds;
+  const covered =
+    a &&
+    a.x <= b.x + 1e-12 &&
+    a.y <= b.y + 1e-12 &&
+    a.x + a.w >= b.x + b.w - 1e-12 &&
+    a.y + a.h >= b.y + b.h - 1e-12;
+  const context = current && {
+    ...current,
+    underlay:
+      !covered && overview?.identity === identity && overview !== current
+        ? overview
+        : null,
+  };
   return (
-    <FrameContext.Provider value={current}>
+    <FrameContext.Provider value={context}>
       <g
         aria-label="Committed terrain viewport"
         data-generation={current?.generation}

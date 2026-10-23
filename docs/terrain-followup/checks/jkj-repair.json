@@ -1,0 +1,12 @@
+{
+  "world": "jkj",
+  "beforeMaps": 0,
+  "afterMaps": 1,
+  "beforeRecords": 0,
+  "afterRecords": 4,
+  "shapes": 4,
+  "coordinateSHA256": "514717c33efce228deb05c6be125d005e82df1cb2b854a3828cc779677484ba5",
+  "sampleUnchanged": true,
+  "backup": "C:/Users/tomyi/worldbuilding/jkj-before-terrain-repair.sqlite",
+  "passed": true
+}

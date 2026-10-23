@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"kriemhild/internal/terrain/detail"
 	"kriemhild/internal/terrain/model"
-	"math"
 )
 
 type Mesh struct {
@@ -16,6 +15,7 @@ type Mesh struct {
 	Surface   []float64    `json:"surface"`
 	Wet       []bool       `json:"wet"`
 	Colors    [][3]uint8   `json:"colors"`
+	LitColors [][3]uint8   `json:"litColors"`
 	Biomes    []string     `json:"biomes"`
 	Gradients [][2]float64 `json:"gradients"` // metre/metre east and north, common 10 m stencil at every LOD
 }
@@ -34,6 +34,7 @@ func SampleMesh(ctx context.Context, p *model.Planet, bounds [4]float64, columns
 	sampler := detail.New(p)
 	m.Biomes = make([]string, n)
 	m.Gradients = make([][2]float64, n)
+	m.LitColors = make([][3]uint8, n)
 	for y := 0; y < rows; y++ {
 		if err := ctx.Err(); err != nil {
 			return nil, err
@@ -48,18 +49,12 @@ func SampleMesh(ctx context.Context, p *model.Planet, bounds [4]float64, columns
 			i := y*columns + x
 			m.Bed[i], m.Surface[i], m.Wet[i] = s.Bed, s.WaterSurface, s.Water != "dry"
 			m.Biomes[i] = s.Biome
-			dlat := 10 / (p.Spec.RadiusKM * 1000)
-			dlon := dlat / math.Max(.01, math.Cos(lat))
-			height := func(x, y float64) float64 {
-				a := sampler.Sample(x, y)
-				if transform != nil {
-					a = transform(a, x, y)
-				}
-				return a.Bed
-			}
-			m.Gradients[i] = [2]float64{(height(lon+dlon, lat) - height(lon-dlon, lat)) / 20, (height(lon, math.Min(math.Pi/2, lat+dlat)) - height(lon, math.Max(-math.Pi/2, lat-dlat))) / 20}
+			east, north := gradients(sampler, p, lon, lat, transform)
+			m.Gradients[i] = [2]float64{east, north}
 			c := palette(s, "natural", 1)
 			m.Colors[i] = [3]uint8{c.R, c.G, c.B}
+			c = terrainColor(s, east, north)
+			m.LitColors[i] = [3]uint8{c.R, c.G, c.B}
 		}
 	}
 	return m, nil

@@ -81,7 +81,26 @@ type State struct {
 	Operations                  map[string]Operation `json:"modifications"`
 	entityIndex, operationIndex *Index
 	dirty                       map[string]bool
+	recovered                   map[string]bool
 	W, H                        float64 `json:"-"`
+}
+
+// Clone retains pending persistence flags while rebuilding independent indexes.
+// JSON alone loses these flags and can save history without its entity parts.
+func (s *State) Clone() (*State, error) {
+	data, err := json.Marshal(s)
+	if err != nil {
+		return nil, err
+	}
+	var next State
+	if err = json.Unmarshal(data, &next); err != nil {
+		return nil, err
+	}
+	next.Reindex(int(s.W)+1, int(s.H)+1)
+	for key, value := range s.dirty {
+		next.dirty[key] = value
+	}
+	return &next, nil
 }
 
 func New(w, h int) *State {
@@ -93,6 +112,89 @@ func New(w, h int) *State {
 	s.Reindex(w, h)
 	return s
 }
+func (s *State) recoverHistoryEntities() error {
+	// Older settlement batch clones dropped dirty entity parts while saving the
+	// complete undo entry. Recover only absent identities from that stored entry,
+	// at the saved cursor; existing parts always take precedence. All recovered
+	// data still passes the normal ID, geometry, graph and history validation.
+	candidates := map[string]Entity{}
+	for i, c := range s.Header.History {
+		if c.Key != "entities" && !strings.HasPrefix(c.Key, "entity/") {
+			continue
+		}
+		read := func(raw json.RawMessage) ([]Entity, error) {
+			var entries []Entity
+			if c.Key == "entities" {
+				if err := json.Unmarshal(raw, &entries); err != nil {
+					return nil, err
+				}
+			} else {
+				var e Entity
+				if err := json.Unmarshal(raw, &e); err != nil {
+					return nil, err
+				}
+				entries = []Entity{e}
+			}
+			return entries, nil
+		}
+		before, err := read(c.Before)
+		if err != nil {
+			return fmt.Errorf("invalid entity history")
+		}
+		for _, e := range before {
+			if _, ok := candidates[e.ID]; !ok {
+				candidates[e.ID] = e
+			}
+		}
+		if i < s.Header.Cursor {
+			after, err := read(c.After)
+			if err != nil {
+				return fmt.Errorf("invalid entity history")
+			}
+			for _, e := range after {
+				candidates[e.ID] = e
+			}
+		}
+	}
+	for id, e := range candidates {
+		if _, ok := s.Entities[id]; !ok {
+			s.Entities[id] = e
+			if s.recovered == nil {
+				s.recovered = map[string]bool{}
+			}
+			s.recovered[id] = true
+		}
+	}
+	for id := range s.recovered {
+		e, exists := s.Entities[id]
+		if !exists {
+			delete(s.recovered, id)
+			continue
+		}
+		validation := e
+		if validation.Deleted {
+			validation.ParentID = ""
+		}
+		if err := s.ValidateEntity(validation); err != nil {
+			return err
+		}
+		if !e.Deleted {
+			s.entityIndex.Put(id, e.Bounds(), e.MinDetail)
+		}
+	}
+	return nil
+}
+
+func (s *State) MarkRecoveredParts() {
+	for id := range s.recovered {
+		if _, ok := s.Entities[id]; ok {
+			s.dirty["entity/"+id] = true
+		} else {
+			delete(s.recovered, id)
+		}
+	}
+}
+func (s *State) RecoveredParts() int { return len(s.recovered) }
 func (s *State) Reindex(w, h int) {
 	s.W = float64(w - 1)
 	s.H = float64(h - 1)
@@ -583,6 +685,9 @@ func (s *State) Validate(w, h int) error {
 		return fmt.Errorf("invalid world metadata")
 	}
 	s.Reindex(w, h)
+	if err := s.recoverHistoryEntities(); err != nil {
+		return err
+	}
 	for id, a := range s.Artworks {
 		if id != a.ID {
 			return fmt.Errorf("artwork identity mismatch")
@@ -737,7 +842,25 @@ func AllowedGeometry(layer, kind, geometry string) bool {
 // pending commands or marking unrelated inherited entities as local edits.
 func (s *State) RefreshRepresentations(shapes map[string]Entity) {
 	dirty := s.dirty
+	referenced := map[string]bool{}
+	for _, c := range s.Header.History {
+		if strings.HasPrefix(c.Key, "entity/") {
+			referenced[strings.TrimPrefix(c.Key, "entity/")] = true
+		} else if c.Key == "entities" {
+			for _, raw := range []json.RawMessage{c.Before, c.After} {
+				var entries []Entity
+				_ = json.Unmarshal(raw, &entries)
+				for _, e := range entries {
+					referenced[e.ID] = true
+				}
+			}
+		}
+	}
 	for id, shape := range s.Entities {
+		if _, exists := shapes[id]; !exists && referenced[id] {
+			shape.Deleted = true
+			shapes[id] = shape
+		}
 		if !HasAuthoredName(shape.Name) {
 			if _, exists := shapes[id]; !exists {
 				shapes[id] = shape
@@ -759,4 +882,17 @@ func (s *State) RefreshRepresentations(shapes map[string]Entity) {
 func HasAuthoredName(name string) bool {
 	name = strings.TrimSpace(name)
 	return name != "" && !strings.HasPrefix(strings.ToLower(name), "example-")
+}
+
+// Every accepted map entity has an editable record, including buildings whose
+// procedural footprint did not supply a name. Identity never depends on a label.
+func RecordName(e Entity) string {
+	if name := strings.TrimSpace(e.Name); name != "" {
+		return name
+	}
+	kind := strings.ReplaceAll(e.Kind, "-", " ")
+	if kind == "" {
+		kind = "Place"
+	}
+	return kind + " " + e.ID[:min(8, len(e.ID))]
 }

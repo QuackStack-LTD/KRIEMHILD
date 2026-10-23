@@ -163,6 +163,16 @@ func bedAt(p *model.Planet, lon, lat, coast float64) (bed, distance, rough float
 	}
 	base := 90 + 1300*(1-math.Exp(-coast*5))
 	ridge := .3*math.Pow(math.Max(0, 1-math.Abs(Noise(p.Seed+302, lon, lat, 6)*5)), 3) + plate.Convergence*1.7
+	if p.Spec.Version == model.Version && p.Spec.ReliefVersion >= 1 {
+		// Broad uplift supports connected subsidiary ridges. Vary crest height
+		// along each belt and allow old, subdued interior ranges as well as active
+		// boundaries. These fields are materialized before climate and drainage.
+		wl := lon + .07*Noise(p.Seed+1800, lon, lat, 5)
+		wp := model.Clamp(lat+.055*Noise(p.Seed+1801, lon, lat, 6), -math.Pi/2, math.Pi/2)
+		oldBelt := math.Pow(math.Max(0, 1-math.Abs(Noise(p.Seed+302, wl, wp, 6)*3.5)), 3)
+		crest := .65 + .65*model.Clamp(.5+Noise(p.Seed+1802, wl, wp, 13), 0, 1)
+		ridge = (.32*oldBelt + plate.Convergence*1.55) * crest
+	}
 	ridge *= model.Clamp(coast*45, 0, 1)
 	local := 0.
 	amplitude := 220.

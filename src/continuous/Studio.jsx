@@ -3,6 +3,7 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useMemo,
   useState,
@@ -10,7 +11,12 @@ import {
 import { request, defaults, presets } from "./api.js";
 import TileSurface from "./TileSurface.jsx";
 import ViewportSurface, { ViewportLayer } from "./ViewportSurface.jsx";
-import { normalizeCamera, visibleTiles, reliefResolution } from "./camera.js";
+import {
+  normalizeCamera,
+  visibleTiles,
+  visibleViewport,
+  reliefResolution,
+} from "./camera.js";
 import {
   screenToMap,
   viewport,
@@ -79,6 +85,7 @@ export default function Studio({ initialState, onExit }) {
       ...defaults,
       ...initialState?.continuous?.spec,
       version: defaults.version,
+      reliefVersion: defaults.reliefVersion,
       seed: "",
     });
   const [hillshade, setHillshade] = useState(
@@ -104,7 +111,12 @@ export default function Studio({ initialState, onExit }) {
         savedView.mode ||
         (location.pathname.endsWith("/build") ? "map" : "generate"),
     ),
-    [style, setStyle] = useState(savedView.style || "physical-atlas");
+    [style, setStyle] = useState(
+      !savedView.style ||
+        ["physical-atlas", "atlas", "natural"].includes(savedView.style)
+        ? "terrain"
+        : savedView.style,
+    );
   const [camera, setCamera] = useState(normalizeCamera(savedView.camera)),
     [width, setWidth] = useState(1000),
     [height, setHeight] = useState(500);
@@ -176,6 +188,7 @@ export default function Studio({ initialState, onExit }) {
   const base = `sessions/${state?.id}`;
   const displayStyle = illustrating ? "atlas" : style;
   const previewInfo = previewRequest({ camera, width, height }, previewQuality);
+  const geographicViewport = visibleViewport(camera, width, height);
   const artObjects = useMemo(
     () =>
       art && state
@@ -308,13 +321,23 @@ export default function Studio({ initialState, onExit }) {
       alive = false;
     };
   }, [state?.id, invalidations, refresh]);
-  useEffect(() => {
-    const observer = new ResizeObserver((entries) => {
-      setWidth(entries[0].contentRect.width);
-      setHeight(entries[0].contentRect.height);
-    });
-    if (stage.current) observer.observe(stage.current);
-    return () => observer.disconnect();
+  useLayoutEffect(() => {
+    const element = svg.current;
+    const measure = () => {
+      const rect = element.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        setWidth(rect.width);
+        setHeight(rect.height);
+      }
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    window.addEventListener("resize", measure);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measure);
+    };
   }, []);
   useEffect(
     () => () => {
@@ -340,7 +363,10 @@ export default function Studio({ initialState, onExit }) {
     return () => window.removeEventListener("beforeunload", warn);
   }, []);
   async function command(body) {
-    const s = active.current;
+    const s =
+      body.kind === "entity" || body.kind === "move-family"
+        ? await ensureWorldMap()
+        : active.current;
     if (!s) return;
     const result = await request(`sessions/${s.id}/world`, {
       ...body,
@@ -359,19 +385,23 @@ export default function Studio({ initialState, onExit }) {
         },
       ]);
     }
-    setState((v) => ({
-      ...v,
-      project: result.project || v.project,
-      continuous: v.continuous
-        ? { ...v.continuous, analysisStale: result.analysisStale }
-        : v.continuous,
+    const next = {
+      ...active.current,
+      project: result.project || s.project,
+      continuous: s.continuous
+        ? { ...s.continuous, analysisStale: result.analysisStale }
+        : s.continuous,
       unsaved: true,
-    }));
+    };
+    active.current = next;
+    setState(next);
     await refresh(s);
     return result;
   }
   async function save() {
-    const s = active.current;
+    const s = query.current.has("world")
+      ? await ensureWorldMap()
+      : active.current;
     if (!s) return;
     await request(`sessions/${s.id}/world`, {
       kind: "view",
@@ -475,9 +505,10 @@ export default function Studio({ initialState, onExit }) {
       setJob(null);
     }
   }
-  async function accept() {
+  async function ensureWorldMap() {
     const s = active.current;
     if (!s) return;
+    if (s.historicalMap) return s;
     let worldId = query.current.get("world"),
       ageId = query.current.get("age");
     if (!worldId) {
@@ -493,15 +524,20 @@ export default function Studio({ initialState, onExit }) {
       name: `Terrain · ${s.continuous.spec.seed}`,
     });
     const next = await request(`sessions/${s.id}/world/state`);
+    active.current = next;
     setState(next);
     accepted.current = next;
-    setMode("map");
-    setTool("inspect");
     history.replaceState(
       {},
       "",
       `/world/${next.worldId}/build?${query.current}`,
     );
+    return next;
+  }
+  async function accept() {
+    await ensureWorldMap();
+    setMode("map");
+    setTool("inspect");
   }
   async function discard() {
     if (state && !state.historicalMap)
@@ -556,10 +592,12 @@ export default function Studio({ initialState, onExit }) {
           seed: 12345,
         });
         setSettlement(d);
-        const span =
+        const span = Math.max(
+          0.00008,
           (d.preview.radiusMetres /
             (state.continuous.spec.radiusKm * 1000 * Math.PI)) *
-          3.8;
+            3.8,
+        );
         setCamera({
           x: p[0] - span / 2,
           y: p[1] - span / 4,
@@ -918,10 +956,10 @@ export default function Studio({ initialState, onExit }) {
     .filter((e) => {
       const b = geometryBounds(e.points.map((p) => projectToMap(p, state)));
       return (
-        b.x <= camera.x + camera.w &&
-        b.x + b.w >= camera.x &&
-        b.y <= camera.y + camera.h &&
-        b.y + b.h >= camera.y
+        b.x <= geographicViewport.x + geographicViewport.w &&
+        b.x + b.w >= geographicViewport.x &&
+        b.y <= geographicViewport.y + geographicViewport.h &&
+        b.y + b.h >= geographicViewport.y
       );
     })
     .sort(
@@ -965,6 +1003,8 @@ export default function Studio({ initialState, onExit }) {
       camera.y,
       camera.w,
       camera.h,
+      width,
+      height,
       showRivers,
       riverShapes,
       geography,
@@ -1069,13 +1109,17 @@ export default function Studio({ initialState, onExit }) {
             <button
               key={id}
               aria-current={mode === id ? "page" : undefined}
-              disabled={id !== "generate" && !state}
-              onClick={() => {
-                setMode(id);
-                if (id === "generate" || id === "atlas") setIllustrating(false);
-                setTool(id === "settlement" ? "site" : "inspect");
-                setDraft([]);
-              }}
+              disabled={busy || (id !== "generate" && !state)}
+              onClick={() =>
+                run(async () => {
+                  if (id !== "generate") await ensureWorldMap();
+                  setMode(id);
+                  if (id === "generate" || id === "atlas")
+                    setIllustrating(false);
+                  setTool(id === "settlement" ? "site" : "inspect");
+                  setDraft([]);
+                })
+              }
             >
               {label}
             </button>
@@ -1200,7 +1244,11 @@ export default function Studio({ initialState, onExit }) {
                 width={width}
                 height={height}
                 previewQuality={illustrating ? undefined : previewQuality}
-                previewHillshade={illustrating ? undefined : hillshade}
+                previewHillshade={
+                  illustrating || displayStyle === "terrain"
+                    ? undefined
+                    : hillshade
+                }
                 onDiagnostics={setRenderDiagnostics}
                 detailLevel={detailLevel}
                 retry={renderRetry}
@@ -1208,7 +1256,8 @@ export default function Studio({ initialState, onExit }) {
                 onError={setRenderError}
                 styles={[
                   displayStyle,
-                  ...((hillshade > 0 &&
+                  ...((displayStyle !== "terrain" &&
+                    hillshade > 0 &&
                     previewQuality.preset !== "performance") ||
                   illustrating
                     ? ["hillshade"]
@@ -1234,29 +1283,31 @@ export default function Studio({ initialState, onExit }) {
                     onLoading={setLoading}
                   />
                 )}
-                {hillshade > 0 && !illustrating && (
-                  <g
-                    style={{ mixBlendMode: "multiply" }}
-                    opacity={hillshade}
-                    pointerEvents="none"
-                  >
-                    {viewportRenderer ? (
-                      <ViewportLayer style="hillshade" />
-                    ) : (
-                      <TileSurface
-                        enabled={!show3D}
-                        session={state.id}
-                        revision={state.project.revision}
-                        invalidations={invalidations}
-                        style="hillshade"
-                        identity={`${state.worldId}:${state.id}`}
-                        camera={camera}
-                        width={width}
-                        height={height}
-                      />
-                    )}
-                  </g>
-                )}
+                {hillshade > 0 &&
+                  !illustrating &&
+                  displayStyle !== "terrain" && (
+                    <g
+                      style={{ mixBlendMode: "multiply" }}
+                      opacity={hillshade}
+                      pointerEvents="none"
+                    >
+                      {viewportRenderer ? (
+                        <ViewportLayer style="hillshade" />
+                      ) : (
+                        <TileSurface
+                          enabled={!show3D}
+                          session={state.id}
+                          revision={state.project.revision}
+                          invalidations={invalidations}
+                          style="hillshade"
+                          identity={`${state.worldId}:${state.id}`}
+                          camera={camera}
+                          width={width}
+                          height={height}
+                        />
+                      )}
+                    </g>
+                  )}
                 {!illustrating &&
                   displayStyle === "physical-atlas" &&
                   !state.continuous.analysisStale && (
@@ -1841,6 +1892,7 @@ export default function Studio({ initialState, onExit }) {
                 <label>
                   Size
                   <select
+                    aria-label="Settlement size"
                     value={settlementSpec.kind}
                     onChange={(e) =>
                       setSettlementSpec({
@@ -1857,6 +1909,7 @@ export default function Studio({ initialState, onExit }) {
                 <label>
                   Layout
                   <select
+                    aria-label="Settlement layout"
                     value={settlementSpec.archetype}
                     onChange={(e) =>
                       setSettlementSpec({
@@ -1893,6 +1946,7 @@ export default function Studio({ initialState, onExit }) {
                       disabled={busy}
                       onClick={() =>
                         run(async () => {
+                          await ensureWorldMap();
                           const r = await request(`${base}/settlements`, {
                             id: settlement.id,
                             revision: settlement.revision,
@@ -2014,6 +2068,22 @@ export default function Studio({ initialState, onExit }) {
                   }
                 >
                   Apply properties
+                </button>
+                <button
+                  onClick={() =>
+                    run(async () => {
+                      const s = await ensureWorldMap();
+                      await command({ kind: "entity", entity: selected });
+                      await save();
+                      onExit?.(
+                        s.historyWorldId,
+                        selected.logicalId || selected.id,
+                        s.historicalMap.ageId,
+                      );
+                    })
+                  }
+                >
+                  Open entity record
                 </button>
                 <button
                   onClick={() =>
@@ -2192,11 +2262,10 @@ export default function Studio({ initialState, onExit }) {
                   onChange={(e) => setStyle(e.target.value)}
                 >
                   {[
-                    "physical-atlas",
+                    "terrain",
                     "natural",
                     "elevation",
                     "biome",
-                    "atlas",
                     "mask",
                     "bathymetry",
                     "temperature",
@@ -2466,6 +2535,8 @@ export default function Studio({ initialState, onExit }) {
           <Terrain3D
             state={state}
             camera={camera}
+            entities={entities}
+            rivers={showRivers ? riverShapes : []}
             onPick={(p, tolerance) => {
               inspect(p);
               const index = new FeatureIndex([

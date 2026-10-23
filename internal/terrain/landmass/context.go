@@ -35,6 +35,11 @@ func Conditioned(p *model.Planet, lon, lat, bed, coast float64) (float64, float6
 		// Wind-aligned dune crests in dry low relief; gullies in wet terrain, and
 		// sharper glacial ridges on cold high ground. Features taper at shores.
 		inland := model.Clamp(coast*p.Spec.RadiusKM/2, 0, 1) * envelope
+		if p.Spec.Version == model.Version && p.Spec.ReliefVersion >= 1 {
+			// A materialized surface needs no zero-at-climate-grid envelope.
+			// That envelope embossed regular straight troughs into every orogen.
+			inland = model.Clamp(coast*p.Spec.RadiusKM/2, 0, 1)
+		}
 		wind := g.At("windX", lon, lat)
 		dune := math.Sin((math.Cos(lon)*math.Cos(lat)*wind+math.Sin(lat)*.4)*13000 + Noise(p.Seed+1502, lon, lat, 900)*5)
 		bed += inland * ((1-wet)*model.Clamp(1-bed/1100, 0, 1)*dune*7 - wet*rough*math.Pow(1-math.Abs(Noise(p.Seed+1503, lon, lat, 1300)), 8)*35 + cold*rough*math.Abs(Noise(p.Seed+1504, lon, lat, 700))*30)
@@ -46,12 +51,20 @@ func Conditioned(p *model.Planet, lon, lat, bed, coast float64) (float64, float6
 		amplitude, frequency := 1100., 1800.
 		if p.Spec.Version == model.Version {
 			amplitude, frequency = 450, 128
+			if p.Spec.ReliefVersion >= 1 {
+				amplitude, frequency = 950, 45
+			}
 		}
 		for octave := 0; octave < 6; octave++ {
 			if p.Spec.Version == model.Version && frequency > float64(max(1024, p.Spec.SurfaceWidth))*.25 {
 				break
 			}
-			ridge := math.Pow(1-math.Abs(Noise(p.Seed+uint64(1600+octave), lon, lat, frequency)), 3) - .4
+			wl, wp := lon, lat
+			if p.Spec.Version == model.Version && p.Spec.ReliefVersion >= 1 {
+				wl += .014 * Noise(p.Seed+1700, lon, lat, 18)
+				wp = model.Clamp(wp+.012*Noise(p.Seed+1701, lon, lat, 19), -math.Pi/2, math.Pi/2)
+			}
+			ridge := math.Pow(1-math.Abs(Noise(p.Seed+uint64(1600+octave), wl, wp, frequency)), 3) - .4
 			bed += inland * mountain * ridge * amplitude * p.Spec.Relief
 			amplitude *= .48
 			frequency *= 2.2

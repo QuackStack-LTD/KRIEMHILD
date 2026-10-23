@@ -80,7 +80,7 @@ func TestInstitutionBatchRollsBackEventOnInvalidRelationship(t *testing.T) {
 	}
 }
 
-func TestUnnamedDrawablesBecomeEntitiesOnlyWhenNamed(t *testing.T) {
+func TestDrawableRecordsPersistIndependentlyOfNaming(t *testing.T) {
 	d := New("Names")
 	a := d.World.CurrentAge
 	m, err := d.AddTerrain(a, "Terrain", "project", 100, 100)
@@ -91,8 +91,8 @@ func TestUnnamedDrawablesBecomeEntitiesOnlyWhenNamed(t *testing.T) {
 	shape := world.Entity{ID: "shape", Name: "example-unique", Kind: "city", Layer: "settlements", Geometry: "polygon", Color: "#000000", Points: [][2]float64{{1, 1}, {5, 1}, {5, 5}, {1, 5}}}
 	s.Entities[shape.ID] = shape
 	d.Sync(m, s)
-	if len(d.Entities) != 0 || len(d.Representations) != 0 {
-		t.Fatal("placeholder became logical entity")
+	if len(d.Entities) != 1 || len(d.Representations) != 1 {
+		t.Fatal("drawable has no logical entity")
 	}
 	s.Saved()
 	s.RefreshRepresentations(d.Shapes(m))
@@ -108,8 +108,8 @@ func TestUnnamedDrawablesBecomeEntitiesOnlyWhenNamed(t *testing.T) {
 	shape.Name = "example-renamed"
 	s.Entities[shape.ID] = shape
 	d.Sync(m, s)
-	if !d.Entity(a, shape.ID).Deleted || len(d.Representations) != 0 {
-		t.Fatal("placeholder remained active logical entity")
+	if d.Entity(a, shape.ID).Deleted || len(d.Representations) != 1 {
+		t.Fatal("renaming removed the logical entity")
 	}
 	shape.Name = "Rivergate restored"
 	s.Entities[shape.ID] = shape

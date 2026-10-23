@@ -23,6 +23,7 @@ export async function request(
 }
 export const defaults = {
   version: "continuous-3",
+  reliefVersion: 1,
   climateVersion: 1,
   seed: "",
   preset: "earthlike",

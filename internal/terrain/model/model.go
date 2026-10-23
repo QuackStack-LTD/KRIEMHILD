@@ -18,6 +18,7 @@ const MaxClimateVersion = 3
 const Tau = 2 * math.Pi
 
 type Spec struct {
+	ReliefVersion  int     `json:"reliefVersion,omitempty"`
 	ClimateVersion int     `json:"climateVersion,omitempty"`
 	Version        string  `json:"version"`
 	Seed           string  `json:"seed"`
@@ -36,9 +37,12 @@ type Spec struct {
 }
 
 func DefaultSpec() Spec {
-	return Spec{Version: Version, ClimateVersion: ClimateVersion, Seed: "Kriemhild", Preset: "earthlike", RadiusKM: 6371, LandCoverage: .32, Continents: 5, Complexity: 1, Islands: 1, Relief: .8, Rainfall: 1.65, Tilt: 23.4, TileSize: 256, SurfaceWidth: 4096}
+	return Spec{Version: Version, ReliefVersion: 1, ClimateVersion: ClimateVersion, Seed: "Kriemhild", Preset: "earthlike", RadiusKM: 6371, LandCoverage: .32, Continents: 5, Complexity: 1, Islands: 1, Relief: .8, Rainfall: 1.65, Tilt: 23.4, TileSize: 256, SurfaceWidth: 4096}
 }
 func (s Spec) Validate() error {
+	if s.ReliefVersion < 0 || s.ReliefVersion > 1 {
+		return fmt.Errorf("unsupported relief version")
+	}
 	if s.ClimateVersion < 0 || s.ClimateVersion > MaxClimateVersion {
 		return fmt.Errorf("unsupported climate version")
 	}

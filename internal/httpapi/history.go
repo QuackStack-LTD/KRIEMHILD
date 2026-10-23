@@ -214,6 +214,7 @@ func (s *Server) acceptTerrain(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	v.historical = &m
+	v.authored().Header.MapID = m.ID
 	v.historyWorld = d.World.ID
 	v.historyRevision = d.World.Revision
 	respond(w, 201, map[string]any{"document": d, "map": m})
@@ -274,6 +275,7 @@ func (s *Server) applyHistoricalMap(ctx context.Context, v *session) error {
 		if v.historical != nil {
 			return fmt.Errorf("this historical map was deleted")
 		}
+		v.authored().MarkRecoveredParts()
 		return nil
 	}
 	if err != nil {
@@ -295,13 +297,16 @@ func (s *Server) applyHistoricalMap(ctx context.Context, v *session) error {
 				delete(model.Entities, id)
 			}
 		}
-		model.Header.History = []world.Change{}
-		model.Header.Cursor = 0
-		model.Header.View = json.RawMessage(`{}`)
+		if model.Header.MapID != "" || m.ParentID != "" {
+			model.Header.History = []world.Change{}
+			model.Header.Cursor = 0
+			model.Header.View = json.RawMessage(`{}`)
+		}
 	}
 	model.Header.MapID = m.ID
 	model.Header.Name = m.Name
 	model.RefreshRepresentations(d.Shapes(*m))
+	model.MarkRecoveredParts()
 	v.composed = nil
 	return nil
 }

@@ -8,6 +8,7 @@ import (
 	"image"
 	"image/color"
 	"image/png"
+	"kriemhild/internal/terrain/detail"
 	"kriemhild/internal/terrain/model"
 	"math"
 	"time"
@@ -16,7 +17,7 @@ import (
 type Transform func(s model.Sample, lon, lat float64) model.Sample
 
 // Raster fixes invalidate derived disk images without changing saved terrain.
-const RenderingVersion = "raster-3"
+const RenderingVersion = "raster-4"
 
 func Valid(z, x, y, size int) bool {
 	return z >= 0 && z <= 18 && x >= 0 && x < (2<<z) && y >= 0 && y < (1<<z) && (size == 256 || size == 512)
@@ -49,7 +50,7 @@ func RenderMeasured(ctx context.Context, p *model.Planet, z, x, y, size int, sty
 		return nil, fmt.Errorf("invalid tile address")
 	}
 	switch style {
-	case "physical-atlas", "natural", "elevation", "biome", "mask", "coastline", "bathymetry", "temperature", "precipitation", "moisture", "atlas", "hillshade", "pet", "aridity", "soil", "seasonality", "rainShadow", "exposure", "slope", "contours", "watersheds", "flow-accumulation", "river-network", "wetlands", "shore-ink":
+	case "terrain", "physical-atlas", "natural", "elevation", "biome", "mask", "coastline", "bathymetry", "temperature", "precipitation", "moisture", "atlas", "hillshade", "pet", "aridity", "soil", "seasonality", "rainShadow", "exposure", "slope", "contours", "watersheds", "flow-accumulation", "river-network", "wetlands", "shore-ink":
 	default:
 		return nil, fmt.Errorf("unknown terrain style")
 	}
@@ -85,7 +86,11 @@ func RenderMeasured(ctx context.Context, p *model.Planet, z, x, y, size int, sty
 		timing.TransformMS = float64(time.Since(started).Microseconds()) / 1000
 	}
 	started = time.Now()
+	sampler := detail.New(p)
 	for j := 0; j < size; j++ {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		for i := 0; i < size; i++ {
 			at := (j+1)*stride + i + 1
 			s := samples[at]
@@ -98,6 +103,10 @@ func RenderMeasured(ctx context.Context, p *model.Planet, z, x, y, size int, sty
 			dy *= 5
 			shade := model.Clamp((.72 + (-dx*.45-dy*.55)/math.Sqrt(1+dx*dx+dy*dy)), .32, 1.18)
 			c := palette(s, style, shade)
+			if style == "terrain" {
+				east, north := gradients(sampler, p, lon, lat, transform)
+				c = terrainColor(s, east, north)
+			}
 			if s.Water != "ocean" {
 				switch style {
 				case "watersheds":

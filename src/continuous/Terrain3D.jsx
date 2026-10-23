@@ -2,10 +2,26 @@ import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { request } from "./api.js";
-import { visibleTiles } from "./camera.js";
-export default function Terrain3D({ state, camera, onClose, onPick }) {
+import { meshCoverage, meshView, sameMeshView } from "./terrain3d-coverage.js";
+import {
+  drapeSegment,
+  drapePolygon,
+  meshBounds,
+  meshHeight,
+} from "./terrain-drape.js";
+import { projectToMap } from "./geometry.js";
+import { bounds as geographicBounds } from "./geometry.js";
+export default function Terrain3D({
+  state,
+  camera,
+  entities = [],
+  rivers = [],
+  onClose,
+  onPick,
+}) {
   const host = useRef(null),
     close = useRef(null),
+    overhead = useRef(null),
     exaggeration = useRef(2);
   const [globe, setGlobe] = useState(false),
     [vertical, setVertical] = useState(2),
@@ -27,21 +43,20 @@ export default function Terrain3D({ state, camera, onClose, onPick }) {
       controls = new OrbitControls(view, renderer.domElement);
     view.position.set(0, globe ? 0.3 : 1.5, globe ? 3.2 : 2.2);
     controls.enableDamping = true;
-    controls.minDistance = globe ? 1.001 : 0.0001;
+    controls.minDistance = globe ? 1.00001 : 0.000001;
     controls.maxDistance = 8;
-    const light = new THREE.DirectionalLight(0xfff3dc, 2.3);
-    light.position.set(-3, 5, 4);
-    scene.add(light, new THREE.HemisphereLight(0xcbdff5, 0x405038, 1.2));
-    const material = new THREE.MeshStandardMaterial({
+    controls.screenSpacePanning = false;
+    controls.zoomToCursor = true;
+    controls.enablePan = !globe;
+    if (!globe) controls.maxPolarAngle = Math.PI * 0.49;
+    const material = new THREE.MeshBasicMaterial({
         vertexColors: true,
-        roughness: 0.92,
+        toneMapped: false,
         side: THREE.DoubleSide,
       }),
-      waterMaterial = new THREE.MeshStandardMaterial({
-        color: 0x498ea8,
-        transparent: true,
-        opacity: 0.55,
-        roughness: 0.25,
+      waterMaterial = new THREE.MeshBasicMaterial({
+        vertexColors: true,
+        toneMapped: false,
         side: THREE.DoubleSide,
       });
     const span = globe ? 2 : camera.w,
@@ -51,6 +66,12 @@ export default function Terrain3D({ state, camera, onClose, onPick }) {
       latitude = (0.5 - center[1]) * Math.PI,
       cos = Math.max(0.15, Math.cos(latitude)),
       radius = state.continuous.spec.radiusKm * 1000;
+    let overlayLimited = false;
+    let labelBytes = 0,
+      fillBytes = 0,
+      lineBytes = 0;
+    let datum = 0,
+      ready = globe;
     const point = (x, y, h) => {
       if (globe) {
         const lon = (x - 1) * Math.PI,
@@ -64,17 +85,58 @@ export default function Terrain3D({ state, camera, onClose, onPick }) {
       }
       return [
         ((x - center[0]) / span) * 2 * cos,
-        (h / (radius * Math.PI * span)) * 2 * exaggeration.current,
+        ((h - datum) / (radius * Math.PI * span)) * 2 * exaggeration.current,
         ((y - center[1]) / span) * 2,
       ];
     };
     const cache = new Map(),
       pending = new Map();
+    overhead.current = () => {
+      const distance = view.position.distanceTo(controls.target);
+      view.position
+        .copy(controls.target)
+        .add(new THREE.Vector3(0, distance, 0.0000001));
+      controls.update();
+    };
+    const overlayFeatures = entities
+      .filter(
+        (e) =>
+          !e.deleted &&
+          state.project.layers.find((l) => l.id === e.layer)?.visible,
+      )
+      .map((e) => ({
+        ...e,
+        points: e.points.map((p) => projectToMap(p, state)),
+      }))
+      .concat(
+        rivers.map((r) => ({
+          ...r,
+          geometry: "line",
+          color: "#71b7d3",
+          name: "",
+          minDetail: ["major", "distributary"].includes(r.river?.class)
+            ? 0
+            : r.river?.class === "regional"
+              ? 2
+              : 4,
+        })),
+      )
+      .filter((f) => f.points?.length)
+      .map((f) => ({ ...f, bounds: geographicBounds(f.points) }));
+    let renderedFrames = 0;
+    let needsRender = true;
+    const requestRender = () => {
+      needsRender = true;
+    };
+    controls.addEventListener("change", requestRender);
+    let lastPlan = null;
     let signature = "",
       scheduling = false,
+      queued = [],
       disposed = false,
       lastCheck = 0,
       wanted = new Set(),
+      cover = new Set(),
       lastVertical = vertical;
     function geometry(m, wet) {
       const positions = [],
@@ -92,7 +154,7 @@ export default function Terrain3D({ state, camera, onClose, onPick }) {
           positions.push(...point(mx, my, wet ? m.surface[i] : m.bed[i]));
           uv.push(u, 1 - v);
           const c = new THREE.Color().setRGB(
-            ...m.colors[i].map((v) => v / 255),
+            ...(m.litColors || m.colors)[i].map((v) => v / 255),
             THREE.SRGBColorSpace,
           );
           colors.push(c.r, c.g, c.b);
@@ -178,82 +240,233 @@ export default function Terrain3D({ state, camera, onClose, onPick }) {
       }
       return g;
     }
+    function overlay(m, key) {
+      const group = new THREE.Group(),
+        b = meshBounds(m);
+      for (const f of overlayFeatures) {
+        if (
+          f.bounds.x > b.x + b.w ||
+          f.bounds.x + f.bounds.w < b.x ||
+          f.bounds.y > b.y + b.h ||
+          f.bounds.y + f.bounds.h < b.y
+        )
+          continue;
+        if (f.minDetail > Number(key.split("/")[0]) + 1 || !f.points?.length)
+          continue;
+        const positions = [];
+        const paths = [
+          f.geometry === "polygon" ? [...f.points, f.points[0]] : f.points,
+        ];
+        for (const path of paths)
+          for (let i = 1; i < path.length; i++) {
+            const line = drapeSegment(m, path[i - 1], path[i]);
+            for (let j = 1; j < line.length; j++)
+              positions.push(
+                ...point(line[j - 1][0], line[j - 1][1], line[j - 1][2] + 2),
+                ...point(line[j][0], line[j][1], line[j][2] + 2),
+              );
+          }
+        const color = f.color || "#e4c989";
+        if (f.geometry === "polygon") {
+          const fill = drapePolygon(m, f.points).flatMap((p) =>
+            point(p[0], p[1], p[2] + 1),
+          );
+          if (fill.length && fillBytes + fill.length * 4 <= 8 * 1024 * 1024) {
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute(
+              "position",
+              new THREE.Float32BufferAttribute(fill, 3),
+            );
+            const mesh = new THREE.Mesh(
+              geometry,
+              new THREE.MeshBasicMaterial({
+                color,
+                transparent: true,
+                opacity: f.kind === "house" ? 0.7 : 0.13,
+                side: THREE.DoubleSide,
+                depthWrite: false,
+                toneMapped: false,
+                polygonOffset: true,
+                polygonOffsetFactor: -1,
+                polygonOffsetUnits: -1,
+              }),
+            );
+            mesh.userData.featureId = f.id;
+            mesh.userData.fillBytes = fill.length * 4;
+            fillBytes += mesh.userData.fillBytes;
+            group.add(mesh);
+          } else if (fill.length) overlayLimited = true;
+        }
+        if (
+          positions.length &&
+          lineBytes + positions.length * 4 <= 24 * 1024 * 1024
+        ) {
+          const geometry = new THREE.BufferGeometry();
+          geometry.setAttribute(
+            "position",
+            new THREE.Float32BufferAttribute(positions, 3),
+          );
+          const line = new THREE.LineSegments(
+            geometry,
+            new THREE.LineBasicMaterial({
+              color,
+              toneMapped: false,
+              depthTest: true,
+            }),
+          );
+          line.userData.featureId = f.id;
+          line.userData.lineBytes = positions.length * 4;
+          lineBytes += line.userData.lineBytes;
+          group.add(line);
+        } else if (positions.length) overlayLimited = true;
+        const p = f.points[0];
+        if (p[0] < b.x || p[0] >= b.x + b.w || p[1] < b.y || p[1] >= b.y + b.h)
+          continue;
+        if (f.geometry === "point") {
+          const mark = new THREE.Sprite(
+            new THREE.SpriteMaterial({
+              color,
+              toneMapped: false,
+              depthTest: false,
+            }),
+          );
+          mark.position.set(...point(...p, meshHeight(m, p) + 3));
+          const size = globe ? b.w * 0.035 : (b.w / span) * 0.035;
+          mark.scale.set(size, size, 1);
+          mark.userData.featureId = f.id;
+          group.add(mark);
+        }
+        if (
+          f.name &&
+          !["house", "road", "district"].includes(f.kind) &&
+          labelBytes + 512 * 64 * 4 <= 16 * 1024 * 1024
+        ) {
+          const canvas = document.createElement("canvas");
+          canvas.width = 512;
+          canvas.height = 64;
+          const ctx = canvas.getContext("2d");
+          ctx.font = "28px sans-serif";
+          ctx.textAlign = "center";
+          ctx.lineWidth = 5;
+          ctx.strokeStyle = "#101d2a";
+          ctx.strokeText(f.name, 256, 40, 500);
+          ctx.fillStyle = "#f0e6c8";
+          ctx.fillText(f.name, 256, 40, 500);
+          const texture = new THREE.CanvasTexture(canvas);
+          labelBytes += 512 * 64 * 4;
+          const label = new THREE.Sprite(
+            new THREE.SpriteMaterial({
+              map: texture,
+              toneMapped: false,
+              depthTest: false,
+            }),
+          );
+          label.position.set(...point(...p, meshHeight(m, p) + 5));
+          const size = globe ? b.w * 0.5 : (b.w / span) * 0.5;
+          label.scale.set(size, size / 8, 1);
+          label.center.set(0.5, 0);
+          label.userData.featureId = f.id;
+          group.add(label);
+        }
+      }
+      return group;
+    }
     function install(key, m) {
       const ground = new THREE.Mesh(geometry(m, false), material),
         water = new THREE.Mesh(geometry(m, true), waterMaterial),
         group = new THREE.Group();
       ground.userData.bounds = m.bounds;
-      group.add(ground, water);
+      group.add(ground, water, overlay(m, key));
+      group.visible = false;
       scene.add(group);
       cache.set(key, { group, m, used: performance.now() });
+      trimCache();
     }
     function disposeTile(t) {
       scene.remove(t.group);
-      for (const mesh of t.group.children) mesh.geometry.dispose();
+      t.group.traverse((object) => {
+        fillBytes -= object.userData.fillBytes || 0;
+        lineBytes -= object.userData.lineBytes || 0;
+        object.geometry?.dispose();
+        if (
+          object.material &&
+          object.material !== material &&
+          object.material !== waterMaterial
+        ) {
+          if (object.material.map) labelBytes -= 512 * 64 * 4;
+          object.material.map?.dispose();
+          object.material.dispose();
+        }
+      });
+    }
+    function trimCache() {
+      // Keep two bounded covers during replacement, even if navigation never
+      // goes idle. Obsolete invisible tiles cannot accumulate between batches.
+      while (cache.size > 132) {
+        const old = [...cache]
+          .filter(([key, t]) => !wanted.has(key) && !t.group.visible)
+          .sort((a, b) => a[1].used - b[1].used)[0];
+        if (!old) break;
+        disposeTile(old[1]);
+        cache.delete(old[0]);
+      }
     }
     async function schedule() {
-      const distance = view.position.distanceTo(controls.target);
-      let region;
-      if (globe) {
-        const direction = view.position.clone().normalize(),
-          x = 1 + Math.atan2(direction.x, direction.z) / Math.PI,
-          y = 0.5 - Math.asin(direction.y) / Math.PI,
-          w = Math.min(2, Math.max(0.0001, (distance - 1) * 1.2));
-        region = { x: x - w / 2, y: y - w / 4, w, h: w / 2 };
-      } else {
-        const w = Math.max(0.00008, Math.min(2, (span * distance) / 2.5)),
-          x = center[0] + (controls.target.x * span) / (2 * cos),
-          y = center[1] + (controls.target.z * span) / 2;
-        region = { x: x - w / 2, y: y - w / 3, w, h: (w * 2) / 3 };
-      }
-      const tiles = visibleTiles(region, 768, 1)
-        .sort(
-          (a, b) =>
-            Math.hypot(
-              (a.x + 0.5) * a.span - region.x - region.w / 2,
-              (a.y + 0.5) * a.span - region.y - region.h / 2,
-            ) -
-            Math.hypot(
-              (b.x + 0.5) * b.span - region.x - region.w / 2,
-              (b.y + 0.5) * b.span - region.y - region.h / 2,
-            ),
-        )
-        .slice(0, 24);
+      if (!ready || disposed) return;
+      const rect = element.getBoundingClientRect();
+      const pose = meshView(view, controls.target, rect.width, rect.height);
+      if (signature && sameMeshView(pose, lastPlan)) return;
+      lastPlan = pose;
+      const tiles = meshCoverage({
+        view,
+        point,
+        width: rect.width,
+        height: rect.height,
+        budget: 64,
+      });
       const keys = tiles.map((t) => `${t.z}/${t.x}/${t.y}`),
-        sig = keys.join(";");
+        sig = [...keys].sort().join(";");
       if (sig === signature) return;
-      wanted = new Set(keys);
+      signature = sig;
+      cover = new Set(keys);
+      wanted = new Set(["0/0/0", "0/1/0", ...keys]);
       for (const [key, abort] of pending)
         if (!wanted.has(key)) {
           abort.abort();
           pending.delete(key);
         }
-      if (scheduling) return;
-      signature = sig;
-      scheduling = true;
-      const queue = tiles.filter(
-        (t, i) => !cache.has(keys[i]) && !pending.has(keys[i]),
+      queued = [{ z: 0, x: 0, y: 0 }, { z: 0, x: 1, y: 0 }, ...tiles].filter(
+        (t) => !cache.has(`${t.z}/${t.x}/${t.y}`),
       );
+      if (scheduling) return;
+      scheduling = true;
       setStatus(
-        `LOD ${tiles[0]?.z || 0} · ${queue.length} visible mesh tiles loading`,
+        `LOD ${tiles[0]?.z || 0} · ${queued.length} visible mesh tiles loading`,
       );
       const worker = async () => {
-        while (queue.length && !disposed) {
-          const t = queue.shift(),
+        while (queued.length && !disposed) {
+          const t = queued.shift(),
             key = `${t.z}/${t.x}/${t.y}`;
-          if (!wanted.has(key)) continue;
+          if (!wanted.has(key) || cache.has(key) || pending.has(key)) continue;
           const abort = new AbortController();
           pending.set(key, abort);
           try {
             const m = await request(
-              `sessions/${state.id}/terrain/mesh?z=${t.z}&x=${t.x}&y=${t.y}`,
+              `sessions/${state.id}/terrain/mesh?z=${t.z}&x=${t.x}&y=${t.y}&revision=${state.project.revision}`,
               undefined,
               "GET",
               abort.signal,
             );
-            if (!disposed && wanted.has(key) && !cache.has(key))
+            if (!disposed && wanted.has(key) && !cache.has(key)) {
               install(key, m);
+              publish();
+            }
           } catch (e) {
+            if (e.status === 409) {
+              ready = false;
+              queued = [];
+              for (const abort of pending.values()) abort.abort();
+            }
             if (e.name !== "AbortError" && !disposed) setStatus(e.message);
           } finally {
             if (pending.get(key) === abort) pending.delete(key);
@@ -262,26 +475,65 @@ export default function Terrain3D({ state, camera, onClose, onPick }) {
       };
       await Promise.all([worker(), worker(), worker()]);
       scheduling = false;
-      if (disposed || sig !== signature) return;
-      for (const [key, t] of cache) {
-        if (wanted.has(key)) {
-          t.used = performance.now();
-          t.group.visible = true;
-        } else t.group.visible = !keys.every((k) => cache.has(k));
-      }
-      while (cache.size > 48) {
+      if (disposed) return;
+      publish();
+      while (cache.size > 128) {
         const old = [...cache]
-          .filter(([k]) => !wanted.has(k))
+          .filter(([k, t]) => !wanted.has(k) && !t.group.visible)
           .sort((a, b) => a[1].used - b[1].used)[0];
         if (!old) break;
         disposeTile(old[1]);
         cache.delete(old[0]);
       }
+      const complete = [...wanted].every((k) => cache.has(k));
+      if (!complete) signature = ""; // Retry failures; never freeze an incomplete cover.
       setStatus(
-        `LOD ${tiles[0]?.z || 0} · ${keys.filter((k) => cache.has(k)).length} visible tiles · drag to orbit, scroll to refine; click to inspect`,
+        overlayLimited
+          ? "Dense geographic overlays reached the 32 MiB geometry budget. Zoom to a smaller region for additional overlay detail."
+          : `${cache.size} cached tiles · ${pending.size} loading · drag to orbit, scroll to refine; click to inspect`,
+      );
+    }
+    function publish() {
+      let changed = false;
+      const keys = [...wanted],
+        complete = keys.every((k) => cache.has(k));
+      for (const [key, t] of cache) {
+        const previous = t.group.visible;
+        if (
+          (complete && cover.has(key)) ||
+          (!complete && key.startsWith("0/"))
+        ) {
+          t.used = performance.now();
+          t.group.visible = true;
+        } else if (complete) t.group.visible = false;
+        if (previous !== t.group.visible) changed = true;
+      }
+      if (changed) needsRender = true;
+      element.dataset.coverComplete = String(complete);
+      element.dataset.visibleTiles = String(
+        [...cache.values()].filter((t) => t.group.visible).length,
+      );
+      element.dataset.wantedTiles = String(cover.size);
+      element.dataset.labelBytes = String(labelBytes);
+      element.dataset.overlayBytes = String(fillBytes + lineBytes);
+      element.dataset.overlayLimited = String(overlayLimited);
+      element.dataset.cachedTiles = String(cache.size);
+      element.dataset.pendingTiles = String(pending.size);
+      element.dataset.queuedTiles = String(queued.length);
+      element.dataset.featureSegments = String(
+        [...cache.values()]
+          .filter((t) => t.group.visible)
+          .reduce(
+            (n, t) =>
+              n +
+              t.group.children[2].children.filter((c) => c.isLineSegments)
+                .length,
+            0,
+          ),
       );
     }
     const resize = () => {
+      needsRender = true;
       const r = element.getBoundingClientRect();
       renderer.setSize(Math.max(1, r.width), Math.max(1, r.height));
       view.aspect = r.width / Math.max(1, r.height);
@@ -290,6 +542,27 @@ export default function Terrain3D({ state, camera, onClose, onPick }) {
     const observer = new ResizeObserver(resize);
     observer.observe(element);
     resize();
+    const initialize = new AbortController();
+    if (!globe) {
+      request(
+        `sessions/${state.id}/terrain/sample?lon=${center[0] * 180 - 180}&lat=${90 - center[1] * 180}&revision=${state.project.revision}`,
+        undefined,
+        "GET",
+        initialize.signal,
+      )
+        .then((sample) => {
+          if (disposed) return;
+          datum =
+            sample.water === "dry"
+              ? sample.bed
+              : Math.max(sample.bed, sample.waterSurface);
+          ready = true;
+          void schedule();
+        })
+        .catch((e) => {
+          if (e.name !== "AbortError") setStatus(e.message);
+        });
+    }
     const ray = new THREE.Raycaster();
     let down = null;
     const start = (e) => {
@@ -354,26 +627,37 @@ export default function Terrain3D({ state, camera, onClose, onPick }) {
           cache.delete(key);
           install(key, t.m);
         }
+        publish();
+        signature = "";
       }
       if (time - lastCheck > 250) {
         lastCheck = time;
         void schedule();
       }
-      renderer.render(scene, view);
+      if (needsRender) {
+        renderer.render(scene, view);
+        element.dataset.renderedFrames = String(++renderedFrames);
+        element.dataset.renderedTriangles = String(
+          renderer.info.render.triangles,
+        );
+        needsRender = false;
+      }
     });
     return () => {
       disposed = true;
+      initialize.abort();
       for (const abort of pending.values()) abort.abort();
       renderer.setAnimationLoop(null);
       observer.disconnect();
       controls.dispose();
+      controls.removeEventListener("change", requestRender);
       for (const t of cache.values()) disposeTile(t);
       material.dispose();
       waterMaterial.dispose();
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, [state.id, state.project.revision, camera, globe]);
+  }, [state.id, state.project.revision, camera, globe, entities, rivers]);
   return (
     <div
       className="studio-3d"
@@ -399,6 +683,9 @@ export default function Terrain3D({ state, camera, onClose, onPick }) {
         <button onClick={() => setGlobe(!globe)}>
           {globe ? "View current region" : "View globe"}
         </button>
+        {!globe && (
+          <button onClick={() => overhead.current?.()}>Look from above</button>
+        )}
         <label>
           Vertical exaggeration{" "}
           <input
