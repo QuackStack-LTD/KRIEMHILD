@@ -1,0 +1,156 @@
+
+> kriemhild@1.0.0 test
+> node --test tests/*.test.mjs
+
+node:internal/fs/promises:1902
+  return await PromisePrototypeThen(
+         ^
+
+Error: ENOENT: no such file or directory, mkdtemp 'C:\Users\tomyi\AppData\Local\Temp\KRIEMHILD-baseline-6e53d231f985488ab7cd2a14e7086297\source\.tools\account-ui-XXXXXX'
+    at async mkdtemp (node:internal/fs/promises:1902:10)
+    at async file:///C:/Users/tomyi/AppData/Local/Temp/KRIEMHILD-baseline-6e53d231f985488ab7cd2a14e7086297/source/tests/accounts-ui.test.mjs:27:14 {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'mkdtemp',
+  path: 'C:\\Users\\tomyi\\AppData\\Local\\Temp\\KRIEMHILD-baseline-6e53d231f985488ab7cd2a14e7086297\\source\\.tools\\account-ui-XXXXXX'
+}
+
+Node.js v24.21.0
+✖ tests\accounts-ui.test.mjs (1678.9923ms)
+✔ archive defaults adapt purpose without granting omniscient knowledge (2.1437ms)
+✔ archive filters distinguish covered dates from recording date including year zero (0.3542ms)
+✔ map writes serialize fresh revisions while real conflicts remain visible (129.8884ms)
+✔ guided ideas produce reviewable targeted biological rules, not invented climate (10.685ms)
+✔ catalogue uses Age-specific identity and saved occurrences rather than inferred suitability (1.2044ms)
+✔ two manuscript clients merge edits, replay offline changes and recover durable state after restart (29153.1583ms)
+✔ directory searches structured content and contexts without cloning concepts (3.9503ms)
+✔ component history reports stable identity across renaming, addition and removal (0.4654ms)
+✔ connection choices distinguish personal, familial, location and institutional endpoints (3.1456ms)
+✔ combined graph shares identities, positions, context edges and isolated characters; focused graphs separate families and social links (4.4602ms)
+✔ reconnecting one endpoint preserves identity, metadata and the other endpoint (0.932ms)
+✔ personal graph supports concept beliefs without adding spatial ownership edges (0.4503ms)
+✔ every visible SVG pixel is covered, including letterboxed margins (27.2244ms)
+✔ viewport right and bottom edges are exclusive (0.3908ms)
+✔ visible tiles stay inside the finite world at all four map boundaries (0.309ms)
+✔ invalid imported camera recovers a finite world viewport (1.1894ms)
+✔ tile density follows viewport and DPR at world and settlement scales (0.5352ms)
+✔ cache eviction cannot remove visible terrain on a high-DPI display (4891.5064ms)
+✔ a local dirty rectangle reuses unaffected tiles and replaces affected parents (259.3241ms)
+✔ parent rectangles precede correctly positioned child rectangles (149.2062ms)
+✔ a revision without a dirty rectangle cannot reuse old terrain (274.0669ms)
+✔ transient child failures retry without camera movement (922.1078ms)
+✔ a delayed child retains its parent while neighboring children load (103.8281ms)
+✔ camera cancellation discards obsolete results and loads the latest viewport (562.11ms)
+✔ Timeline window centers the selected Age with at most two neighbors each way (2.8067ms)
+✔ Merge review reports geometry and deletion conflicts but not unique objects (0.8314ms)
+✔ Graph layout retains independent lanes and forward branch/merge dependencies (1.0743ms)
+✔ New Age targets the selected graph Age after switching away from a new branch (0.2731ms)
+✔ Chronological loops and self-connections have finite stable layouts and curved return paths (0.7165ms)
+✔ new DOCX is a real document archive with escaped text and package relationships (8.3113ms)
+✔ spreadsheet edits survive XLS/XLSX/ODS file round-trips without formula execution (114.5635ms)
+✔ PDF creation and updates produce real PDF bytes; unsupported files stay opaque (47.4768ms)
+✔ preview presets change output and sampling demand, independently of screen DPR and camera (4.4318ms)
+✔ all zooms and large custom previews respect output and atlas safety budgets (25.0373ms)
+✔ preference is user local, validated and never implicitly affects generic/Illustrator/export requests (0.6923ms)
+✔ quality does not invalidate reusable authoritative raster nodes (0.645ms)
+✔ World ZIP survives deletion of the original session and a Go server process restart (61526.0164ms)
+✔ system relationships separate knowledge, supply and mechanical dependencies (1.2882ms)
+✔ draft commits an atomic delta without removing unrelated relations (1.3093ms)
+✔ impact review distinguishes new and resolved issues and templates only ask questions (0.4305ms)
+✔ illustration uses saved shoreline and follows moved country and settlement geometry (5.8449ms)
+✔ whole-world trunk visibility uses basin classification even with small headwaters (0.2898ms)
+✔ manual retry fetches fresh bytes after a corrupt PNG decode (8.8214ms)
+✔ a fully cached fine viewport bypasses coarse work; unknown edits restore fallback (12.3595ms)
+✔ related styles are fetched together within the shared worker bound (373.3802ms)
+✔ deep display LOD increases beyond finite relief without claiming new source samples (0.5374ms)
+✔ viewport request covers the actual SVG, with the original sample density (0.435ms)
+✔ every child has the same bounds as its quadrant of the parent (0.3434ms)
+✔ pyramid reuse is local, while missing revision history invalidates every level (0.7721ms)
+✔ bounded blob cache eviction cannot remove pixels already assembled into a frame (19.9166ms)
+✔ a delayed layer never publishes a partially completed transaction (33.3891ms)
+✔ obsolete renders do not publish and use at most three requests across styles (39.6406ms)
+✔ coarse failure does not prevent a complete fine replacement (3.4945ms)
+✔ large/high-DPI requests keep density, with an explicit resource limit (0.8498ms)
+✔ coarse previews avoid full-DPI storage while final detail retains every requested pixel (6.8297ms)
+✔ Balanced's global level 1 publishes a complete level 0 before fine work (1.0449ms)
+✔ selection transforms survive letterboxing, pan, resize and high DPI at every zoom (1.8456ms)
+✔ geometry index prioritizes points and thin lines over containing polygons and rebuilds after edits (12.0377ms)
+✔ optional seeds are fresh while explicit text and input state remain exact (4.6885ms)
+✔ one illustration scene filters world/country/city and keeps manual labels linked after rename (2.8515ms)
+✔ concave country labels use interior scanline anchors (0.2765ms)
+✔ river seam splits and optical width retain source identity and width hierarchy (0.5151ms)
+✔ only the continuous editor implementation remains, with shared world pages preserved (45.1747ms)
+✔ archive preview reads the original saved cell colors including the unsigned high bit (1.8983ms)
+✔ transient errors stop after three attempts; permanent errors never retry (141.3549ms)
+✔ deadline aborts a stalled request, then recovers (54.4462ms)
+✔ obsolete work cancels backoff and never retries (23.5446ms)
+✔ a response from another revision is never accepted (0.7928ms)
+node:internal/fs/promises:1902
+  return await PromisePrototypeThen(
+         ^
+
+Error: ENOENT: no such file or directory, mkdtemp 'C:\Users\tomyi\AppData\Local\Temp\KRIEMHILD-baseline-6e53d231f985488ab7cd2a14e7086297\source\.tools\ui-test-XXXXXX'
+    at async mkdtemp (node:internal/fs/promises:1902:10)
+    at async file:///C:/Users/tomyi/AppData/Local/Temp/KRIEMHILD-baseline-6e53d231f985488ab7cd2a14e7086297/source/tests/ui.test.mjs:30:14 {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'mkdtemp',
+  path: 'C:\\Users\\tomyi\\AppData\\Local\\Temp\\KRIEMHILD-baseline-6e53d231f985488ab7cd2a14e7086297\\source\\.tools\\ui-test-XXXXXX'
+}
+
+Node.js v24.21.0
+✖ tests\ui.test.mjs (1508.7623ms)
+✔ preview composition keeps one image and an export-layer placeholder; Illustrator retains separate layers (433.4501ms)
+✔ decoded layers commit together; obsolete decode cannot replace the latest camera; URLs release (338.288ms)
+✔ project routes retain stable identity across both editors (2.4017ms)
+✔ comparison recognizes renames, additions, removals and relationship changes by continuity (2.983ms)
+✔ attendance connections require known overlapping dates (0.5007ms)
+✔ family and social graphs retain cycles and multiple distinct edges (0.8175ms)
+✔ place thumbnails use their own child map and never a parent terrain map (0.2698ms)
+✔ country profiles group duplicate spatial facts without losing political meaning (0.5354ms)
+✔ eight connection ports and persisted endpoints terminate on node boundaries (1.0558ms)
+✔ family validation normalizes child direction and rejects contradictory ancestry (0.6595ms)
+✔ saved family views include members without requiring a family entity (0.3233ms)
+✔ two parents share one junction and one descent line per child (1.3688ms)
+✔ year timeline is numerically ordered and confined to its Age (0.5435ms)
+✔ relationship graphs and creation choices exclude geography, politics and generic historical links (0.5111ms)
+node:internal/fs/promises:1902
+  return await PromisePrototypeThen(
+         ^
+
+Error: ENOENT: no such file or directory, mkdtemp 'C:\Users\tomyi\AppData\Local\Temp\KRIEMHILD-baseline-6e53d231f985488ab7cd2a14e7086297\source\.tools\writer-ui-XXXXXX'
+    at async mkdtemp (node:internal/fs/promises:1902:10)
+    at async file:///C:/Users/tomyi/AppData/Local/Temp/KRIEMHILD-baseline-6e53d231f985488ab7cd2a14e7086297/source/tests/writer-ui.test.mjs:15:12 {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'mkdtemp',
+  path: 'C:\\Users\\tomyi\\AppData\\Local\\Temp\\KRIEMHILD-baseline-6e53d231f985488ab7cd2a14e7086297\\source\\.tools\\writer-ui-XXXXXX'
+}
+
+Node.js v24.21.0
+✖ tests\writer-ui.test.mjs (1786.8765ms)
+✔ canonical manuscript order is recursive; private subtrees excluded unless explicitly selected (2.8773ms)
+✔ semantic Markdown round-trip, scene breaks, Unicode counts and world wording survive export (107.9957ms)
+✔ continuity checks selected historical state and preserves reference identity after rename (0.6341ms)
+ℹ tests 88
+ℹ suites 0
+ℹ pass 85
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 67791.1443
+
+✖ failing tests:
+
+test at tests\accounts-ui.test.mjs:1:1
+✖ tests\accounts-ui.test.mjs (1678.9923ms)
+  'test failed'
+
+test at tests\ui.test.mjs:1:1
+✖ tests\ui.test.mjs (1508.7623ms)
+  'test failed'
+
+test at tests\writer-ui.test.mjs:1:1
+✖ tests\writer-ui.test.mjs (1786.8765ms)
+  'test failed'
