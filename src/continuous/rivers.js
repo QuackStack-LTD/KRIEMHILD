@@ -1,24 +1,16 @@
 // The only source is the persisted canonical channel network, in radians / SI.
+import { geographicParts } from "./geographic-path.js";
 export function riverFeatures(rivers) {
   return rivers.flatMap((r) => {
-    const parts = [[]];
-    for (const p of r.path) {
-      const q = [(p[0] + Math.PI) / Math.PI, 0.5 - p[1] / Math.PI];
-      if (parts.at(-1).length && Math.abs(q[0] - parts.at(-1).at(-1)[0]) > 1)
-        parts.push([]);
-      parts.at(-1).push(q);
-    }
-    return parts
-      .filter((p) => p.length > 1)
-      .map((points, i) => ({
-        id: r.id + ":" + i,
-        sourceId: r.id,
-        name: r.name || r.id,
-        kind: "river",
-        geometry: "line",
-        points,
-        river: r,
-      }));
+    return geographicParts(r.path).map((points, i) => ({
+      id: r.id + ":" + i,
+      sourceId: r.id,
+      name: r.name || r.id,
+      kind: "river",
+      geometry: "line",
+      points,
+      river: r,
+    }));
   });
 }
 export function riverWidth(r, pixel, radius) {

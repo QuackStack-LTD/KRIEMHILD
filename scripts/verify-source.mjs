@@ -18,7 +18,7 @@ const git = (...args) => {
   if (r.status !== 0) throw Error(r.stderr || `git ${args[0]} failed`);
   return r.stdout.trim();
 };
-const commit = git('rev-parse', '--verify', `${revision}^{commit}`);
+const commit = git('rev-parse', '--verify', '--end-of-options', `${revision}^{commit}`);
 const format = git('rev-parse', '--show-object-format');
 const report = { commit, source: 'git archive', node: process.version, checks: [], warnings: [] };
 const save = () => fs.writeFileSync(path.join(destination, 'verification.json'), JSON.stringify(report, null, 2) + '\n');

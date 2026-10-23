@@ -1,0 +1,535 @@
+{
+  "origin": "http://127.0.0.1:8149",
+  "errors": [],
+  "stages": [
+    {
+      "name": "world",
+      "camera": "0 0 2 1",
+      "pixels": {
+        "generation": "1",
+        "phase": "final",
+        "revision": "0",
+        "pixelWidth": "669",
+        "pixelHeight": "596"
+      },
+      "frames": [
+        {
+          "time": 12718.30000000028,
+          "event": "frame",
+          "generation": 1,
+          "phase": "coarse",
+          "revision": 0,
+          "bounds": {
+            "x": 0,
+            "y": -0.3912556053811659,
+            "w": 2,
+            "h": 1.7825112107623318
+          },
+          "z": 0,
+          "pixels": {
+            "width": 335,
+            "height": 298
+          },
+          "timings": {
+            "fetch": 2588.6999999997206,
+            "decode": 7.5,
+            "assemble": 1.900000000372529,
+            "resample": 1.1000000000931323,
+            "encode": 18.799999999813735,
+            "publish": 22.600000000093132
+          },
+          "nodes": 2,
+          "duration": 1357.1000000000931,
+          "bytes": 100691,
+          "cacheBytes": 124455,
+          "workingCanvasBytes": 923608,
+          "decodedFrameBytes": 399320,
+          "publishedBytes": 76778,
+          "hits": 2,
+          "misses": 4,
+          "evictions": 0
+        },
+        {
+          "time": 15330.399999999907,
+          "event": "frame",
+          "generation": 1,
+          "phase": "final",
+          "revision": 0,
+          "bounds": {
+            "x": 0,
+            "y": -0.3912556053811659,
+            "w": 2,
+            "h": 1.7825112107623318
+          },
+          "z": 1,
+          "pixels": {
+            "width": 669,
+            "height": 596
+          },
+          "timings": {
+            "fetch": 7051.100000000093,
+            "decode": 31.700000000186265,
+            "assemble": 3.2000000001862645,
+            "resample": 4,
+            "encode": 30.299999999813735,
+            "publish": 32
+          },
+          "nodes": 8,
+          "duration": 3969.1999999997206,
+          "bytes": 312723,
+          "cacheBytes": 484833,
+          "workingCanvasBytes": 3692048,
+          "decodedFrameBytes": 1594896,
+          "publishedBytes": 241660,
+          "hits": 10,
+          "misses": 20,
+          "evictions": 0
+        }
+      ],
+      "rivers": 149,
+      "resolution": "Preview: 669 × 596 · Balanced"
+    },
+    {
+      "name": "region",
+      "camera": "1.1 0.12 0.4 0.2",
+      "pixels": {
+        "generation": "2",
+        "phase": "final",
+        "revision": "0",
+        "pixelWidth": "669",
+        "pixelHeight": "596"
+      },
+      "frames": [
+        {
+          "time": 16081.30000000028,
+          "event": "frame",
+          "generation": 2,
+          "phase": "coarse",
+          "revision": 0,
+          "bounds": {
+            "x": 1.1,
+            "y": 0.04174887892376683,
+            "w": 0.4,
+            "h": 0.35650224215246634
+          },
+          "z": 1,
+          "pixels": {
+            "width": 167,
+            "height": 149
+          },
+          "timings": {
+            "fetch": 0.10000000009313226,
+            "decode": 2.8999999999068677,
+            "assemble": 0.3000000002793968,
+            "resample": 0.10000000009313226,
+            "encode": 21.600000000093132,
+            "publish": 20.300000000279397
+          },
+          "nodes": 1,
+          "duration": 45.700000000186265,
+          "bytes": 31421,
+          "cacheBytes": 484833,
+          "workingCanvasBytes": 361676,
+          "decodedFrameBytes": 99532,
+          "publishedBytes": 23342,
+          "hits": 13,
+          "misses": 20,
+          "evictions": 0
+        },
+        {
+          "time": 20246.600000000093,
+          "event": "frame",
+          "generation": 2,
+          "phase": "final",
+          "revision": 0,
+          "bounds": {
+            "x": 1.1,
+            "y": 0.04174887892376683,
+            "w": 0.4,
+            "h": 0.35650224215246634
+          },
+          "z": 3,
+          "pixels": {
+            "width": 669,
+            "height": 596
+          },
+          "timings": {
+            "fetch": 12056.600000000093,
+            "decode": 49.00000000046566,
+            "assemble": 6.599999999627471,
+            "resample": 5.400000000372529,
+            "encode": 23.899999999906868,
+            "publish": 30.899999999906868
+          },
+          "nodes": 16,
+          "duration": 4211,
+          "bytes": 270165,
+          "cacheBytes": 846848,
+          "workingCanvasBytes": 5789200,
+          "decodedFrameBytes": 1594896,
+          "publishedBytes": 205568,
+          "hits": 29,
+          "misses": 52,
+          "evictions": 0
+        }
+      ],
+      "rivers": 758,
+      "resolution": "Preview: 669 × 596 · Balanced"
+    },
+    {
+      "name": "local",
+      "camera": "1.2750000000000001 0.2075 0.05 0.025",
+      "pixels": {
+        "generation": "2",
+        "phase": "final",
+        "revision": "0",
+        "pixelWidth": "669",
+        "pixelHeight": "596"
+      },
+      "frames": [
+        {
+          "time": 16081.30000000028,
+          "event": "frame",
+          "generation": 2,
+          "phase": "coarse",
+          "revision": 0,
+          "bounds": {
+            "x": 1.1,
+            "y": 0.04174887892376683,
+            "w": 0.4,
+            "h": 0.35650224215246634
+          },
+          "z": 1,
+          "pixels": {
+            "width": 167,
+            "height": 149
+          },
+          "timings": {
+            "fetch": 0.10000000009313226,
+            "decode": 2.8999999999068677,
+            "assemble": 0.3000000002793968,
+            "resample": 0.10000000009313226,
+            "encode": 21.600000000093132,
+            "publish": 20.300000000279397
+          },
+          "nodes": 1,
+          "duration": 45.700000000186265,
+          "bytes": 31421,
+          "cacheBytes": 484833,
+          "workingCanvasBytes": 361676,
+          "decodedFrameBytes": 99532,
+          "publishedBytes": 23342,
+          "hits": 13,
+          "misses": 20,
+          "evictions": 0
+        },
+        {
+          "time": 20246.600000000093,
+          "event": "frame",
+          "generation": 2,
+          "phase": "final",
+          "revision": 0,
+          "bounds": {
+            "x": 1.1,
+            "y": 0.04174887892376683,
+            "w": 0.4,
+            "h": 0.35650224215246634
+          },
+          "z": 3,
+          "pixels": {
+            "width": 669,
+            "height": 596
+          },
+          "timings": {
+            "fetch": 12056.600000000093,
+            "decode": 49.00000000046566,
+            "assemble": 6.599999999627471,
+            "resample": 5.400000000372529,
+            "encode": 23.899999999906868,
+            "publish": 30.899999999906868
+          },
+          "nodes": 16,
+          "duration": 4211,
+          "bytes": 270165,
+          "cacheBytes": 846848,
+          "workingCanvasBytes": 5789200,
+          "decodedFrameBytes": 1594896,
+          "publishedBytes": 205568,
+          "hits": 29,
+          "misses": 52,
+          "evictions": 0
+        }
+      ],
+      "rivers": 2127,
+      "resolution": "Preview: 669 × 596 · Balanced"
+    },
+    {
+      "name": "editing",
+      "camera": "1.2975 0.21875 0.005 0.0025",
+      "pixels": {
+        "generation": "4",
+        "phase": "final",
+        "revision": "0",
+        "pixelWidth": "669",
+        "pixelHeight": "596"
+      },
+      "frames": [
+        {
+          "time": 21313,
+          "event": "frame",
+          "generation": 4,
+          "phase": "coarse",
+          "revision": 0,
+          "bounds": {
+            "x": 1.2975,
+            "y": 0.21777186098654708,
+            "w": 0.005,
+            "h": 0.004456278026905829
+          },
+          "z": 8,
+          "pixels": {
+            "width": 167,
+            "height": 149
+          },
+          "timings": {
+            "fetch": 779.7000000006519,
+            "decode": 10.200000000186265,
+            "assemble": 1.7000000001862645,
+            "resample": 1.2999999998137355,
+            "encode": 14.900000000372529,
+            "publish": 20
+          },
+          "nodes": 4,
+          "duration": 363.6999999997206,
+          "bytes": 3020,
+          "cacheBytes": 858280,
+          "workingCanvasBytes": 1148108,
+          "decodedFrameBytes": 99532,
+          "publishedBytes": 1868,
+          "hits": 33,
+          "misses": 62,
+          "evictions": 0
+        },
+        {
+          "time": 24366.200000000186,
+          "event": "frame",
+          "generation": 4,
+          "phase": "final",
+          "revision": 0,
+          "bounds": {
+            "x": 1.2975,
+            "y": 0.21777186098654708,
+            "w": 0.005,
+            "h": 0.004456278026905829
+          },
+          "z": 10,
+          "pixels": {
+            "width": 669,
+            "height": 596
+          },
+          "timings": {
+            "fetch": 8860.60000000149,
+            "decode": 94.69999999925494,
+            "assemble": 13.699999999720603,
+            "resample": 8.600000000093132,
+            "encode": 15.599999999627471,
+            "publish": 19.399999999906868
+          },
+          "nodes": 36,
+          "duration": 3416.899999999907,
+          "bytes": 24477,
+          "cacheBytes": 948607,
+          "workingCanvasBytes": 11032080,
+          "decodedFrameBytes": 1594896,
+          "publishedBytes": 14198,
+          "hits": 69,
+          "misses": 134,
+          "evictions": 0
+        }
+      ],
+      "rivers": 2127,
+      "resolution": "Preview: 669 × 596 · Balanced"
+    },
+    {
+      "name": "selection",
+      "camera": "1.25 0.19 0.12 0.06",
+      "pixels": {
+        "generation": "7",
+        "phase": "final",
+        "revision": "0",
+        "pixelWidth": "446",
+        "pixelHeight": "398"
+      },
+      "frames": [
+        {
+          "time": 27044.600000000093,
+          "event": "frame",
+          "generation": 7,
+          "phase": "coarse",
+          "revision": 0,
+          "bounds": {
+            "x": 1.25,
+            "y": 0.16652466367713004,
+            "w": 0.12,
+            "h": 0.1069506726457399
+          },
+          "z": 2,
+          "pixels": {
+            "width": 112,
+            "height": 100
+          },
+          "timings": {
+            "fetch": 1703.3999999999069,
+            "decode": 3.1000000000931323,
+            "assemble": 0.5,
+            "resample": 0.20000000018626451,
+            "encode": 14.899999999906868,
+            "publish": 2.1000000000931323
+          },
+          "nodes": 2,
+          "duration": 903.2000000001863,
+          "bytes": 3598,
+          "cacheBytes": 987644,
+          "workingCanvasBytes": 569088,
+          "decodedFrameBytes": 44800,
+          "publishedBytes": 3598,
+          "hits": 95,
+          "misses": 136,
+          "evictions": 0
+        },
+        {
+          "time": 28682.200000000186,
+          "event": "frame",
+          "generation": 7,
+          "phase": "final",
+          "revision": 0,
+          "bounds": {
+            "x": 1.25,
+            "y": 0.16652466367713004,
+            "w": 0.12,
+            "h": 0.1069506726457399
+          },
+          "z": 4,
+          "pixels": {
+            "width": 446,
+            "height": 398
+          },
+          "timings": {
+            "fetch": 4458.799999999814,
+            "decode": 7.499999999534339,
+            "assemble": 1.3000000002793968,
+            "resample": 0.8999999999068677,
+            "encode": 5.2000000001862645,
+            "publish": 4.399999999906868
+          },
+          "nodes": 6,
+          "duration": 2540.8000000002794,
+          "bytes": 26220,
+          "cacheBytes": 1037149,
+          "workingCanvasBytes": 2282896,
+          "decodedFrameBytes": 710032,
+          "publishedBytes": 26220,
+          "hits": 95,
+          "misses": 142,
+          "evictions": 0
+        }
+      ],
+      "rivers": 2127,
+      "resolution": "Preview: 446 × 398 · Fast"
+    },
+    {
+      "name": "illustrator",
+      "camera": "0 0 2 1",
+      "pixels": {
+        "generation": "14",
+        "phase": "final",
+        "revision": "1",
+        "pixelWidth": "892",
+        "pixelHeight": "795"
+      },
+      "frames": [
+        {
+          "time": 34099.30000000028,
+          "event": "frame",
+          "generation": 13,
+          "phase": "final",
+          "revision": 1,
+          "bounds": {
+            "x": 0,
+            "y": -0.3912556053811659,
+            "w": 2,
+            "h": 1.7825112107623318
+          },
+          "z": 1,
+          "pixels": {
+            "width": 892,
+            "height": 795
+          },
+          "timings": {
+            "fetch": 107.49999999953434,
+            "decode": 41.200000000186265,
+            "assemble": 3.7999999998137355,
+            "resample": 7.300000000279397,
+            "encode": 33.39999999944121,
+            "publish": 46.700000000186265
+          },
+          "nodes": 8,
+          "duration": 198.8000000002794,
+          "bytes": 501350,
+          "cacheBytes": 1930891,
+          "workingCanvasBytes": 4933712,
+          "decodedFrameBytes": 2836560,
+          "publishedBytes": 386078,
+          "hits": 129,
+          "misses": 193,
+          "evictions": 0
+        },
+        {
+          "time": 34415.30000000028,
+          "event": "frame",
+          "generation": 14,
+          "phase": "final",
+          "revision": 1,
+          "bounds": {
+            "x": 0,
+            "y": -0.3912556053811659,
+            "w": 2,
+            "h": 1.7825112107623318
+          },
+          "z": 1,
+          "pixels": {
+            "width": 892,
+            "height": 795
+          },
+          "timings": {
+            "fetch": 0.7000000001862645,
+            "decode": 170.0999999991618,
+            "assemble": 3.6000000005587935,
+            "resample": 5.7999999998137355,
+            "encode": 43.89999999990687,
+            "publish": 19.90000000037253
+          },
+          "nodes": 8,
+          "duration": 130.3000000002794,
+          "bytes": 476900,
+          "cacheBytes": 1930891,
+          "workingCanvasBytes": 4933712,
+          "decodedFrameBytes": 5673120,
+          "publishedBytes": 476900,
+          "hits": 153,
+          "misses": 193,
+          "evictions": 0
+        }
+      ],
+      "rivers": 0
+    }
+  ],
+  "session": "0779cb15818427f34fa188bf5183448e",
+  "builderExportSHA256": "0da24633b455bc5157a182fed534afdfd5776af53568192f731ffa2ea361d1d5",
+  "previewPreservedSource": true,
+  "queryDuringRenderMs": 297,
+  "deferredRasterRequests": 2,
+  "burstRenderRequests": 1,
+  "illustratorExportSHA256": "b35236de66c094a374871c25f25512e9167dd829301ab798f4a86705ee978447",
+  "passed": true
+}

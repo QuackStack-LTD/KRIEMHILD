@@ -306,9 +306,17 @@ export function Atlas({
                   </div>
                 </button>
                 {root && (
-                  <button className="danger" onClick={() => onDeleteMap(root)}>
-                    Delete terrain
-                  </button>
+                  <div className="history-actions">
+                    <button onClick={() => onMap(root, "atlas")}>
+                      Explore Atlas
+                    </button>
+                    <button
+                      className="danger"
+                      onClick={() => onDeleteMap(root)}
+                    >
+                      Delete terrain
+                    </button>
+                  </div>
                 )}
               </article>
             );

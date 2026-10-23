@@ -2,9 +2,9 @@ import { viewportRequest, pyramidNodes } from "./terrain-pyramid.js";
 
 export const previewPreferenceKey = "kriemhild.preview-quality.v1";
 export const previewPresets = {
-  performance: { label: "Performance", scale: 0.5 },
+  performance: { label: "Fast", scale: 0.5 },
   balanced: { label: "Balanced", scale: 0.75 },
-  high: { label: "High quality", scale: 1 },
+  high: { label: "Detailed", scale: 1 },
 };
 export const previewHelp =
   "Controls the quality and responsiveness of the interactive preview. Does not change saved terrain, climate generation, the Map Illustrator, or exported maps. Preview density is measured per CSS pixel, independently of screen DPR.";

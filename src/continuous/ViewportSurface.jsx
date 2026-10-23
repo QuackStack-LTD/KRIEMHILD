@@ -71,10 +71,13 @@ export default function ViewportSurface({
   active = true,
   previewQuality,
   previewHillshade,
+  detailLevel,
+  onDiagnostics,
 }) {
   const [frame, setFrame] = useState(null),
     generation = useRef(0),
-    committed = useRef(null);
+    committed = useRef(null),
+    counters = useRef({ cancelled: 0, outstanding: 0 });
   const options = {
     session,
     identity,
@@ -101,6 +104,7 @@ export default function ViewportSurface({
     retry,
     enabled,
     active,
+    previewQuality ? detailLevel : undefined,
   ]);
   useEffect(() => {
     if (!active) return;
@@ -111,6 +115,30 @@ export default function ViewportSurface({
     const controller = new AbortController(),
       current = ++generation.current;
     let live = true;
+    let completed = false;
+    let entered = false;
+    counters.current.outstanding++;
+    const started = performance.now();
+    let firstMs;
+    const report = (event) => {
+      record(event);
+      if (event.event !== "frame") return;
+      firstMs ??= performance.now() - started;
+      onDiagnostics?.({
+        ...event,
+        identity,
+        detailLevel,
+        quality: request.preview?.label,
+        firstMs,
+        finalMs:
+          event.phase === "final" ? performance.now() - started : undefined,
+        cancelled: counters.current.cancelled,
+        outstanding: Math.max(
+          0,
+          counters.current.outstanding - (event.phase === "final" ? 1 : 0),
+        ),
+      });
+    };
     onLoading?.(1);
     record({
       event: "request",
@@ -121,88 +149,95 @@ export default function ViewportSurface({
         : undefined,
       invalidations: undefined,
     });
-    const timer = setTimeout(
-      () =>
-        renderViewport(
-          pyramid,
-          { ...request, generation: current },
-          controller.signal,
-          {
-            record,
-            onFrame: async (value) => {
-              const compositeStart = performance.now();
-              const displayed = previewQuality
-                ? await compositePreview(
-                    value,
-                    previewHillshade,
-                    controller.signal,
-                  )
-                : value;
-              if (displayed !== value)
-                record({
-                  event: "preview-composite",
-                  generation: current,
-                  phase: value.phase,
-                  duration: performance.now() - compositeStart,
-                  bytes: displayed.images[0].blob.size,
-                  pixels: value.pixels,
-                  workingBytes: 12 * value.pixels.width * value.pixels.height,
-                  opacity: previewHillshade,
-                });
-              const next = {
-                ...displayed,
-                images: displayed.images.map((i) => ({
-                  style: i.style,
-                  url: URL.createObjectURL(i.blob),
-                })),
-              };
-              try {
-                // Decode every layer before one React commit, not one load event each.
-                await Promise.all(
-                  next.images.map(async (i) => {
-                    const image = new Image();
-                    image.src = i.url;
-                    await image.decode();
-                  }),
-                );
-                if (!live || generation.current !== current) {
-                  release(next);
-                  return;
-                }
-                setFrame(next);
-                return {
-                  layers: next.images.length,
-                  bytes: displayed.images.reduce((n, i) => n + i.blob.size, 0),
-                };
-              } catch (error) {
-                release(next);
-                throw error;
-              }
-            },
-          },
-        )
-          .then(() => {
-            if (live) onLoading?.(0);
-          })
-          .catch((error) => {
-            record({
-              event: controller.signal.aborted ? "obsolete" : "failed",
-              generation: current,
-              message: error.message,
-            });
-            if (live) {
-              onLoading?.(-1);
-              onError?.(
-                `Terrain render failed: ${error.message}. Retry the terrain render below.`,
+    const timer = setTimeout(() => {
+      entered = true;
+      return renderViewport(
+        pyramid,
+        { ...request, generation: current },
+        controller.signal,
+        {
+          record: report,
+          onFrame: async (value) => {
+            const compositeStart = performance.now();
+            const displayed = previewQuality
+              ? await compositePreview(
+                  value,
+                  previewHillshade,
+                  controller.signal,
+                )
+              : value;
+            if (displayed !== value)
+              record({
+                event: "preview-composite",
+                generation: current,
+                phase: value.phase,
+                duration: performance.now() - compositeStart,
+                bytes: displayed.images[0].blob.size,
+                pixels: value.pixels,
+                workingBytes: 12 * value.pixels.width * value.pixels.height,
+                opacity: previewHillshade,
+              });
+            const next = {
+              ...displayed,
+              images: displayed.images.map((i) => ({
+                style: i.style,
+                url: URL.createObjectURL(i.blob),
+              })),
+            };
+            try {
+              // Decode every layer before one React commit, not one load event each.
+              await Promise.all(
+                next.images.map(async (i) => {
+                  const image = new Image();
+                  image.src = i.url;
+                  await image.decode();
+                }),
               );
+              if (!live || generation.current !== current) {
+                release(next);
+                return;
+              }
+              setFrame(next);
+              return {
+                layers: next.images.length,
+                bytes: displayed.images.reduce((n, i) => n + i.blob.size, 0),
+              };
+            } catch (error) {
+              release(next);
+              throw error;
             }
-          }),
-      80,
-    );
+          },
+        },
+      )
+        .then(() => {
+          completed = true;
+          counters.current.outstanding--;
+          if (live) onLoading?.(0);
+        })
+        .catch((error) => {
+          completed = true;
+          counters.current.outstanding--;
+          record({
+            event: controller.signal.aborted ? "obsolete" : "failed",
+            generation: current,
+            message: error.message,
+          });
+          if (live) {
+            onLoading?.(-1);
+            onError?.(
+              `Terrain render failed: ${error.message}. Retry the terrain render below.`,
+            );
+          }
+        });
+    }, 80);
     return () => {
       live = false;
       clearTimeout(timer);
       controller.abort();
+      if (!completed) {
+        counters.current.cancelled++;
+        if (!entered) counters.current.outstanding--;
+      }
     };
   }, [signature]);
   useEffect(() => {

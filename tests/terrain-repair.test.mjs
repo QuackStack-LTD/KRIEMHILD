@@ -193,8 +193,12 @@ test("river seam splits and optical width retain source identity and width hiera
     discharge: [10, 20, 30],
   };
   const shapes = riverFeatures([river]);
-  assert.equal(shapes.length, 1);
+  assert.equal(shapes.length, 2);
   assert.equal(shapes[0].sourceId, river.id);
+  assert.equal(shapes[1].sourceId, river.id);
+  assert.equal(shapes[0].points.at(-1)[0], 2);
+  assert.equal(shapes[1].points[0][0], 0);
+  assert.equal(shapes[0].points.at(-1)[1], shapes[1].points[0][1]);
   assert.ok(
     riverWidth({ ...river, width: [400], discharge: [2000] }, 0.001, 6371) >
       riverWidth(river, 0.001, 6371),

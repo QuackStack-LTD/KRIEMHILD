@@ -9,6 +9,7 @@ import (
 	"kriemhild/internal/storage"
 	"kriemhild/internal/terrain/detail"
 	"kriemhild/internal/terrain/generate"
+	"kriemhild/internal/terrain/hydrology"
 	"kriemhild/internal/terrain/landmass"
 	"kriemhild/internal/terrain/model"
 	"kriemhild/internal/terrain/tiles"
@@ -321,29 +322,43 @@ func (s *Server) continuousSample(w http.ResponseWriter, r *http.Request) {
 	if v == nil {
 		return
 	}
-	defer v.mu.Unlock()
 	if v.planet == nil {
+		v.mu.Unlock()
 		fail(w, 409, "Legacy terrain has no continuous sampler")
 		return
 	}
+	revision := v.authored().Header.Revision
+	if requested := r.URL.Query().Get("revision"); requested != "" && requested != strconv.Itoa(revision) {
+		v.mu.Unlock()
+		fail(w, 409, "Terrain changed during geographic inspection")
+		return
+	}
+	p := v.planet // Immutable source; authored edits are captured separately.
 	lon *= math.Pi / 180
 	lat *= math.Pi / 180
-	a := detail.New(v.planet).Sample(lon, lat)
 	x, y := (model.Wrap(lon)+math.Pi)/model.Tau*float64(v.solver.W-1), (.5-lat/math.Pi)*float64(v.solver.H-1)
-	if f := continuousTransform(v.authored().Ops(world.Bounds{X: x, Y: y}), v.solver.W, v.solver.H, v.planet); f != nil {
+	ops := append([]world.Operation(nil), v.authored().Ops(world.Bounds{X: x, Y: y})...)
+	transform := continuousTransform(ops, v.solver.W, v.solver.H, p)
+	v.mu.Unlock()
+	started := time.Now()
+	a := detail.New(p).Sample(lon, lat)
+	if f := transform; f != nil {
 		a = f(a, lon, lat)
 	}
 	var mass any
 	if a.Water == "dry" {
-		if m := landmass.Identity(v.planet, lon, lat); m != nil {
+		if m := landmass.Identity(p, lon, lat); m != nil {
 			mass = map[string]any{"id": m.ID, "family": m.Family, "center": m.Center, "extent": m.Extent}
 		}
 	}
+	w.Header().Set("Server-Timing", fmt.Sprintf("query;dur=%.2f", float64(time.Since(started).Microseconds())/1000))
+	w.Header().Set("X-Terrain-Revision", strconv.Itoa(revision))
 	respond(w, 200, struct {
 		model.Sample
+		Revision int                `json:"revision"`
 		Landmass any                `json:"landmass,omitempty"`
 		Climate  map[string]float64 `json:"climate"`
-	}{a, mass, sampleClimate(v.planet, lon, lat)})
+	}{a, revision, mass, sampleClimate(p, lon, lat)})
 }
 func sampleClimate(p *model.Planet, lon, lat float64) map[string]float64 {
 	fields := map[string]float64{}
@@ -359,14 +374,23 @@ func (s *Server) continuousFeatures(w http.ResponseWriter, r *http.Request) {
 	if v == nil {
 		return
 	}
-	defer v.mu.Unlock()
 	if v.planet == nil {
+		v.mu.Unlock()
 		fail(w, 409, "Legacy terrain")
 		return
 	}
+	p, revision, stale := v.planet, v.authored().Header.Revision, v.terrainAnalysisStale()
+	v.mu.Unlock()
 	var coasts [][]model.Point
-	if v.planet.Surface != nil {
-		coasts = v.planet.Surface.Coasts
+	if p.Surface != nil {
+		coasts = p.Surface.Coasts
 	}
-	respond(w, 200, map[string]any{"rivers": v.planet.Rivers, "coasts": coasts, "legend": tiles.BiomeColors, "masses": v.planet.Masses, "revision": v.authored().Header.Revision, "units": "radians; elevations and widths in metres; discharge in m3/s"})
+	graph := hydrology.Build(p)
+	out := map[string]any{"rivers": p.Rivers, "coasts": coasts, "legend": tiles.BiomeColors, "masses": p.Masses, "revision": revision, "analysisStale": stale,
+		"hydrology": map[string]any{"revision": graph.Revision, "counts": graph.Counts, "issues": graph.Issues, "nodes": len(graph.Nodes), "reaches": len(graph.Reaches)},
+		"units":     "radians; elevations and widths in metres; discharge in m3/s"}
+	if r.URL.Query().Get("topology") == "1" {
+		out["topology"] = graph
+	}
+	respond(w, 200, out)
 }

@@ -551,12 +551,15 @@ export default function App() {
   }
   const editorURL = (project, age, view = "build") =>
     `/world/${project}/${view}?world=${id}&age=${age}`;
-  const openMap = async (m) => {
+  const openMap = async (m, workspace) => {
     if (m.ageId !== doc.world.currentAge) {
       const d = await command({ kind: "select", ageId: m.ageId });
       if (!d) return;
     }
-    navigate(editorURL(m.projectId, m.ageId));
+    navigate(
+      editorURL(m.projectId, m.ageId) +
+        (workspace === "atlas" ? "&workspace=atlas" : ""),
+    );
   };
   const openSettlement = (entity) =>
     run(async () => {

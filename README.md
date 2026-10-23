@@ -22,6 +22,11 @@ npm start
 
 Open **http://127.0.0.1:8124**. On Windows, `start.bat` performs the same steps. The launcher also recognizes a portable Go installation at `.tools/go`.
 
+For source distribution, package a commit with `node scripts/verify-source.mjs HEAD`.
+This verifies archive contents and builds a clean extraction; it does not include
+the optional local Go SDK, credentials, databases or dependency installations.
+See [archive investigation and baseline](docs/atlas-redesign/BASELINE.md).
+
 For development, run these in separate terminals:
 
 ```sh

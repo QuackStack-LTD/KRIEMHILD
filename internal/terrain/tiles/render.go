@@ -16,7 +16,7 @@ import (
 type Transform func(s model.Sample, lon, lat float64) model.Sample
 
 // Raster fixes invalidate derived disk images without changing saved terrain.
-const RenderingVersion = "raster-2"
+const RenderingVersion = "raster-3"
 
 func Valid(z, x, y, size int) bool {
 	return z >= 0 && z <= 18 && x >= 0 && x < (2<<z) && y >= 0 && y < (1<<z) && (size == 256 || size == 512)
@@ -49,7 +49,7 @@ func RenderMeasured(ctx context.Context, p *model.Planet, z, x, y, size int, sty
 		return nil, fmt.Errorf("invalid tile address")
 	}
 	switch style {
-	case "natural", "elevation", "biome", "mask", "coastline", "bathymetry", "temperature", "precipitation", "moisture", "atlas", "hillshade", "pet", "aridity", "soil", "seasonality", "rainShadow", "exposure", "slope", "contours", "watersheds", "flow-accumulation", "river-network", "wetlands", "shore-ink":
+	case "physical-atlas", "natural", "elevation", "biome", "mask", "coastline", "bathymetry", "temperature", "precipitation", "moisture", "atlas", "hillshade", "pet", "aridity", "soil", "seasonality", "rainShadow", "exposure", "slope", "contours", "watersheds", "flow-accumulation", "river-network", "wetlands", "shore-ink":
 	default:
 		return nil, fmt.Errorf("unknown terrain style")
 	}
@@ -187,6 +187,23 @@ func palette(s model.Sample, style string, shade float64) color.NRGBA {
 		c = mix(c, [3]float64{228, 235, 230}, model.Clamp((-s.Temperature+3)/14, 0, 1))
 	}
 	switch style {
+	case "physical-atlas":
+		if s.Water == "dry" {
+			// Restrained hypsometric inks retain elevation structure at overview
+			// scale. Moisture warms/darkens the same relief, never invents texture.
+			c = mix([3]float64{207, 211, 166}, [3]float64{177, 190, 144}, s.Moisture)
+			c = mix(c, [3]float64{205, 182, 140}, (s.Bed-400)/1800)
+			c = mix(c, [3]float64{167, 146, 124}, (s.Bed-2200)/1800)
+			c = mix(c, [3]float64{241, 236, 218}, (s.Bed-3600)/2200)
+			if s.Biome == "ice" {
+				c = [3]float64{235, 238, 224}
+			}
+		} else if s.Water == "ocean" {
+			c = mix([3]float64{168, 202, 202}, [3]float64{110, 157, 176}, s.WaterDepth/4200)
+		} else {
+			c = [3]float64{139, 187, 194}
+		}
+		shade = 1 // Relief is a separately composited, user-controlled layer.
 	case "mask":
 		if s.Water == "dry" {
 			c = [3]float64{230, 235, 224}

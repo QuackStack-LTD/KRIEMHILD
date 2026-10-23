@@ -18,8 +18,17 @@ import {
   mapToProject,
   FeatureIndex,
 } from "./geometry.js";
-import { riverFeatures, riverWidth, riverVisible } from "./rivers.js";
+import { riverFeatures, riverWidth } from "./rivers.js";
 import { generationSpec } from "./seed.js";
+import { GeographicQuery } from "./geographic-query.js";
+import {
+  CartographicGeometry,
+  cartographicLevel,
+  cartographicLevels,
+} from "./cartography.js";
+import { pathText } from "./geographic-path.js";
+import { FrameNavigator } from "./frame-navigator.js";
+import { prepareGeographicExport } from "./export-geography.js";
 import {
   readPreviewQuality,
   savePreviewQuality,
@@ -89,13 +98,24 @@ export default function Studio({ initialState, onExit }) {
     initialState?.project?.view ||
     {};
   const [mode, setMode] = useState(
-      savedView.mode ||
+      (new URLSearchParams(location.search).get("workspace") === "atlas"
+        ? "atlas"
+        : null) ||
+        savedView.mode ||
         (location.pathname.endsWith("/build") ? "map" : "generate"),
     ),
-    [style, setStyle] = useState(savedView.style || "natural");
+    [style, setStyle] = useState(savedView.style || "physical-atlas");
   const [camera, setCamera] = useState(normalizeCamera(savedView.camera)),
     [width, setWidth] = useState(1000),
     [height, setHeight] = useState(500);
+  const cameraRef = useRef(camera);
+  cameraRef.current = camera;
+  const navigation = useRef(null);
+  navigation.current ||= new FrameNavigator(() => cameraRef.current, setCamera);
+  useEffect(() => {
+    navigation.current.cancel();
+  }, [camera]);
+  useEffect(() => () => navigation.current.cancel(), []);
   const [entities, setEntities] = useState([]),
     [rivers, setRivers] = useState([]),
     [coasts, setCoasts] = useState(null),
@@ -128,7 +148,11 @@ export default function Studio({ initialState, onExit }) {
     active = useRef(state),
     accepted = useRef(initialState || null),
     cancelled = useRef(false),
-    inspectAbort = useRef(null);
+    geographicQuery = useRef(null);
+  geographicQuery.current ||= new GeographicQuery();
+  const sourceIdentity = `${state?.worldId}:${state?.id}`;
+  geographicQuery.current.source(sourceIdentity, state?.project?.revision);
+  const [inspectionPoint, setInspectionPoint] = useState(null);
   active.current = state;
   const query = useRef(new URLSearchParams(location.search));
   useEffect(() => {
@@ -143,6 +167,12 @@ export default function Studio({ initialState, onExit }) {
   const viewportRenderer = query.current.get("terrainRenderer") !== "tiles";
   const [renderRetry, setRenderRetry] = useState(0);
   const [renderError, setRenderError] = useState("");
+  const [renderDiagnostics, setRenderDiagnostics] = useState(null);
+  const [hydrologyDiagnostics, setHydrologyDiagnostics] = useState(null);
+  const geometryCache = useRef(new CartographicGeometry());
+  const presentation = useRef();
+  presentation.current = cartographicLevel(camera.w, presentation.current);
+  const detailLevel = presentation.current;
   const base = `sessions/${state?.id}`;
   const displayStyle = illustrating ? "atlas" : style;
   const previewInfo = previewRequest({ camera, width, height }, previewQuality);
@@ -270,13 +300,14 @@ export default function Studio({ initialState, onExit }) {
           setRivers(r.rivers || []);
           setCoasts(r.coasts);
           setLegend(r.legend || {});
+          setHydrologyDiagnostics(r.hydrology || null);
         }
       })
       .catch((e) => setError(e.message));
     return () => {
       alive = false;
     };
-  }, [state?.id, refresh]);
+  }, [state?.id, invalidations, refresh]);
   useEffect(() => {
     const observer = new ResizeObserver((entries) => {
       setWidth(entries[0].contentRect.width);
@@ -288,7 +319,7 @@ export default function Studio({ initialState, onExit }) {
   useEffect(
     () => () => {
       cancelled.current = true;
-      inspectAbort.current?.abort();
+      geographicQuery.current.cancel();
       if (jobRef.current)
         request(
           `terrain/generation-jobs/${jobRef.current}`,
@@ -494,19 +525,23 @@ export default function Studio({ initialState, onExit }) {
     ];
   }
   function inspect(p) {
-    inspectAbort.current?.abort();
-    const abort = new AbortController();
-    inspectAbort.current = abort;
-    request(
-      `${base}/terrain/sample?lon=${p[0] * 180 - 180}&lat=${90 - p[1] * 180}`,
-      undefined,
-      "GET",
-      abort.signal,
-    )
-      .then(setSample)
-      .catch((e) => {
-        if (e.name !== "AbortError") setError(e.message);
-      });
+    setInspectionPoint({
+      point: p,
+      identity: sourceIdentity,
+      revision: state.project.revision,
+    });
+    setSample(null);
+    geographicQuery.current
+      .select(
+        {
+          session: state.id,
+          identity: sourceIdentity,
+          revision: state.project.revision,
+          point: p,
+        },
+        setSample,
+      )
+      .catch((e) => setError(e.message));
   }
   async function clickMap(p) {
     if (!state || p[0] < 0 || p[0] > 2 || p[1] < 0 || p[1] > 1) return;
@@ -624,6 +659,7 @@ export default function Studio({ initialState, onExit }) {
         ? hits[(hits.findIndex((f) => f.id === selected?.id) + 1) % hits.length]
         : hits[0];
       if (hit?.river) {
+        inspect(position(e));
         setRiverSelection(hit.river);
         setSelected(null);
         return;
@@ -681,7 +717,7 @@ export default function Studio({ initialState, onExit }) {
       return;
     }
     if (d.moved)
-      setCamera({
+      navigation.current.transform(() => ({
         ...d.camera,
         x:
           d.camera.x -
@@ -689,7 +725,7 @@ export default function Studio({ initialState, onExit }) {
         y:
           d.camera.y -
           dy / viewport(svg.current.getBoundingClientRect(), d.camera).scale,
-      });
+      }));
   }
   function up(e) {
     const d = drag.current;
@@ -720,7 +756,7 @@ export default function Studio({ initialState, onExit }) {
       x = e.clientX,
       y = e.clientY,
       factor = Math.exp(Math.max(-0.4, Math.min(0.4, e.deltaY * 0.0015)));
-    setCamera((c) => {
+    navigation.current.transform((c) => {
       // Batched wheel events can share a listener from an earlier render. Use
       // the SAME current camera for both pointer conversion and zooming.
       const p = screenToMap(x, y, rect, c);
@@ -745,6 +781,18 @@ export default function Studio({ initialState, onExit }) {
     if ((exportWidth * exportWidth * camera.h) / camera.w > 16777216)
       throw Error("Choose a smaller export width for this tall view.");
     const clone = svg.current.cloneNode(true);
+    if (!illustrating)
+      prepareGeographicExport(
+        clone,
+        geometryCache.current.derive({
+          identity: sourceIdentity,
+          revision: state.project.revision,
+          rivers,
+          coasts,
+          level: detailLevel,
+          fast: false,
+        }),
+      );
     clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
     clone.setAttribute("width", String(exportWidth));
     clone.setAttribute("height", String((exportWidth * camera.h) / camera.w));
@@ -882,6 +930,25 @@ export default function Studio({ initialState, onExit }) {
         state.project.layers.find((l) => l.id === b.layer).order,
     );
   const riverShapes = useMemo(() => riverFeatures(rivers), [rivers]);
+  const geography = useMemo(
+    () =>
+      geometryCache.current.derive({
+        identity: sourceIdentity,
+        revision: state?.project?.revision,
+        rivers,
+        coasts,
+        level: detailLevel,
+        fast: previewQuality.preset === "performance",
+      }),
+    [
+      sourceIdentity,
+      state?.project?.revision,
+      rivers,
+      coasts,
+      detailLevel,
+      previewQuality.preset,
+    ],
+  );
   const featureIndex = useMemo(
     () =>
       new FeatureIndex([
@@ -889,18 +956,7 @@ export default function Studio({ initialState, onExit }) {
           ...e,
           points: e.points.map((p) => projectToMap(p, state)),
         })),
-        ...(showRivers
-          ? riverShapes.filter((f) =>
-              riverVisible(
-                f.river,
-                camera.w > 0.8
-                  ? "world"
-                  : camera.w > 0.15
-                    ? "continent"
-                    : "local",
-              ),
-            )
-          : []),
+        ...(showRivers ? geography.rivers : []),
       ]),
     [
       entities,
@@ -911,6 +967,7 @@ export default function Studio({ initialState, onExit }) {
       camera.h,
       showRivers,
       riverShapes,
+      geography,
     ],
   );
   function feature(e, preview = false) {
@@ -1004,6 +1061,7 @@ export default function Studio({ initialState, onExit }) {
         </span>
         <nav aria-label="World editors">
           {[
+            ["atlas", "Atlas"],
             ["generate", "Terrain Generator"],
             ["map", "Map Builder"],
             ["settlement", "Settlement Builder"],
@@ -1014,7 +1072,7 @@ export default function Studio({ initialState, onExit }) {
               disabled={id !== "generate" && !state}
               onClick={() => {
                 setMode(id);
-                if (id === "generate") setIllustrating(false);
+                if (id === "generate" || id === "atlas") setIllustrating(false);
                 setTool(id === "settlement" ? "site" : "inspect");
                 setDraft([]);
               }}
@@ -1069,7 +1127,7 @@ export default function Studio({ initialState, onExit }) {
       )}
       <div className="studio-body">
         <nav className="studio-rail" aria-label="Map tools">
-          {(mode === "generate"
+          {(mode === "generate" || mode === "atlas"
             ? ["inspect"]
             : mode === "settlement"
               ? ["site", "select", "road", "house", "landmark"]
@@ -1143,12 +1201,18 @@ export default function Studio({ initialState, onExit }) {
                 height={height}
                 previewQuality={illustrating ? undefined : previewQuality}
                 previewHillshade={illustrating ? undefined : hillshade}
+                onDiagnostics={setRenderDiagnostics}
+                detailLevel={detailLevel}
                 retry={renderRetry}
                 onLoading={setLoading}
                 onError={setRenderError}
                 styles={[
                   displayStyle,
-                  ...(hillshade > 0 || illustrating ? ["hillshade"] : []),
+                  ...((hillshade > 0 &&
+                    previewQuality.preset !== "performance") ||
+                  illustrating
+                    ? ["hillshade"]
+                    : []),
                   ...(illustrating && state.continuous.analysisStale
                     ? ["shore-ink"]
                     : []),
@@ -1193,6 +1257,21 @@ export default function Studio({ initialState, onExit }) {
                     )}
                   </g>
                 )}
+                {!illustrating &&
+                  displayStyle === "physical-atlas" &&
+                  !state.continuous.analysisStale && (
+                    <g
+                      fill="none"
+                      stroke="#556c68"
+                      strokeOpacity=".65"
+                      strokeWidth={(camera.w / width) * 0.65}
+                      pointerEvents="none"
+                    >
+                      {geography.coasts.map((p, i) => (
+                        <path key={i} data-coast-index={i} d={pathText(p)} />
+                      ))}
+                    </g>
+                  )}
                 {showRivers && !illustrating && (
                   <g
                     fill="none"
@@ -1200,22 +1279,17 @@ export default function Studio({ initialState, onExit }) {
                     strokeOpacity=".7"
                     pointerEvents="none"
                   >
-                    {rivers
-                      .filter(
-                        (r) =>
-                          style === "river-network" ||
-                          riverVisible(
-                            r,
-                            camera.w > 0.8
-                              ? "world"
-                              : camera.w > 0.15
-                                ? "continent"
-                                : "local",
-                          ),
-                      )
-                      .map((r) => (
+                    {(style === "river-network"
+                      ? riverShapes
+                      : geography.rivers
+                    ).map((f) => {
+                      const r = f.river;
+                      return (
                         <path
-                          key={r.id}
+                          key={f.id}
+                          data-river-id={f.id}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                           stroke={
                             style === "river-network"
                               ? {
@@ -1237,14 +1311,10 @@ export default function Studio({ initialState, onExit }) {
                             camera.w / width,
                             state.continuous.spec.radiusKm,
                           )}
-                          d={r.path
-                            .map(
-                              (p, i) =>
-                                `${i === 0 || Math.abs(p[0] - r.path[i - 1][0]) > Math.PI ? "M" : "L"}${(p[0] + Math.PI) / Math.PI},${0.5 - p[1] / Math.PI}`,
-                            )
-                            .join(" ")}
+                          d={pathText(f.points)}
                         />
-                      ))}
+                      );
+                    })}
                   </g>
                 )}
                 {!illustrating && visibleEntities.map((e) => feature(e))}
@@ -1333,6 +1403,19 @@ export default function Studio({ initialState, onExit }) {
                     strokeWidth={(camera.w / width) * 2}
                   />
                 )}
+                {inspectionPoint?.identity === sourceIdentity &&
+                  inspectionPoint.revision === state.project.revision && (
+                    <circle
+                      data-editor-handle="selection"
+                      cx={inspectionPoint.point[0]}
+                      cy={inspectionPoint.point[1]}
+                      r={(camera.w / width) * 6}
+                      fill="none"
+                      stroke="#fff4b1"
+                      strokeWidth={(camera.w / width) * 1.5}
+                      pointerEvents="none"
+                    />
+                  )}
                 {cursor &&
                   ["raise", "lower", "smooth", "water", "plant"].includes(
                     tool,
@@ -1949,6 +2032,30 @@ export default function Studio({ initialState, onExit }) {
             )}
             <section>
               <h3>Map appearance</h3>
+              {state?.continuous?.analysisStale && (
+                <p role="status">
+                  Landscape edits changed the terrain. Saved drainage and
+                  climate require revalidation; their original graph is
+                  retained. Undo restores the original analysis.
+                </p>
+              )}
+              {hydrologyDiagnostics && (
+                <details>
+                  <summary>River topology diagnostics</summary>
+                  <p>
+                    {hydrologyDiagnostics.nodes} nodes ·{" "}
+                    {hydrologyDiagnostics.reaches} connected reaches
+                  </p>
+                  <p>Graph {hydrologyDiagnostics.revision.slice(0, 12)}</p>
+                  {Object.entries(hydrologyDiagnostics.counts).map(
+                    ([key, n]) => (
+                      <p key={key}>
+                        {key.replaceAll("-", " ")}: {n}
+                      </p>
+                    ),
+                  )}
+                </details>
+              )}
               {!illustrating && viewportRenderer && (
                 <div title={previewHelp}>
                   <label>
@@ -2002,6 +2109,43 @@ export default function Studio({ initialState, onExit }) {
                   <p className="studio-muted">
                     2D preview only; saved terrain and exports are unchanged.
                   </p>
+                  <p>
+                    Level {detailLevel} ·{" "}
+                    {cartographicLevels[detailLevel].label}
+                  </p>
+                  <details>
+                    <summary>Preview diagnostics</summary>
+                    <p>
+                      Source revision {state?.project?.revision} · geometry{" "}
+                      {geography.durationMs.toFixed(1)} ms · geometry cache{" "}
+                      {(geometryCache.current.bytes / 1048576).toFixed(1)} MiB
+                    </p>
+                    {renderDiagnostics && (
+                      <>
+                        <p>
+                          First usable frame{" "}
+                          {renderDiagnostics.firstMs.toFixed(0)} ms · final{" "}
+                          {renderDiagnostics.finalMs?.toFixed(0) ?? "pending"}{" "}
+                          ms
+                        </p>
+                        <p>
+                          Raster cache{" "}
+                          {(renderDiagnostics.cacheBytes / 1048576).toFixed(1)}{" "}
+                          MiB · {renderDiagnostics.hits} hits /{" "}
+                          {renderDiagnostics.misses} misses
+                        </p>
+                        <p>
+                          {renderDiagnostics.outstanding} outstanding ·{" "}
+                          {renderDiagnostics.cancelled} cancelled · working
+                          canvas{" "}
+                          {(
+                            renderDiagnostics.workingCanvasBytes / 1048576
+                          ).toFixed(1)}{" "}
+                          MiB
+                        </p>
+                      </>
+                    )}
+                  </details>
                   {!previewSaved && (
                     <p role="status">
                       This browser could not save the preview preference.
@@ -2048,6 +2192,7 @@ export default function Studio({ initialState, onExit }) {
                   onChange={(e) => setStyle(e.target.value)}
                 >
                   {[
+                    "physical-atlas",
                     "natural",
                     "elevation",
                     "biome",
@@ -2182,49 +2327,63 @@ export default function Studio({ initialState, onExit }) {
                 </label>
               </details>
             )}
-            {sample && (
-              <section>
-                <h3>Geographic inspection</h3>
-                <dl>
-                  <dt>Surface</dt>
-                  <dd>
-                    {sample.biome} · {sample.water}
-                  </dd>
-                  {sample.landmass && (
-                    <>
-                      <dt>Landmass</dt>
-                      <dd>
-                        {sample.landmass.id} · {sample.landmass.family}
-                      </dd>
-                    </>
-                  )}
-                  <dt>Bed elevation</dt>
-                  <dd>{sample.bed.toFixed(0)} m</dd>
-                  <dt>Water depth</dt>
-                  <dd>{sample.waterDepth.toFixed(1)} m</dd>
-                  <dt>Temperature</dt>
-                  <dd>{sample.temperature.toFixed(1)} °C</dd>
-                  <dt>Rainfall</dt>
-                  <dd>{sample.precipitation.toFixed(0)} mm/year</dd>
-                  <dt>Moisture</dt>
-                  <dd>{(sample.moisture * 100).toFixed(0)}%</dd>
-                  <dt>Evaporative demand</dt>
-                  <dd>{sample.pet.toFixed(0)} mm/year</dd>
-                  {sample.climate?.soil != null && (
-                    <>
-                      <dt>Soil water</dt>
-                      <dd>{sample.climate.soil.toFixed(0)} mm</dd>
-                      <dt>Precipitation / PET</dt>
-                      <dd>{sample.climate.aridity.toFixed(2)}</dd>
-                      <dt>Dry months</dt>
-                      <dd>{sample.climate.dryMonths.toFixed(1)}</dd>
-                      <dt>Seasonality (CV)</dt>
-                      <dd>{sample.climate.seasonality.toFixed(2)}</dd>
-                    </>
-                  )}
-                </dl>
-              </section>
-            )}
+            {inspectionPoint?.identity === sourceIdentity &&
+              inspectionPoint.revision === state?.project?.revision &&
+              !sample && <p role="status">Inspecting geography…</p>}
+            {sample?.query?.identity === sourceIdentity &&
+              sample.query.revision === state?.project?.revision && (
+                <section>
+                  <h3>Geographic inspection</h3>
+                  <dl>
+                    <dt>Surface</dt>
+                    <dd>
+                      {sample.biome} · {sample.water}
+                    </dd>
+                    <dt>Coordinates</dt>
+                    <dd>
+                      {sample.query.longitude.toFixed(5)}°,{" "}
+                      {sample.query.latitude.toFixed(5)}°
+                    </dd>
+                    <dt>Query</dt>
+                    <dd>
+                      {sample.query.durationMs.toFixed(1)} ms · revision{" "}
+                      {sample.query.revision}
+                    </dd>
+                    {sample.landmass && (
+                      <>
+                        <dt>Landmass</dt>
+                        <dd>
+                          {sample.landmass.id} · {sample.landmass.family}
+                        </dd>
+                      </>
+                    )}
+                    <dt>Bed elevation</dt>
+                    <dd>{sample.bed.toFixed(0)} m</dd>
+                    <dt>Water depth</dt>
+                    <dd>{sample.waterDepth.toFixed(1)} m</dd>
+                    <dt>Temperature</dt>
+                    <dd>{sample.temperature.toFixed(1)} °C</dd>
+                    <dt>Rainfall</dt>
+                    <dd>{sample.precipitation.toFixed(0)} mm/year</dd>
+                    <dt>Moisture</dt>
+                    <dd>{(sample.moisture * 100).toFixed(0)}%</dd>
+                    <dt>Evaporative demand</dt>
+                    <dd>{sample.pet.toFixed(0)} mm/year</dd>
+                    {sample.climate?.soil != null && (
+                      <>
+                        <dt>Soil water</dt>
+                        <dd>{sample.climate.soil.toFixed(0)} mm</dd>
+                        <dt>Precipitation / PET</dt>
+                        <dd>{sample.climate.aridity.toFixed(2)}</dd>
+                        <dt>Dry months</dt>
+                        <dd>{sample.climate.dryMonths.toFixed(1)}</dd>
+                        <dt>Seasonality (CV)</dt>
+                        <dd>{sample.climate.seasonality.toFixed(2)}</dd>
+                      </>
+                    )}
+                  </dl>
+                </section>
+              )}
             {riverSelection && (
               <section>
                 <h3>{riverSelection.name || riverSelection.id}</h3>

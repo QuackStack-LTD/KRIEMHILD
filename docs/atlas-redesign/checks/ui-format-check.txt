@@ -1,0 +1,14 @@
+
+> kriemhild@1.0.0 check:ui
+> prettier --check "src/**/*.css" "src/worldbuilding/**/*.jsx" "src/worldbuilding/ui/*.js" src/App.jsx "src/continuous/**/*.jsx" src/main.jsx tests/ui.test.mjs scripts/check-ui.mjs playwright.config.mjs tests/ui.browser.spec.mjs && node scripts/check-ui.mjs
+
+Checking formatting...
+npm.cmd : [warn] src/worldbuilding/Biosphere.jsx
+At line:2 char:1
++ npm.cmd run check:ui *> .cache/atlas-ui-check.txt; $code=$LASTEXITCOD ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([warn] src/worldbuilding/Biosphere.jsx:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+[warn] src/worldbuilding/BiosphereEditors.jsx
+[warn] Code style issues found in 2 files. Run Prettier with --write to fix.
