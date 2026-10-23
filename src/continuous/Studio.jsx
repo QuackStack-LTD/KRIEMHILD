@@ -159,6 +159,8 @@ export default function Studio({ initialState, onExit }) {
     jobRef = useRef(null),
     active = useRef(state),
     accepted = useRef(initialState || null),
+    attachment = useRef(null),
+    viewWriter = useRef({ client: crypto.randomUUID(), sequence: 0 }),
     cancelled = useRef(false),
     geographicQuery = useRef(null);
   geographicQuery.current ||= new GeographicQuery();
@@ -399,25 +401,29 @@ export default function Studio({ initialState, onExit }) {
     return result;
   }
   async function save() {
-    const s = query.current.has("world")
-      ? await ensureWorldMap()
-      : active.current;
+    const s = await ensureWorldMap();
     if (!s) return;
-    await request(`sessions/${s.id}/world`, {
-      kind: "view",
+    const sequence = ++viewWriter.current.sequence;
+    const result = await request(`sessions/${s.id}/save`, {
       revision: s.project.revision,
       view: { camera, style, mode, showRivers, hillshade },
+      client: viewWriter.current.client,
+      sequence,
     });
-    const result = await request(`sessions/${s.id}/save`, {});
-    setState((v) => ({
-      ...v,
-      project: result.project || v.project,
-      unsaved: false,
-    }));
+    if (active.current?.id !== s.id) return;
+    const next = {
+      ...active.current,
+      project: result.project || active.current.project,
+      projectUI: result.projectUI || active.current.projectUI,
+      unsaved: sequence !== viewWriter.current.sequence,
+    };
+    active.current = next;
+    setState(next);
   }
   useEffect(() => {
     if (!state?.id) return;
     const id = state.id,
+      sequence = ++viewWriter.current.sequence,
       timer = setTimeout(
         () =>
           request(`sessions/${id}/view`, {
@@ -425,9 +431,14 @@ export default function Studio({ initialState, onExit }) {
               continuousView: { camera, style, mode, showRivers, hillshade },
             },
             merge: true,
+            client: viewWriter.current.client,
+            sequence,
           })
             .then((result) => {
-              if (active.current?.id === id)
+              if (
+                active.current?.id === id &&
+                sequence === viewWriter.current.sequence
+              )
                 setState((v) => ({ ...v, unsaved: result.unsaved }));
             })
             .catch((e) => setError(e.message)),
@@ -509,6 +520,16 @@ export default function Studio({ initialState, onExit }) {
     const s = active.current;
     if (!s) return;
     if (s.historicalMap) return s;
+    if (attachment.current?.session === s.id) return attachment.current.promise;
+    const promise = attachWorldMap(s);
+    attachment.current = { session: s.id, promise };
+    try {
+      return await promise;
+    } finally {
+      if (attachment.current?.promise === promise) attachment.current = null;
+    }
+  }
+  async function attachWorldMap(s) {
     let worldId = query.current.get("world"),
       ageId = query.current.get("age");
     if (!worldId) {
@@ -1146,11 +1167,22 @@ export default function Studio({ initialState, onExit }) {
             aria-pressed={illustrating}
             onClick={() => {
               if (illustrating) setIllustrating(false);
-              else
+              else {
+                const country =
+                  selected &&
+                  ["country", "state", "kingdom", "empire"].includes(
+                    selected.kind,
+                  );
+                const city =
+                  selected &&
+                  ["capital", "city", "town", "village"].includes(
+                    selected.kind,
+                  );
                 artScope(
-                  mode === "settlement" ? "city" : "world",
-                  mode === "settlement" && selected ? selected : undefined,
+                  country ? "country" : city ? "city" : "world",
+                  country || city ? selected : undefined,
                 );
+              }
             }}
           >
             {illustrating ? "Construction mode" : "Medieval Illustrator"}
@@ -1256,15 +1288,13 @@ export default function Studio({ initialState, onExit }) {
                 onError={setRenderError}
                 styles={[
                   displayStyle,
-                  ...((displayStyle !== "terrain" &&
-                    hillshade > 0 &&
-                    previewQuality.preset !== "performance") ||
-                  illustrating
+                  ...(displayStyle !== "terrain" &&
+                  !illustrating &&
+                  hillshade > 0 &&
+                  previewQuality.preset !== "performance"
                     ? ["hillshade"]
                     : []),
-                  ...(illustrating && state.continuous.analysisStale
-                    ? ["shore-ink"]
-                    : []),
+                  ...(illustrating ? ["relief-shadow", "shore-ink"] : []),
                 ]}
               >
                 {viewportRenderer ? (
@@ -1286,11 +1316,7 @@ export default function Studio({ initialState, onExit }) {
                 {hillshade > 0 &&
                   !illustrating &&
                   displayStyle !== "terrain" && (
-                    <g
-                      style={{ mixBlendMode: "multiply" }}
-                      opacity={hillshade}
-                      pointerEvents="none"
-                    >
+                    <g opacity={hillshade} pointerEvents="none">
                       {viewportRenderer ? (
                         <ViewportLayer style="hillshade" />
                       ) : (
@@ -1299,7 +1325,7 @@ export default function Studio({ initialState, onExit }) {
                           session={state.id}
                           revision={state.project.revision}
                           invalidations={invalidations}
-                          style="hillshade"
+                          style="relief-shadow"
                           identity={`${state.worldId}:${state.id}`}
                           camera={camera}
                           width={width}
@@ -1380,39 +1406,33 @@ export default function Studio({ initialState, onExit }) {
                     state={state}
                     pixel={art.bounds[2] / 1200}
                     coastOverlay={
-                      state.continuous.analysisStale ? (
-                        viewportRenderer ? (
-                          <ViewportLayer style="shore-ink" />
-                        ) : (
-                          <TileSurface
-                            enabled={!show3D}
-                            session={state.id}
-                            revision={state.project.revision}
-                            invalidations={invalidations}
-                            style="shore-ink"
-                            identity={`${state.worldId}:${state.id}`}
-                            camera={camera}
-                            width={width}
-                            height={height}
-                          />
-                        )
-                      ) : null
+                      viewportRenderer ? (
+                        <ViewportLayer style="shore-ink" />
+                      ) : (
+                        <TileSurface
+                          enabled={!show3D}
+                          session={state.id}
+                          revision={state.project.revision}
+                          invalidations={invalidations}
+                          style="shore-ink"
+                          identity={`${state.worldId}:${state.id}`}
+                          camera={camera}
+                          width={width}
+                          height={height}
+                        />
+                      )
                     }
                     relief={
-                      <g
-                        style={{ mixBlendMode: "multiply" }}
-                        opacity={hillshade}
-                        pointerEvents="none"
-                      >
+                      <g opacity={hillshade} pointerEvents="none">
                         {viewportRenderer ? (
-                          <ViewportLayer style="hillshade" />
+                          <ViewportLayer style="relief-shadow" />
                         ) : (
                           <TileSurface
                             enabled={!show3D}
                             session={state.id}
                             revision={state.project.revision}
                             invalidations={invalidations}
-                            style="hillshade"
+                            style="relief-shadow"
                             identity={`${state.worldId}:${state.id}`}
                             camera={camera}
                             width={width}

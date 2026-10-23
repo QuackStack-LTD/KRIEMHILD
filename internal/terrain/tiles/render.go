@@ -17,7 +17,7 @@ import (
 type Transform func(s model.Sample, lon, lat float64) model.Sample
 
 // Raster fixes invalidate derived disk images without changing saved terrain.
-const RenderingVersion = "raster-4"
+const RenderingVersion = "raster-5"
 
 func Valid(z, x, y, size int) bool {
 	return z >= 0 && z <= 18 && x >= 0 && x < (2<<z) && y >= 0 && y < (1<<z) && (size == 256 || size == 512)
@@ -50,7 +50,7 @@ func RenderMeasured(ctx context.Context, p *model.Planet, z, x, y, size int, sty
 		return nil, fmt.Errorf("invalid tile address")
 	}
 	switch style {
-	case "terrain", "physical-atlas", "natural", "elevation", "biome", "mask", "coastline", "bathymetry", "temperature", "precipitation", "moisture", "atlas", "hillshade", "pet", "aridity", "soil", "seasonality", "rainShadow", "exposure", "slope", "contours", "watersheds", "flow-accumulation", "river-network", "wetlands", "shore-ink":
+	case "terrain", "physical-atlas", "natural", "elevation", "biome", "mask", "coastline", "bathymetry", "temperature", "precipitation", "moisture", "atlas", "hillshade", "relief-shadow", "pet", "aridity", "soil", "seasonality", "rainShadow", "exposure", "slope", "contours", "watersheds", "flow-accumulation", "river-network", "wetlands", "shore-ink":
 	default:
 		return nil, fmt.Errorf("unknown terrain style")
 	}
@@ -103,6 +103,11 @@ func RenderMeasured(ctx context.Context, p *model.Planet, z, x, y, size int, sty
 			dy *= 5
 			shade := model.Clamp((.72 + (-dx*.45-dy*.55)/math.Sqrt(1+dx*dx+dy*dy)), .32, 1.18)
 			c := palette(s, style, shade)
+			if style == "relief-shadow" {
+				// Black alpha is exactly grayscale multiply, without an SVG blend
+				// surface that can cover later vector layers at close zoom.
+				c = color.NRGBA{0, 0, 0, 255 - c.R}
+			}
 			if style == "terrain" {
 				east, north := gradients(sampler, p, lon, lat, transform)
 				c = terrainColor(s, east, north)
@@ -139,7 +144,7 @@ func RenderMeasured(ctx context.Context, p *model.Planet, z, x, y, size int, sty
 					c = color.NRGBA{70, 55, 40, 255}
 				}
 			}
-			if p.Surface == nil && style != "coastline" && style != "mask" && style != "hillshade" && math.Abs(s.CoastDistance*1000) < metres*.8 && (s.Water == "dry" || s.Water == "ocean") {
+			if p.Surface == nil && style != "coastline" && style != "mask" && style != "hillshade" && style != "relief-shadow" && math.Abs(s.CoastDistance*1000) < metres*.8 && (s.Water == "dry" || s.Water == "ocean") {
 				wet, dry := s, s
 				wet.Water = "ocean"
 				wet.WaterDepth = 30
@@ -245,7 +250,7 @@ func palette(s model.Sample, style string, shade float64) color.NRGBA {
 			c = [3]float64{255, 0, 255}
 		}
 		shade = 1
-	case "hillshade":
+	case "hillshade", "relief-shadow":
 		c = [3]float64{255, 255, 255}
 	case "natural":
 		if s.Water == "dry" {

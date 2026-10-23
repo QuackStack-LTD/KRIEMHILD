@@ -2,7 +2,11 @@ import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests",
-  testMatch: ["ui.browser.spec.mjs", "terrain.browser.spec.mjs"],
+  testMatch: [
+    "ui.browser.spec.mjs",
+    "terrain.browser.spec.mjs",
+    "terrain-save.browser.spec.mjs",
+  ],
   workers: 1,
   timeout: 90000,
   outputDir: ".tools/ui-browser-results",

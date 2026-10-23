@@ -15,7 +15,11 @@ export default function IllustrationPanel({
       <h2>Medieval Illustrator</h2>
       <label>
         Map scope
-        <select value={config.scope} onChange={(e) => onScope(e.target.value)}>
+        <select
+          aria-label="Map scope"
+          value={config.scope}
+          onChange={(e) => onScope(e.target.value)}
+        >
           {["world", "continent", "country", "city"].map((v) => (
             <option key={v}>{v}</option>
           ))}

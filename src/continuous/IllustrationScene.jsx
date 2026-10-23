@@ -66,20 +66,36 @@ export default function IllustrationScene({
       };
     if (o.kind === "text")
       return (
-        <text
-          {...shared}
-          x={p[0]}
-          y={p[1]}
-          fill={color}
-          stroke="none"
-          fontFamily="Georgia,serif"
-          fontSize={o.size || pixel * 13}
-          textAnchor="middle"
-          dominantBaseline="middle"
-          style={{ cursor: "move" }}
-        >
-          {o.text}
-        </text>
+        <g>
+          {o.leaderFrom && (
+            <line
+              x1={o.leaderFrom[0]}
+              y1={o.leaderFrom[1]}
+              x2={p[0]}
+              y2={p[1]}
+              stroke={color}
+              strokeWidth={pixel * 0.7}
+              pointerEvents="none"
+            />
+          )}
+          <text
+            {...shared}
+            x={p[0]}
+            y={p[1]}
+            fill={color}
+            fontFamily="Georgia,serif"
+            fontSize={o.size || pixel * 13}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            style={{ cursor: "move" }}
+            paintOrder="stroke"
+            stroke="#e9d9af"
+            strokeWidth={pixel * 2.5}
+            strokeLinejoin="round"
+          >
+            {o.text}
+          </text>
+        </g>
       );
     if (o.kind === "symbol")
       return (

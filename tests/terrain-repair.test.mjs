@@ -129,7 +129,7 @@ test("one illustration scene filters world/country/city and keeps manual labels 
   const config = newIllustration("world", { x: 0, y: 0, w: 2, h: 1 });
   assert.deepEqual(
     scopeEntities(entities, state, config).map((e) => e.id),
-    ["country", "capital"],
+    ["country", "capital", "city"],
   );
   const country = { ...config, scope: "country", focus: "country" };
   assert.ok(

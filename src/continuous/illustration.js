@@ -1,5 +1,6 @@
 import { anchor, contains, bounds, projectToMap } from "./geometry.js";
 import { riverFeatures, riverVisible } from "./rivers.js";
+import { placeLabel } from "./label-placement.js";
 export const layerNames = [
   "Paper",
   "Relief",
@@ -69,7 +70,13 @@ export function scopeEntities(entities, state, config) {
       b.y + b.h < extent.y
     )
       return false;
-    if (whole) return countryKinds.has(e.kind) || e.kind === "capital";
+    if (whole)
+      return (
+        countryKinds.has(e.kind) ||
+        e.kind === "capital" ||
+        e.kind === "city" ||
+        (config.scope === "continent" && e.kind === "town")
+      );
     if (
       config.scope === "country" &&
       ["house", "building", "district", "lot", "street"].includes(e.kind)
@@ -158,7 +165,13 @@ export function buildIllustration(
         position: anchor(e.points, e.geometry),
         country: countryKinds.has(e.kind),
         polygon: e.geometry === "polygon" ? e.points : null,
-        priority: countryKinds.has(e.kind) ? 0 : e.kind === "capital" ? 1 : 3,
+        priority: countryKinds.has(e.kind)
+          ? 0
+          : e.kind === "capital"
+            ? 1
+            : e.kind === "city"
+              ? 2
+              : 3,
         color: ink,
       });
   }
@@ -295,79 +308,15 @@ export function buildIllustration(
   for (const label of labels.sort(
     (a, b) => a.priority - b.priority || a.id.localeCompare(b.id),
   )) {
-    const override = config.objects[label.id],
-      size = label.country ? 15 : 11,
-      ww = Math.max(12, label.text.length * size * 0.57) * pixel,
-      hh = size * 1.25 * pixel;
-    const origin = label.position;
-    const offsets = label.country
-      ? [
-          [0, 0],
-          [-ww * 0.2, 0],
-          [ww * 0.2, 0],
-          [0, -hh],
-          [0, hh],
-        ]
-      : [
-          [ww / 2 + 6 * pixel, -hh / 2],
-          [ww / 2 + 6 * pixel, hh / 2],
-          [-ww / 2 - 6 * pixel, -hh / 2],
-          [0, -hh],
-        ];
-    let chosen = null;
-    for (const [dx, dy] of offsets) {
-      const p = [origin[0] + dx, origin[1] + dy],
-        box = { x: p[0] - ww / 2, y: p[1] - hh / 2, w: ww, h: hh };
-      if (box.x < x || box.y < y || box.x + ww > x + w || box.y + hh > y + h)
-        continue;
-      if (
-        label.country &&
-        label.polygon &&
-        ![
-          [box.x, box.y],
-          [box.x + ww, box.y],
-          [box.x, box.y + hh],
-          [box.x + ww, box.y + hh],
-          p,
-        ].every((q) => contains(q, label.polygon))
-      )
-        continue;
-      if (
-        occupied.some(
-          (b) =>
-            box.x < b.x + b.w &&
-            box.x + ww > b.x &&
-            box.y < b.y + b.h &&
-            box.y + hh > b.y,
-        )
-      )
-        continue;
-      chosen = { p, box };
-      break;
-    }
-    if (override?.position)
-      chosen = {
-        p: override.position,
-        box: {
-          x: override.position[0] - ww / 2,
-          y: override.position[1] - hh / 2,
-          w: ww,
-          h: hh,
-        },
-      };
-    if (chosen) {
-      occupied.push(chosen.box);
-      push({ ...label, position: chosen.p, size: pixel * size });
-    } else {
-      push({
-        ...label,
-        position: origin,
-        size: pixel * size,
-        hidden: true,
-        placementWarning:
-          "No collision-free label position fits; place it manually.",
-      });
-    }
+    const { box, ...placement } = placeLabel(
+      label,
+      config.bounds,
+      pixel,
+      occupied,
+      config.objects[label.id],
+    );
+    occupied.push(box);
+    push({ ...label, ...placement });
   }
   for (const [id, o] of Object.entries(config.objects))
     if (!objects.some((e) => e.id === id) && !o.source) objects.push(o);
