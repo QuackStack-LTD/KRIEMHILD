@@ -97,3 +97,10 @@ This is not ZIP corruption; the supplied GitHub ZIP contains canonical bytes.
 The verifier now uses `git -c core.autocrlf=false -c core.eol=lf archive` to
 produce platform-independent source bytes without changing global Git settings.
 The failed strict verification output is preserved separately from the final ZIP.
+
+Clean-source JavaScript integration tests also require the compiled React app:
+`cmd/kriemhild` refuses to start without `dist/index.html`. The verifier and README
+therefore build the frontend after `npm ci` and before `npm test`. Running tests
+before that build produced explicit server-startup failures in collaboration and
+project-restart tests; both failures are preserved in the earlier verification
+directory. This prerequisite is independent of ZIP extraction and Go compilation.

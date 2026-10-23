@@ -76,8 +76,9 @@ Use **View → Save → Export world ZIP** for a portable backup of a completed 
 ```sh
 go test ./...
 go vet ./...
-npm test
+npm ci
 npm run build
+npm test
 ```
 
 `npm test` includes a real Go process restart and continuous ZIP round trip. Go integration

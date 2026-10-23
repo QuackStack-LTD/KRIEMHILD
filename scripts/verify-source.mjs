@@ -86,13 +86,14 @@ try {
   report.extracted = source;
   run('go-version', go, ['version'], source);
   run('go-env', go, ['env', 'GOMOD'], source);
-  run('go-build', go, ['build', './...'], source);
-  run('go-test', go, ['test', './...', '-timeout', process.env.KRIEMHILD_TEST_TIMEOUT || '10m'], source);
   run('npm-version', 'npm', ['--version'], source);
   if (run('npm-ci', 'npm', ['ci'], source).status === 0) {
-    run('npm-test', 'npm', ['test'], source);
-    run('frontend-build', 'npm', ['run', 'build'], source);
+    // Integration tests launch cmd/kriemhild, which requires dist/index.html.
+    if (run('frontend-build', 'npm', ['run', 'build'], source).status === 0)
+      run('npm-test', 'npm', ['test'], source);
   }
+  run('go-build', go, ['build', './...'], source);
+  run('go-test', go, ['test', './...', '-timeout', process.env.KRIEMHILD_TEST_TIMEOUT || '10m'], source);
   report.passed = report.checks.every(c => c.exit === 0);
 } catch (e) {
   report.error = e.message;
