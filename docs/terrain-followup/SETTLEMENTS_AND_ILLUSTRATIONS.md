@@ -73,8 +73,9 @@ The existing bounded terrain cache holds derived selection responses.
 
 The decorative map border has been removed. Saving produces two PNGs in one
 transaction: a square map and a separate 3:1 banner with the decoration layer
-(including compass, scale and title ornament) removed. Both retain the source
-geographic extent without cropping it. Export width is bounded at 4096 for this
+(including compass, scale and title ornament) removed. The square map retains
+the complete geographic extent; the banner uses a centered wide crop to fill
+its image rather than letterboxing a square map in empty paper. Export width is bounded at 4096 for this
 two-image operation; individual stored images retain the existing 16 MP limit,
 and the combined upload is limited to 64 MiB. Both blobs travel in World export/
 import and survive database restart. Legacy illustrations without a banner

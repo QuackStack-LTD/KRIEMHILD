@@ -149,6 +149,9 @@ export async function illustrationAssets(svg, width = 2048) {
   svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
   const map = await paint(svg, width, width);
   const banner = svg.cloneNode(true);
+  // A banner is a wide view into the map, not a square map letterboxed in paper.
+  // Only this derivative crops; the primary map retains the complete geography.
+  banner.setAttribute("preserveAspectRatio", "xMidYMid slice");
   for (const e of banner.querySelectorAll(
     '[data-illustration-layer="decoration"]',
   ))
