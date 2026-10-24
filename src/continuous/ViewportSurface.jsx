@@ -6,6 +6,7 @@ import {
 } from "./terrain-pyramid.js";
 import { previewRequest } from "./preview-quality.js";
 import { compositePreview } from "./preview-composite.js";
+import { ProjectedRaster } from "./MapProjection.js";
 
 const pyramid = new TerrainPyramid();
 const FrameContext = createContext(null);
@@ -42,14 +43,10 @@ export function ViewportLayer({ style, primary = false }) {
       pointerEvents="none"
     >
       {layers.map((layer) => (
-        <image
+        <ProjectedRaster
           key={layer.image.url}
-          href={layer.image.url}
-          x={layer.bounds.x}
-          y={layer.bounds.y}
-          width={layer.bounds.w}
-          height={layer.bounds.h}
-          preserveAspectRatio="none"
+          frame={layer}
+          image={layer.image}
           data-generation={layer.generation}
           data-revision={layer.revision}
           data-lod={layer.z}
@@ -87,6 +84,7 @@ export default function ViewportSurface({
   previewHillshade,
   detailLevel,
   onDiagnostics,
+  onProgress,
 }) {
   const [frame, setFrame] = useState(null),
     [overview, setOverview] = useState(null),
@@ -137,7 +135,21 @@ export default function ViewportSurface({
     counters.current.outstanding++;
     const started = performance.now();
     let firstMs;
+    let lastProgress = 0;
     const report = (event) => {
+      if (event.event === "progress") {
+        const now = performance.now();
+        if (
+          live &&
+          (now - lastProgress > 75 ||
+            event.completed === 0 ||
+            event.completed === event.total)
+        ) {
+          onProgress?.(event);
+          lastProgress = now;
+        }
+        return;
+      }
       record(event);
       if (event.event !== "frame") return;
       firstMs ??= performance.now() - started;
@@ -157,6 +169,12 @@ export default function ViewportSurface({
       });
     };
     onLoading?.(1);
+    onProgress?.({
+      generation: current,
+      phase: "pending",
+      completed: 0,
+      total: 0,
+    });
     record({
       event: "request",
       generation: current,

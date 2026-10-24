@@ -77,6 +77,7 @@ export class CartographicGeometry {
     coasts = noCoasts,
     level,
     fast = false,
+    pixel,
   }) {
     const sourceKey = (source) => {
       if (!source) return 0;
@@ -91,6 +92,7 @@ export class CartographicGeometry {
       sourceKey(coasts),
       level,
       fast,
+      pixel,
     ]);
     const hit = this.cache.get(key);
     if (hit) {
@@ -121,7 +123,10 @@ export class CartographicGeometry {
         ),
       )
       .forEach(include);
-    const tolerance = cartographicLevels[level].tolerance * (fast ? 1.6 : 1);
+    const tolerance = Math.min(
+      cartographicLevels[level].tolerance * (fast ? 1.6 : 1),
+      Number.isFinite(pixel) ? pixel * 0.2 : Infinity,
+    );
     const value = {
       rivers: all
         .filter((f) => selected.has(f.sourceId))

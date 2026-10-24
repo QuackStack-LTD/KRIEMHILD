@@ -128,6 +128,7 @@ func NewWithOptions(dist string, options Options) *Server {
 	s.mux.HandleFunc("POST /api/sessions/{id}/world/illustration", s.illustrationData)
 	s.mux.HandleFunc("GET /api/sessions/{id}/world/artworks", s.listArtworks)
 	s.mux.HandleFunc("POST /api/sessions/{id}/world/artworks", s.saveArtwork)
+	s.mux.HandleFunc("POST /api/sessions/{id}/illustrated-maps", s.saveIllustratedMap)
 	s.mux.HandleFunc("GET /api/sessions/{id}/world/natural", s.worldNatural)
 	s.mux.HandleFunc("GET /api/sessions/{id}/world/climate", s.worldClimateOverlay)
 	s.mux.HandleFunc("POST /api/sessions/{id}/world", s.worldCommand)

@@ -140,7 +140,7 @@ export function RelationEditor({
           value={value.destination}
           onChange={(e) => field("destination", e.target.value)}
         >
-          <option value="">Choose an entity</option>
+          <option value="">Choose a record</option>
           {entities
             .filter(
               (e) => e.id !== value.source && matches(e, rule?.destinations),
@@ -169,7 +169,7 @@ export function RelationEditor({
         />
       </label>
       <label>
-        Context entity
+        Context record
         <select
           disabled={value.automatic}
           value={value.contextId || ""}
@@ -185,9 +185,9 @@ export function RelationEditor({
       </label>
       {onCreate && !value.automatic && (
         <details>
-          <summary>Create a context entity</summary>
+          <summary>Create a context record</summary>
           <p>
-            Create an independent institution, event or cultural entity for this
+            Create an independent institution, event or cultural record for this
             connection.
           </p>
           <label>
@@ -375,7 +375,7 @@ export default function Profile({
         return (
           <li key={g.other}>
             <button type="button" onClick={() => other && onProfile(other)}>
-              {other?.name || "Unknown entity"}
+              {other?.name || "Unknown record"}
             </button>
             <span>
               {g.meanings
@@ -441,16 +441,29 @@ export default function Profile({
           {entity.deleted ? " · historical, removed" : ""}
         </span>
       </div>
-      {place && (
+      {(place || p.illustratedMap) && (
         <section className="settlement-banner">
-          {detailMap ? (
+          {p.illustratedMap ? (
+            <img
+              className="illustrated-map-banner"
+              src={`/api/worlds/${doc.world.id}/library/${encodeURIComponent(p.illustratedMap.fileId)}?age=${entity.ageId}&version=${encodeURIComponent(p.illustratedMap.version)}&inline=1`}
+              alt={`${entity.name} illustrated map`}
+            />
+          ) : detailMap ? (
             <MapPreview doc={doc} map={detailMap} />
           ) : (
             <SettlementPlaceholder />
           )}
           <div>
             <h1>{entity.name}</h1>
-            {!entity.deleted && (
+            {p.illustratedMap && (
+              <a
+                href={`/worlds/${doc.world.id}/library?age=${entity.ageId}&record=${encodeURIComponent(p.illustratedMap.fileId)}`}
+              >
+                Open {entity.name} illustrated map
+              </a>
+            )}
+            {!entity.deleted && place && (
               <button className="primary" onClick={() => onSettlement(entity)}>
                 {detailMap ? "Edit settlement map" : "Draw settlement map"}
               </button>
@@ -614,8 +627,7 @@ export default function Profile({
               <section className="profile-section">
                 <h2>Names in context</h2>
                 <p>
-                  Alternate names belong to this identity, not separate
-                  entities.
+                  Alternate names belong to this identity, not separate records.
                 </p>
                 {(draft.names || []).map((n, i) => (
                   <div className="name-variant" key={i}>

@@ -58,6 +58,39 @@ export function meshHeight(m, p) {
         h(i + 1, j) * (1 - v);
 }
 
+export function meshBulkWater(m, p) {
+  if (!m.waterKinds) return false;
+  const b = meshBounds(m),
+    x = Math.max(
+      0,
+      Math.min(m.columns - 1, ((p[0] - b.x) / b.w) * (m.columns - 1)),
+    ),
+    y = Math.max(0, Math.min(m.rows - 1, ((p[1] - b.y) / b.h) * (m.rows - 1)));
+  const i = Math.min(m.columns - 2, Math.floor(x)),
+    j = Math.min(m.rows - 2, Math.floor(y)),
+    u = x - i,
+    v = y - j;
+  const weights =
+    u + v <= 1
+      ? [
+          [i, j, 1 - u - v],
+          [i + 1, j, u],
+          [i, j + 1, v],
+        ]
+      : [
+          [i + 1, j + 1, u + v - 1],
+          [i, j + 1, 1 - u],
+          [i + 1, j, 1 - v],
+        ];
+  return (
+    weights.reduce(
+      (sum, [a, b, w]) =>
+        sum + ([1, 2].includes(m.waterKinds[b * m.columns + a]) ? w : 0),
+      0,
+    ) >= 0.5
+  );
+}
+
 // Break at every mesh edge (including diagonals). Each resulting line segment
 // lies in exactly one terrain triangle, so its side view follows the terrain.
 export function drapeSegment(m, a, b) {

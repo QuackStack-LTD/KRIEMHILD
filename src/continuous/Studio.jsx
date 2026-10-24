@@ -11,6 +11,9 @@ import {
 import { request, defaults, presets } from "./api.js";
 import TileSurface from "./TileSurface.jsx";
 import ViewportSurface, { ViewportLayer } from "./ViewportSurface.jsx";
+import { ProjectionContext } from "./MapProjection.js";
+import { mapProjection } from "./projection.js";
+import { clipLine, clipPolygon, intersects } from "./clip.js";
 import {
   normalizeCamera,
   visibleTiles,
@@ -69,8 +72,6 @@ function download(blob, name) {
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 const toMap = (p, state) => [(p[0] / (state.W - 1)) * 2, p[1] / (state.H - 1)];
-const pointsText = (points, state) =>
-  points.map((p) => toMap(p, state).join(",")).join(" ");
 
 export default function Studio({ initialState, onExit }) {
   const [show3D, setShow3D] = useState(false);
@@ -100,6 +101,7 @@ export default function Studio({ initialState, onExit }) {
     [artSelected, setArtSelected] = useState(null),
     [artTerrain, setArtTerrain] = useState(null);
   const [worldContext, setWorldContext] = useState(null);
+  const [savedIllustration, setSavedIllustration] = useState(null);
   const savedView =
     initialState?.projectUI?.continuousView ||
     initialState?.project?.view ||
@@ -182,6 +184,7 @@ export default function Studio({ initialState, onExit }) {
   const [renderRetry, setRenderRetry] = useState(0);
   const [renderError, setRenderError] = useState("");
   const [renderDiagnostics, setRenderDiagnostics] = useState(null);
+  const [terrainProgress, setTerrainProgress] = useState(null);
   const [hydrologyDiagnostics, setHydrologyDiagnostics] = useState(null);
   const geometryCache = useRef(new CartographicGeometry());
   const presentation = useRef();
@@ -191,6 +194,21 @@ export default function Studio({ initialState, onExit }) {
   const displayStyle = illustrating ? "atlas" : style;
   const previewInfo = previewRequest({ camera, width, height }, previewQuality);
   const geographicViewport = visibleViewport(camera, width, height);
+  const projection = useMemo(
+    () => mapProjection(camera, width, height),
+    [camera, width, height],
+  );
+  const drawPoint = (p) => projection.point(p);
+  const drawProjectPoint = (p) => drawPoint(projectToMap(p, state));
+  const drawProjectPoints = (points) =>
+    points
+      .map(drawProjectPoint)
+      .map((p) => p.join(","))
+      .join(" ");
+  const drawPath = (points) =>
+    clipLine(points, projection.bounds)
+      .map((part) => pathText(part.map(drawPoint)))
+      .join(" ");
   const artObjects = useMemo(
     () =>
       art && state
@@ -237,6 +255,7 @@ export default function Studio({ initialState, onExit }) {
     return () => abort.abort();
   }, [state?.historyWorldId, state?.historicalMap?.ageId]);
   function changeArt(next, commit = false) {
+    setSavedIllustration(null);
     setArt(next);
     if (commit)
       void run(() => command({ kind: "illustration", illustration: next }));
@@ -269,6 +288,7 @@ export default function Studio({ initialState, onExit }) {
       };
     }
     const next = newIllustration(scope, extent, focus?.id || "");
+    if (focus?.name) next.title = `${focus.name} atlas`.slice(0, 160);
     const saved = state.project.illustrations?.[next.id];
     const current =
       saved && focus ? { ...saved, bounds: next.bounds } : saved || next;
@@ -835,9 +855,16 @@ export default function Studio({ initialState, onExit }) {
     element.addEventListener("wheel", zoom, { passive: false });
     return () => element.removeEventListener("wheel", zoom);
   }, [camera, width]);
-  async function exportMap(format) {
+  async function exportMap(
+    format,
+    outputCamera = camera,
+    outputState = active.current,
+  ) {
     if (!svg.current) return;
-    if ((exportWidth * exportWidth * camera.h) / camera.w > 16777216)
+    if (
+      (exportWidth * exportWidth * outputCamera.h) / outputCamera.w >
+      16777216
+    )
       throw Error("Choose a smaller export width for this tall view.");
     const clone = svg.current.cloneNode(true);
     if (!illustrating)
@@ -845,16 +872,32 @@ export default function Studio({ initialState, onExit }) {
         clone,
         geometryCache.current.derive({
           identity: sourceIdentity,
-          revision: state.project.revision,
+          revision: outputState.project.revision,
           rivers,
           coasts,
           level: detailLevel,
           fast: false,
         }),
+        projection.point,
+        outputCamera,
       );
     clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
     clone.setAttribute("width", String(exportWidth));
-    clone.setAttribute("height", String((exportWidth * camera.h) / camera.w));
+    clone.setAttribute(
+      "height",
+      String((exportWidth * outputCamera.h) / outputCamera.w),
+    );
+    const exportBounds = projection.box(outputCamera);
+    clone.setAttribute(
+      "viewBox",
+      `${exportBounds.x} ${exportBounds.y} ${exportBounds.w} ${exportBounds.h}`,
+    );
+    for (const mask of clone.querySelectorAll("mask")) {
+      mask.setAttribute("x", String(exportBounds.x));
+      mask.setAttribute("y", String(exportBounds.y));
+      mask.setAttribute("width", String(exportBounds.w));
+      mask.setAttribute("height", String(exportBounds.h));
+    }
     // Preview transactions are editor state, not export quality or content.
     for (const frame of clone.querySelectorAll(
       '[aria-label="Committed terrain viewport"]',
@@ -874,12 +917,12 @@ export default function Studio({ initialState, onExit }) {
       '[aria-label="Continuous terrain tiles"]',
     )) {
       terrain.replaceChildren();
-      const queue = visibleTiles(camera, exportWidth, 1);
+      const queue = visibleTiles(outputCamera, exportWidth, 1);
       const worker = async () => {
         while (queue.length) {
           const t = queue.shift();
           const r = await fetch(
-            `/api/${base}/terrain/tiles/${t.z}/${t.x}/${t.y}?size=${t.size}&style=${terrain.getAttribute("data-terrain-style") || displayStyle}&strict=1&revision=${state.project.revision}`,
+            `/api/sessions/${outputState.id}/terrain/tiles/${t.z}/${t.x}/${t.y}?size=${t.size}&style=${terrain.getAttribute("data-terrain-style") || displayStyle}&strict=1&revision=${outputState.project.revision}`,
           );
           if (!r.ok)
             throw Error(
@@ -895,12 +938,18 @@ export default function Studio({ initialState, onExit }) {
             "http://www.w3.org/2000/svg",
             "image",
           );
-          for (const [k, v] of Object.entries({
-            href: uri,
+          const tile = projection.box({
             x: t.x * t.span,
             y: t.y * t.span,
-            width: t.span,
-            height: t.span,
+            w: t.span,
+            h: t.span,
+          });
+          for (const [k, v] of Object.entries({
+            href: uri,
+            x: tile.x,
+            y: tile.y,
+            width: tile.w,
+            height: tile.h,
             preserveAspectRatio: "none",
           }))
             img.setAttribute(k, String(v));
@@ -944,11 +993,13 @@ export default function Studio({ initialState, onExit }) {
       });
       const c = document.createElement("canvas");
       c.width = exportWidth;
-      c.height = Math.round((exportWidth * camera.h) / camera.w);
+      c.height = Math.round((exportWidth * outputCamera.h) / outputCamera.w);
       c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
       const png = await new Promise((resolve) =>
         c.toBlob(resolve, "image/png"),
       );
+      if (!png) throw Error("The illustration image could not be rendered.");
+      if (format === "snapshot") return png;
       if (format === "png") {
         download(png, "KRIEMHILD-map.png");
         return;
@@ -967,6 +1018,54 @@ export default function Studio({ initialState, onExit }) {
     }
   }
   const diagnostics = state?.continuous?.diagnostics;
+  async function saveIllustration() {
+    if (!art) return;
+    setSavedIllustration(null);
+    const design = art;
+    await ensureWorldMap();
+    await command({ kind: "illustration", illustration: design });
+    await save();
+    const source = active.current;
+    const png = await exportMap("snapshot", {
+      x: design.bounds[0],
+      y: design.bounds[1],
+      w: design.bounds[2],
+      h: design.bounds[3],
+    });
+    if (
+      active.current?.id !== source.id ||
+      active.current.project.revision !== source.project.revision
+    )
+      throw Error(
+        "The map changed while rendering; save the illustration again.",
+      );
+    const form = new FormData();
+    form.append(
+      "metadata",
+      JSON.stringify({
+        sourceRevision: source.project.revision,
+        illustration: design,
+      }),
+    );
+    form.append("file", png, "illustration.png");
+    const response = await fetch(
+      `/api/sessions/${source.id}/illustrated-maps`,
+      { method: "POST", body: form },
+    );
+    const result = await response.json();
+    if (!response.ok)
+      throw Error(result.error || "Could not save the illustration.");
+    setWorldContext(result.document);
+    const folder = result.document.entities.find(
+      (e) =>
+        e.id === result.archiveId && e.ageId === source.historicalMap.ageId,
+    );
+    setSavedIllustration({
+      name: design.title,
+      folder: folder?.name || "Illustrated maps",
+      href: `/worlds/${source.historyWorldId}/library?age=${source.historicalMap.ageId}&record=${result.fileId}`,
+    });
+  }
   const visibleEntities = entities
     .filter(
       (e) =>
@@ -998,6 +1097,7 @@ export default function Studio({ initialState, onExit }) {
         coasts,
         level: detailLevel,
         fast: previewQuality.preset === "performance",
+        pixel: 1 / projection.scale,
       }),
     [
       sourceIdentity,
@@ -1006,7 +1106,21 @@ export default function Studio({ initialState, onExit }) {
       coasts,
       detailLevel,
       previewQuality.preset,
+      projection.scale,
     ],
+  );
+  const displayedRivers = useMemo(
+    () =>
+      (style === "river-network" ? riverShapes : geography.rivers)
+        .filter((f) => intersects(f.bounds, projection.bounds))
+        .map((f) => ({
+          feature: f,
+          path: clipLine(f.points, projection.bounds)
+            .map((part) => pathText(part.map(projection.point)))
+            .join(" "),
+        }))
+        .filter((f) => f.path),
+    [style, riverShapes, geography, projection],
   );
   const featureIndex = useMemo(
     () =>
@@ -1015,7 +1129,7 @@ export default function Studio({ initialState, onExit }) {
           ...e,
           points: e.points.map((p) => projectToMap(p, state)),
         })),
-        ...(showRivers ? geography.rivers : []),
+        ...(showRivers ? displayedRivers.map((f) => f.feature) : []),
       ]),
     [
       entities,
@@ -1029,6 +1143,7 @@ export default function Studio({ initialState, onExit }) {
       showRivers,
       riverShapes,
       geography,
+      displayedRivers,
     ],
   );
   function feature(e, preview = false) {
@@ -1037,7 +1152,7 @@ export default function Studio({ initialState, onExit }) {
     const common = {
       key: e.id,
       stroke: isSelected ? "#fff4b1" : e.color || "#ddba7b",
-      strokeWidth: (camera.w / width) * (e.kind === "road" ? 2 : 1.2),
+      strokeWidth: e.kind === "road" ? 2 : 1.2,
       fill:
         f.geometry === "polygon"
           ? e.kind === "house"
@@ -1066,17 +1181,38 @@ export default function Studio({ initialState, onExit }) {
       },
     };
     return (
-      <g key={e.id} opacity={preview ? 0.65 : 1}>
+      <g key={e.id} data-map-feature={e.id} opacity={preview ? 0.65 : 1}>
         {f.geometry === "polygon" ? (
-          <polygon {...common} points={pointsText(f.points, state)} />
+          <>
+            <polygon
+              {...common}
+              stroke="none"
+              points={projection.points(
+                clipPolygon(
+                  f.points.map((p) => projectToMap(p, state)),
+                  projection.bounds,
+                ),
+              )}
+            />
+            <path
+              {...common}
+              fill="none"
+              d={drawPath(
+                [...f.points, f.points[0]].map((p) => projectToMap(p, state)),
+              )}
+            />
+          </>
         ) : f.geometry === "line" ? (
-          <polyline {...common} points={pointsText(f.points, state)} />
+          <path
+            {...common}
+            d={drawPath(f.points.map((p) => projectToMap(p, state)))}
+          />
         ) : (
           <circle
             {...common}
-            cx={toMap(f.points[0], state)[0]}
-            cy={toMap(f.points[0], state)[1]}
-            r={(camera.w / width) * 4}
+            cx={drawProjectPoint(f.points[0])[0]}
+            cy={drawProjectPoint(f.points[0])[1]}
+            r={4}
             fill={e.color}
           />
         )}
@@ -1085,10 +1221,10 @@ export default function Studio({ initialState, onExit }) {
           f.kind !== "road" &&
           f.kind !== "district" && (
             <text
-              x={toMap(f.points[0], state)[0]}
-              y={toMap(f.points[0], state)[1] - (camera.w / width) * 8}
+              x={drawProjectPoint(f.points[0])[0]}
+              y={drawProjectPoint(f.points[0])[1] - 8}
               fill="#f0e6c8"
-              fontSize={(camera.w / width) * 12}
+              fontSize={12}
               textAnchor="middle"
               pointerEvents="none"
             >
@@ -1179,8 +1315,8 @@ export default function Studio({ initialState, onExit }) {
                     selected.kind,
                   );
                 artScope(
-                  country ? "country" : city ? "city" : "world",
-                  country || city ? selected : undefined,
+                  country ? "country" : city || selected ? "city" : "world",
+                  selected || undefined,
                 );
               }
             }}
@@ -1250,182 +1386,105 @@ export default function Studio({ initialState, onExit }) {
           </button>
         </nav>
         <main className="studio-stage" ref={stage}>
-          <svg
-            ref={svg}
-            role="img"
-            aria-label="Interactive continuous world map"
-            tabIndex={0}
-            viewBox={`${camera.x} ${camera.y} ${camera.w} ${camera.h}`}
-            onPointerDown={down}
-            onPointerMove={move}
-            onPointerUp={up}
-            onPointerCancel={() => {
-              drag.current = null;
-            }}
-          >
-            <rect x="-100" y="-100" width="200" height="200" fill="#101d2a" />
-            {state && (
-              <ViewportSurface
-                active={viewportRenderer}
-                enabled={!show3D}
-                session={state.id}
-                revision={state.project.revision}
-                invalidations={invalidations}
-                identity={`${state.worldId}:${state.id}`}
-                camera={camera}
-                width={width}
-                height={height}
-                previewQuality={illustrating ? undefined : previewQuality}
-                previewHillshade={
-                  illustrating || displayStyle === "terrain"
-                    ? undefined
-                    : hillshade
-                }
-                onDiagnostics={setRenderDiagnostics}
-                detailLevel={detailLevel}
-                retry={renderRetry}
-                onLoading={setLoading}
-                onError={setRenderError}
-                styles={[
-                  displayStyle,
-                  ...(displayStyle !== "terrain" &&
-                  !illustrating &&
-                  hillshade > 0 &&
-                  previewQuality.preset !== "performance"
-                    ? ["hillshade"]
-                    : []),
-                  ...(illustrating ? ["relief-shadow", "shore-ink"] : []),
-                ]}
-              >
-                {viewportRenderer ? (
-                  <ViewportLayer style={displayStyle} primary />
-                ) : (
-                  <TileSurface
-                    enabled={!show3D}
-                    session={state.id}
-                    revision={state.project.revision}
-                    invalidations={invalidations}
-                    style={displayStyle}
-                    identity={`${state.worldId}:${state.id}`}
-                    camera={camera}
-                    width={width}
-                    height={height}
-                    onLoading={setLoading}
-                  />
-                )}
-                {hillshade > 0 &&
-                  !illustrating &&
-                  displayStyle !== "terrain" && (
-                    <g opacity={hillshade} pointerEvents="none">
+          <ProjectionContext.Provider value={projection}>
+            <svg
+              ref={svg}
+              role="img"
+              aria-label="Interactive continuous world map"
+              tabIndex={0}
+              viewBox={`0 0 ${width} ${height}`}
+              data-camera={JSON.stringify(camera)}
+              onPointerDown={down}
+              onPointerMove={move}
+              onPointerUp={up}
+              onPointerCancel={() => {
+                drag.current = null;
+              }}
+            >
+              <rect x="0" y="0" width={width} height={height} fill="#101d2a" />
+              {state && (
+                <ViewportSurface
+                  active={viewportRenderer}
+                  enabled={!show3D}
+                  session={state.id}
+                  revision={state.project.revision}
+                  invalidations={invalidations}
+                  identity={`${state.worldId}:${state.id}`}
+                  camera={camera}
+                  width={width}
+                  height={height}
+                  previewQuality={illustrating ? undefined : previewQuality}
+                  previewHillshade={
+                    illustrating || displayStyle === "terrain"
+                      ? undefined
+                      : hillshade
+                  }
+                  onDiagnostics={setRenderDiagnostics}
+                  onProgress={setTerrainProgress}
+                  detailLevel={detailLevel}
+                  retry={renderRetry}
+                  onLoading={setLoading}
+                  onError={setRenderError}
+                  styles={[
+                    displayStyle,
+                    ...(displayStyle !== "terrain" &&
+                    !illustrating &&
+                    hillshade > 0 &&
+                    previewQuality.preset !== "performance"
+                      ? ["hillshade"]
+                      : []),
+                    ...(illustrating ? ["relief-shadow", "shore-ink"] : []),
+                    ...(showRivers || illustrating ? ["river-mask"] : []),
+                  ]}
+                >
+                  <defs>
+                    <mask
+                      id="terrain-river-mask"
+                      maskUnits="userSpaceOnUse"
+                      x="0"
+                      y="0"
+                      width={width}
+                      height={height}
+                    >
                       {viewportRenderer ? (
-                        <ViewportLayer style="hillshade" />
+                        <ViewportLayer style="river-mask" />
                       ) : (
                         <TileSurface
                           enabled={!show3D}
                           session={state.id}
                           revision={state.project.revision}
                           invalidations={invalidations}
-                          style="relief-shadow"
                           identity={`${state.worldId}:${state.id}`}
+                          style="river-mask"
                           camera={camera}
                           width={width}
                           height={height}
                         />
                       )}
-                    </g>
+                    </mask>
+                  </defs>
+                  {viewportRenderer ? (
+                    <ViewportLayer style={displayStyle} primary />
+                  ) : (
+                    <TileSurface
+                      enabled={!show3D}
+                      session={state.id}
+                      revision={state.project.revision}
+                      invalidations={invalidations}
+                      style={displayStyle}
+                      identity={`${state.worldId}:${state.id}`}
+                      camera={camera}
+                      width={width}
+                      height={height}
+                      onLoading={setLoading}
+                    />
                   )}
-                {!illustrating &&
-                  displayStyle === "physical-atlas" &&
-                  !state.continuous.analysisStale && (
-                    <g
-                      fill="none"
-                      stroke="#556c68"
-                      strokeOpacity=".65"
-                      strokeWidth={(camera.w / width) * 0.65}
-                      pointerEvents="none"
-                    >
-                      {geography.coasts.map((p, i) => (
-                        <path key={i} data-coast-index={i} d={pathText(p)} />
-                      ))}
-                    </g>
-                  )}
-                {showRivers && !illustrating && (
-                  <g
-                    fill="none"
-                    stroke="#71b7d3"
-                    strokeOpacity=".7"
-                    pointerEvents="none"
-                  >
-                    {(style === "river-network"
-                      ? riverShapes
-                      : geography.rivers
-                    ).map((f) => {
-                      const r = f.river;
-                      return (
-                        <path
-                          key={f.id}
-                          data-river-id={f.id}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          stroke={
-                            style === "river-network"
-                              ? {
-                                  major: "#17488c",
-                                  regional: "#328bd3",
-                                  stream: "#6fcce4",
-                                  ephemeral: "#9b7345",
-                                  distributary: "#36aaaa",
-                                }[r.class] || "#71b7d3"
-                              : undefined
-                          }
-                          strokeDasharray={
-                            r.class === "ephemeral"
-                              ? `${(camera.w / width) * 3} ${(camera.w / width) * 2}`
-                              : undefined
-                          }
-                          strokeWidth={riverWidth(
-                            r,
-                            camera.w / width,
-                            state.continuous.spec.radiusKm,
-                          )}
-                          d={pathText(f.points)}
-                        />
-                      );
-                    })}
-                  </g>
-                )}
-                {!illustrating && visibleEntities.map((e) => feature(e))}
-                {illustrating && art && (
-                  <IllustrationScene
-                    config={art}
-                    objects={artObjects}
-                    selected={artSelected}
-                    onSelect={setArtSelected}
-                    onOverride={overrideArt}
-                    position={position}
-                    state={state}
-                    pixel={art.bounds[2] / 1200}
-                    coastOverlay={
-                      viewportRenderer ? (
-                        <ViewportLayer style="shore-ink" />
-                      ) : (
-                        <TileSurface
-                          enabled={!show3D}
-                          session={state.id}
-                          revision={state.project.revision}
-                          invalidations={invalidations}
-                          style="shore-ink"
-                          identity={`${state.worldId}:${state.id}`}
-                          camera={camera}
-                          width={width}
-                          height={height}
-                        />
-                      )
-                    }
-                    relief={
+                  {hillshade > 0 &&
+                    !illustrating &&
+                    displayStyle !== "terrain" && (
                       <g opacity={hillshade} pointerEvents="none">
                         {viewportRenderer ? (
-                          <ViewportLayer style="relief-shadow" />
+                          <ViewportLayer style="hillshade" />
                         ) : (
                           <TileSurface
                             enabled={!show3D}
@@ -1440,70 +1499,204 @@ export default function Studio({ initialState, onExit }) {
                           />
                         )}
                       </g>
-                    }
-                  />
-                )}
-                {settlement?.entities.map((e) => feature(e, true))}
-                {!illustrating &&
-                  selected?.points.map((p, i) => (
-                    <circle
-                      key={i}
-                      data-editor-handle="vertex"
-                      cx={toMap(p, state)[0]}
-                      cy={toMap(p, state)[1]}
-                      r={(camera.w / width) * 4}
-                      fill="#fff0a3"
-                      stroke="#473c28"
-                      strokeWidth={camera.w / width}
-                      onPointerDown={(e) => {
-                        e.stopPropagation();
-                        drag.current = {
-                          start: [e.clientX, e.clientY],
-                          vertex: i,
-                          moved: false,
-                        };
-                        svg.current.setPointerCapture(e.pointerId);
-                      }}
-                    />
-                  ))}
-                {draft.length > 0 && (
-                  <polyline
-                    points={pointsText(draft, state)}
-                    fill={tool === "country" ? "#ddc98c33" : "none"}
-                    stroke="#ffe3a2"
-                    strokeWidth={(camera.w / width) * 2}
-                  />
-                )}
-                {inspectionPoint?.identity === sourceIdentity &&
-                  inspectionPoint.revision === state.project.revision && (
-                    <circle
-                      data-editor-handle="selection"
-                      cx={inspectionPoint.point[0]}
-                      cy={inspectionPoint.point[1]}
-                      r={(camera.w / width) * 6}
+                    )}
+                  {!illustrating &&
+                    displayStyle === "physical-atlas" &&
+                    !state.continuous.analysisStale && (
+                      <g
+                        fill="none"
+                        stroke="#556c68"
+                        strokeOpacity=".65"
+                        strokeWidth={0.65}
+                        pointerEvents="none"
+                      >
+                        {geography.coasts.map((p, i) => (
+                          <path
+                            key={i}
+                            data-coast-index={i}
+                            d={pathText(p.map(drawPoint))}
+                          />
+                        ))}
+                      </g>
+                    )}
+                  {showRivers && !illustrating && (
+                    <g
+                      mask="url(#terrain-river-mask)"
                       fill="none"
-                      stroke="#fff4b1"
-                      strokeWidth={(camera.w / width) * 1.5}
+                      stroke="#71b7d3"
+                      strokeOpacity=".7"
                       pointerEvents="none"
+                    >
+                      {displayedRivers.map(({ feature: f, path }) => {
+                        const r = f.river;
+                        return (
+                          <path
+                            key={f.id}
+                            data-river-id={f.id}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            stroke={
+                              style === "river-network"
+                                ? {
+                                    major: "#17488c",
+                                    regional: "#328bd3",
+                                    stream: "#6fcce4",
+                                    ephemeral: "#9b7345",
+                                    distributary: "#36aaaa",
+                                  }[r.class] || "#71b7d3"
+                                : undefined
+                            }
+                            strokeDasharray={
+                              r.class === "ephemeral" ? "3 2" : undefined
+                            }
+                            strokeWidth={
+                              riverWidth(
+                                r,
+                                1 / projection.scale,
+                                state.continuous.spec.radiusKm,
+                              ) * projection.scale
+                            }
+                            d={path}
+                          />
+                        );
+                      })}
+                    </g>
+                  )}
+                  {!illustrating && visibleEntities.map((e) => feature(e))}
+                  {illustrating && art && (
+                    <IllustrationScene
+                      config={art}
+                      objects={artObjects}
+                      selected={artSelected}
+                      onSelect={setArtSelected}
+                      onOverride={overrideArt}
+                      position={position}
+                      state={state}
+                      pixel={art.bounds[2] / 1200}
+                      coastOverlay={
+                        viewportRenderer ? (
+                          <ViewportLayer style="shore-ink" />
+                        ) : (
+                          <TileSurface
+                            enabled={!show3D}
+                            session={state.id}
+                            revision={state.project.revision}
+                            invalidations={invalidations}
+                            style="shore-ink"
+                            identity={`${state.worldId}:${state.id}`}
+                            camera={camera}
+                            width={width}
+                            height={height}
+                          />
+                        )
+                      }
+                      riverMask="url(#terrain-river-mask)"
+                      relief={
+                        <g opacity={hillshade} pointerEvents="none">
+                          {viewportRenderer ? (
+                            <ViewportLayer style="relief-shadow" />
+                          ) : (
+                            <TileSurface
+                              enabled={!show3D}
+                              session={state.id}
+                              revision={state.project.revision}
+                              invalidations={invalidations}
+                              style="relief-shadow"
+                              identity={`${state.worldId}:${state.id}`}
+                              camera={camera}
+                              width={width}
+                              height={height}
+                            />
+                          )}
+                        </g>
+                      }
                     />
                   )}
-                {cursor &&
-                  ["raise", "lower", "smooth", "water", "plant"].includes(
-                    tool,
-                  ) && (
-                    <circle
-                      cx={cursor[0]}
-                      cy={cursor[1]}
-                      r={radius / (Math.PI * state.continuous.spec.radiusKm)}
-                      fill="#ffe5a522"
-                      stroke="#ffe5a5"
-                      strokeWidth={camera.w / width}
-                      pointerEvents="none"
+                  {settlement?.entities.map((e) => feature(e, true))}
+                  {!illustrating &&
+                    selected?.points.map((p, i) => (
+                      <circle
+                        key={i}
+                        data-editor-handle="vertex"
+                        cx={drawProjectPoint(p)[0]}
+                        cy={drawProjectPoint(p)[1]}
+                        r={4}
+                        fill="#fff0a3"
+                        stroke="#473c28"
+                        strokeWidth={1}
+                        onPointerDown={(e) => {
+                          e.stopPropagation();
+                          drag.current = {
+                            start: [e.clientX, e.clientY],
+                            vertex: i,
+                            moved: false,
+                          };
+                          svg.current.setPointerCapture(e.pointerId);
+                        }}
+                      />
+                    ))}
+                  {draft.length > 0 && (
+                    <polyline
+                      points={drawProjectPoints(draft)}
+                      fill={tool === "country" ? "#ddc98c33" : "none"}
+                      stroke="#ffe3a2"
+                      strokeWidth={2}
                     />
                   )}
-              </ViewportSurface>
-            )}
-          </svg>
+                  {inspectionPoint?.identity === sourceIdentity &&
+                    inspectionPoint.revision === state.project.revision && (
+                      <circle
+                        data-editor-handle="selection"
+                        cx={drawPoint(inspectionPoint.point)[0]}
+                        cy={drawPoint(inspectionPoint.point)[1]}
+                        r={6}
+                        fill="none"
+                        stroke="#fff4b1"
+                        strokeWidth={1.5}
+                        pointerEvents="none"
+                      />
+                    )}
+                  {cursor &&
+                    ["raise", "lower", "smooth", "water", "plant"].includes(
+                      tool,
+                    ) && (
+                      <circle
+                        cx={drawPoint(cursor)[0]}
+                        cy={drawPoint(cursor)[1]}
+                        r={
+                          (projection.scale * radius) /
+                          (Math.PI * state.continuous.spec.radiusKm)
+                        }
+                        fill="#ffe5a522"
+                        stroke="#ffe5a5"
+                        strokeWidth={1}
+                        pointerEvents="none"
+                      />
+                    )}
+                </ViewportSurface>
+              )}
+            </svg>
+          </ProjectionContext.Provider>
+          {state && loading > 0 && !show3D && (
+            <div
+              className="studio-detail-loading"
+              role="status"
+              aria-live="polite"
+            >
+              <strong>
+                {terrainProgress?.phase === "final"
+                  ? "Loading terrain details…"
+                  : "Preparing terrain preview…"}
+              </strong>
+              <progress
+                aria-label="Terrain detail loading"
+                max={terrainProgress?.total || 1}
+                value={
+                  terrainProgress?.total ? terrainProgress.completed : undefined
+                }
+              />
+            </div>
+          )}
           {!state && (
             <div className="studio-empty">
               <span>THE SHAPE OF A WORLD</span>
@@ -1549,6 +1742,8 @@ export default function Studio({ initialState, onExit }) {
             {illustrating && art && (
               <IllustrationPanel
                 busy={busy}
+                onSave={() => run(saveIllustration)}
+                saved={savedIllustration}
                 config={art}
                 objects={artObjects}
                 onChange={changeArt}
@@ -2103,7 +2298,7 @@ export default function Studio({ initialState, onExit }) {
                     })
                   }
                 >
-                  Open entity record
+                  Open {selected.name || "this place"} record
                 </button>
                 <button
                   onClick={() =>

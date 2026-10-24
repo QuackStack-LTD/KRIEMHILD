@@ -8,6 +8,7 @@ import {
   drapePolygon,
   meshBounds,
   meshHeight,
+  meshBulkWater,
 } from "./terrain-drape.js";
 import { projectToMap } from "./geometry.js";
 import { bounds as geographicBounds } from "./geometry.js";
@@ -260,11 +261,20 @@ export default function Terrain3D({
         for (const path of paths)
           for (let i = 1; i < path.length; i++) {
             const line = drapeSegment(m, path[i - 1], path[i]);
-            for (let j = 1; j < line.length; j++)
+            for (let j = 1; j < line.length; j++) {
+              if (
+                f.kind === "river" &&
+                meshBulkWater(m, [
+                  (line[j - 1][0] + line[j][0]) / 2,
+                  (line[j - 1][1] + line[j][1]) / 2,
+                ])
+              )
+                continue;
               positions.push(
                 ...point(line[j - 1][0], line[j - 1][1], line[j - 1][2] + 2),
                 ...point(line[j][0], line[j][1], line[j][2] + 2),
               );
+            }
           }
         const color = f.color || "#e4c989";
         if (f.geometry === "polygon") {

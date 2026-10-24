@@ -3,7 +3,7 @@ export {registry};
 export const identity=e=>e.continuityId||e.id;
 export const activeEntities=(doc,age)=>doc.entities.filter(e=>e.ageId===age&&!e.deleted);
 export const entityIn=(doc,age,id)=>doc.entities.find(e=>e.ageId===age&&e.id===id);
-export const label=s=>(s||'').replaceAll('-',' ');
+export const label=s=>s==='entity'?'record':s==='entities'?'records':(s||'').replaceAll('-',' ');
 export const ageYears=(doc,age)=>(doc.years||[]).filter(y=>y.ageId===age).slice().sort((a,b)=>a.number-b.number);
 function canonical(v){if(Array.isArray(v))return v.map(canonical);if(v&&typeof v==='object')return Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])]));return v;}
 function signature(doc,e){

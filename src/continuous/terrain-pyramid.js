@@ -172,6 +172,16 @@ export async function renderViewport(
         "Terrain atlas exceeds the 64-megapixel render budget. Reduce display pixel density or window size.",
       );
     const images = [];
+    let completed = 0;
+    const total = nodes.length * r.styles.length;
+    record({
+      event: "progress",
+      generation: r.generation,
+      phase,
+      z,
+      completed,
+      total,
+    });
     const timings = {
       fetch: 0,
       decode: 0,
@@ -232,6 +242,14 @@ export async function renderViewport(
                 (n.x - minX) * r.size,
                 (n.y - minY) * r.size,
               );
+              record({
+                event: "progress",
+                generation: r.generation,
+                phase,
+                z,
+                completed: ++completed,
+                total,
+              });
               timings.assemble += performance.now() - startedNode;
             } finally {
               bitmap.close();

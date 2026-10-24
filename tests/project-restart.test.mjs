@@ -31,6 +31,8 @@ test("World ZIP survives deletion of the original session and a Go server proces
   fs.mkdirSync(path.join(root, ".tools"), { recursive: true });
   const databaseDir = fs.mkdtempSync(path.join(root, ".tools", "restart-db-"));
   const launch = async () => {
+    let startupOutput = "",
+      startupError;
     server = spawn(binary, ["-addr", "127.0.0.1:18126"], {
       cwd: root,
       stdio: "pipe",
@@ -42,13 +44,23 @@ test("World ZIP survives deletion of the original session and a Go server proces
         DATABASE_URL_FILE: "",
       },
     });
+    server.stderr.on("data", (chunk) => {
+      startupOutput = (startupOutput + chunk).slice(-16384);
+    });
+    server.on("error", (error) => {
+      startupError = error;
+    });
     for (let n = 0; n < 100; n++) {
+      if (startupError || server.exitCode !== null || server.signalCode)
+        throw new Error(
+          `Test server exited before readiness: ${startupError || server.exitCode || server.signalCode}\n${startupOutput}`,
+        );
       try {
         if ((await fetch(origin + "/api/health")).ok) return;
       } catch {}
       await delay(50);
     }
-    throw new Error("Test server did not start");
+    throw new Error(`Test server did not become ready\n${startupOutput}`);
   };
   const stop = async () => {
     if (server && server.exitCode === null) {

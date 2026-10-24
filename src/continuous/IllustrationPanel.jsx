@@ -9,10 +9,25 @@ export default function IllustrationPanel({
   onSelect,
   objects,
   busy,
+  onSave,
+  saved,
 }) {
   return (
     <fieldset disabled={busy}>
       <h2>Medieval Illustrator</h2>
+      <button className="primary" onClick={onSave}>
+        Save illustration
+      </button>
+      <p>
+        Saves this illustrated map to Library. A focused map is also linked to
+        the place’s record and banner.
+      </p>
+      {saved && (
+        <p role="status">
+          Saved {saved.name} to {saved.folder}.{" "}
+          <a href={saved.href}>Open in Library</a>
+        </p>
+      )}
       <label>
         Map scope
         <select
@@ -28,6 +43,7 @@ export default function IllustrationPanel({
       <label>
         Title
         <input
+          maxLength={160}
           value={config.title}
           onChange={(e) =>
             onChange({ ...config, title: e.target.value }, false)

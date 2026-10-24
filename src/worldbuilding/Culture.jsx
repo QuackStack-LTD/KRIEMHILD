@@ -804,7 +804,8 @@ export function ConceptProfile({ doc, entity, command, onProfile, onBack }) {
                         })
                       }
                     >
-                      Make independent entity
+                      Make {part.name || part.title || "this component"}{" "}
+                      independent
                     </button>
                     <button
                       onClick={() =>

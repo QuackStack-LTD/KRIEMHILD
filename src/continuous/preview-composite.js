@@ -3,8 +3,7 @@
 export async function compositePreview(frame, opacity, signal) {
   const shade = frame.images.find((i) => i.style === "hillshade");
   const base = frame.images.find((i) => i.style !== "hillshade");
-  if (!shade || !base || frame.images.length !== 2 || !(opacity > 0))
-    return frame;
+  if (!shade || !base || !(opacity > 0)) return frame;
   signal.throwIfAborted();
   const canvas = new OffscreenCanvas(frame.pixels.width, frame.pixels.height);
   let color, relief;
@@ -32,7 +31,10 @@ export async function compositePreview(frame, opacity, signal) {
     signal.throwIfAborted();
     return {
       ...frame,
-      images: [{ style: base.style, blob }],
+      images: [
+        { style: base.style, blob },
+        ...frame.images.filter((i) => i !== base && i !== shade),
+      ],
       compositedStyles: ["hillshade"],
     };
   } finally {

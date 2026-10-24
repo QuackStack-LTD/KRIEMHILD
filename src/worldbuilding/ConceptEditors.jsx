@@ -456,7 +456,7 @@ export function VariationsEditor({ value = [], onChange, doc, age }) {
       {value.map((v, i) => (
         <section className="context-variation" key={v.id}>
           <label>
-            Context entity
+            Context record
             <select
               required
               value={v.contextId}
@@ -570,13 +570,13 @@ export function ComponentLinksEditor({ value = [], onChange, type, doc, age }) {
             </select>
           </label>
           <label>
-            Related entity
+            Related record
             <select
               required
               value={v.targetId}
               onChange={(e) => edit(i, "targetId", e.target.value)}
             >
-              <option value="">Choose an existing entity</option>
+              <option value="">Choose an existing record</option>
               {all
                 .filter((e) =>
                   matches(e, registry.relations[v.kind]?.destinations),

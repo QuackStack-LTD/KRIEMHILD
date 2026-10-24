@@ -70,7 +70,7 @@ export function MapPreview({ doc, map, onEntity }) {
       className="atlas-preview"
       viewBox={`${b.x} ${b.y} ${b.width} ${b.height}`}
       role="img"
-      aria-label={`Geographical entities on ${map.name}`}
+      aria-label={`Places and boundaries on ${map.name}`}
     >
       <rect x={b.x} y={b.y} width={b.width} height={b.height} fill="#182b32" />
       <image
@@ -435,7 +435,7 @@ export function Atlas({
           }
         >
           <p>
-            Draw its geography in Map Builder, then name and save the entity.
+            Draw its geography in Map Builder, then name and save the record.
           </p>
           {collection === "natural" && (
             <label>
@@ -483,7 +483,7 @@ export function Atlas({
                 value={extend}
                 onChange={(e) => setExtend(e.target.value)}
               >
-                <option value="">Create a new political entity</option>
+                <option value="">Create a new political record</option>
                 {entities
                   .filter((e) => e.kind === type)
                   .map((e) => (
@@ -505,7 +505,7 @@ export function Atlas({
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
               >
-                <option value="">Choose a political entity</option>
+                <option value="">Choose a political record</option>
                 {entities
                   .filter((e) =>
                     ["country", "state", "kingdom", "empire"].includes(e.kind),

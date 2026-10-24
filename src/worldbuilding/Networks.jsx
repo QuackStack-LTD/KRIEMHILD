@@ -184,7 +184,7 @@ export default function Networks({
     if (from.id === to.id && from.port === to.port) return;
     const changes = reconnectRelations(item.records, from.id, to);
     if (changes.some((r) => r.source === r.destination)) {
-      setStatus("A connection cannot point to its own entity.");
+      setStatus("A connection cannot point to its own record.");
       return;
     }
     if (

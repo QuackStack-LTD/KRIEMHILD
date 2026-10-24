@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { visibleTiles, visibleViewport } from "./camera.js";
 import { requestTile } from "./tile-request.js";
+import { ProjectedRaster, useMapProjection } from "./MapProjection.js";
 const sharedCache = new Map();
 const activeTiles = new Map();
 function trimCache() {
@@ -37,6 +38,7 @@ export default function TileSurface({
     new URLSearchParams(location.search).has("tileDebug"),
 }) {
   const debugId = useId();
+  const projection = useMapProjection();
   const owner = useRef(Symbol("tile surface"));
   const cache = useRef(sharedCache),
     [images, setImages] = useState([]);
@@ -241,55 +243,68 @@ export default function TileSurface({
             t.stamp === stamp(t),
         )
         .map((t) => (
-          <image
+          <ProjectedRaster
             key={t.key}
-            href={t.url}
-            x={t.x * t.span}
-            y={t.y * t.span}
-            width={t.span}
-            height={t.span}
-            preserveAspectRatio="none"
+            frame={{
+              bounds: {
+                x: t.x * t.span,
+                y: t.y * t.span,
+                w: t.span,
+                h: t.span,
+              },
+              pixels: { width: t.size, height: t.size },
+            }}
+            image={{ url: t.url }}
             data-tile={`${t.z}/${t.x}/${t.y}`}
             data-revision={t.revision}
           />
         ))}
       {debug && style !== "hillshade" && (
         <g pointerEvents="none" aria-label="Tile diagnostics">
-          {wanted.map((t) => (
-            <g key={`${debugId}/${t.z}/${t.x}/${t.y}`}>
-              <rect
-                x={t.x * t.span}
-                y={t.y * t.span}
-                width={t.span}
-                height={t.span}
-                fill="none"
-                stroke="#ff4fa3"
-                strokeWidth={view.w / width}
-              />
-              <text
-                x={t.x * t.span + t.span * 0.02}
-                y={t.y * t.span + t.span * 0.08}
-                fontSize={t.span * 0.055}
-                fill="#fff"
-                stroke="#111"
-                strokeWidth={t.span * 0.003}
-                paintOrder="stroke"
-              >
-                {`${t.z}/${t.x}/${t.y} r${revision}`}
-              </text>
-              <text
-                x={t.x * t.span + t.span * 0.02}
-                y={t.y * t.span + t.span * 0.15}
-                fontSize={t.span * 0.035}
-                fill="#fff"
-                stroke="#111"
-                strokeWidth={t.span * 0.002}
-                paintOrder="stroke"
-              >
-                {`[${(t.x * t.span * 180 - 180).toFixed(3)},${(90 - (t.y + 1) * t.span * 180).toFixed(3)}]–[${((t.x + 1) * t.span * 180 - 180).toFixed(3)},${(90 - t.y * t.span * 180).toFixed(3)}]`}
-              </text>
-            </g>
-          ))}
+          {wanted.map((tile) => {
+            const bounds = {
+              x: tile.x * tile.span,
+              y: tile.y * tile.span,
+              w: tile.span,
+              h: tile.span,
+            };
+            const box = projection ? projection.box(bounds) : bounds;
+            return (
+              <g key={`${debugId}/${tile.z}/${tile.x}/${tile.y}`}>
+                <rect
+                  x={box.x}
+                  y={box.y}
+                  width={box.w}
+                  height={box.h}
+                  fill="none"
+                  stroke="#ff4fa3"
+                  strokeWidth={projection ? 1 : view.w / width}
+                />
+                <text
+                  x={box.x + box.w * 0.02}
+                  y={box.y + box.h * 0.08}
+                  fontSize={box.w * 0.055}
+                  fill="#fff"
+                  stroke="#111"
+                  strokeWidth={box.w * 0.003}
+                  paintOrder="stroke"
+                >
+                  {`${tile.z}/${tile.x}/${tile.y} r${revision}`}
+                </text>
+                <text
+                  x={box.x + box.w * 0.02}
+                  y={box.y + box.h * 0.15}
+                  fontSize={box.w * 0.035}
+                  fill="#fff"
+                  stroke="#111"
+                  strokeWidth={box.w * 0.002}
+                  paintOrder="stroke"
+                >
+                  {`[${(bounds.x * 180 - 180).toFixed(3)},${(90 - (bounds.y + bounds.h) * 180).toFixed(3)}]–[${((bounds.x + bounds.w) * 180 - 180).toFixed(3)},${(90 - bounds.y * 180).toFixed(3)}]`}
+                </text>
+              </g>
+            );
+          })}
         </g>
       )}
     </g>

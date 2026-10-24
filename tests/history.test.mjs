@@ -6,12 +6,12 @@ test('Timeline window centers the selected Age with at most two neighbors each w
 });
 test('Merge review reports geometry and deletion conflicts but not unique objects',()=>{
  const doc={maps:[],entities:[{id:'city',ageId:'a',name:'City'},{id:'city',ageId:'b',name:'City',deleted:true},{id:'keep',ageId:'b',name:'Keep'}],representations:[{entityId:'city',ageId:'a',mapId:'map',shape:{points:[[1,2],[2,3],[3,1]]}}]};
- assert.deepEqual(mergeConflicts(doc,'a','b').map(c=>c.kind),['Entity deletion']);
+ assert.deepEqual(mergeConflicts(doc,'a','b').map(c=>c.kind),['Record deletion']);
  doc.entities[1].deleted=false;
  doc.representations.push({...doc.representations[0],ageId:'b'});
  assert.deepEqual(mergeConflicts(doc,'a','b'),[]);
  doc.representations[1]={...doc.representations[1],shape:{points:[[1,2],[2,4],[3,1]]}};
- assert.equal(mergeConflicts(doc,'a','b')[0].kind,'Entity properties / geometry');
+ assert.equal(mergeConflicts(doc,'a','b')[0].kind,'Record properties / geometry');
 });
 test('Graph layout retains independent lanes and forward branch/merge dependencies',()=>{
  const d={ages:['a','b','c','d','e'].map(id=>({id})),timelines:[{ages:['a','b']},{ages:['c','d']},{ages:['e']}],edges:[{source:'a',destination:'b'},{source:'a',destination:'c'},{source:'c',destination:'d'},{source:'b',destination:'e'},{source:'d',destination:'e'}]};const l=graphLayout(d);assert.equal(l.positions.get('a').y,l.positions.get('b').y);assert.notEqual(l.positions.get('a').y,l.positions.get('c').y);for(const e of d.edges)assert.ok(l.positions.get(e.destination).x>l.positions.get(e.source).x);assert.match(edgePath(l.positions.get('d'),l.positions.get('e')),/ C /);

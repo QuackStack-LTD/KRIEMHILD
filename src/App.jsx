@@ -239,7 +239,7 @@ function AgeDialog({ doc, sourceAge, sourceYear, onClose, onSubmit, busy }) {
         <p>
           The new Age records this year as its origin and inherits the current
           saved state. Earlier events are not used to rewind terrain or
-          entities.
+          records.
         </p>
       )}
       <label>
@@ -295,7 +295,7 @@ function AgeDialog({ doc, sourceAge, sourceYear, onClose, onSubmit, busy }) {
       )}
       {mode === "merge" && (
         <details>
-          <summary>{conflicts.length} conflicting map or entity states</summary>
+          <summary>{conflicts.length} conflicting map or record states</summary>
           <ul>
             {conflicts.map((c) => (
               <li key={c.kind + c.id}>
@@ -315,10 +315,10 @@ function AgeDialog({ doc, sourceAge, sourceYear, onClose, onSubmit, busy }) {
           >
             <option value="">Choose how to resolve conflicts</option>
             <option value="primary">
-              Keep current Age's conflicting maps and entities
+              Keep current Age's conflicting maps and records
             </option>
             <option value="secondary">
-              Keep the other Age's conflicting maps and entities
+              Keep the other Age's conflicting maps and records
             </option>
           </select>
           <small>
@@ -333,17 +333,17 @@ function AgeDialog({ doc, sourceAge, sourceYear, onClose, onSubmit, busy }) {
           ? "Copies the current Age into an independent timeline without a chronological connection."
           : mode === "connect"
             ? "Adds a chronological merge link without changing either Age’s saved content. Histories may loop back to earlier Ages."
-            : "New Ages inherit the saved terrains, maps and entities of their source Age."}
+            : "New Ages inherit the saved terrains, maps and records of their source Age."}
       </p>
       {mode !== "connect" && (
         <details>
           <summary>
-            Review inherited entities (
+            Review inherited records (
             {inherited.filter((e) => !excluded.includes(e.id)).length} of{" "}
             {inherited.length} included)
           </summary>
           <p>
-            Maps and terrain are inherited. Uncheck entities to remove them from
+            Maps and terrain are inherited. Uncheck records to remove them from
             the new Age; the source is preserved. Open their new profiles after
             creation to make changes.
           </p>
@@ -1252,7 +1252,7 @@ export default function App() {
                   )
                 ) : (
                   <main className="world-page">
-                    <h1>Entity not found in this Age</h1>
+                    <h1>Record not found in this Age</h1>
                   </main>
                 );
               })()

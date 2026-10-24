@@ -8,16 +8,17 @@ import (
 )
 
 type Mesh struct {
-	Columns   int          `json:"columns"`
-	Rows      int          `json:"rows"`
-	Bounds    [4]float64   `json:"bounds"` // west, south, east, north, radians
-	Bed       []float64    `json:"bed"`
-	Surface   []float64    `json:"surface"`
-	Wet       []bool       `json:"wet"`
-	Colors    [][3]uint8   `json:"colors"`
-	LitColors [][3]uint8   `json:"litColors"`
-	Biomes    []string     `json:"biomes"`
-	Gradients [][2]float64 `json:"gradients"` // metre/metre east and north, common 10 m stencil at every LOD
+	Columns    int          `json:"columns"`
+	Rows       int          `json:"rows"`
+	Bounds     [4]float64   `json:"bounds"` // west, south, east, north, radians
+	Bed        []float64    `json:"bed"`
+	Surface    []float64    `json:"surface"`
+	Wet        []bool       `json:"wet"`
+	WaterKinds []int        `json:"waterKinds,omitempty"` // JSON array: 0 land, 1 ocean, 2 lake, 3 channel
+	Colors     [][3]uint8   `json:"colors"`
+	LitColors  [][3]uint8   `json:"litColors"`
+	Biomes     []string     `json:"biomes"`
+	Gradients  [][2]float64 `json:"gradients"` // metre/metre east and north, common 10 m stencil at every LOD
 }
 
 func SampleMesh(ctx context.Context, p *model.Planet, bounds [4]float64, columns, rows int, transform Transform) (*Mesh, error) {
@@ -35,6 +36,7 @@ func SampleMesh(ctx context.Context, p *model.Planet, bounds [4]float64, columns
 	m.Biomes = make([]string, n)
 	m.Gradients = make([][2]float64, n)
 	m.LitColors = make([][3]uint8, n)
+	m.WaterKinds = make([]int, n)
 	for y := 0; y < rows; y++ {
 		if err := ctx.Err(); err != nil {
 			return nil, err
@@ -48,6 +50,15 @@ func SampleMesh(ctx context.Context, p *model.Planet, bounds [4]float64, columns
 			}
 			i := y*columns + x
 			m.Bed[i], m.Surface[i], m.Wet[i] = s.Bed, s.WaterSurface, s.Water != "dry"
+			switch s.Water {
+			case "ocean":
+				m.WaterKinds[i] = 1
+			case "lake":
+				m.WaterKinds[i] = 2
+			case "dry":
+			default:
+				m.WaterKinds[i] = 3
+			}
 			m.Biomes[i] = s.Biome
 			east, north := gradients(sampler, p, lon, lat, transform)
 			m.Gradients[i] = [2]float64{east, north}

@@ -435,6 +435,11 @@
       "spatial": false,
       "label": "Document"
     },
+    "illustrated-map": {
+      "category": "records",
+      "spatial": false,
+      "label": "Illustrated map"
+    },
     "certificate": {
       "category": "records",
       "spatial": false,

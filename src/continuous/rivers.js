@@ -1,5 +1,6 @@
 // The only source is the persisted canonical channel network, in radians / SI.
 import { geographicParts } from "./geographic-path.js";
+import { bounds } from "./geometry.js";
 export function riverFeatures(rivers) {
   return rivers.flatMap((r) => {
     return geographicParts(r.path).map((points, i) => ({
@@ -10,6 +11,7 @@ export function riverFeatures(rivers) {
       geometry: "line",
       points,
       river: r,
+      bounds: bounds(points),
     }));
   });
 }

@@ -72,7 +72,7 @@ func (s *Server) continuousMesh(w http.ResponseWriter, r *http.Request) {
 		v.tileIdentity = fmt.Sprintf("%x", hash.Sum(nil))
 	}
 	opData, _ := json.Marshal(ops)
-	key := fmt.Sprintf("mesh-2/%s/%v/%d/%d/%x", v.tileIdentity, b, columns, rows, sha256.Sum256(opData))
+	key := fmt.Sprintf("mesh-4/%s/%v/%d/%d/%x", v.tileIdentity, b, columns, rows, sha256.Sum256(opData))
 	v.mu.Unlock()
 	if data, ok := s.terrainTileCache.Get(key); ok {
 		w.Header().Set("Content-Type", "application/json")

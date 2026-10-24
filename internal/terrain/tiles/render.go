@@ -17,7 +17,7 @@ import (
 type Transform func(s model.Sample, lon, lat float64) model.Sample
 
 // Raster fixes invalidate derived disk images without changing saved terrain.
-const RenderingVersion = "raster-5"
+const RenderingVersion = "raster-6"
 
 func Valid(z, x, y, size int) bool {
 	return z >= 0 && z <= 18 && x >= 0 && x < (2<<z) && y >= 0 && y < (1<<z) && (size == 256 || size == 512)
@@ -50,7 +50,7 @@ func RenderMeasured(ctx context.Context, p *model.Planet, z, x, y, size int, sty
 		return nil, fmt.Errorf("invalid tile address")
 	}
 	switch style {
-	case "terrain", "physical-atlas", "natural", "elevation", "biome", "mask", "coastline", "bathymetry", "temperature", "precipitation", "moisture", "atlas", "hillshade", "relief-shadow", "pet", "aridity", "soil", "seasonality", "rainShadow", "exposure", "slope", "contours", "watersheds", "flow-accumulation", "river-network", "wetlands", "shore-ink":
+	case "terrain", "physical-atlas", "natural", "elevation", "biome", "mask", "river-mask", "coastline", "bathymetry", "temperature", "precipitation", "moisture", "atlas", "hillshade", "relief-shadow", "pet", "aridity", "soil", "seasonality", "rainShadow", "exposure", "slope", "contours", "watersheds", "flow-accumulation", "river-network", "wetlands", "shore-ink":
 	default:
 		return nil, fmt.Errorf("unknown terrain style")
 	}
@@ -168,6 +168,12 @@ func RenderMeasured(ctx context.Context, p *model.Planet, z, x, y, size int, sty
 						}
 						break
 					}
+				}
+			}
+			if style == "river-mask" {
+				c = color.NRGBA{255, 255, 255, 255}
+				if s.Water == "ocean" || s.Water == "lake" {
+					c = color.NRGBA{}
 				}
 			}
 			img.SetNRGBA(i, j, c)

@@ -103,7 +103,11 @@ func (s *Server) libraryRoutes() {
 			return
 		}
 		w.Header().Set("Content-Type", v.MIME)
-		w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": v.Name}))
+		disposition := "attachment"
+		if r.URL.Query().Get("inline") == "1" && (v.MIME == "image/png" || v.MIME == "image/jpeg" || v.MIME == "image/webp") {
+			disposition = "inline"
+		}
+		w.Header().Set("Content-Disposition", mime.FormatMediaType(disposition, map[string]string{"filename": v.Name}))
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Content-Security-Policy", "sandbox; default-src 'none'")
 		w.Header().Set("Cache-Control", "private, no-store")
