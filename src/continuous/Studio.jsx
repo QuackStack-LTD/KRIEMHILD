@@ -55,6 +55,8 @@ import {
   toggleLand,
   rectangleLand,
   selectedLand,
+  illustrationFootprint,
+  illustrationMeshBounds,
 } from "./land-selection.js";
 import Dialog from "../worldbuilding/ui/Dialog.jsx";
 import "./studio.css";
@@ -139,6 +141,9 @@ export default function Studio({ initialState, onExit }) {
     [width, setWidth] = useState(1000),
     [height, setHeight] = useState(500);
   const cameraRef = useRef(camera);
+  const constructionCamera = useRef(camera);
+  const savedCamera =
+    illustrating || mapSetup ? constructionCamera.current : camera;
   cameraRef.current = camera;
   const navigation = useRef(null);
   navigation.current ||= new FrameNavigator(() => cameraRef.current, setCamera);
@@ -212,6 +217,11 @@ export default function Studio({ initialState, onExit }) {
   const detailLevel = presentation.current;
   const base = `sessions/${state?.id}`;
   const displayStyle = illustrating ? "atlas" : style;
+  const wrapIllustration = !!(illustrating && art?.regions?.length);
+  const illustrationCoverage = useMemo(
+    () => illustrationFootprint(art?.regions || []),
+    [art?.regions],
+  );
   const previewInfo = previewRequest({ camera, width, height }, previewQuality);
   const geographicViewport = visibleViewport(camera, width, height);
   const projection = useMemo(
@@ -250,19 +260,22 @@ export default function Studio({ initialState, onExit }) {
     else {
       setArt(null);
       setArtSelected(null);
-      setIllustrating(false);
+      if (illustrating) leaveIllustration();
     }
   }, [state?.project?.revision]);
   useEffect(() => {
     if (!illustrating || !art || !state) return;
-    const abort = new AbortController(),
-      [x, y, w, h] = art.bounds;
+    const abort = new AbortController();
     setArtTerrain(null);
-    request(
-      `${base}/terrain/mesh?west=${Math.max(-180, x * 180 - 180)}&east=${Math.min(180, (x + w) * 180 - 180)}&north=${Math.min(90, 90 - y * 180)}&south=${Math.max(-90, 90 - (y + h) * 180)}`,
-      undefined,
-      "GET",
-      abort.signal,
+    Promise.all(
+      illustrationMeshBounds(art).map(([west, south, east, north]) =>
+        request(
+          `${base}/terrain/mesh?west=${west}&east=${east}&north=${north}&south=${south}`,
+          undefined,
+          "GET",
+          abort.signal,
+        ),
+      ),
     )
       .then(setArtTerrain)
       .catch((e) => {
@@ -342,6 +355,7 @@ export default function Studio({ initialState, onExit }) {
     setTool("select");
   }
   function startIllustration() {
+    constructionCamera.current = camera;
     const focus = selected?.recordStatus !== "draft" ? selected : null;
     const inherited = entities.find(
       (e) => (e.logicalId || e.id) === state.historicalMap?.entityId,
@@ -354,6 +368,10 @@ export default function Studio({ initialState, onExit }) {
       kind: focus || inherited ? "place" : "land",
       camera,
     });
+  }
+  function leaveIllustration() {
+    setIllustrating(false);
+    setCamera(constructionCamera.current);
   }
   async function setupIllustration() {
     const setup = { ...mapSetup };
@@ -565,7 +583,7 @@ export default function Studio({ initialState, onExit }) {
     const sequence = ++viewWriter.current.sequence;
     const result = await request(`sessions/${s.id}/save`, {
       revision: s.project.revision,
-      view: { camera, style, mode, showRivers, hillshade },
+      view: { camera: savedCamera, style, mode, showRivers, hillshade },
       client: viewWriter.current.client,
       sequence,
     });
@@ -587,7 +605,13 @@ export default function Studio({ initialState, onExit }) {
         () =>
           request(`sessions/${id}/view`, {
             ui: {
-              continuousView: { camera, style, mode, showRivers, hillshade },
+              continuousView: {
+                camera: savedCamera,
+                style,
+                mode,
+                showRivers,
+                hillshade,
+              },
             },
             merge: true,
             client: viewWriter.current.client,
@@ -604,7 +628,7 @@ export default function Studio({ initialState, onExit }) {
         700,
       );
     return () => clearTimeout(timer);
-  }, [state?.id, camera, style, mode, showRivers, hillshade]);
+  }, [state?.id, savedCamera, style, mode, showRivers, hillshade]);
   useEffect(() => {
     if (!autoSave || !state?.historicalMap || !state.unsaved || busy) return;
     const timer = setTimeout(() => run(save), 30000);
@@ -1069,7 +1093,7 @@ export default function Studio({ initialState, onExit }) {
     if (landMask && art?.regions)
       landMask.setAttribute(
         "d",
-        art.regions
+        illustrationCoverage
           .map(
             (p) =>
               pathText(clipPolygon(p, outputCamera).map(projection.point)) +
@@ -1109,6 +1133,7 @@ export default function Studio({ initialState, onExit }) {
       session: outputState.id,
       revision: outputState.project.revision,
       identity: JSON.stringify([outputState.id, outputState.project.revision]),
+      wrapLongitude: wrapIllustration,
       onProgress: setIllustrationProgress,
     });
     if (format === "assets") return illustrationAssets(clone, exportWidth);
@@ -1538,7 +1563,7 @@ export default function Studio({ initialState, onExit }) {
                   if (id !== "generate") await ensureWorldMap();
                   setMode(id);
                   if (id === "generate" || id === "atlas")
-                    setIllustrating(false);
+                    if (illustrating) leaveIllustration();
                   setTool(id === "settlement" ? "settlement" : "inspect");
                   setDraft([]);
                 })
@@ -1568,7 +1593,7 @@ export default function Studio({ initialState, onExit }) {
             disabled={!state}
             aria-pressed={illustrating}
             onClick={() => {
-              if (illustrating) setIllustrating(false);
+              if (illustrating) leaveIllustration();
               else startIllustration();
             }}
           >
@@ -1667,6 +1692,7 @@ export default function Studio({ initialState, onExit }) {
               />
               {state && (
                 <ViewportSurface
+                  wrapLongitude={wrapIllustration}
                   active={viewportRenderer}
                   enabled={!show3D}
                   session={state.id}
@@ -1712,10 +1738,10 @@ export default function Studio({ initialState, onExit }) {
                       >
                         <path
                           fill="white"
-                          fillRule="evenodd"
+                          fillRule="nonzero"
                           stroke="white"
                           strokeWidth="1"
-                          d={landPath(art.regions)}
+                          d={landPath(illustrationCoverage)}
                         />
                       </mask>
                     )}
@@ -1738,6 +1764,7 @@ export default function Studio({ initialState, onExit }) {
                           <ViewportLayer style="river-mask" />
                         ) : (
                           <TileSurface
+                            wrapLongitude={wrapIllustration}
                             enabled={!show3D}
                             session={state.id}
                             revision={state.project.revision}
@@ -1763,6 +1790,7 @@ export default function Studio({ initialState, onExit }) {
                       <ViewportLayer style={displayStyle} primary />
                     ) : (
                       <TileSurface
+                        wrapLongitude={wrapIllustration}
                         enabled={!show3D}
                         session={state.id}
                         revision={state.project.revision}
@@ -1784,6 +1812,7 @@ export default function Studio({ initialState, onExit }) {
                           <ViewportLayer style="hillshade" />
                         ) : (
                           <TileSurface
+                            wrapLongitude={wrapIllustration}
                             enabled={!show3D}
                             session={state.id}
                             revision={state.project.revision}
@@ -1901,6 +1930,7 @@ export default function Studio({ initialState, onExit }) {
                           <ViewportLayer style="shore-ink" />
                         ) : (
                           <TileSurface
+                            wrapLongitude={wrapIllustration}
                             enabled={!show3D}
                             session={state.id}
                             revision={state.project.revision}
@@ -1925,6 +1955,7 @@ export default function Studio({ initialState, onExit }) {
                             <ViewportLayer style="relief-shadow" />
                           ) : (
                             <TileSurface
+                              wrapLongitude={wrapIllustration}
                               enabled={!show3D}
                               session={state.id}
                               revision={state.project.revision}
@@ -3172,7 +3203,9 @@ export default function Studio({ initialState, onExit }) {
                             : {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ ui: { camera, style } }),
+                                body: JSON.stringify({
+                                  ui: { camera: savedCamera, style },
+                                }),
                               },
                         );
                         if (!r.ok) throw Error("Archive export failed");

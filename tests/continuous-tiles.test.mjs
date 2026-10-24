@@ -103,6 +103,44 @@ test("cache eviction cannot remove visible terrain on a high-DPI display", async
     }
   }));
 
+test("illustration tile fallback draws through the longitude seam using canonical API addresses", async () =>
+  fixture(async ({ render, images }) => {
+    const calls = [];
+    globalThis.fetch = async (url) => {
+      calls.push(url);
+      return response(
+        new URL(url, "http://local").searchParams.get("revision"),
+      );
+    };
+    let loading;
+    await render({
+      camera: { x: 1.9, y: 0.3, w: 0.2, h: 0.2 },
+      height: 256,
+      wrapLongitude: true,
+      onLoading: (n) => (loading = n),
+    });
+    await until(() => loading === 0);
+    assert.ok(images().some((e) => +e.getAttribute("x") >= 2));
+    assert.ok(images().some((e) => +e.getAttribute("x") < 2));
+    for (const url of calls) {
+      const [, z, x] = url.match(/tiles\/(\d+)\/(\d+)\//);
+      assert.ok(+x >= 0 && +x < 2 ** (+z + 1));
+    }
+    const before = calls.length;
+    await render({
+      revision: 2,
+      invalidations: [{ revision: 2, x: 0, y: 0.3, w: 0.1, h: 0.2 }],
+    });
+    await until(() => loading === 0);
+    assert.ok(calls.length > before);
+    assert.ok(
+      images().some(
+        (e) =>
+          +e.getAttribute("x") >= 2 && e.getAttribute("data-revision") === "2",
+      ),
+    );
+  }));
+
 test("a local dirty rectangle reuses unaffected tiles and replaces affected parents", async () =>
   fixture(async ({ render, images }) => {
     const calls = [];

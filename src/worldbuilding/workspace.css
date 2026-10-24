@@ -777,6 +777,9 @@
   box-sizing: border-box;
   padding-inline: clamp(16px, 2.5vw, 40px);
 }
+.history-app.profile-page .entity-profile.has-banner {
+  padding-top: 0;
+}
 .entity-profile .profile-columns {
   grid-template-columns: minmax(210px, 24%) minmax(0, 1fr);
   justify-content: stretch;

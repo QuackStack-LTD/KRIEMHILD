@@ -1,4 +1,4 @@
-import { visibleTiles, visibleViewport } from "./camera.js";
+import { visibleTiles, visibleViewport, canonicalTileX } from "./camera.js";
 import { requestTile } from "./tile-request.js";
 
 // Lazy, immutable raster representations of the authoritative terrain sampler.
@@ -10,7 +10,7 @@ export function viewportRequest({ camera, width, height, dpr = 1, ...source }) {
     width: Math.max(1, Math.round(width * dpr)),
     height: Math.max(1, Math.round(height * dpr)),
   };
-  const tiles = visibleTiles(camera, width, dpr, height);
+  const tiles = visibleTiles(camera, width, dpr, height, source.wrapLongitude);
   return {
     ...source,
     bounds,
@@ -30,8 +30,13 @@ export function pyramidNodes(request, z = request.z) {
     y++
   )
     for (
-      let x = Math.max(0, Math.floor(b.x / span));
-      x < Math.min(2 ** (z + 1), Math.ceil((b.x + b.w) / span));
+      let x = request.wrapLongitude
+        ? Math.floor(b.x / span)
+        : Math.max(0, Math.floor(b.x / span));
+      x <
+      (request.wrapLongitude
+        ? Math.ceil((b.x + b.w) / span)
+        : Math.min(2 ** (z + 1), Math.ceil((b.x + b.w) / span)));
       x++
     )
       nodes.push({ z, x, y, size, span });
@@ -68,6 +73,7 @@ export class TerrainPyramid {
     return { ...request, base };
   }
   key(r, n, style) {
+    n = { ...n, x: canonicalTileX(n) };
     const halo = n.span / n.size;
     const stamp = (r.invalidations || []).reduce(
       (v, b) =>
@@ -94,7 +100,7 @@ export class TerrainPyramid {
     }
     this.stats.misses++;
     const blob = await this.fetchTile(
-      `/api/sessions/${r.session}/terrain/tiles/${n.z}/${n.x}/${n.y}?style=${style}&revision=${r.revision}&size=${n.size}&strict=1`,
+      `/api/sessions/${r.session}/terrain/tiles/${n.z}/${canonicalTileX(n)}/${n.y}?style=${style}&revision=${r.revision}&size=${n.size}&strict=1`,
       r.revision,
       signal,
       { record },
@@ -145,9 +151,10 @@ export async function renderViewport(
       "Viewport exceeds the 32-megapixel render budget. Reduce display pixel density or window size.",
     );
   async function level(z, phase, overview = false) {
-    const levelRequest = overview
-      ? { ...r, bounds: { x: 0, y: 0, w: 2, h: 1 } }
-      : r;
+    const levelRequest =
+      overview && !r.wrapLongitude
+        ? { ...r, bounds: { x: 0, y: 0, w: 2, h: 1 } }
+        : r;
     signal.throwIfAborted();
     // A coarse preview needs coarse output pixels too. Upscaling it into a full
     // DPR raster would retain a second full-size decoded frame during refinement.

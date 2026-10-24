@@ -329,11 +329,24 @@ test.describe("Languages persisted authoring lifecycle", () => {
         };
         return {
           banner: box(el),
+          header: box(document.querySelector(".application-nav")),
           nav: box(el.querySelector(".profile-breadcrumb")),
           details: box(el.querySelector(".settlement-banner-details")),
         };
       });
       expect(boxes.banner.height).toBeLessThanOrEqual(280);
+      expect(
+        Math.abs(boxes.banner.top - boxes.header.bottom),
+      ).toBeLessThanOrEqual(1);
+      const navigation = await page
+        .locator(".world-sidebar .sidebar-section")
+        .allTextContents();
+      expect(navigation.indexOf("Languages")).toBe(
+        navigation.indexOf("Culture & Religion") + 1,
+      );
+      expect(navigation.indexOf("Characters")).toBe(
+        navigation.indexOf("Languages") + 1,
+      );
       expect(boxes.nav.top).toBeGreaterThanOrEqual(boxes.banner.top);
       expect(boxes.nav.bottom).toBeLessThanOrEqual(boxes.details.top + 16);
       expect(boxes.details.bottom).toBeLessThanOrEqual(boxes.banner.bottom + 1);

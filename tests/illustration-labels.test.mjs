@@ -4,6 +4,7 @@ import {
   buildIllustration,
   newIllustration,
 } from "../src/continuous/illustration.js";
+import { landPaths, selectedLand } from "../src/continuous/land-selection.js";
 
 const state = { W: 192, H: 96 };
 const country = {
@@ -20,6 +21,94 @@ const country = {
     [101.81319891501845, 49.45506720781314],
   ],
 };
+
+test("countries, names and rivers follow the fitted longitude branch without moving source data", () => {
+  const fit = selectedLand(
+    [
+      {
+        id: "seam",
+        paths: landPaths([
+          [
+            [1.85, 0.3],
+            [0.15, 0.3],
+            [0.15, 0.6],
+            [1.85, 0.6],
+            [1.85, 0.3],
+          ],
+        ]),
+      },
+    ],
+    ["seam"],
+  );
+  const config = {
+    ...newIllustration("continent", fit.bounds),
+    regions: fit.regions,
+  };
+  const local = { W: 201, H: 101 };
+  const realm = {
+    id: "seam-state",
+    name: "Seam Realm",
+    kind: "country",
+    geometry: "polygon",
+    points: [
+      [198, 40],
+      [2, 40],
+      [2, 50],
+      [198, 50],
+    ],
+  };
+  const rivers = [
+    {
+      id: "crossing",
+      class: "major",
+      path: [
+        [0.98 * Math.PI, 0],
+        [-0.98 * Math.PI, 0.01],
+      ],
+      name: "Seam River",
+    },
+  ];
+  const before = structuredClone({ realm, rivers });
+  const scene = buildIllustration(config, [realm], rivers, null, local);
+  const polygon = scene.find((o) => o.id === realm.id);
+  assert.ok(polygon);
+  assert.ok(polygon.points.every((p) => p[0] >= 1.98 && p[0] <= 2.02));
+  assert.ok(scene.find((o) => o.id === "label-seam-state" && !o.hidden));
+  const reaches = scene.filter((o) => o.river);
+  assert.equal(reaches.length, 2);
+  assert.equal(reaches[0].points.at(-1)[0], reaches[1].points[0][0]);
+  assert.ok(
+    reaches.every((o) => o.points.every((p) => p[0] >= 1.98 && p[0] <= 2.02)),
+  );
+  assert.deepEqual({ realm, rivers }, before);
+});
+
+test("relief from both mesh branches meets without duplicate symbols at their shared seam", () => {
+  const config = {
+    ...newIllustration("continent", { x: 1.85, y: 0.3, w: 0.3, h: 0.4 }),
+    regions: [
+      [
+        [1.9, 0.3],
+        [2.1, 0.3],
+        [2.1, 0.7],
+        [1.9, 0.7],
+        [1.9, 0.3],
+      ],
+    ],
+  };
+  const mesh = (west, east) => ({
+    bounds: [west, -0.5, east, 0.5],
+    columns: 8,
+    rows: 64,
+    bed: Array(512).fill(2000),
+    wet: Array(512).fill(false),
+  });
+  const meshes = [mesh(0.9 * Math.PI, Math.PI), mesh(-Math.PI, -0.9 * Math.PI)];
+  const scene = buildIllustration(config, [], [], meshes, state, []);
+  assert.ok(scene.some((o) => o.symbol === "mountain" && o.position[0] < 2));
+  assert.ok(scene.some((o) => o.symbol === "mountain" && o.position[0] > 2));
+  assert.equal(new Set(scene.map((o) => o.id)).size, scene.length);
+});
 test("a small country's name stays legible with a leader at world scale", () => {
   const config = newIllustration("world", { x: 0, y: 0, w: 2, h: 1 });
   const before = structuredClone(country);

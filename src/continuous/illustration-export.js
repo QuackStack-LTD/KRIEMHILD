@@ -1,4 +1,4 @@
-import { visibleTiles } from "./camera.js";
+import { visibleTiles, canonicalTileX } from "./camera.js";
 
 // One bounded cache for immutable export rasters; preview quality never enters
 // its identity. Visit all styles of a node before the physical tile is evicted.
@@ -46,6 +46,7 @@ export async function exportTerrain(
     session,
     revision,
     identity,
+    wrapLongitude = false,
     onProgress = () => {},
     fetchTile = fetch,
   },
@@ -54,7 +55,7 @@ export async function exportTerrain(
     ...svg.querySelectorAll('[aria-label="Continuous terrain tiles"]'),
   ];
   const styles = [...new Set(groups.map((g) => g.dataset.terrainStyle))];
-  const nodes = visibleTiles(camera, width, 1),
+  const nodes = visibleTiles(camera, width, 1, undefined, wrapLongitude),
     layers = new Map(styles.map((s) => [s, []]));
   let next = 0,
     done = 0;
@@ -64,10 +65,11 @@ export async function exportTerrain(
     while (next < nodes.length) {
       const t = nodes[next++];
       for (const style of styles) {
-        const key = `${identity}/${style}/${t.z}/${t.x}/${t.y}/${t.size}`;
+        const sourceX = canonicalTileX(t);
+        const key = `${identity}/${style}/${t.z}/${sourceX}/${t.y}/${t.size}`;
         const href = await rasterCache.get(key, async () => {
           const r = await fetchTile(
-            `/api/sessions/${session}/terrain/tiles/${t.z}/${t.x}/${t.y}?size=${t.size}&style=${style}&strict=1&revision=${revision}`,
+            `/api/sessions/${session}/terrain/tiles/${t.z}/${sourceX}/${t.y}?size=${t.size}&style=${style}&strict=1&revision=${revision}`,
           );
           if (!r.ok)
             throw Error(

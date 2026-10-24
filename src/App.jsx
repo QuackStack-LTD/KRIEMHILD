@@ -743,9 +743,9 @@ export default function App() {
             ["biosphere", "Biosphere"],
             ["magic", "Magic & Technology"],
             ["culture", "Culture & Religion"],
+            ["languages", "Languages"],
             ["characters", "Characters"],
             ["organizations", "Organizations"],
-            ["languages", "Languages"],
             ["library", "Library"],
           ].map(([key, title]) => (
             <button

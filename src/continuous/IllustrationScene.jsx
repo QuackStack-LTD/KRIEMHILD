@@ -295,27 +295,6 @@ export default function IllustrationScene({
                     N
                   </text>
                 </g>
-                <path
-                  d={`M${x + w * 0.05},${y + h * 0.92}h${w * 0.1}`}
-                  strokeWidth={w / 900}
-                />
-                <text
-                  x={x + w * 0.05}
-                  y={y + h * 0.9}
-                  stroke="none"
-                  fontSize={w / 100}
-                >
-                  {Math.round(
-                    worldBounds.w *
-                      0.1 *
-                      Math.PI *
-                      state.continuous.spec.radiusKm *
-                      Math.cos(
-                        (0.5 - worldBounds.y - worldBounds.h * 0.9) * Math.PI,
-                      ),
-                  )}{" "}
-                  km at this latitude
-                </text>
               </g>
             )}
           </g>

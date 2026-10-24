@@ -442,7 +442,7 @@ export default function Profile({
   );
   return (
     <main
-      className={`world-page entity-profile ${place ? "place-profile" : ""}`}
+      className={`world-page entity-profile ${place ? "place-profile" : ""} ${place || p.illustratedMap ? "has-banner" : ""}`}
     >
       {!(place || p.illustratedMap) && breadcrumb}
       {(place || p.illustratedMap) && (

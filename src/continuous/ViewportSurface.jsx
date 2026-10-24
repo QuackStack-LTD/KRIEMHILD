@@ -81,6 +81,7 @@ export default function ViewportSurface({
   children,
   active = true,
   previewQuality,
+  wrapLongitude = false,
   previewHillshade,
   detailLevel,
   onDiagnostics,
@@ -103,6 +104,7 @@ export default function ViewportSurface({
     height,
     dpr: Math.min(3, devicePixelRatio || 1),
     styles,
+    wrapLongitude,
   };
   const request = previewQuality
     ? previewRequest(options, previewQuality)
@@ -116,6 +118,7 @@ export default function ViewportSurface({
     request.size,
     previewQuality ? previewHillshade : undefined,
     request.styles,
+    wrapLongitude,
     retry,
     enabled,
     active,

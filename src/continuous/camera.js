@@ -32,7 +32,13 @@ export function visibleViewport(
     h,
   };
 }
-export function visibleTiles(camera, width, dpr = 1, height) {
+export function visibleTiles(
+  camera,
+  width,
+  dpr = 1,
+  height,
+  wrapLongitude = false,
+) {
   camera = visibleViewport(camera, width, height);
   const size = width * dpr > 1536 ? 512 : 256;
   const z = Math.max(
@@ -50,13 +56,27 @@ export function visibleTiles(camera, width, dpr = 1, height) {
     y++
   )
     for (
-      let x = Math.max(0, Math.floor(camera.x / span));
+      let x = wrapLongitude
+        ? Math.floor(camera.x / span)
+        : Math.max(0, Math.floor(camera.x / span));
       x <=
-      Math.min(2 ** (z + 1) - 1, Math.ceil((camera.x + camera.w) / span) - 1);
+      (wrapLongitude
+        ? Math.ceil((camera.x + camera.w) / span) - 1
+        : Math.min(
+            2 ** (z + 1) - 1,
+            Math.ceil((camera.x + camera.w) / span) - 1,
+          ));
       x++
     )
       tiles.push({ z, x, y, span, size });
   return tiles;
+}
+
+// Drawing coordinates may cross the illustration seam; API/cache coordinates
+// always address the canonical, immutable world tile.
+export function canonicalTileX(tile) {
+  const columns = 2 ** (tile.z + 1);
+  return ((tile.x % columns) + columns) % columns;
 }
 
 // Source resolution is independent of requested raster LOD. Rivers and authored

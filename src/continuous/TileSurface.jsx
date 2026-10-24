@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { visibleTiles, visibleViewport } from "./camera.js";
+import { visibleTiles, visibleViewport, canonicalTileX } from "./camera.js";
 import { requestTile } from "./tile-request.js";
 import { ProjectedRaster, useMapProjection } from "./MapProjection.js";
 const sharedCache = new Map();
@@ -34,6 +34,7 @@ export default function TileSurface({
   height,
   onLoading,
   enabled = true,
+  wrapLongitude = false,
   debug = typeof location !== "undefined" &&
     new URLSearchParams(location.search).has("tileDebug"),
 }) {
@@ -83,8 +84,9 @@ export default function TileSurface({
   const stamp = (t) =>
     invalidations.reduce((v, b) => {
       const halo = t.span / t.size;
-      return t.x * t.span - halo <= b.x + b.w &&
-        (t.x + 1) * t.span + halo >= b.x &&
+      const x = canonicalTileX(t);
+      return x * t.span - halo <= b.x + b.w &&
+        (x + 1) * t.span + halo >= b.x &&
         t.y * t.span - halo <= b.y + b.h &&
         (t.y + 1) * t.span + halo >= b.y
         ? Math.max(v, b.revision)
@@ -95,6 +97,7 @@ export default function TileSurface({
     width,
     Math.min(3, devicePixelRatio || 1),
     height,
+    wrapLongitude,
   );
   const view = visibleViewport(camera, width, height);
   const signature = wanted
@@ -172,7 +175,7 @@ export default function TileSurface({
         }
         try {
           const blob = await requestTile(
-            `/api/sessions/${session}/terrain/tiles/${t.z}/${t.x}/${t.y}?style=${style}&revision=${revision}&size=${t.size}&strict=1`,
+            `/api/sessions/${session}/terrain/tiles/${t.z}/${canonicalTileX(t)}/${t.y}?style=${style}&revision=${revision}&size=${t.size}&strict=1`,
             revision,
             abort.signal,
             { record: debug ? recordTile : undefined },

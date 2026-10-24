@@ -7,6 +7,7 @@ export default defineConfig({
     "ui.browser.spec.mjs",
     "terrain.browser.spec.mjs",
     "terrain-save.browser.spec.mjs",
+    "illustrator.browser.spec.mjs",
   ],
   workers: 1,
   timeout: 90000,

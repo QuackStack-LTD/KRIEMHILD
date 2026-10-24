@@ -7,7 +7,11 @@ import {
   renderViewport,
 } from "../src/continuous/terrain-pyramid.js";
 import { screenToMap } from "../src/continuous/geometry.js";
-import { reliefResolution, visibleTiles } from "../src/continuous/camera.js";
+import {
+  reliefResolution,
+  visibleTiles,
+  canonicalTileX,
+} from "../src/continuous/camera.js";
 const camera = {
   x: 0.7620343104171656,
   y: 0.3127600712541041,
@@ -41,6 +45,67 @@ function drawing() {
     }),
   };
 }
+
+test("fitted illustrations draw both sides of a seam from canonical tiles, including after edits", async () => {
+  const urls = [];
+  const p = new TerrainPyramid({
+    fetchTile: async (url) => {
+      urls.push(url);
+      return new Blob(["valid"]);
+    },
+  });
+  const r = request({
+    camera: { x: 1.9, y: 0.3, w: 0.2, h: 0.2 },
+    width: 256,
+    height: 256,
+    wrapLongitude: true,
+    styles: ["atlas"],
+  });
+  const nodes = pyramidNodes(r);
+  assert.ok(nodes.some((n) => n.x * n.span >= 2));
+  assert.deepEqual(
+    nodes,
+    visibleTiles({ x: 1.9, y: 0.3, w: 0.2, h: 0.2 }, 256, 1, 256, true),
+  );
+  const frames = [];
+  await renderViewport(p, r, signal(), {
+    ...drawing(),
+    onFrame: async (f) => frames.push(f),
+  });
+  assert.equal(frames.at(-1).bounds.x, 1.9);
+  assert.ok(urls.length > 0);
+  for (const url of urls) {
+    const [, z, x] = url.match(/tiles\/(\d+)\/(\d+)\//);
+    assert.ok(+x >= 0 && +x < 2 ** (+z + 1));
+  }
+  const n = nodes.find((n) => n.x * n.span >= 2),
+    canonical = { ...n, x: canonicalTileX(n) };
+  const prepared = p.prepare(r);
+  assert.equal(
+    p.key(prepared, n, "atlas"),
+    p.key(prepared, canonical, "atlas"),
+  );
+  const edited = p.prepare({
+    ...r,
+    revision: 1,
+    invalidations: [{ revision: 1, x: 0, y: 0.3, w: 0.1, h: 0.2 }],
+  });
+  assert.notEqual(p.key(edited, n, "atlas"), p.key(prepared, n, "atlas"));
+  const negative = visibleTiles(
+    { x: -0.1, y: 0.3, w: 0.2, h: 0.2 },
+    256,
+    1,
+    256,
+    true,
+  );
+  assert.ok(negative.some((n) => n.x < 0));
+  assert.ok(negative.every((n) => canonicalTileX(n) >= 0));
+  assert.ok(
+    visibleTiles({ x: 1.9, y: 0.3, w: 0.2, h: 0.2 }, 256, 1, 256).every(
+      (n) => n.x * n.span < 2,
+    ),
+  );
+});
 
 test("manual retry fetches fresh bytes after a corrupt PNG decode", async () => {
   let requests = 0;

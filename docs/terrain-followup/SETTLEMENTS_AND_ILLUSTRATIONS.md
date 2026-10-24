@@ -58,12 +58,17 @@ keeps relative geographic positions, and masks unselected land. It does not
 resize or move individual continents.
 
 Connectivity follows saved surface triangles, including their diagonal and
-longitude seam, rather than generator mass IDs. Lake holes remain holes.
+longitude seam, rather than generator mass IDs. Lake holes remain excluded from
+dry-land selection; illustrated coverage includes their water and shorelines.
 Finite outlines close at map edges, including polar caps and all-land worlds.
 Authored terrain operations participate in the selection surface. Revision
 checks reject an obsolete selection, and a saved operation fingerprint requires
 reselection if terrain changes before a selected-land illustration is saved.
 Source data, queries, terrain coordinates and preview quality are independent.
+
+The follow-up [seam and inland-water repair](ILLUSTRATOR_SEAM_AND_WATER.md)
+joins opposite-edge fragments in one fitted longitude interval and records
+preview/export, navigation, and banner regression evidence.
 
 Selection runs outside the session lock, is cancellable, and uses at most
 64 MiB for flood labels/queue plus the source copy and bounded coastline maps.
