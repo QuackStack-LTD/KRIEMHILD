@@ -44,12 +44,16 @@ func TestIllustratedMapAtomicFilingBannerVersionsAndRestart(t *testing.T) {
 		return b.Bytes()
 	}
 	req := IllustratedMapRequest{MapID: m.ID, AgeID: age, SourceRevision: state.Header.Revision, Illustration: art, PNG: picture(color.NRGBA{R: 200, A: 255})}
+	req.BannerPNG = picture(color.NRGBA{G: 200, A: 255})
 	d, id, inbox, err := s.SaveIllustratedMap(ctx, d.World.ID, d.World.Revision, req)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if d.Entity(age, inbox).Name != "Illustrated maps" || d.LibraryFile(age, id).ArchiveID != inbox {
 		t.Fatal("global map not filed in inbox")
+	}
+	if d.LibraryFile(age, id).Versions[0].Banner == nil {
+		t.Fatal("missing banner rendition")
 	}
 	if d.Entity(age, country.ID) == nil {
 		t.Fatal("country record missing")
@@ -145,5 +149,9 @@ func TestIllustratedMapAtomicFilingBannerVersionsAndRestart(t *testing.T) {
 	data, _, err = portable.LibraryContent(ctx, d.World.ID, age, focusFile, props.IllustratedMap.Version)
 	if err != nil || bytes.Equal(data, req.PNG) {
 		t.Fatal("portable bundle lost earlier image", err)
+	}
+	data, _, err = portable.LibraryContent(ctx, d.World.ID, age, focusFile, props.IllustratedMap.Version, "banner")
+	if err != nil || !bytes.Equal(data, req.BannerPNG) {
+		t.Fatal("portable bundle lost banner", err)
 	}
 }

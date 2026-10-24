@@ -49,6 +49,14 @@ import { bounds as geometryBounds } from "./geometry.js";
 import { newIllustration, buildIllustration } from "./illustration.js";
 import IllustrationScene from "./IllustrationScene.jsx";
 import IllustrationPanel from "./IllustrationPanel.jsx";
+import { exportTerrain, illustrationAssets } from "./illustration-export.js";
+import {
+  landPaths,
+  toggleLand,
+  rectangleLand,
+  selectedLand,
+} from "./land-selection.js";
+import Dialog from "../worldbuilding/ui/Dialog.jsx";
 import "./studio.css";
 
 const uid = () => crypto.randomUUID().replaceAll("-", "");
@@ -60,6 +68,7 @@ const layerFor = (kind) =>
     landmark: "natural-features",
     house: "buildings",
     country: "countries",
+    state: "countries",
   })[kind] || "settlements";
 const initialCamera = { x: 0, y: 0, w: 2, h: 1 };
 const Terrain3D = lazy(() => import("./Terrain3D.jsx"));
@@ -102,6 +111,13 @@ export default function Studio({ initialState, onExit }) {
     [artTerrain, setArtTerrain] = useState(null);
   const [worldContext, setWorldContext] = useState(null);
   const [savedIllustration, setSavedIllustration] = useState(null);
+  const [illustrationProgress, setIllustrationProgress] = useState(null);
+  const imageAssets = useRef(null);
+  const [mapSetup, setMapSetup] = useState(null);
+  const [landComponents, setLandComponents] = useState([]);
+  const [landIDs, setLandIDs] = useState([]);
+  const [landBox, setLandBox] = useState(null);
+  const setupSequence = useRef(0);
   const savedView =
     initialState?.projectUI?.continuousView ||
     initialState?.project?.view ||
@@ -145,6 +161,10 @@ export default function Studio({ initialState, onExit }) {
   const [radius, setRadius] = useState(100),
     [amount, setAmount] = useState(300),
     [name, setName] = useState("New feature");
+  const [drawingType, setDrawingType] = useState({
+    state: "country",
+    settlement: "town",
+  });
   const [settlement, setSettlement] = useState(null),
     [settlementSpec, setSettlementSpec] = useState({
       name: "New town",
@@ -199,6 +219,13 @@ export default function Studio({ initialState, onExit }) {
     [camera, width, height],
   );
   const drawPoint = (p) => projection.point(p);
+  const landPath = (regions) =>
+    regions
+      .map(
+        (p) =>
+          pathText(clipPolygon(p, projection.bounds).map(drawPoint)) + " Z",
+      )
+      .join(" ");
   const drawProjectPoint = (p) => drawPoint(projectToMap(p, state));
   const drawProjectPoints = (points) =>
     points
@@ -275,7 +302,7 @@ export default function Studio({ initialState, onExit }) {
     setArtSelected({ ...o, ...patch });
     changeArt(next, commit);
   }
-  function artScope(scope, focus) {
+  function artScope(scope, focus, options = {}) {
     let extent = scope === "world" ? initialCamera : camera;
     if (focus) {
       const b = geometryBounds(focus.points.map((p) => projectToMap(p, state))),
@@ -287,25 +314,137 @@ export default function Studio({ initialState, onExit }) {
         h: Math.max(0.0001, b.h + pad * 2),
       };
     }
+    extent = options.extent || extent;
     const next = newIllustration(scope, extent, focus?.id || "");
-    if (focus?.name) next.title = `${focus.name} atlas`.slice(0, 160);
-    const saved = state.project.illustrations?.[next.id];
-    const current =
-      saved && focus ? { ...saved, bounds: next.bounds } : saved || next;
-    changeArt(current, !saved || !!focus);
-    setCamera(
-      saved && !focus
-        ? {
-            x: saved.bounds[0],
-            y: saved.bounds[1],
-            w: saved.bounds[2],
-            h: saved.bounds[3],
-          }
-        : extent,
-    );
+    next.id =
+      options.fresh ||
+      (art && (art.scope !== scope || (art.focus || "") !== (focus?.id || "")))
+        ? `medieval-${uid()}`
+        : art?.id || next.id;
+    next.title =
+      options.title ||
+      art?.title ||
+      (focus?.name ? `${focus.name} atlas` : next.title);
+    if (options.regions) {
+      next.regions = options.regions;
+      next.landIds = options.landIds;
+      next.landKey = options.landKey;
+    }
+    if (art && !options.fresh) {
+      next.style = art.style;
+      next.layers = art.layers;
+      next.objects = art.objects;
+    }
+    changeArt(next, true);
+    setCamera(extent);
     setArtSelected(null);
     setIllustrating(true);
     setTool("select");
+  }
+  function startIllustration() {
+    const focus = selected?.recordStatus !== "draft" ? selected : null;
+    const inherited = entities.find(
+      (e) => (e.logicalId || e.id) === state.historicalMap?.entityId,
+    );
+    setMapSetup({
+      step: "name",
+      title: art?.title || "",
+      resume: !!art,
+      focus: focus || inherited || null,
+      kind: focus || inherited ? "place" : "land",
+      camera,
+    });
+  }
+  async function setupIllustration() {
+    const setup = { ...mapSetup };
+    if (!setup.title.trim()) return;
+    if (setup.resume && art && setup.title.trim() === art.title) {
+      const currentLand = art.landKey
+        ? await request(`${base}/terrain/land-selection?key=1`)
+        : null;
+      if (currentLand && currentLand.sourceKey !== art.landKey) {
+        setError(
+          "The landscape changed. Select the connected land for this map again.",
+        );
+        setup.resume = false;
+      } else {
+        setCamera({
+          x: art.bounds[0],
+          y: art.bounds[1],
+          w: art.bounds[2],
+          h: art.bounds[3],
+        });
+        setIllustrating(true);
+        setMapSetup(null);
+        return;
+      }
+    }
+    const serial = ++setupSequence.current;
+    if (setup.kind === "place" && setup.focus) {
+      artScope(
+        ["country", "state", "kingdom", "empire"].includes(setup.focus.kind)
+          ? "country"
+          : "city",
+        setup.focus,
+        { fresh: true, title: setup.title.trim() },
+      );
+      setMapSetup(null);
+      return;
+    }
+    setMapSetup({ ...setup, step: "land", loading: true });
+    setLandIDs([]);
+    setCamera(initialCamera);
+    setIllustrating(false);
+    try {
+      const data = await request(`${base}/terrain/land-selection`);
+      if (serial !== setupSequence.current) return;
+      if (active.current?.project.revision !== data.revision)
+        throw Error("The terrain changed; start land selection again.");
+      setLandComponents(
+        data.components
+          .map((c) => ({
+            ...c,
+            paths: landPaths(c.paths, (0.05 * 2) / data.sourceWidth),
+          }))
+          .filter((c) => c.paths.length),
+      );
+      setMapSetup({
+        ...setup,
+        step: "land",
+        loading: false,
+        revision: data.revision,
+        landKey: data.sourceKey,
+      });
+    } catch (e) {
+      if (serial === setupSequence.current) {
+        setError(e.message);
+        setMapSetup(null);
+      }
+    }
+  }
+  function createSelectedMap() {
+    if (active.current.project.revision !== mapSetup.revision) {
+      setError("The source changed; start land selection again.");
+      return;
+    }
+    const selection = selectedLand(landComponents, landIDs);
+    if (!selection) return;
+    if (selection.regions.reduce((n, p) => n + p.length, 0) > 80000) {
+      setError(
+        "This selection exceeds the map geometry budget. Select a smaller region.",
+      );
+      return;
+    }
+    artScope("continent", null, {
+      fresh: true,
+      title: mapSetup.title.trim(),
+      extent: selection.bounds,
+      regions: selection.regions,
+      landIds: landIDs,
+      landKey: mapSetup.landKey,
+    });
+    setMapSetup(null);
+    setLandBox(null);
   }
   const run = async (work) => {
     setError("");
@@ -648,26 +787,27 @@ export default function Studio({ initialState, onExit }) {
       });
       return;
     }
-    if (["road", "country", "border"].includes(tool)) {
+    if (["road", "country", "state", "settlement", "border"].includes(tool)) {
       setDraft((d) => [...d, toWorld(p)]);
       return;
     }
     if (["landmark", "label", "house"].includes(tool)) {
-      await run(() =>
-        command({
-          kind: "entity",
-          entity: {
-            id: uid(),
-            name,
-            kind: tool,
-            geometry: "point",
-            points: [toWorld(p)],
-            layer: layerFor(tool),
-            color: "#e4c989",
-            minDetail: 0,
-          },
-        }),
-      );
+      const id = uid();
+      const shape = {
+        id,
+        name: name === "New feature" ? `${tool} ${id.slice(0, 8)}` : name,
+        kind: tool,
+        geometry: "point",
+        points: [toWorld(p)],
+        layer: layerFor(tool),
+        color: "#e4c989",
+        minDetail: 0,
+      };
+      await run(async () => {
+        await command({ kind: "entity", entity: shape });
+        setSelected({ ...shape, recordStatus: "draft" });
+        setTool("select");
+      });
       return;
     }
     if (
@@ -709,26 +849,32 @@ export default function Studio({ initialState, onExit }) {
     }
   }
   async function finish() {
-    const polygon = tool === "country";
+    const polygon = ["country", "state", "settlement"].includes(tool);
     if (draft.length < (polygon ? 3 : 2)) return;
-    await command({
-      kind: "entity",
-      entity: {
-        id: uid(),
-        name,
-        kind: tool,
-        geometry: polygon ? "polygon" : "line",
-        points: draft,
-        layer: layerFor(tool),
-        color: polygon ? "#c49d65" : "#e7cfaa",
-        minDetail: 0,
-      },
-    });
+    const id = uid();
+    const kind = drawingType[tool] || tool;
+    const shape = {
+      id,
+      name: name === "New feature" ? `${kind} ${id.slice(0, 8)}` : name,
+      kind,
+      geometry: polygon ? "polygon" : "line",
+      points: draft,
+      layer: layerFor(tool),
+      color: polygon ? "#c49d65" : "#e7cfaa",
+      minDetail: 0,
+    };
+    await command({ kind: "entity", entity: shape });
+    setSelected({ ...shape, recordStatus: "draft" });
+    setTool("select");
     setDraft([]);
   }
   function down(e) {
     if (e.button !== 0) return;
     e.currentTarget.setPointerCapture(e.pointerId);
+    if (mapSetup?.step === "land") {
+      drag.current = { landStart: position(e), start: [e.clientX, e.clientY] };
+      return;
+    }
     if (state && (tool === "select" || tool === "inspect")) {
       const hits = featureIndex.pick(
         position(e),
@@ -775,6 +921,16 @@ export default function Studio({ initialState, onExit }) {
     const d = drag.current,
       dx = e.clientX - d.start[0],
       dy = e.clientY - d.start[1];
+    if (d.landStart) {
+      const a = d.landStart;
+      setLandBox({
+        x: Math.min(a[0], p[0]),
+        y: Math.min(a[1], p[1]),
+        w: Math.abs(a[0] - p[0]),
+        h: Math.abs(a[1] - p[1]),
+      });
+      return;
+    }
     if (Math.hypot(dx, dy) > 4) d.moved = true;
     if (d.vertex != null) {
       setSelected((v) => ({
@@ -810,6 +966,23 @@ export default function Studio({ initialState, onExit }) {
     const d = drag.current;
     drag.current = null;
     if (!d) return;
+    if (d.landStart) {
+      if (!mapSetup?.loading) {
+        const p = position(e);
+        if (Math.hypot(e.clientX - d.start[0], e.clientY - d.start[1]) > 4)
+          setLandIDs((ids) =>
+            rectangleLand(landComponents, ids, {
+              x: Math.min(d.landStart[0], p[0]),
+              y: Math.min(d.landStart[1], p[1]),
+              w: Math.abs(p[0] - d.landStart[0]),
+              h: Math.abs(p[1] - d.landStart[1]),
+            }),
+          );
+        else setLandIDs((ids) => toggleLand(landComponents, ids, p));
+      }
+      setLandBox(null);
+      return;
+    }
     if ((d.vertex != null || d.entity) && d.moved) {
       run(() =>
         command(
@@ -861,6 +1034,10 @@ export default function Studio({ initialState, onExit }) {
     outputState = active.current,
   ) {
     if (!svg.current) return;
+    if (format === "assets" && exportWidth > 4096)
+      throw Error(
+        "Choose an export width up to 4096 pixels to save a square map and banner.",
+      );
     if (
       (exportWidth * exportWidth * outputCamera.h) / outputCamera.w >
       16777216
@@ -888,6 +1065,18 @@ export default function Studio({ initialState, onExit }) {
       String((exportWidth * outputCamera.h) / outputCamera.w),
     );
     const exportBounds = projection.box(outputCamera);
+    const landMask = clone.querySelector("#selected-illustration-land path");
+    if (landMask && art?.regions)
+      landMask.setAttribute(
+        "d",
+        art.regions
+          .map(
+            (p) =>
+              pathText(clipPolygon(p, outputCamera).map(projection.point)) +
+              " Z",
+          )
+          .join(" "),
+      );
     clone.setAttribute(
       "viewBox",
       `${exportBounds.x} ${exportBounds.y} ${exportBounds.w} ${exportBounds.h}`,
@@ -913,69 +1102,16 @@ export default function Studio({ initialState, onExit }) {
       '[aria-label="Illustration selection"], [data-editor-handle]',
     ))
       selected.remove();
-    for (const terrain of clone.querySelectorAll(
-      '[aria-label="Continuous terrain tiles"]',
-    )) {
-      terrain.replaceChildren();
-      const queue = visibleTiles(outputCamera, exportWidth, 1);
-      const worker = async () => {
-        while (queue.length) {
-          const t = queue.shift();
-          const r = await fetch(
-            `/api/sessions/${outputState.id}/terrain/tiles/${t.z}/${t.x}/${t.y}?size=${t.size}&style=${terrain.getAttribute("data-terrain-style") || displayStyle}&strict=1&revision=${outputState.project.revision}`,
-          );
-          if (!r.ok)
-            throw Error(
-              "Export terrain changed or could not be sampled; retry the export.",
-            );
-          const blob = await r.blob();
-          const uri = await new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.readAsDataURL(blob);
-          });
-          const img = document.createElementNS(
-            "http://www.w3.org/2000/svg",
-            "image",
-          );
-          const tile = projection.box({
-            x: t.x * t.span,
-            y: t.y * t.span,
-            w: t.span,
-            h: t.span,
-          });
-          for (const [k, v] of Object.entries({
-            href: uri,
-            x: tile.x,
-            y: tile.y,
-            width: tile.w,
-            height: tile.h,
-            preserveAspectRatio: "none",
-          }))
-            img.setAttribute(k, String(v));
-          terrain.appendChild(img);
-        }
-      };
-      await Promise.all([worker(), worker(), worker()]);
-      // PNG edge coverage must not depend on which network worker finishes
-      // first. Export the same geographic tile sequence at every preview quality.
-      terrain.replaceChildren(
-        ...[...terrain.children].sort(
-          (a, b) =>
-            +a.getAttribute("y") - +b.getAttribute("y") ||
-            +a.getAttribute("x") - +b.getAttribute("x"),
-        ),
-      );
-    }
-    for (const img of clone.querySelectorAll("image")) {
-      const blob = await (await fetch(img.getAttribute("href"))).blob();
-      const uri = await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.readAsDataURL(blob);
-      });
-      img.setAttribute("href", uri);
-    }
+    await exportTerrain(clone, {
+      camera: outputCamera,
+      width: exportWidth,
+      projection,
+      session: outputState.id,
+      revision: outputState.project.revision,
+      identity: JSON.stringify([outputState.id, outputState.project.revision]),
+      onProgress: setIllustrationProgress,
+    });
+    if (format === "assets") return illustrationAssets(clone, exportWidth);
     const blob = new Blob([new XMLSerializer().serializeToString(clone)], {
       type: "image/svg+xml",
     });
@@ -1020,18 +1156,45 @@ export default function Studio({ initialState, onExit }) {
   const diagnostics = state?.continuous?.diagnostics;
   async function saveIllustration() {
     if (!art) return;
+    const started = performance.now();
     setSavedIllustration(null);
     const design = art;
     await ensureWorldMap();
-    await command({ kind: "illustration", illustration: design });
-    await save();
+    if (
+      JSON.stringify(active.current.project.illustrations?.[design.id]) !==
+      JSON.stringify(design)
+    )
+      await command({ kind: "illustration", illustration: design });
+    if (active.current.unsaved) await save();
     const source = active.current;
-    const png = await exportMap("snapshot", {
-      x: design.bounds[0],
-      y: design.bounds[1],
-      w: design.bounds[2],
-      h: design.bounds[3],
+    const sourceMs = performance.now() - started;
+    const assetKey = JSON.stringify([
+      source.id,
+      source.project.revision,
+      design,
+      invalidations,
+      entities,
+      rivers.length,
+      exportWidth,
+      hillshade,
+      artTerrain?.bounds,
+    ]);
+    setIllustrationProgress({
+      phase: "Preparing map images",
+      completed: 0,
+      total: 1,
     });
+    const cached = imageAssets.current?.key === assetKey;
+    const assets = cached
+      ? imageAssets.current.assets
+      : await exportMap("assets", {
+          x: design.bounds[0],
+          y: design.bounds[1],
+          w: design.bounds[2],
+          h: design.bounds[3],
+        });
+    imageAssets.current = { key: assetKey, assets };
+    const rasterMs = performance.now() - started - sourceMs;
     if (
       active.current?.id !== source.id ||
       active.current.project.revision !== source.project.revision
@@ -1047,7 +1210,13 @@ export default function Studio({ initialState, onExit }) {
         illustration: design,
       }),
     );
-    form.append("file", png, "illustration.png");
+    form.append("file", assets.map, "illustration.png");
+    form.append("banner", assets.banner, "banner.png");
+    setIllustrationProgress({
+      phase: "Saving map and banner",
+      completed: 0,
+      total: 1,
+    });
     const response = await fetch(
       `/api/sessions/${source.id}/illustrated-maps`,
       { method: "POST", body: form },
@@ -1056,6 +1225,16 @@ export default function Studio({ initialState, onExit }) {
     if (!response.ok)
       throw Error(result.error || "Could not save the illustration.");
     setWorldContext(result.document);
+    const saves = (window.__illustrationSaveLog ||= []);
+    saves.push({
+      sourceMs,
+      rasterMs,
+      totalMs: performance.now() - started,
+      serverTiming: response.headers.get("Server-Timing"),
+      cached,
+    });
+    if (saves.length > 20) saves.shift();
+    setIllustrationProgress(null);
     const folder = result.document.entities.find(
       (e) =>
         e.id === result.archiveId && e.ageId === source.historicalMap.ageId,
@@ -1236,6 +1415,93 @@ export default function Studio({ initialState, onExit }) {
   }
   return (
     <div className="terrain-studio">
+      {mapSetup?.step === "name" && (
+        <Dialog
+          title="Name illustrated map"
+          onClose={() => {
+            setupSequence.current++;
+            setMapSetup(null);
+          }}
+          onSubmit={setupIllustration}
+          trackChanges={false}
+          actions={
+            <>
+              <button type="button" data-dialog-dismiss>
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="primary"
+                disabled={!mapSetup.title.trim()}
+              >
+                Continue
+              </button>
+            </>
+          }
+        >
+          <label>
+            Map name
+            <input
+              aria-label="Illustrated map name"
+              autoFocus
+              required
+              maxLength={160}
+              value={mapSetup.title}
+              onChange={(e) =>
+                setMapSetup({ ...mapSetup, title: e.target.value })
+              }
+            />
+          </label>
+          {Object.values(state.project.illustrations || {}).length > 0 && (
+            <label>
+              Saved map
+              <select
+                aria-label="Saved illustrated map"
+                value={mapSetup.resume ? art?.id || "" : ""}
+                onChange={(e) => {
+                  const saved = state.project.illustrations[e.target.value];
+                  if (saved) {
+                    setArt(saved);
+                    setMapSetup({
+                      ...mapSetup,
+                      resume: true,
+                      title: saved.title,
+                      kind: saved.focus ? "place" : "land",
+                      focus: entities.find((e) => e.id === saved.focus) || null,
+                    });
+                  } else setMapSetup({ ...mapSetup, resume: false, title: "" });
+                }}
+              >
+                <option value="">Create a new map</option>
+                {Object.values(state.project.illustrations).map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          {mapSetup.focus && (
+            <label>
+              Map content
+              <select
+                aria-label="Illustrated map content"
+                value={mapSetup.kind}
+                onChange={(e) =>
+                  setMapSetup({
+                    ...mapSetup,
+                    kind: e.target.value,
+                    resume: false,
+                  })
+                }
+              >
+                <option value="place">{mapSetup.focus.name}</option>
+                <option value="land">Choose continents and islands</option>
+              </select>
+            </label>
+          )}
+        </Dialog>
+      )}
       <header className="studio-top">
         <button
           className="studio-brand"
@@ -1273,7 +1539,7 @@ export default function Studio({ initialState, onExit }) {
                   setMode(id);
                   if (id === "generate" || id === "atlas")
                     setIllustrating(false);
-                  setTool(id === "settlement" ? "site" : "inspect");
+                  setTool(id === "settlement" ? "settlement" : "inspect");
                   setDraft([]);
                 })
               }
@@ -1303,22 +1569,7 @@ export default function Studio({ initialState, onExit }) {
             aria-pressed={illustrating}
             onClick={() => {
               if (illustrating) setIllustrating(false);
-              else {
-                const country =
-                  selected &&
-                  ["country", "state", "kingdom", "empire"].includes(
-                    selected.kind,
-                  );
-                const city =
-                  selected &&
-                  ["capital", "city", "town", "village"].includes(
-                    selected.kind,
-                  );
-                artScope(
-                  country ? "country" : city || selected ? "city" : "world",
-                  selected || undefined,
-                );
-              }
+              else startIllustration();
             }}
           >
             {illustrating ? "Construction mode" : "Medieval Illustrator"}
@@ -1342,12 +1593,12 @@ export default function Studio({ initialState, onExit }) {
           {(mode === "generate" || mode === "atlas"
             ? ["inspect"]
             : mode === "settlement"
-              ? ["site", "select", "road", "house", "landmark"]
+              ? ["settlement", "select", "road", "house", "landmark", "site"]
               : [
                   "inspect",
                   "select",
                   "road",
-                  "country",
+                  "state",
                   "border",
                   "landmark",
                   "label",
@@ -1359,7 +1610,7 @@ export default function Studio({ initialState, onExit }) {
                 ]
           ).map((t) => (
             <button
-              title={t}
+              title={t === "site" ? "Generate settlement layout" : t}
               key={t}
               aria-pressed={tool === t}
               onClick={() => {
@@ -1367,7 +1618,13 @@ export default function Studio({ initialState, onExit }) {
                 setDraft([]);
               }}
             >
-              {t}
+              {t === "site"
+                ? "Generate layout"
+                : t === "state"
+                  ? "State"
+                  : t === "settlement"
+                    ? "Settlement"
+                    : t}
             </button>
           ))}
           <hr />
@@ -1401,7 +1658,13 @@ export default function Studio({ initialState, onExit }) {
                 drag.current = null;
               }}
             >
-              <rect x="0" y="0" width={width} height={height} fill="#101d2a" />
+              <rect
+                x="0"
+                y="0"
+                width={width}
+                height={height}
+                fill={illustrating ? "#e9d9af" : "#101d2a"}
+              />
               {state && (
                 <ViewportSurface
                   active={viewportRenderer}
@@ -1438,6 +1701,24 @@ export default function Studio({ initialState, onExit }) {
                   ]}
                 >
                   <defs>
+                    {illustrating && art?.regions?.length > 0 && (
+                      <mask
+                        id="selected-illustration-land"
+                        maskUnits="userSpaceOnUse"
+                        x="0"
+                        y="0"
+                        width={width}
+                        height={height}
+                      >
+                        <path
+                          fill="white"
+                          fillRule="evenodd"
+                          stroke="white"
+                          strokeWidth="1"
+                          d={landPath(art.regions)}
+                        />
+                      </mask>
+                    )}
                     <mask
                       id="terrain-river-mask"
                       maskUnits="userSpaceOnUse"
@@ -1446,39 +1727,55 @@ export default function Studio({ initialState, onExit }) {
                       width={width}
                       height={height}
                     >
-                      {viewportRenderer ? (
-                        <ViewportLayer style="river-mask" />
-                      ) : (
-                        <TileSurface
-                          enabled={!show3D}
-                          session={state.id}
-                          revision={state.project.revision}
-                          invalidations={invalidations}
-                          identity={`${state.worldId}:${state.id}`}
-                          style="river-mask"
-                          camera={camera}
-                          width={width}
-                          height={height}
-                        />
-                      )}
+                      <g
+                        mask={
+                          illustrating && art?.regions?.length
+                            ? "url(#selected-illustration-land)"
+                            : undefined
+                        }
+                      >
+                        {viewportRenderer ? (
+                          <ViewportLayer style="river-mask" />
+                        ) : (
+                          <TileSurface
+                            enabled={!show3D}
+                            session={state.id}
+                            revision={state.project.revision}
+                            invalidations={invalidations}
+                            identity={`${state.worldId}:${state.id}`}
+                            style="river-mask"
+                            camera={camera}
+                            width={width}
+                            height={height}
+                          />
+                        )}
+                      </g>
                     </mask>
                   </defs>
-                  {viewportRenderer ? (
-                    <ViewportLayer style={displayStyle} primary />
-                  ) : (
-                    <TileSurface
-                      enabled={!show3D}
-                      session={state.id}
-                      revision={state.project.revision}
-                      invalidations={invalidations}
-                      style={displayStyle}
-                      identity={`${state.worldId}:${state.id}`}
-                      camera={camera}
-                      width={width}
-                      height={height}
-                      onLoading={setLoading}
-                    />
-                  )}
+                  <g
+                    mask={
+                      illustrating && art?.regions?.length
+                        ? "url(#selected-illustration-land)"
+                        : undefined
+                    }
+                  >
+                    {viewportRenderer ? (
+                      <ViewportLayer style={displayStyle} primary />
+                    ) : (
+                      <TileSurface
+                        enabled={!show3D}
+                        session={state.id}
+                        revision={state.project.revision}
+                        invalidations={invalidations}
+                        style={displayStyle}
+                        identity={`${state.worldId}:${state.id}`}
+                        camera={camera}
+                        width={width}
+                        height={height}
+                        onLoading={setLoading}
+                      />
+                    )}
+                  </g>
                   {hillshade > 0 &&
                     !illustrating &&
                     displayStyle !== "terrain" && (
@@ -1563,6 +1860,32 @@ export default function Studio({ initialState, onExit }) {
                     </g>
                   )}
                   {!illustrating && visibleEntities.map((e) => feature(e))}
+                  {mapSetup?.step === "land" && (
+                    <g aria-label="Selected landmasses" pointerEvents="none">
+                      {landComponents
+                        .filter((c) => landIDs.includes(c.id))
+                        .map((c) => (
+                          <path
+                            key={c.id}
+                            d={landPath(c.paths)}
+                            fill="#e7c56b66"
+                            fillRule="evenodd"
+                            stroke="#ffdd83"
+                            strokeWidth="1.5"
+                          />
+                        ))}
+                      {landBox && (
+                        <rect
+                          {...(() => {
+                            const b = projection.box(landBox);
+                            return { x: b.x, y: b.y, width: b.w, height: b.h };
+                          })()}
+                          fill="#f8db7044"
+                          stroke="#ffdd83"
+                        />
+                      )}
+                    </g>
+                  )}
                   {illustrating && art && (
                     <IllustrationScene
                       config={art}
@@ -1591,6 +1914,11 @@ export default function Studio({ initialState, onExit }) {
                         )
                       }
                       riverMask="url(#terrain-river-mask)"
+                      landMask={
+                        art.regions?.length
+                          ? "url(#selected-illustration-land)"
+                          : undefined
+                      }
                       relief={
                         <g opacity={hillshade} pointerEvents="none">
                           {viewportRenderer ? (
@@ -1739,9 +2067,67 @@ export default function Studio({ initialState, onExit }) {
         </main>
         {panel && (
           <aside className="studio-panel">
+            {mapSetup?.step === "land" && (
+              <section aria-label="Choose land for the map">
+                <h2>{mapSetup.title}</h2>
+                <p>
+                  Click a connected piece of land to select it; click again to
+                  remove it. Drag a rectangle to add islands and archipelagos.
+                </p>
+                {mapSetup.loading ? (
+                  <p role="status">Finding connected land…</p>
+                ) : (
+                  <p>{landIDs.length} selected</p>
+                )}
+                <button
+                  className="primary"
+                  disabled={mapSetup.loading || !landIDs.length || busy}
+                  onClick={createSelectedMap}
+                >
+                  Create illustrated map
+                </button>
+                <button
+                  onClick={() => {
+                    setupSequence.current++;
+                    setCamera(mapSetup.camera);
+                    setMapSetup(null);
+                    setLandBox(null);
+                  }}
+                >
+                  Cancel map
+                </button>
+              </section>
+            )}
+            {!illustrating && ["state", "settlement"].includes(tool) && (
+              <section>
+                <h3>{tool === "state" ? "State" : "Settlement"}</h3>
+                <label>
+                  Type
+                  <select
+                    aria-label="Drawing place type"
+                    value={drawingType[tool]}
+                    onChange={(e) =>
+                      setDrawingType({ ...drawingType, [tool]: e.target.value })
+                    }
+                  >
+                    {(tool === "state"
+                      ? ["country", "state", "kingdom", "empire"]
+                      : ["capital", "city", "town", "village", "hamlet"]
+                    ).map((k) => (
+                      <option key={k}>{k}</option>
+                    ))}
+                  </select>
+                </label>
+                <p>
+                  Click to draw the boundary. Finish the shape, name it, and
+                  Apply changes to publish its record.
+                </p>
+              </section>
+            )}
             {illustrating && art && (
               <IllustrationPanel
                 busy={busy}
+                progress={illustrationProgress}
                 onSave={() => run(saveIllustration)}
                 saved={savedIllustration}
                 config={art}
@@ -1839,7 +2225,7 @@ export default function Studio({ initialState, onExit }) {
                 )}
                 {[
                   ["landCoverage", "Land preference", 0.03, 0.65, 0.01, "%"],
-                  ["continents", "Major landmasses", 1, 10, 1, ""],
+                  ["continents", "Number of continents", 1, 12, 1, ""],
                   ["complexity", "Coast complexity", 0, 2, 0.1, ""],
                   ["islands", "Island intensity", 0, 3, 0.1, ""],
                   ["relief", "Relief strength", 0.1, 2, 0.1, ""],
@@ -2141,8 +2527,9 @@ export default function Studio({ initialState, onExit }) {
                   </select>
                 </label>
                 <p className="studio-muted">
-                  Choose Site, then click dry land to preview districts, streets
-                  and building footprints.
+                  Draw a Settlement boundary, then choose its type and name in
+                  the selection panel. Generate layout is an optional procedural
+                  preview of streets and buildings; it does not publish records.
                 </p>
                 {settlement && (
                   <>
@@ -2176,7 +2563,7 @@ export default function Studio({ initialState, onExit }) {
                         })
                       }
                     >
-                      Accept settlement
+                      Add layout to terrain
                     </button>
                     <button onClick={() => setSettlement(null)}>Discard</button>
                   </>
@@ -2185,7 +2572,56 @@ export default function Studio({ initialState, onExit }) {
             )}
             {selected && !illustrating && (
               <section className="studio-inspector">
-                <h3>Object inspector</h3>
+                <h3>
+                  {["country", "state", "kingdom", "empire"].includes(
+                    selected.kind,
+                  )
+                    ? "State"
+                    : ["capital", "city", "town", "village", "hamlet"].includes(
+                          selected.kind,
+                        )
+                      ? "Settlement"
+                      : "Object"}
+                </h3>
+                {[
+                  "country",
+                  "state",
+                  "kingdom",
+                  "empire",
+                  "capital",
+                  "city",
+                  "town",
+                  "village",
+                  "hamlet",
+                ].includes(selected.kind) && (
+                  <label>
+                    Type
+                    <select
+                      aria-label="Selected place type"
+                      value={selected.kind}
+                      onChange={(e) =>
+                        setSelected({ ...selected, kind: e.target.value })
+                      }
+                    >
+                      {(["country", "state", "kingdom", "empire"].includes(
+                        selected.kind,
+                      )
+                        ? ["country", "state", "kingdom", "empire"]
+                        : ["capital", "city", "town", "village", "hamlet"]
+                      ).map((k) => (
+                        <option key={k} value={k}>
+                          {k}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                {selected.recordStatus === "draft" && (
+                  <p>
+                    Terrain object only. Give it a name and Apply changes to
+                    create its record.
+                  </p>
+                )}
                 <label>
                   Name
                   <input
@@ -2279,27 +2715,34 @@ export default function Studio({ initialState, onExit }) {
                 </p>
                 <button
                   onClick={() =>
-                    run(() => command({ kind: "entity", entity: selected }))
-                  }
-                >
-                  Apply properties
-                </button>
-                <button
-                  onClick={() =>
                     run(async () => {
-                      const s = await ensureWorldMap();
-                      await command({ kind: "entity", entity: selected });
-                      await save();
-                      onExit?.(
-                        s.historyWorldId,
-                        selected.logicalId || selected.id,
-                        s.historicalMap.ageId,
-                      );
+                      await command({
+                        kind: "entity",
+                        entity: selected,
+                        publish: true,
+                      });
+                      setSelected((v) => ({ ...v, recordStatus: "published" }));
                     })
                   }
                 >
-                  Open {selected.name || "this place"} record
+                  Apply changes
                 </button>
+                {selected.recordStatus !== "draft" && (
+                  <button
+                    onClick={() =>
+                      run(async () => {
+                        const s = await ensureWorldMap();
+                        onExit?.(
+                          s.historyWorldId,
+                          selected.logicalId || selected.id,
+                          s.historicalMap.ageId,
+                        );
+                      })
+                    }
+                  >
+                    Open {selected.name || "this place"} record
+                  </button>
+                )}
                 <button
                   onClick={() =>
                     run(async () => {

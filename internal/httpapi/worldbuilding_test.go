@@ -138,7 +138,7 @@ func TestWritingStorageIsIndependentAndDetectsConflicts(t *testing.T) {
 	}
 }
 
-func TestBuilderEntitiesPersistImmediatelyWithoutSavingTerrain(t *testing.T) {
+func TestAppliedBuilderRecordsPersistWithoutSavingTerrain(t *testing.T) {
 	ctx := context.Background()
 	db, err := storage.Open(ctx, t.TempDir(), "")
 	if err != nil {
@@ -160,7 +160,7 @@ func TestBuilderEntitiesPersistImmediatelyWithoutSavingTerrain(t *testing.T) {
 	city := world.Entity{ID: "city", Name: "Rivergate", Kind: "city", Layer: "settlements", ParentID: "country", Geometry: "polygon", Color: "#000000", Points: [][2]float64{{2, 2}, {3, 2}, {3, 3}, {2, 3}}}
 	send := func(kind string, e world.Entity) {
 		t.Helper()
-		b, _ := json.Marshal(map[string]any{"kind": kind, "entity": e, "revision": v.world.Header.Revision})
+		b, _ := json.Marshal(map[string]any{"kind": kind, "entity": e, "publish": kind == "entity", "revision": v.world.Header.Revision})
 		autoRequest(t, s, "POST", "/api/sessions/terrain/world", string(b))
 	}
 	send("entity", country)

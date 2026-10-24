@@ -42,6 +42,13 @@ test("3D loads a coherent terrain cover, renders geographic overlays and support
   const frames = await page
     .locator(".studio-3d-canvas")
     .getAttribute("data-rendered-frames");
+  const exaggeration = page.getByLabel("Vertical exaggeration", {
+    exact: true,
+  });
+  await expect(exaggeration).toHaveAttribute("max", "60");
+  await exaggeration.focus();
+  await exaggeration.press("End");
+  await expect(exaggeration).toHaveValue("60");
   await page
     .getByRole("button", { name: "Look from above", exact: true })
     .click();

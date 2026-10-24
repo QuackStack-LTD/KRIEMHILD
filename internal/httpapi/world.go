@@ -7,6 +7,7 @@ import (
 	"kriemhild/internal/history"
 	"kriemhild/internal/legacyterrain"
 	"kriemhild/internal/storage"
+	"kriemhild/internal/terrain/detail"
 	"kriemhild/internal/world"
 	"math"
 	"net/http"
@@ -136,6 +137,7 @@ func (s *Server) worldEntities(w http.ResponseWriter, r *http.Request) {
 func (s *Server) worldCommand(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Kind         string             `json:"kind"`
+		Publish      bool               `json:"publish"`
 		Revision     int                `json:"revision"`
 		Entity       world.Entity       `json:"entity"`
 		Operation    world.Operation    `json:"operation"`
@@ -186,6 +188,50 @@ func (s *Server) worldCommand(w http.ResponseWriter, r *http.Request) {
 			err = model.MoveFamily(req.Entity.ID, req.Delta[0], req.Delta[1])
 		}
 	case "entity":
+		if req.Entity.ID == "" {
+			req.Entity.ID = token()
+		}
+		old, exists := model.Entities[req.Entity.ID]
+		if !exists {
+			req.Entity.PlaceholderName = ""
+			req.Entity.RecordStatus = "draft"
+			if req.Entity.LogicalID != "" {
+				req.Entity.RecordStatus = "published"
+			}
+		} else {
+			req.Entity.RecordStatus = old.RecordStatus
+			req.Entity.PlaceholderName = old.PlaceholderName
+		}
+		if !exists && !world.MeaningfulName(req.Entity) {
+			req.Entity.PlaceholderName = req.Entity.Name
+		}
+		if req.Publish {
+			if !world.MeaningfulName(req.Entity) {
+				fail(w, 400, "Give this place or object its own name before applying changes")
+				return
+			}
+			req.Entity.RecordStatus = "published"
+		}
+		if v.planet != nil && v.planet.Surface != nil && samePlaceFamily(req.Entity.Kind, "city") && (!exists || !reflect.DeepEqual(old.Points, req.Entity.Points)) {
+			sampler := detail.New(v.planet)
+			transform := continuousTransform(model.Ops(world.Box(req.Entity.Points)), v.solver.W, v.solver.H, v.planet)
+			dry := false
+			for _, point := range req.Entity.Points {
+				lon, lat := (point[0]/float64(v.solver.W-1)-.5)*2*math.Pi, (.5-point[1]/float64(v.solver.H-1))*math.Pi
+				sample := sampler.Sample(lon, lat)
+				if transform != nil {
+					sample = transform(sample, lon, lat)
+				}
+				if sample.Water == "dry" {
+					dry = true
+					break
+				}
+			}
+			if !dry {
+				fail(w, 400, "Place the settlement boundary on dry land; use inspection to check the site.")
+				return
+			}
+		}
 		if v.historical != nil && v.historical.Kind == "settlement" && req.Entity.Layer == "natural-features" {
 			err = fmt.Errorf("geographical features are edited in the Map Builder")
 			break
@@ -316,7 +362,7 @@ func (s *Server) publishBuilderEntities(v *session, state *world.State) error {
 		for _, shape := range state.Entities {
 			if shape.LogicalID != "" && !shape.Deleted {
 				e := d.Entity(m.AgeID, shape.LogicalID)
-				if e == nil || e.Deleted || e.Kind != shape.Kind {
+				if e == nil || e.Deleted || (e.Kind != shape.Kind && !samePlaceFamily(e.Kind, shape.Kind)) {
 					return fmt.Errorf("invalid logical entity reference")
 				}
 			}
@@ -328,6 +374,19 @@ func (s *Server) publishBuilderEntities(v *session, state *world.State) error {
 		v.historyRevision = updated.World.Revision
 	}
 	return err
+}
+
+func samePlaceFamily(a, b string) bool {
+	family := func(k string) int {
+		switch k {
+		case "country", "state", "kingdom", "empire":
+			return 1
+		case "capital", "city", "town", "village", "hamlet", "custom-settlement":
+			return 2
+		}
+		return 0
+	}
+	return family(a) > 0 && family(a) == family(b)
 }
 
 // The generated tile store stays immutable; only intersecting composed tiles

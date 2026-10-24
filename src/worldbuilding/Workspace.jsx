@@ -3,13 +3,18 @@ import Networks from "./Networks.jsx";
 import { useState } from "react";
 import { activeEntities, registry, label, entityDetailMap } from "./model.js";
 import "./workspace.css";
+import IllustratedMapImage from "./IllustratedMapImage.jsx";
 
-export function EntityTile({ entity, onOpen, children, visual }) {
+export function EntityTile({ entity, onOpen, children, visual, worldId }) {
   const p = entity.properties || {};
   return (
     <article className="entity-tile">
       <button className="entity-tile-open" onClick={() => onOpen(entity)}>
-        {visual ||
+        {(p.illustratedMap && worldId ? (
+          <IllustratedMapImage worldId={worldId} entity={entity} />
+        ) : (
+          visual
+        )) ||
           (p.portrait ? (
             <img className="entity-portrait" src={p.portrait} alt="" />
           ) : (
@@ -183,7 +188,9 @@ export function Atlas({
               ? ["city", "capital"].includes(e.kind)
               : collection === "places"
                 ? registry.types[e.kind]?.spatial && e.terrainId
-                : e.kind === (collection === "towns" ? "town" : "village");
+                : collection === "towns"
+                  ? e.kind === "town"
+                  : ["village", "hamlet"].includes(e.kind);
   const rows = entities
     .map((entity) => ({ entity }))
     .filter(
@@ -349,6 +356,7 @@ export function Atlas({
                 <EntityTile
                   key={entity.ageId + entity.id}
                   entity={entity}
+                  worldId={doc.world.id}
                   onOpen={onProfile}
                   visual={(() => {
                     const m = entityDetailMap(doc, entity);

@@ -19,6 +19,7 @@ type IllustratedMapRequest struct {
 	SourceRevision int
 	Illustration   world.Illustration
 	PNG            []byte
+	BannerPNG      []byte
 }
 
 // The file, its folder, place link and banner commit together. Geographic shapes
@@ -28,7 +29,7 @@ func (s *Store) SaveIllustratedMap(ctx context.Context, worldID string, revision
 	if err := a.Validate(); err != nil {
 		return nil, "", "", err
 	}
-	if strings.TrimSpace(a.Title) == "" || len(a.Title) > 160 || len(req.PNG) > history.MaxLibraryFileSize {
+	if strings.TrimSpace(a.Title) == "" || len(a.Title) > 160 || len(req.PNG)+len(req.BannerPNG) > history.MaxLibraryFileSize {
 		return nil, "", "", fmt.Errorf("name the illustration using up to 160 characters and keep its image under 64 MiB")
 	}
 	config, err := png.DecodeConfig(bytes.NewReader(req.PNG))
@@ -37,6 +38,17 @@ func (s *Store) SaveIllustratedMap(ctx context.Context, worldID string, revision
 	}
 	if _, err = png.Decode(bytes.NewReader(req.PNG)); err != nil || req.SourceRevision < 0 {
 		return nil, "", "", fmt.Errorf("the illustration image or its source revision is invalid")
+	}
+	var banner *history.LibraryImage
+	if len(req.BannerPNG) > 0 {
+		c, e := png.DecodeConfig(bytes.NewReader(req.BannerPNG))
+		if e != nil || len(req.BannerPNG) > history.MaxLibraryFileSize || c.Width < 1 || c.Height < 1 || c.Width > 8192 || c.Height > 8192 || c.Width*c.Height > 16777216 {
+			return nil, "", "", fmt.Errorf("invalid banner image dimensions")
+		}
+		if _, e = png.Decode(bytes.NewReader(req.BannerPNG)); e != nil {
+			return nil, "", "", fmt.Errorf("invalid banner PNG")
+		}
+		banner = &history.LibraryImage{Hash: hash(req.BannerPNG), Size: int64(len(req.BannerPNG)), Width: c.Width, Height: c.Height}
 	}
 	tx, err := s.beginHistory(ctx, false)
 	if err != nil {
@@ -98,7 +110,14 @@ func (s *Store) SaveIllustratedMap(ctx context.Context, worldID string, revision
 	name := strings.NewReplacer("/", "-", "\\", "-", "\r", "", "\n", "").Replace(a.Title) + ".png"
 	h := hash(req.PNG)
 	if len(existing.Versions) == 0 || existing.Versions[len(existing.Versions)-1].Hash != h {
-		existing.Versions = append(existing.Versions, history.LibraryVersion{Hash: h, Name: name, MIME: "image/png", Size: int64(len(req.PNG)), CreatedAt: time.Now().UnixMilli()})
+		existing.Versions = append(existing.Versions, history.LibraryVersion{Hash: h, Name: name, MIME: "image/png", Size: int64(len(req.PNG)), CreatedAt: time.Now().UnixMilli(), Banner: banner})
+	} else if banner != nil {
+		existing.Versions[len(existing.Versions)-1].Banner = banner
+	}
+	if banner != nil {
+		if _, err = tx.ExecContext(ctx, "INSERT INTO history_blobs(hash,data) VALUES($1,$2) ON CONFLICT(hash) DO NOTHING", banner.Hash, req.BannerPNG); err != nil {
+			return nil, "", "", err
+		}
 	}
 	if _, err = tx.ExecContext(ctx, "INSERT INTO history_blobs(hash,data) VALUES($1,$2) ON CONFLICT(hash) DO NOTHING", h, req.PNG); err != nil {
 		return nil, "", "", err

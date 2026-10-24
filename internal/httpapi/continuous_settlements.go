@@ -49,7 +49,11 @@ func (s *Server) previewSettlement(w http.ResponseWriter, r *http.Request) {
 			layer = "roads"
 		}
 		e := world.Entity{ID: ids[f.ID], ParentID: ids[f.Parent], Kind: f.Kind, Name: f.Name, Geometry: f.Geometry, Layer: layer, MinDetail: f.MinDetail, Color: "#c8a976"}
+		e.RecordStatus = "draft"
 		e.Name = world.RecordName(e)
+		if f.ID != "settlement" || !world.MeaningfulName(e) {
+			e.PlaceholderName = e.Name
+		}
 		for _, pt := range f.Points {
 			e.Points = append(e.Points, [2]float64{(model.Wrap(pt[0]) + math.Pi) / model.Tau * float64(v.solver.W-1), (.5 - pt[1]/math.Pi) * float64(v.solver.H-1)})
 		}
@@ -81,6 +85,9 @@ func (s *Server) acceptSettlement(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fail(w, 500, err.Error())
 		return
+	}
+	for i := range draft.Entities {
+		draft.Entities[i].RecordStatus = "draft"
 	}
 	if err := next.PutEntities(draft.Entities); err != nil {
 		fail(w, 400, err.Error())

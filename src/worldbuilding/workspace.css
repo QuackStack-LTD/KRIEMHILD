@@ -770,3 +770,45 @@
   object-fit: contain;
   background: #101d2a;
 }
+.history-app.profile-page .entity-profile {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  box-sizing: border-box;
+  padding-inline: clamp(16px, 2.5vw, 40px);
+}
+.entity-profile .profile-columns {
+  grid-template-columns: minmax(210px, 24%) minmax(0, 1fr);
+  justify-content: stretch;
+  gap: clamp(24px, 3vw, 48px);
+}
+.entity-profile.place-profile .profile-columns {
+  max-width: none;
+  margin: 0;
+}
+.entity-profile .settlement-banner {
+  margin-inline: calc(-1 * clamp(16px, 2.5vw, 40px));
+  border: 0;
+  border-radius: 0;
+}
+.settlement-banner .illustrated-map-banner {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 1;
+  max-height: none;
+  object-fit: cover;
+  border-radius: 0;
+}
+.entity-tile .illustrated-map-thumbnail {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  display: block;
+  border-radius: 0;
+}
+@media (max-width: 700px) {
+  .entity-profile .profile-columns {
+    grid-template-columns: 1fr;
+  }
+}

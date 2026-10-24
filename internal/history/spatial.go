@@ -77,6 +77,26 @@ func (d *Document) Sync(m Map, state *world.State) {
 				break
 			}
 		}
+		if shape.RecordStatus == "draft" {
+			// Draft geography persists in terrain snapshots only. Undoing a first
+			// publication also removes its representation from the record index.
+			remaining := false
+			kept := d.Representations[:0]
+			for _, r := range d.Representations {
+				if r.AgeID == m.AgeID && r.Shape.ID == shapeID {
+					continue
+				}
+				if r.AgeID == m.AgeID && r.EntityID == id {
+					remaining = true
+				}
+				kept = append(kept, r)
+			}
+			d.Representations = kept
+			if ei >= 0 && !remaining {
+				d.Entities[ei].Deleted = true
+			}
+			continue
+		}
 		if !shape.Deleted && shape.Name == "" {
 			shape.Name = world.RecordName(shape)
 			state.Entities[shapeID] = shape

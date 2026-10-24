@@ -22,11 +22,15 @@ func layout(p *model.Planet) {
 	scale := math.Sqrt(p.Spec.LandCoverage/.32) * math.Sqrt(5/float64(count))
 	if p.Spec.Preset == "archipelago" {
 		scale *= .55
-		count += 4
+		if p.Spec.ReliefVersion < 2 {
+			count += 4
+		}
 	}
 	if p.Spec.Preset == "supercontinent" {
-		count = 3
-		scale = 1.35
+		if p.Spec.ReliefVersion < 2 {
+			count = 3
+			scale = 1.35
+		}
 	}
 	families := []string{"shield", "hook", "ribbon", "branch", "fractured", "crescent", "accreted"}
 	if p.Spec.Version != "continuous-1" {
@@ -48,12 +52,12 @@ func layout(p *model.Planet) {
 					break
 				}
 			}
-			if clear || p.Spec.Preset == "supercontinent" {
+			if clear || (p.Spec.Preset == "supercontinent" && p.Spec.ReliefVersion < 2) {
 				break
 			}
 			center = model.Point{r.Float64()*model.Tau - math.Pi, math.Asin(r.Float64()*1.65 - .825)}
 		}
-		if p.Spec.Preset == "supercontinent" && i > 0 {
+		if p.Spec.Preset == "supercontinent" && i > 0 && p.Spec.ReliefVersion < 2 {
 			center = model.Point{p.Masses[0].Center[0] + float64(i)*.38, p.Masses[0].Center[1] + .15*float64(i)}
 		}
 		family := families[(i+int(shape.Uint64()%uint64(len(families))))%len(families)]

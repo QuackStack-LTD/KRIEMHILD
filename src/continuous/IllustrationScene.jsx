@@ -14,6 +14,7 @@ export default function IllustrationScene({
   relief,
   coastOverlay,
   riverMask,
+  landMask,
 }) {
   const drag = useRef(null),
     projection = useMapProjection(),
@@ -212,7 +213,15 @@ export default function IllustrationScene({
             key={l.id}
             data-illustration-layer={l.id}
             opacity={l.opacity}
-            mask={l.id === "waterways" ? riverMask : undefined}
+            mask={
+              l.id === "waterways"
+                ? riverMask
+                : !["labels", "paper", "decoration", "annotations"].includes(
+                      l.id,
+                    )
+                  ? landMask
+                  : undefined
+            }
           >
             {l.id === "relief" && relief}
             {l.id === "coasts" && coastOverlay}
@@ -259,14 +268,6 @@ export default function IllustrationScene({
                 stroke="#503d2a"
                 fontFamily="Georgia,serif"
               >
-                <rect
-                  x={x + w * 0.012}
-                  y={y + h * 0.02}
-                  width={w * 0.976}
-                  height={h * 0.96}
-                  fill="none"
-                  strokeWidth={w / 1500}
-                />
                 <text
                   x={x + w / 2}
                   y={y + h * 0.075}

@@ -411,6 +411,16 @@ func (s *Store) HistoryBundle(ctx context.Context, id string) (Bundle, error) {
 	}
 	for _, f := range d.LibraryFiles {
 		for _, v := range f.Versions {
+			if v.Banner != nil {
+				h := v.Banner.Hash
+				if b.Blobs[h] == nil {
+					var data []byte
+					if err = tx.QueryRowContext(ctx, "SELECT data FROM history_blobs WHERE hash=$1", h).Scan(&data); err != nil {
+						return b, err
+					}
+					b.Blobs[h] = data
+				}
+			}
 			if _, ok := b.Blobs[v.Hash]; ok {
 				continue
 			}
@@ -464,6 +474,12 @@ func (b Bundle) Validate() error {
 	}
 	for _, f := range b.Document.LibraryFiles {
 		for _, v := range f.Versions {
+			if v.Banner != nil {
+				data, ok := b.Blobs[v.Banner.Hash]
+				if !ok || hash(data) != v.Banner.Hash || int64(len(data)) != v.Banner.Size {
+					return fmt.Errorf("missing or corrupt Library banner")
+				}
+			}
 			data, ok := b.Blobs[v.Hash]
 			if !ok || hash(data) != v.Hash || int64(len(data)) != v.Size {
 				return fmt.Errorf("missing or corrupt Library file: %s", v.Name)

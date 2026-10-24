@@ -3,6 +3,223 @@ import { test, expect } from "@playwright/test";
 // This test saves and closes a session. Supply an expendable database/world.
 const project = process.env.KRIEMHILD_SAVE_TEST_PROJECT;
 const world = process.env.KRIEMHILD_SAVE_TEST_WORLD;
+
+test("State and Settlement drafts publish only on named Apply; saved settlement art fills Atlas and responsive banners", async ({
+  page,
+  request,
+}) => {
+  test.skip(!project || !world, "Requires an expendable world.");
+  test.setTimeout(180000);
+  const suffix = Date.now().toString(36),
+    stateName = `Regression March ${suffix}`,
+    settlementName = `Regression Harbor ${suffix}`,
+    houseLabel = `The Candle House ${suffix}`;
+  const state = await (
+    await request.post(`/api/projects/${project}/open`, { data: {} })
+  ).json();
+  const baseline = await (await request.get(`/api/worlds/${world}`)).json();
+  let site;
+  for (const [lon, lat] of [
+    [32, -15],
+    [12, -4],
+    [0, 0],
+    [-60, 30],
+    [120, -30],
+  ]) {
+    const sample = await (
+      await request.get(
+        `/api/sessions/${state.id}/terrain/sample?lon=${lon}&lat=${lat}`,
+      )
+    ).json();
+    if (sample.water === "dry") {
+      site = [(lon + 180) / 180, (90 - lat) / 180];
+      break;
+    }
+  }
+  test.skip(!site, "No dry test site found in this fixture.");
+  await page.goto(
+    `/world/${project}/build?world=${world}&age=${baseline.world.currentAge}&tileDebug=1`,
+  );
+  await page.getByLabel("Autosave accepted terrain after 30 seconds").uncheck();
+  const svg = page.getByRole("img", {
+    name: "Interactive continuous world map",
+    exact: true,
+  });
+  await page.evaluate(
+    (p) =>
+      window.dispatchEvent(
+        new CustomEvent("terrain-diagnostic-camera", {
+          detail: {
+            x: p[0] - 0.00025,
+            y: p[1] - 0.000125,
+            w: 0.0005,
+            h: 0.00025,
+          },
+        }),
+      ),
+    site,
+  );
+  const click = async (p) => {
+    const q = await svg.evaluate((s, p) => {
+      const r = s.getBoundingClientRect(),
+        c = JSON.parse(s.dataset.camera),
+        scale = Math.min(r.width / c.w, r.height / c.h);
+      return {
+        x: (p[0] - c.x) * scale + (r.width - c.w * scale) / 2,
+        y: (p[1] - c.y) * scale + (r.height - c.h * scale) / 2,
+      };
+    }, p);
+    await svg.click({ position: q });
+  };
+  const draw = async (tool, offset) => {
+    await page.getByRole("button", { name: tool, exact: true }).click();
+    for (const [x, y] of [
+      [-1, -1],
+      [1, -1],
+      [1, 1],
+      [-1, 1],
+    ])
+      await click([site[0] + x * offset, site[1] + y * offset]);
+    await page.getByRole("button", { name: new RegExp("^Finish ") }).click();
+  };
+  const inspector = page.locator(".studio-inspector");
+  await page.getByRole("button", { name: "Map Builder", exact: true }).click();
+  await draw("State", 0.000065);
+  const placeholder = await inspector
+    .getByLabel("Name", { exact: true })
+    .inputValue();
+  let doc = await (await request.get(`/api/worlds/${world}`)).json();
+  expect(doc.entities.some((e) => e.name === placeholder && !e.deleted)).toBe(
+    false,
+  );
+  await inspector.getByLabel("Selected place type").selectOption("empire");
+  await inspector.getByLabel("Name", { exact: true }).fill(stateName);
+  await inspector
+    .getByRole("button", { name: "Apply changes", exact: true })
+    .click();
+  await expect(
+    inspector.getByRole("button", {
+      name: `Open ${stateName} record`,
+      exact: true,
+    }),
+  ).toBeVisible();
+  doc = await (await request.get(`/api/worlds/${world}`)).json();
+  expect(
+    doc.entities.some(
+      (e) => e.name === stateName && e.kind === "empire" && !e.deleted,
+    ),
+  ).toBe(true);
+  await page
+    .getByRole("button", { name: "Settlement Builder", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Settlement", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await draw("Settlement", 0.000025);
+  await inspector.getByLabel("Selected place type").selectOption("hamlet");
+  await inspector.getByLabel("Name", { exact: true }).fill(settlementName);
+  doc = await (await request.get(`/api/worlds/${world}`)).json();
+  expect(
+    doc.entities.some((e) => e.name === settlementName && !e.deleted),
+  ).toBe(false);
+  await inspector
+    .getByRole("button", { name: "Apply changes", exact: true })
+    .click();
+  await expect(
+    inspector.getByRole("button", {
+      name: `Open ${settlementName} record`,
+      exact: true,
+    }),
+  ).toBeVisible();
+  doc = await (await request.get(`/api/worlds/${world}`)).json();
+  const settlement = doc.entities.find(
+    (e) => e.name === settlementName && !e.deleted,
+  );
+  expect(settlement.kind).toBe("hamlet");
+  const shapes = await (
+    await request.get(`/api/sessions/${state.id}/world/entities?all=1&detail=8`)
+  ).json();
+  expect(
+    shapes.entities.find((e) => e.id === settlement.id).points,
+  ).toHaveLength(4);
+  await page.getByRole("button", { name: "house", exact: true }).click();
+  await click(site);
+  await expect(inspector.getByLabel("Name", { exact: true })).toHaveValue(
+    /^house /,
+  );
+  const houseName = await inspector
+    .getByLabel("Name", { exact: true })
+    .inputValue();
+  doc = await (await request.get(`/api/worlds/${world}`)).json();
+  expect(doc.entities.some((e) => e.name === houseName && !e.deleted)).toBe(
+    false,
+  );
+  await inspector.getByLabel("Name", { exact: true }).fill(houseLabel);
+  await inspector
+    .getByRole("button", { name: "Apply changes", exact: true })
+    .click();
+  await expect(
+    inspector.getByRole("button", {
+      name: `Open ${houseLabel} record`,
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page.getByText("Layers & objects", { exact: true }).click();
+  await page.getByLabel("Find an object", { exact: true }).fill(settlementName);
+  await expect(inspector.getByLabel("Name", { exact: true })).toHaveValue(
+    settlementName,
+  );
+  await page
+    .getByRole("button", { name: "Medieval Illustrator", exact: true })
+    .click();
+  await page.getByLabel("Illustrated map name").fill("Harbor map");
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  const response = page.waitForResponse(
+    (r) =>
+      r.url().endsWith("/illustrated-maps") && r.request().method() === "POST",
+  );
+  await page
+    .getByRole("button", { name: "Save illustration", exact: true })
+    .click();
+  const saved = await response;
+  expect(saved.status(), await saved.text()).toBe(201);
+  await page.goto(`/worlds/${world}/atlas?age=${baseline.world.currentAge}`);
+  await page.getByLabel("Atlas collection").selectOption("villages");
+  const tile = page
+    .locator(".entity-tile")
+    .filter({
+      has: page.getByRole("heading", {
+        name: settlementName,
+        exact: true,
+      }),
+    })
+    .last();
+  await expect(
+    tile.getByRole("img", { name: `${settlementName} illustrated map` }),
+  ).toBeVisible();
+  await expect
+    .poll(() => tile.locator("img").evaluate((e) => e.naturalWidth))
+    .toBeGreaterThan(0);
+  await tile.locator(".entity-tile-open").click();
+  const banner = page.locator(".settlement-banner"),
+    image = banner.getByRole("img", {
+      name: `${settlementName} illustrated map`,
+    });
+  await expect(image).toBeVisible();
+  await expect
+    .poll(() => image.evaluate((e) => e.naturalWidth))
+    .toBeGreaterThan(0);
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    const b = await banner.boundingBox(),
+      main = await page.locator(".entity-profile").boundingBox();
+    expect(Math.abs(b.width - main.width)).toBeLessThan(2);
+    expect(Math.abs(b.x - main.x)).toBeLessThan(2);
+    expect(await banner.evaluate((e) => getComputedStyle(e).borderRadius)).toBe(
+      "0px",
+    );
+  }
+});
 test("Save publishes records and artwork, and Illustrator names paint at close zoom", async ({
   page,
   request,
@@ -40,7 +257,10 @@ test("Save publishes records and artwork, and Illustrator names paint at close z
       ),
       page.getByRole("button", { name: "Save", exact: true }).click(),
     ]);
-    expect(response.status(), await response.text()).toBe(200);
+    expect(
+      response.status(),
+      response.status() === 200 ? "" : await response.text(),
+    ).toBe(200);
   };
   await save();
   const accepted = await json(await request.get(`/api/worlds/${world}`));
@@ -52,6 +272,31 @@ test("Save publishes records and artwork, and Illustrator names paint at close z
   ).toBeTruthy();
   await page
     .getByRole("button", { name: "Medieval Illustrator", exact: true })
+    .click();
+  await page
+    .getByRole("dialog", { name: "Name illustrated map" })
+    .getByLabel("Illustrated map name")
+    .fill("Regression atlas");
+  await Promise.all([
+    page.waitForResponse((r) => r.url().includes("/terrain/land-selection")),
+    page.getByRole("button", { name: "Continue", exact: true }).click(),
+  ]);
+  await expect(
+    page.getByText("Finding connected land…", { exact: true }),
+  ).toHaveCount(0);
+  const selectionMap = await page
+    .getByRole("img", { name: "Interactive continuous world map", exact: true })
+    .boundingBox();
+  await page.mouse.move(selectionMap.x + 1, selectionMap.y + 1);
+  await page.mouse.down();
+  await page.mouse.move(
+    selectionMap.x + selectionMap.width - 1,
+    selectionMap.y + selectionMap.height - 1,
+    { steps: 3 },
+  );
+  await page.mouse.up();
+  await page
+    .getByRole("button", { name: "Create illustrated map", exact: true })
     .click();
   await page.getByLabel("Map scope", { exact: true }).selectOption("world");
   const label = page.locator(
@@ -115,10 +360,21 @@ test("Save publishes records and artwork, and Illustrator names paint at close z
     `/api/worlds/${world}/library/${focused.fileId}?age=${doc.world.currentAge}&inline=1`,
   );
   expect(png.ok()).toBeTruthy();
+  const bannerPNG = await request.get(
+    `/api/worlds/${world}/library/${focused.fileId}?age=${doc.world.currentAge}&inline=1&variant=banner`,
+  );
+  const square = await png.body(),
+    wide = await bannerPNG.body();
+  expect(square.readUInt32BE(16)).toBe(square.readUInt32BE(20));
+  expect(wide.readUInt32BE(16) / wide.readUInt32BE(20)).toBeCloseTo(3, 2);
   expect(png.headers()["content-type"]).toBe("image/png");
   expect((await png.body()).subarray(0, 8).toString("hex")).toBe(
     "89504e470d0a1a0a",
   );
+  await saveIllustration();
+  const timings = await page.evaluate(() => window.__illustrationSaveLog);
+  expect(timings.at(-1).cached).toBe(true);
+  console.log("Illustration save timings", JSON.stringify(timings));
   await page
     .getByRole("button", { name: "Construction mode", exact: true })
     .click();
@@ -130,6 +386,7 @@ test("Save publishes records and artwork, and Illustrator names paint at close z
   await page
     .getByRole("button", { name: "Medieval Illustrator", exact: true })
     .click();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.getByLabel("Focus geographical feature").selectOption(country.id);
   await expect(label).toHaveText(country.name);
   const anotherQuality = await saveIllustration();
@@ -146,6 +403,7 @@ test("Save publishes records and artwork, and Illustrator names paint at close z
   await page
     .getByRole("button", { name: "Medieval Illustrator", exact: true })
     .click();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.getByLabel("Map scope", { exact: true }).selectOption("world");
   const global = await saveIllustration();
   expect(

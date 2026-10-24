@@ -80,6 +80,11 @@
       "spatial": true,
       "label": "Town"
     },
+    "hamlet": {
+      "category": "settlements",
+      "spatial": true,
+      "label": "Hamlet"
+    },
     "village": {
       "category": "settlements",
       "spatial": true,

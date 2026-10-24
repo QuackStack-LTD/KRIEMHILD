@@ -20,25 +20,50 @@ type Layer struct {
 	Order   int    `json:"order"`
 }
 type Entity struct {
-	LabelName string                 `json:"labelName,omitempty"`
-	LogicalID string                 `json:"logicalId,omitempty"`
-	River     *terrain.DetailFeature `json:"river,omitempty"`
-	Cells     []int                  `json:"cells,omitempty"`
-	SourceID  string                 `json:"sourceId,omitempty"`
-	ID        string                 `json:"id"`
-	Name      string                 `json:"name"`
-	Kind      string                 `json:"kind"`
-	Layer     string                 `json:"layer"`
-	ParentID  string                 `json:"parentId,omitempty"`
-	Geometry  string                 `json:"geometry"`
-	Points    [][2]float64           `json:"points"`
-	Color     string                 `json:"color"`
-	MinDetail float64                `json:"minDetail"`
-	Created   *int                   `json:"created,omitempty"`
-	Destroyed *int                   `json:"destroyed,omitempty"`
-	Notes     string                 `json:"notes,omitempty"`
-	Deleted   bool                   `json:"deleted,omitempty"`
+	PlaceholderName string                 `json:"placeholderName,omitempty"`
+	RecordStatus    string                 `json:"recordStatus,omitempty"` // empty preserves legacy published shapes
+	LabelName       string                 `json:"labelName,omitempty"`
+	LogicalID       string                 `json:"logicalId,omitempty"`
+	River           *terrain.DetailFeature `json:"river,omitempty"`
+	Cells           []int                  `json:"cells,omitempty"`
+	SourceID        string                 `json:"sourceId,omitempty"`
+	ID              string                 `json:"id"`
+	Name            string                 `json:"name"`
+	Kind            string                 `json:"kind"`
+	Layer           string                 `json:"layer"`
+	ParentID        string                 `json:"parentId,omitempty"`
+	Geometry        string                 `json:"geometry"`
+	Points          [][2]float64           `json:"points"`
+	Color           string                 `json:"color"`
+	MinDetail       float64                `json:"minDetail"`
+	Created         *int                   `json:"created,omitempty"`
+	Destroyed       *int                   `json:"destroyed,omitempty"`
+	Notes           string                 `json:"notes,omitempty"`
+	Deleted         bool                   `json:"deleted,omitempty"`
 }
+
+// Placeholder names never publish a new map object. This also recognizes old
+// generated labels while allowing the author's own names without a quota/list.
+func MeaningfulName(e Entity) bool {
+	name := strings.TrimSpace(e.Name)
+	if e.PlaceholderName != "" && strings.EqualFold(name, strings.TrimSpace(e.PlaceholderName)) {
+		return false
+	}
+	if name == "" {
+		return false
+	}
+	short := e.ID
+	if len(short) > 8 {
+		short = short[:8]
+	}
+	for _, placeholder := range []string{e.Kind, e.Kind + " " + short, e.Kind + " " + e.ID, "New " + e.Kind, "New town", "New city", "New village", "New capital", "New hamlet", "New country", "New kingdom", "New empire", "New place", "New feature", "New settlement", "New state", "New object"} {
+		if strings.EqualFold(name, placeholder) {
+			return false
+		}
+	}
+	return true
+}
+
 type Operation struct {
 	River    *terrain.DetailFeature `json:"river,omitempty"`
 	ID       string                 `json:"id"`
@@ -284,7 +309,10 @@ func validID(id string) bool {
 	return true
 }
 func (s *State) ValidateEntity(e Entity) error {
-	if len(e.LabelName) > 200 {
+	if e.RecordStatus != "" && e.RecordStatus != "draft" && e.RecordStatus != "published" {
+		return fmt.Errorf("invalid record publication state")
+	}
+	if len(e.LabelName) > 200 || len(e.PlaceholderName) > 160 {
 		return fmt.Errorf("map label exceeds 200 characters")
 	}
 	if !validID(e.ID) || len(e.Name) > 160 || (strings.TrimSpace(e.Name) == "" && e.Kind != "house") || len(e.Kind) > 80 || e.Kind == "" || len(e.Notes) > 8192 || !finite(e.MinDetail) || e.MinDetail < 0 || e.MinDetail > 8 {
@@ -857,6 +885,10 @@ func (s *State) RefreshRepresentations(shapes map[string]Entity) {
 		}
 	}
 	for id, shape := range s.Entities {
+		if shape.RecordStatus == "draft" {
+			shapes[id] = shape
+			continue
+		}
 		if _, exists := shapes[id]; !exists && referenced[id] {
 			shape.Deleted = true
 			shapes[id] = shape
@@ -884,8 +916,7 @@ func HasAuthoredName(name string) bool {
 	return name != "" && !strings.HasPrefix(strings.ToLower(name), "example-")
 }
 
-// Every accepted map entity has an editable record, including buildings whose
-// procedural footprint did not supply a name. Identity never depends on a label.
+// A display placeholder does not publish the object as a World record.
 func RecordName(e Entity) string {
 	if name := strings.TrimSpace(e.Name); name != "" {
 		return name

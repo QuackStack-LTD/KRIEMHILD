@@ -2,15 +2,18 @@ package httpapi
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"kriemhild/internal/history"
 	"kriemhild/internal/storage"
 	"kriemhild/internal/world"
 	"net/http"
 	"reflect"
+	"time"
 )
 
 func (s *Server) saveIllustratedMap(w http.ResponseWriter, r *http.Request) {
+	started := time.Now()
 	r.Body = http.MaxBytesReader(w, r.Body, history.MaxLibraryFileSize+(1<<20))
 	if err := r.ParseMultipartForm(2 << 20); err != nil {
 		fail(w, 400, "The illustration could not be read or exceeds 64 MiB")
@@ -38,6 +41,15 @@ func (s *Server) saveIllustratedMap(w http.ResponseWriter, r *http.Request) {
 		fail(w, 413, "The illustration exceeds 64 MiB")
 		return
 	}
+	var banner []byte
+	if image, _, e := r.FormFile("banner"); e == nil {
+		defer image.Close()
+		banner, err = io.ReadAll(io.LimitReader(image, history.MaxLibraryFileSize+1))
+		if err != nil || len(banner) > history.MaxLibraryFileSize {
+			fail(w, 413, "The banner exceeds 64 MiB")
+			return
+		}
+	}
 	v := s.worldSession(w, r)
 	if v == nil {
 		return
@@ -48,6 +60,10 @@ func (s *Server) saveIllustratedMap(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	saved, ok := v.authored().Header.Illustrations[req.Illustration.ID]
+	if req.Illustration.LandKey != "" && req.Illustration.LandKey != landKey(v) {
+		fail(w, 409, "The landscape changed. Select the connected land again before saving this map.")
+		return
+	}
 	if !ok || req.SourceRevision != v.authored().Header.Revision || !reflect.DeepEqual(saved, req.Illustration) {
 		fail(w, 409, "The map or illustration changed while rendering; save the illustration again")
 		return
@@ -68,11 +84,12 @@ func (s *Server) saveIllustratedMap(w http.ResponseWriter, r *http.Request) {
 			focusID = v.historical.EntityID
 		}
 	}
-	doc, id, folder, err := s.projects.SaveIllustratedMap(r.Context(), v.historyWorld, v.historyRevision, storage.IllustratedMapRequest{MapID: v.historical.ID, AgeID: v.historical.AgeID, FocusID: focusID, SourceRevision: req.SourceRevision, Illustration: saved, PNG: data})
+	doc, id, folder, err := s.projects.SaveIllustratedMap(r.Context(), v.historyWorld, v.historyRevision, storage.IllustratedMapRequest{MapID: v.historical.ID, AgeID: v.historical.AgeID, FocusID: focusID, SourceRevision: req.SourceRevision, Illustration: saved, PNG: data, BannerPNG: banner})
 	if err != nil {
 		fail(w, 409, err.Error())
 		return
 	}
 	v.historyRevision = doc.World.Revision
+	w.Header().Set("Server-Timing", fmt.Sprintf("illustration-save;dur=%.2f", float64(time.Since(started).Microseconds())/1000))
 	respond(w, 201, map[string]any{"document": doc, "fileId": id, "archiveId": folder, "saved": true})
 }

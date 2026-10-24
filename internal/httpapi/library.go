@@ -97,7 +97,7 @@ func (s *Server) libraryRoutes() {
 		if !s.historyStore(w) {
 			return
 		}
-		data, v, err := s.projects.LibraryContent(r.Context(), r.PathValue("world"), r.URL.Query().Get("age"), r.PathValue("document"), r.URL.Query().Get("version"))
+		data, v, err := s.projects.LibraryContent(r.Context(), r.PathValue("world"), r.URL.Query().Get("age"), r.PathValue("document"), r.URL.Query().Get("version"), r.URL.Query().Get("variant"))
 		if err != nil {
 			fail(w, 404, "Document version not found")
 			return
@@ -111,6 +111,9 @@ func (s *Server) libraryRoutes() {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Content-Security-Policy", "sandbox; default-src 'none'")
 		w.Header().Set("Cache-Control", "private, no-store")
+		if r.URL.Query().Get("version") != "" {
+			w.Header().Set("Cache-Control", "private, max-age=3600")
+		}
 		w.Write(data)
 	})
 }

@@ -702,7 +702,7 @@ export default function Terrain3D({
             aria-label="Vertical exaggeration"
             type="range"
             min="1"
-            max="30"
+            max="60"
             step="1"
             value={vertical}
             onChange={(e) => setVertical(+e.target.value)}

@@ -1,4 +1,5 @@
 import useUnsavedChanges from "./ui/useUnsavedChanges.js";
+import IllustratedMapImage from "./IllustratedMapImage.jsx";
 import { confirmAction } from "./ui/feedback.js";
 import Dialog from "./ui/Dialog.jsx";
 import CharacterRelationEditor from "./CharacterRelationEditor.jsx";
@@ -444,10 +445,10 @@ export default function Profile({
       {(place || p.illustratedMap) && (
         <section className="settlement-banner">
           {p.illustratedMap ? (
-            <img
-              className="illustrated-map-banner"
-              src={`/api/worlds/${doc.world.id}/library/${encodeURIComponent(p.illustratedMap.fileId)}?age=${entity.ageId}&version=${encodeURIComponent(p.illustratedMap.version)}&inline=1`}
-              alt={`${entity.name} illustrated map`}
+            <IllustratedMapImage
+              worldId={doc.world.id}
+              entity={entity}
+              banner
             />
           ) : detailMap ? (
             <MapPreview doc={doc} map={detailMap} />

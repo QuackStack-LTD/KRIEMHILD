@@ -1,6 +1,7 @@
 import { anchor, contains, bounds, projectToMap } from "./geometry.js";
 import { riverFeatures, riverVisible } from "./rivers.js";
 import { placeLabel } from "./label-placement.js";
+import { landContains } from "./land-selection.js";
 export const layerNames = [
   "Paper",
   "Relief",
@@ -40,7 +41,7 @@ export function newIllustration(scope, extent, focus = "") {
   };
 }
 const countryKinds = new Set(["country", "state", "kingdom", "empire"]);
-const cityKinds = new Set(["capital", "city", "town", "village"]);
+const cityKinds = new Set(["capital", "city", "town", "village", "hamlet"]);
 const hash = (s) => {
   let n = 2166136261;
   for (const c of s) n = Math.imul(n ^ c.charCodeAt(0), 16777619);
@@ -62,6 +63,12 @@ export function scopeEntities(entities, state, config) {
       h: config.bounds[3],
     };
   return all.filter((e) => {
+    if (
+      config.regions?.length &&
+      !e.points.some((p) => landContains({ paths: config.regions }, p)) &&
+      !landContains({ paths: config.regions }, anchor(e.points, e.geometry))
+    )
+      return false;
     const b = bounds(e.points);
     if (
       b.x > extent.x + extent.w ||

@@ -44,6 +44,7 @@ func (s *Server) continuousRoutes() {
 	s.mux.HandleFunc("GET /api/sessions/{id}/terrain/sample", s.continuousSample)
 	s.mux.HandleFunc("GET /api/sessions/{id}/terrain/mesh", s.continuousMesh)
 	s.mux.HandleFunc("GET /api/sessions/{id}/terrain/features", s.continuousFeatures)
+	s.mux.HandleFunc("GET /api/sessions/{id}/terrain/land-selection", s.landSelection)
 	s.mux.HandleFunc("POST /api/sessions/{id}/settlements/preview", s.previewSettlement)
 	s.mux.HandleFunc("POST /api/sessions/{id}/settlements", s.acceptSettlement)
 }

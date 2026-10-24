@@ -39,6 +39,16 @@ func TestSettlementBatchMoveUndoRedoPublishesEveryRecord(t *testing.T) {
 	v.settlement = &settlementDraft{ID: "draft", Revision: v.world.Header.Revision, Entities: shapes}
 	body, _ = json.Marshal(map[string]any{"id": "draft", "revision": v.world.Header.Revision})
 	autoRequest(t, s, "POST", "/api/sessions/builder/settlements", string(body))
+	initial, _ := db.History(ctx, d.World.ID)
+	for _, shape := range shapes {
+		if initial.Entity(d.World.CurrentAge, shape.ID) != nil {
+			t.Fatal("generated draft published without Apply")
+		}
+	}
+	for _, shape := range shapes {
+		b, _ := json.Marshal(map[string]any{"kind": "entity", "entity": shape, "publish": true, "revision": v.world.Header.Revision})
+		autoRequest(t, s, "POST", "/api/sessions/builder/world", string(b))
+	}
 	send := func(kind string) {
 		t.Helper()
 		b, _ := json.Marshal(map[string]any{"kind": kind, "entity": map[string]any{"id": "capital"}, "delta": [2]float64{1, 2}, "revision": v.world.Header.Revision})
@@ -100,9 +110,13 @@ func TestSettlementBatchMoveUndoRedoPublishesEveryRecord(t *testing.T) {
 	check(false, 1, 2)
 	send("undo")
 	check(false, 0, 0)
-	send("undo")
+	for range shapes {
+		send("undo")
+	}
 	check(true, 0, 0)
-	send("redo")
+	for range shapes {
+		send("redo")
+	}
 	check(false, 0, 0)
 	send("redo")
 	check(false, 1, 2)

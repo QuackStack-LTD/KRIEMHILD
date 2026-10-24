@@ -172,6 +172,11 @@ func bedAt(p *model.Planet, lon, lat, coast float64) (bed, distance, rough float
 		oldBelt := math.Pow(math.Max(0, 1-math.Abs(Noise(p.Seed+302, wl, wp, 6)*3.5)), 3)
 		crest := .65 + .65*model.Clamp(.5+Noise(p.Seed+1802, wl, wp, 13), 0, 1)
 		ridge = (.32*oldBelt + plate.Convergence*1.55) * crest
+		if p.Spec.ReliefVersion >= 2 {
+			// Compression supports broad connected ranges, with varying crests and
+			// subdued relict belts. This is source relief, before drainage/climate.
+			ridge = (.42*oldBelt + math.Pow(plate.Convergence, .72)*2.15) * crest
+		}
 	}
 	ridge *= model.Clamp(coast*45, 0, 1)
 	local := 0.
