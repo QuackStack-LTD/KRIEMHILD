@@ -583,7 +583,7 @@
   margin: 0;
   border-radius: 0;
 }
-.settlement-banner > div:last-child {
+.settlement-banner-details {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -658,7 +658,7 @@
   .world-grid {
     grid-template-columns: 1fr;
   }
-  .settlement-banner > div:last-child {
+  .settlement-banner-details {
     align-items: start;
     gap: 12px;
     flex-direction: column;
@@ -790,15 +790,47 @@
   margin-inline: calc(-1 * clamp(16px, 2.5vw, 40px));
   border: 0;
   border-radius: 0;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: clamp(210px, 22vw, 280px);
 }
-.settlement-banner .illustrated-map-banner {
+.entity-profile .settlement-banner > .illustrated-map-banner,
+.entity-profile .settlement-banner > .atlas-preview,
+.entity-profile .settlement-banner > .settlement-placeholder {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
-  height: auto;
-  aspect-ratio: 3 / 1;
+  height: 100%;
   max-height: none;
   object-fit: cover;
   border-radius: 0;
+}
+.settlement-banner .profile-breadcrumb {
+  position: relative;
+  grid-row: 1;
+  z-index: 1;
+  margin: 0;
+  padding: 14px clamp(16px, 2.5vw, 40px);
+  background: linear-gradient(#101c21ed, #101c2199 65%, transparent);
+  color: #fff5dc;
+}
+.settlement-banner .profile-breadcrumb button {
+  background: #182b32eb;
+  color: #fff5dc;
+}
+.settlement-banner .settlement-banner-details {
+  position: relative;
+  grid-row: 3;
+  z-index: 1;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  padding: 16px clamp(16px, 2.5vw, 40px);
+  background: linear-gradient(transparent, #101c21df 45%);
+  color: #fff5dc;
+}
+.settlement-banner-details a {
+  color: #fff5dc;
 }
 .entity-tile .illustrated-map-thumbnail {
   width: 100%;

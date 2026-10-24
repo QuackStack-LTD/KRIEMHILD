@@ -431,17 +431,20 @@ export default function Profile({
     </ul>
   );
 
+  const breadcrumb = (
+    <div className="profile-breadcrumb">
+      <button onClick={onBack}>← Back to collection</button>
+      <span>
+        {doc.world.name} / <strong>{age?.name}</strong>
+        {entity.deleted ? " · historical, removed" : ""}
+      </span>
+    </div>
+  );
   return (
     <main
       className={`world-page entity-profile ${place ? "place-profile" : ""}`}
     >
-      <div className="profile-breadcrumb">
-        <button onClick={onBack}>← Back to collection</button>
-        <span>
-          {doc.world.name} / <strong>{age?.name}</strong>
-          {entity.deleted ? " · historical, removed" : ""}
-        </span>
-      </div>
+      {!(place || p.illustratedMap) && breadcrumb}
       {(place || p.illustratedMap) && (
         <section className="settlement-banner">
           {p.illustratedMap ? (
@@ -455,7 +458,8 @@ export default function Profile({
           ) : (
             <SettlementPlaceholder />
           )}
-          <div>
+          {breadcrumb}
+          <div className="settlement-banner-details">
             <h1>{entity.name}</h1>
             {p.illustratedMap && (
               <a
