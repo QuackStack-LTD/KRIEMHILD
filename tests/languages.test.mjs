@@ -7,6 +7,8 @@ import {
   diffDefinitions,
   metadataFor,
   retainLanguageAge,
+  matchingCompile,
+  emptyProductive,
 } from "../src/worldbuilding/languages.js";
 import { mergeConflicts } from "../src/history.js";
 import { readFile } from "node:fs/promises";
@@ -41,6 +43,45 @@ test("language drafts do not fabricate inventories or defaults", () => {
     constructions: 0,
   });
   assert.equal(blankScript("Writing").direction, "undecided");
+});
+
+test("productive drafts stay empty and compiler pins gate compiled readiness", () => {
+  const model = emptyProductive();
+  assert.deepEqual(model.features, []);
+  assert.deepEqual(model.paradigms, []);
+  assert.deepEqual(model.stratum.rules, []);
+  const compiled = {
+    revision: "retained-body",
+    engine: "languages/2",
+    adapter: "finite-compose/1",
+    compiler: "languages-compiler/2",
+  };
+  assert.equal(matchingCompile(compiled, "retained-body", { schema: 2 }), true);
+  assert.equal(
+    matchingCompile(
+      { ...compiled, compiler: "languages-compiler/future" },
+      "retained-body",
+      { schema: 2 },
+    ),
+    false,
+  );
+  assert.equal(matchingCompile(compiled, "changed-body", { schema: 2 }), false);
+  assert.equal(
+    matchingCompile(compiled, "retained-body", { schema: 1 }),
+    false,
+  );
+  assert.equal(
+    matchingCompile(
+      {
+        revision: "legacy",
+        engine: "languages/1",
+        adapter: "token-relation/1",
+      },
+      "legacy",
+      { schema: 1 },
+    ),
+    true,
+  );
 });
 test("a save response retains client Age selection without changing authoritative response data", () => {
   const response = {

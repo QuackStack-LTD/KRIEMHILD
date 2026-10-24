@@ -29,6 +29,11 @@ type Evolution struct {
 // target-only entries remain intact. Publication requires a separate transaction.
 func PreviewEvolution(ctx context.Context, source, target Definition) Evolution {
 	out := Evolution{Status: "invalid_input", Engine: EngineVersion, Adapter: AdapterVersion, SourceRevision: Hash(source), TargetRevision: Hash(target), Changes: []HistoricalChange{}, Diagnostics: []Diagnostic{}}
+	if source.Schema != 1 || target.Schema != 1 {
+		out.Status = "unsupported_operation"
+		out.Diagnostics = []Diagnostic{{Code: "unsupported_operation", Severity: "error", Module: "history", Path: "schema", Message: "Historical evolution currently requires schema-1 source and target definitions; A1 does not reinterpret productive plans."}}
+		return out
+	}
 	fail := func(code, path, message string) Evolution {
 		out.Status = code
 		out.Target = nil

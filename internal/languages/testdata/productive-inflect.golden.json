@@ -1,0 +1,421 @@
+{
+  "schema": 2,
+  "compiler": "languages-compiler/2",
+  "derivations": [
+    {
+      "candidate": "83a9fb454b24a6006fc289e6e87e4726bf2f5f3175753b1a3d255bbea11ad4f6",
+      "lexeme": "stone",
+      "cell": "framed",
+      "steps": [
+        {
+          "stage": "lexical",
+          "ruleId": "stone",
+          "before": [],
+          "after": [
+            {
+              "segment": "p"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            }
+          ]
+        },
+        {
+          "stage": "cell",
+          "ruleId": "framed",
+          "before": [
+            {
+              "segment": "p"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            }
+          ],
+          "after": [
+            {
+              "segment": "p"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            }
+          ]
+        },
+        {
+          "stage": "allomorph",
+          "ruleId": "frame",
+          "allomorph": "i-a-frame",
+          "before": [
+            {
+              "segment": "p"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            }
+          ],
+          "after": [
+            {
+              "segment": "i"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "p"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "a"
+            }
+          ],
+          "alternatives": [
+            {
+              "id": "i-a-frame",
+              "decision": "selected"
+            }
+          ]
+        },
+        {
+          "stage": "allomorph",
+          "ruleId": "after-frame",
+          "allomorph": "frame-confirm",
+          "before": [
+            {
+              "segment": "i"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "p"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "a"
+            }
+          ],
+          "after": [
+            {
+              "segment": "i"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "p"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "a"
+            }
+          ],
+          "alternatives": [
+            {
+              "id": "frame-confirm",
+              "decision": "selected"
+            }
+          ]
+        },
+        {
+          "stage": "boundary-rule",
+          "ruleId": "t-before-a-suffix",
+          "before": [
+            {
+              "segment": "i"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "p"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "a"
+            }
+          ],
+          "after": [
+            {
+              "segment": "i"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "p"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "d"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "a"
+            }
+          ]
+        },
+        {
+          "stage": "erase-boundaries",
+          "ruleId": "stem-edge",
+          "before": [
+            {
+              "segment": "i"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "p"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "d"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "a"
+            }
+          ],
+          "after": [
+            {
+              "segment": "i"
+            },
+            {
+              "segment": "p"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "d"
+            },
+            {
+              "segment": "a"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "status": "success",
+  "languageId": "55555555555555555555555555555555",
+  "revision": "8492e7dc99f30a1d4bab66c3cb8960c4d744426719731b629fb58d0fe0038f04",
+  "engine": "languages/2",
+  "canonicalizer": "kriemhild-typed-json/1",
+  "selection": "sha256-canonical-candidates/1",
+  "request": {
+    "revision": "8492e7dc99f30a1d4bab66c3cb8960c4d744426719731b629fb58d0fe0038f04",
+    "engine": "languages/2",
+    "operation": "inflect",
+    "lexeme": "stone",
+    "features": {
+      "number": "many",
+      "shape": "framed"
+    },
+    "policy": "all",
+    "limit": 64
+  },
+  "candidates": [
+    {
+      "lexeme": "stone",
+      "cell": "framed",
+      "features": {
+        "number": "many",
+        "shape": "framed"
+      },
+      "underlying": [
+        "p",
+        "a",
+        "t"
+      ],
+      "segments": [
+        "i",
+        "p",
+        "a",
+        "d",
+        "a"
+      ],
+      "trace": [
+        {
+          "stage": "lexical",
+          "ruleId": "stone",
+          "before": [],
+          "after": [
+            "p",
+            "a",
+            "t"
+          ]
+        },
+        {
+          "stage": "cell",
+          "ruleId": "framed",
+          "before": [
+            "p",
+            "a",
+            "t"
+          ],
+          "after": [
+            "p",
+            "a",
+            "t"
+          ]
+        },
+        {
+          "stage": "allomorph",
+          "ruleId": "frame/i-a-frame",
+          "before": [
+            "p",
+            "a",
+            "t"
+          ],
+          "after": [
+            "i",
+            "\u003cmorpheme\u003e",
+            "p",
+            "a",
+            "t",
+            "\u003cmorpheme\u003e",
+            "a"
+          ]
+        },
+        {
+          "stage": "allomorph",
+          "ruleId": "after-frame/frame-confirm",
+          "before": [
+            "i",
+            "\u003cmorpheme\u003e",
+            "p",
+            "a",
+            "t",
+            "\u003cmorpheme\u003e",
+            "a"
+          ],
+          "after": [
+            "i",
+            "\u003cmorpheme\u003e",
+            "p",
+            "a",
+            "t",
+            "\u003cmorpheme\u003e",
+            "a"
+          ]
+        },
+        {
+          "stage": "boundary-rule",
+          "ruleId": "t-before-a-suffix",
+          "before": [
+            "i",
+            "\u003cmorpheme\u003e",
+            "p",
+            "a",
+            "t",
+            "\u003cmorpheme\u003e",
+            "a"
+          ],
+          "after": [
+            "i",
+            "\u003cmorpheme\u003e",
+            "p",
+            "a",
+            "d",
+            "\u003cmorpheme\u003e",
+            "a"
+          ]
+        },
+        {
+          "stage": "erase-boundaries",
+          "ruleId": "stem-edge",
+          "before": [
+            "i",
+            "\u003cmorpheme\u003e",
+            "p",
+            "a",
+            "d",
+            "\u003cmorpheme\u003e",
+            "a"
+          ],
+          "after": [
+            "i",
+            "p",
+            "a",
+            "d",
+            "a"
+          ]
+        }
+      ]
+    }
+  ],
+  "diagnostics": [],
+  "truncated": false,
+  "examined": 3,
+  "knownValid": 1,
+  "rejected": 0,
+  "diagnosticsOmitted": 0,
+  "adapter": "finite-compose/1",
+  "kernel": "languages-spike/1",
+  "input": {
+    "revision": "8492e7dc99f30a1d4bab66c3cb8960c4d744426719731b629fb58d0fe0038f04",
+    "engine": "languages/2",
+    "operation": "inflect",
+    "lexeme": "stone",
+    "features": {
+      "number": "many",
+      "shape": "framed"
+    },
+    "policy": "all",
+    "limit": 64,
+    "adapter": "finite-compose/1",
+    "compiler": "languages-compiler/2"
+  }
+}

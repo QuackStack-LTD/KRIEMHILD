@@ -30,7 +30,7 @@ func (a *Artifact) write(ctx context.Context, q Request, out Result) Result {
 	r := a.phonology.Execute(ctx, in)
 	out.Result = r
 	out.Revision = a.report.Revision
-	out.Engine = EngineVersion
+	out.Engine = a.report.Engine
 	out.Request = q.Request
 	if r.Status != "success" {
 		return out

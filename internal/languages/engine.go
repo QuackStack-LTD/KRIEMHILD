@@ -16,12 +16,21 @@ type Artifact struct {
 	phonology, morphology, written *spike.Compiled
 	orthographic                   *spike.Compiled
 	grammar                        map[string]Construction
+	productive                     *productiveIndex
 }
 
 func (a *Artifact) Report() Report { return Clone(a.report) }
 func Compile(ctx context.Context, source Definition, scripts map[ScriptRef]ScriptDefinition) *Artifact {
 	d := Clone(source)
 	a := &Artifact{definition: d, grammar: map[string]Construction{}, report: Report{Revision: Hash(d), Engine: EngineVersion, Adapter: AdapterVersion, Kernel: spike.EngineVersion, Status: "incomplete", Ready: map[string]bool{}, Diagnostics: []Diagnostic{}}}
+	a.report.Engine, a.report.Adapter, a.report.Compiler = Versions(d)
+	if d.Schema == ProductiveSchemaVersion {
+		a.report.Schema = d.Schema
+		a.report.Capabilities = Capabilities()[1].Operations
+		for _, c := range a.report.Capabilities {
+			a.report.Ready[c.Operation] = false
+		}
+	}
 	add := func(items []Diagnostic) {
 		for _, v := range items {
 			if len(a.report.Diagnostics) < 256 {
@@ -48,8 +57,10 @@ func Compile(ctx context.Context, source Definition, scripts map[ScriptRef]Scrip
 			add([]Diagnostic{v})
 		}
 	}
-	base.Lexicon = d.Lexicon
-	base.Morphology = d.Morphology
+	if d.Schema == 1 {
+		base.Lexicon = d.Lexicon
+		base.Morphology = d.Morphology
+	}
 	m, mr := spike.Compile(ctx, base, spike.TokenTrieBackend{})
 	a.report.DiagnosticsOmitted += mr.DiagnosticsOmitted
 	a.morphology = m
@@ -63,6 +74,9 @@ func Compile(ctx context.Context, source Definition, scripts map[ScriptRef]Scrip
 		seen[Hash(v)] = true
 	}
 	for _, v := range mr.Diagnostics {
+		if d.Schema == 2 && (v.Module == "morphology" || v.Module == "lexicon") {
+			continue
+		}
 		if v.Module == "orthography" {
 			continue
 		}
@@ -133,11 +147,17 @@ func Compile(ctx context.Context, source Definition, scripts map[ScriptRef]Scrip
 			}
 		}
 	}
-	grammarDiagnostics := a.compileGrammar()
-	add(grammarDiagnostics)
+	if d.Schema == 2 {
+		add(a.compileProductive(ctx))
+		if d.Syntax != nil || d.History != nil {
+			add([]Diagnostic{{Code: "unsupported_module", Severity: "error", Module: "productive", Path: "syntax/history", Message: "A1 does not execute schema-2 grammar or historical changes. Keep using schema 1 for those operations."}})
+		}
+	} else {
+		add(a.compileGrammar())
+	}
 	add(a.checkLexical())
 	add(a.checkCorpus())
-	if d.History != nil {
+	if d.History != nil && d.Schema == 1 {
 		add([]Diagnostic{{Code: "preview_required", Severity: "info", Module: "history", Path: "history", Message: "Historical changes require a separately validated source and an explicit preview/apply operation."}})
 	}
 	for _, ready := range a.report.Ready {
@@ -166,13 +186,18 @@ func Compile(ctx context.Context, source Definition, scripts map[ScriptRef]Scrip
 
 func (a *Artifact) Execute(ctx context.Context, q Request) Result {
 	out := Result{Result: spike.Result{Status: "invalid_input", LanguageID: a.definition.LanguageID, Revision: a.report.Revision, Engine: EngineVersion, Canonicalizer: CanonicalVersion, Selection: spike.SelectionVersion, Request: q.Request, Candidates: []spike.Candidate{}, Diagnostics: []Diagnostic{}}, Adapter: AdapterVersion, Kernel: spike.EngineVersion, Input: Clone(q), Dependencies: Clone(a.report.Dependencies)}
+	out.Engine, out.Adapter, out.Compiler, out.Schema = a.report.Engine, a.report.Adapter, a.report.Compiler, a.report.Schema
 	fail := func(status, message string) Result {
 		out.Status = status
 		out.Diagnostics = append(out.Diagnostics, Diagnostic{Code: status, Severity: "error", Module: "execution", Path: "request", Message: message})
 		return out
 	}
-	if q.Engine != EngineVersion || q.Adapter != AdapterVersion {
-		return fail("incompatible_engine", "Select the exact supported engine and adapter; no fallback is applied.")
+	if q.Engine != a.report.Engine || q.Adapter != a.report.Adapter || q.Compiler != a.report.Compiler {
+		message := "Select the exact supported engine and adapter; no fallback is applied."
+		if a.definition.Schema == 2 {
+			message = "Select the exact supported engine, adapter and compiler; no fallback is applied."
+		}
+		return fail("incompatible_engine", message)
 	}
 	if q.Revision != a.report.Revision {
 		return fail("uncompiled_revision", "The request must name this exact immutable definition revision.")
@@ -182,6 +207,12 @@ func (a *Artifact) Execute(ctx context.Context, q Request) Result {
 	}
 	if q.Operation == "regression" {
 		return a.runCorpus(ctx, q, out)
+	}
+	if a.definition.Schema == 2 && (q.Operation == "inflect" || q.Operation == "paradigm" || q.Operation == "analyze" || q.Operation == "analyze-written") {
+		return a.executeProductive(ctx, q, out)
+	}
+	if a.definition.Schema == 2 && (q.Operation == "realize" || q.Operation == "parse") {
+		return fail("unsupported_operation", "Schema-2 grammar is not implemented by A1; schema-1 grammar remains available.")
 	}
 	if q.Operation == "realize" {
 		return a.realize(ctx, q, out)
@@ -222,7 +253,7 @@ func (a *Artifact) Execute(ctx context.Context, q Request) Result {
 	in.Engine = spike.EngineVersion
 	out.Result = kernel.Execute(ctx, in)
 	out.Revision = a.report.Revision
-	out.Engine = EngineVersion
+	out.Engine = a.report.Engine
 	out.Request = q.Request
 	return out
 }

@@ -73,3 +73,76 @@ that unrelated baseline.
 Native HFST/foma selection remains open. No native FST tool, model service or AI
 dependency was added. Recursive grammar, productive advanced morphology and
 custom glyph layout remain clearly distinguished from working operations.
+
+## Continuation A1 evidence
+
+Baseline source `6aed8ff`; audit/semantics commit `a009b1b`; independent banner
+commit `62d4c62`. A1 adds the schema-2 adapter described in PRODUCTIVE_A1, preserving
+the schema-1 body hash and original full-result goldens. Its fixture revision is
+`8492e7dc99f30a1d4bab66c3cb8960c4d744426719731b629fb58d0fe0038f04`.
+The new inflection golden contains `i + pat + a → i + pad + a → ipada` with actual
+typed boundaries, ordered epsilon confirmation, rule IDs and preserved underlying
+form. Inverse `pada` retains stone/rock analyses and rejected nonmatching surfaces.
+
+Commands actually exercised on disposable data during continuation:
+
+```powershell
+.tools/go/bin/go.exe test ./internal/languages/... ./internal/history ./internal/storage
+.tools/go/bin/go.exe test ./internal/httpapi -run TestLanguage
+.tools/go/bin/go.exe vet ./internal/languages/... ./internal/history ./internal/storage ./internal/httpapi ./cmd/languages
+.tools/go/bin/go.exe build ./...
+npm.cmd test
+npm.cmd run build
+node scripts/check-ui.mjs
+$env:KRIEMHILD_LANGUAGES_TEST='1'
+$env:KRIEMHILD_UI_URL='http://127.0.0.1:8137'
+npx.cmd playwright test tests/languages.browser.spec.mjs
+docker build -f docs/languages/Dockerfile.engine -t kriemhild-languages:a1 .
+.tools/go/bin/go.exe build -trimpath -o .cache/languages/a1-cli.exe ./cmd/languages
+node scripts/languages-a1-replay.mjs kriemhild-languages:a1
+node scripts/languages-container-smoke.mjs kriemhild-languages-runtime:a1
+```
+
+Go suites, vet and build passed. **132 Node tests passed**, production frontend
+build passed, changed-file Prettier checks and shared UI boundaries passed.
+**Eight browser tests passed** on an isolated database, including the five legacy
+flows, actual productive generation/typed trace capture/save/corpus execution,
+empty schema-2 wizard creation, 27-cell pagination/search, keyboard use, 390 px
+editing, and banner navigation/height at desktop and mobile widths. The suite
+deletes its own Worlds. Existing retained sources, author Worlds and active data
+are not fixtures.
+
+The repository-wide `npm run check:ui` also ran and **failed on pre-existing
+formatting in `src/worldbuilding/Biosphere.jsx` and `BiosphereEditors.jsx`**. Those
+files are unchanged from `6aed8ff`; unrelated formatting was not rewritten to
+hide this failure. This is additional baseline evidence, not an all-green claim.
+The retired-terrain timeout and generic old smoke-route mismatch above also remain.
+
+The engine Docker image runs Linux Go tests/vet/build with CGO disabled. The new
+replay script runs nine cases twice in separate Windows/Linux CLI processes:
+legacy compile/inflect/seed/parse/corpus, productive compile/forward/inverse and
+productive seeded selection. It compares raw UTF-8 bytes, complete traces and
+goldens; its JSON records bytes/hashes. SQL runtime smoke now also saves/compiles/
+activates schema 2, runs both productive goldens, restarts, exports a real World
+ZIP, imports into another World and replays both old/new results. Non-root
+SQLite and PostgreSQL runtimes passed and temporary containers/volumes are removed.
+Historical schema-1 preview/apply remains exercised alongside the new adapter.
+
+New tests also cover mixed schema-1/schema-2 immutable revisions, compiler pins,
+Age inheritance/isolation, changed current script drafts with old dependency pins,
+reference/body schema mismatch, corrupt/missing dependencies, and a schema-2
+source retained only through a pinned dependency after its source Age disappears.
+Archive schema 3 is required for those bodies; unrelated Library JSON is not
+classified as a definition. Existing permissions/CSRF/session-revocation and
+compute-gate tests remain in the focused HTTP suite.
+
+Five-sample varied-inventory benchmark inputs, commands, limits and allocation
+figures are in [BACKEND_DECISION_A1.md](BACKEND_DECISION_A1.md). The 1,000-entry
+inverse **does not complete**: it returns an explicit work limit and no partial
+choice. General native/backend comparison and peak-memory instrumentation are
+still pending. The next increment is A2 indexed inverse composition.
+
+Ignored evidence files use `.cache/languages/a1-*` (core/HTTP/Node/browser/build/
+UI checks, Docker/runtime/replay, benchmarks). The clean source archive and its
+verification record identify the exact implementation commit separately; Git
+history and local Go SDK/cache/data directories are not source-archive contents.

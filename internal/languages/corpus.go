@@ -16,7 +16,10 @@ func (a *Artifact) checkCorpus() []Diagnostic {
 	diagnostics := []Diagnostic{}
 	seen := map[string]bool{}
 	for _, c := range a.definition.Tests {
-		if c.ID == "" || len(c.ID) > 80 || seen[c.ID] || c.Request.Revision != "" || c.Request.Operation == "regression" || c.Request.Engine != EngineVersion || c.Request.Adapter != AdapterVersion || c.ExpectedStatus == "" || len(c.Expected) > 256 || len(c.ExpectedSentences) > 256 || len(c.Notes) > 2000 {
+		if a.definition.Schema == 2 && c.Request.Policy == "seeded" {
+			diagnostics = append(diagnostics, Diagnostic{Code: "revision_sensitive_case", Severity: "error", Module: "tests", RuleID: c.ID, Path: "tests.request.policy", Message: "Seeded choice includes the definition revision, which changes when saving expectations. Capture an all-candidates run as a corpus case; replay seeded requests externally against their exact immutable revision."})
+		}
+		if c.ID == "" || len(c.ID) > 80 || seen[c.ID] || c.Request.Revision != "" || c.Request.Operation == "regression" || c.Request.Engine != a.report.Engine || c.Request.Adapter != a.report.Adapter || c.Request.Compiler != a.report.Compiler || c.ExpectedStatus == "" || len(c.Expected) > 256 || len(c.ExpectedSentences) > 256 || len(c.ExpectedDerivations) > 256 || len(c.ExpectedRejectedDerivations) > 256 || len(c.Notes) > 2000 {
 			diagnostics = append(diagnostics, Diagnostic{Code: "invalid_regression", Severity: "error", Module: "tests", RuleID: c.ID, Path: "tests", Message: "Use a unique bounded case ID, exact engine/adapter, an empty revision binding for this definition, a nonrecursive operation and explicit expectations."})
 		}
 		seen[c.ID] = true
@@ -65,7 +68,7 @@ func (a *Artifact) runCorpus(ctx context.Context, q Request, out Result) Result 
 		if len(diagnostics) == 0 {
 			diagnostics = nil
 		}
-		passed := r.Status == test.ExpectedStatus && string(Canonical(actual)) == string(Canonical(expected)) && string(Canonical(r.Sentences)) == string(Canonical(test.ExpectedSentences)) && string(Canonical(diagnostics)) == string(Canonical(test.ExpectedDiagnostics))
+		passed := r.Status == test.ExpectedStatus && string(Canonical(actual)) == string(Canonical(expected)) && string(Canonical(r.Sentences)) == string(Canonical(test.ExpectedSentences)) && string(Canonical(diagnostics)) == string(Canonical(test.ExpectedDiagnostics)) && string(Canonical(r.Derivations)) == string(Canonical(test.ExpectedDerivations)) && string(Canonical(r.RejectedDerivations)) == string(Canonical(test.ExpectedRejectedDerivations))
 		out.Tests = append(out.Tests, CaseResult{ID: test.ID, Passed: passed, ExpectedStatus: test.ExpectedStatus, Result: &r})
 		out.Examined++
 		if passed {

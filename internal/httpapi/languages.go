@@ -18,6 +18,9 @@ func isLanguageCompute(r *http.Request) bool {
 	return r.Method == "POST" && len(p) == 6 && p[0] == "api" && p[1] == "worlds" && p[3] == "languages" && (p[5] == "compile" || p[5] == "run" || p[5] == "validate" || p[5] == "history-preview" || p[5] == "history-apply")
 }
 func (s *Server) languageRoutes() {
+	s.mux.HandleFunc("GET /api/worlds/{world}/languages/capabilities", func(w http.ResponseWriter, r *http.Request) {
+		respond(w, 200, map[string]any{"profiles": languages.Capabilities()})
+	})
 	s.mux.HandleFunc("POST /api/worlds/{world}/languages", s.saveLanguage)
 	s.mux.HandleFunc("GET /api/worlds/{world}/languages/{language}", s.getLanguage)
 	s.mux.HandleFunc("POST /api/worlds/{world}/languages/{language}/activate", s.activateLanguage)
@@ -282,7 +285,7 @@ func (s *Server) computeLanguage(w http.ResponseWriter, r *http.Request) {
 		compiled := false
 		if entity != nil && entity.Language != nil {
 			for _, ref := range entity.Language.Compiled {
-				if ref.Revision == report.Revision && ref.Engine == report.Engine && ref.Adapter == report.Adapter {
+				if ref.Revision == report.Revision && ref.Engine == report.Engine && ref.Adapter == report.Adapter && ref.Compiler == report.Compiler {
 					compiled = true
 				}
 			}
@@ -293,7 +296,11 @@ func (s *Server) computeLanguage(w http.ResponseWriter, r *http.Request) {
 		}
 		result := artifact.Execute(ctx, req.Request)
 		s.publishLanguage(w, r, func() {
-			respond(w, 200, map[string]any{"result": result, "report": report, "runtime": map[string]any{"cacheHit": cacheHit, "accountedArtifactBytes": artifact.AccountedBytes()}})
+			envelope := map[string]any{"result": result, "report": report, "runtime": map[string]any{"cacheHit": cacheHit, "accountedArtifactBytes": artifact.AccountedBytes()}}
+			if definition.Schema == 2 {
+				envelope["context"] = map[string]string{"worldId": world, "ageId": req.AgeID, "languageId": id}
+			}
+			respond(w, 200, envelope)
 		})
 		return
 	}

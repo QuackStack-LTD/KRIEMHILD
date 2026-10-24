@@ -1,5 +1,29 @@
 export const ENGINE = "languages/1";
 export const ADAPTER = "token-relation/1";
+export function definitionVersions(d) {
+  return d?.schema === 2
+    ? {
+        engine: "languages/2",
+        adapter: "finite-compose/1",
+        compiler: "languages-compiler/2",
+      }
+    : { engine: ENGINE, adapter: ADAPTER };
+}
+export function matchingCompile(c, hash, d) {
+  const versions = definitionVersions(d);
+  return (
+    c.revision === hash &&
+    c.engine === versions.engine &&
+    c.adapter === versions.adapter &&
+    (c.compiler || "") === (versions.compiler || "")
+  );
+}
+export const emptyProductive = () => ({
+  version: "productive/1",
+  features: [],
+  paradigms: [],
+  stratum: { id: "", boundaryPolicy: "retain-until-surface", rules: [] },
+});
 export const sections = [
   "Overview",
   "Phonology",
@@ -74,7 +98,7 @@ export function definitionStats(d) {
   return {
     segments: d?.phonology?.segments?.length || 0,
     lexemes: d?.lexicon?.length || 0,
-    paradigms: d?.morphology?.paradigms?.length || 0,
+    paradigms: (d?.productive || d?.morphology)?.paradigms?.length || 0,
     constructions: d?.syntax?.constructions?.length || 0,
   };
 }

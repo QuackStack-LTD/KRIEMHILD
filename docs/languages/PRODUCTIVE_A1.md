@@ -58,3 +58,18 @@ A1 does not claim all Milestone A exit criteria: general finite-state compositio
 optimized inversion, richer morphological context and later non-concatenative
 mechanisms still require their own increments. Benchmark results decide only
 whether this bounded adapter is adequate for A1, not whether foma/HFST is inferior.
+
+Compatibility review: schema-2 requests and compile references explicitly pin
+`languages-compiler/2` in addition to engine/adapter. Schema-1 requests retain the
+old omitted compiler field and byte-compatible goldens. A schema-1 body rejects
+the new `productive` field even when null. New nested inventory limits are checked
+before persistence, rather than leaving oversized source arrays for execution.
+An archive containing a retained/pinned schema-2 body requires World schema 3;
+reference/body schemas must agree. Ordinary Library JSON is not inspected as a
+linguistic definition.
+
+Corpus policy: seeded choice includes the exact source revision. Adding expected
+output changes that revision, making a seeded corpus case self-referential. A1
+reports `revision_sensitive_case` and does not advertise those cases as executable.
+All-candidates corpus expectations include typed accepted/rejected derivations;
+external seeded requests remain replayable against their exact retained revision.

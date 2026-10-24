@@ -1,4 +1,73 @@
-# Languages: initial product engine
+# Languages: versioned product engine
+
+The continuation audit is [CONTINUATION_AUDIT.md](CONTINUATION_AUDIT.md).
+The first delivered increment, **A1**, adds an opt-in productive adapter alongside
+the existing engine. It does not replace the verified kernel or migrate saved
+languages. [PRODUCTIVE_A1.md](PRODUCTIVE_A1.md) defines its semantics;
+[BACKEND_DECISION_A1.md](BACKEND_DECISION_A1.md) records measured limits and the
+provisional backend decision. The schema-1 baseline remains documented below.
+
+## Productive composition (A1)
+
+Choose **Productive composition · schema 2** in the creation wizard, or explicitly
+save/import a schema-2 revision. Empty inventories remain empty. Author productive
+features, paradigms/cells, ordered operations and allomorph conditions in Morphology.
+Supported operations are prefix, suffix, zero and whole-form circumfix. Conditions
+use explicit feature bundles, category, the immediately preceding operation and
+supported segment/class edge contexts. `first` and `all` precedence are authored;
+there is no inferred default allomorph. An empty operation chain is explicitly the
+identity relation. Cell overrides provide complete suppletion.
+
+Compile validates/indexes plans without pre-expanding surface forms. Requests apply
+the ordered plan, retain typed morpheme boundaries through a named consuming rule
+stratum, erase boundaries explicitly, validate surface phonotactics and optionally
+write through the pinned script. Insertion/deletion/substitution see snapshots;
+insertion runs once per gap in the typed stream, never recursively on its output.
+Word phonology rules must be moved explicitly to this stratum in schema 2.
+
+Forward, phonological inverse and written inverse preserve lexical/cell/allomorph
+identity, homophones and epsilon stages. Results include actual typed intermediate
+states, selected/rejected alternatives, failed paths and ordinary readable traces.
+Inverse traverses the same finite authored lexical domain. It is **not** an optimized
+general inverse FST: the varied 128-entry benchmark completes; the 1,000-entry
+benchmark reaches the deterministic work cap. A work limit clears partial results
+and cannot make a seeded choice from an incomplete prefix. This remains a narrow
+Milestone A increment, not completion of the entire advanced roadmap.
+
+Schema 2 uses `languages/2`, `finite-compose/1`, `languages-compiler/2` and the
+unchanged `kriemhild-typed-json/1`. Requests must pin engine, adapter **and compiler**.
+Compile references and cache keys include compiler; the source hash includes all
+authored rules and pinned dependency hashes. Schema-1 requests still omit compiler
+and retain their existing result bytes; capability metadata names their implicit
+compiler `languages-compiler/1`. Scripts remain schema 1. No automatic migration
+changes a source body, Age state, active revision or script dependency.
+
+`GET /api/worlds/{world}/languages/capabilities` reports the actual supported
+profiles. New compile reports expose capabilities separately from dependency
+readiness; the Laboratory renders those server capabilities. Unsupported schema-2
+grammar/history are explained in their tabs while retained data and immutable
+revision restoration stay available. Prosody, recursive grammar, sequence spelling,
+custom fonts and reconstruction are still unsupported.
+
+Corpus capture saves typed traces only after explicit author action and Save.
+Schema 2 refuses seeded corpus cases: adding expectations changes the revision used
+for seeded selection. Capture an `all` run instead, or replay the exact external
+seeded request against its retained revision. Legacy schema-1 diagnostic ordering
+for multiple unknown features and revision-sensitive seeded corpus behavior remain
+documented limitations; schema 2 does not silently reinterpret those old requests.
+
+Existing limits remain, with at most 64 productive paradigms, 64 cells each, 16
+operations/cell, 16 allomorphs/operation, 32 boundary rules, 16 selectors/context,
+256 live branches, 256 surface segments and 512 typed tokens. Execution checks
+cancellation in traversal/rule loops and caps 100,000 steps and 8 MiB of logical
+serialized intermediate/result payload. That payload cap is not a measured peak
+Go heap limit. The server retains its two-slot admission and five-second context.
+
+World archives with any retained schema-2 definition or pinned dependency use
+**World archive schema 3**. Older readers reject it. Worlds containing only
+schema-1 languages still use archive schema 2, and ordinary Worlds retain schema 1.
+Import checks the body schema against its reference, including mixed revision
+histories; a Library document is not mistaken for an authoritative definition.
 
 The author approved stable identity, separate Age state, immutable definition
 revisions, and separately cached compiled artifacts. Languages uses existing

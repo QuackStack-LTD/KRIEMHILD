@@ -27,6 +27,10 @@ func NewCache(budget int64) *Cache {
 	return &Cache{budget: budget, order: list.New(), entries: map[string]*list.Element{}}
 }
 func ArtifactKey(world, age string, d Definition) string {
+	if d.Schema == 2 {
+		e, a, c := Versions(d)
+		return Hash(struct{ World, Age, Revision, Engine, Adapter, Compiler string }{world, age, Hash(d), e, a, c})
+	}
 	return Hash(struct{ World, Age, Revision, Engine, Adapter string }{world, age, Hash(d), EngineVersion, AdapterVersion})
 }
 func (a *Artifact) AccountedBytes() int64 {

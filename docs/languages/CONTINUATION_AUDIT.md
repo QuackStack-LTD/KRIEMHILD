@@ -76,3 +76,36 @@ schema-2 archive reader could discard new definition metadata.
 Formal semantics and resource policy are specified in [PRODUCTIVE_A1.md](PRODUCTIVE_A1.md).
 Implementation follows this committed audit; completion/evidence will be appended
 without replacing the original baseline observations.
+
+## Delivered A1 and remaining scope
+
+The preceding table records the original `6aed8ff` baseline, not a claim that its
+unsupported capabilities were already implemented. Audit/semantics were committed
+first as `a009b1b`; the independent banner change is `62d4c62`.
+
+| Capability | Current status | Exact implementation/tests | Missing behavior | Proposed next increment |
+| --- | --- | --- | --- | --- |
+| Schema-2 typed productive plans and version pins | working | `productive_schema.go`, `productive_compile.go`, `schema.go`; productive validation/limit tests | No automatic schema migration, deliberately | Add mechanisms only with a version decision |
+| Ordered lazy composition, conditioned allomorphy and whole-form circumfix | working | `productive_execute.go:affix,composeCell`; `TestProductiveCompositionAndCompleteInverse`, `TestProductivePrefixAndClassConditionsRoundTrip` | Not a general FST optimizer; no infix/reduplication/interdigitation | A2 indexed inverse composition |
+| Boundary stratum and actual intermediate provenance | working | Typed tokens/steps; insertion/deletion/order tests; full `productive-inflect` and `productive-inverse` result goldens | One retain-until-surface stratum; no boundary-consuming or transparent strata | Separate typed stratum extensions |
+| Forward/inverse for the declared finite domain | partial | Same request-time composition in both directions; complete fixture round trips, homophones and distinct epsilon derivations | The 1,000-entry benchmark hits the work cap rather than completing inverse | A2 pruning/indexing without losing analyses |
+| New-adapter deterministic diagnostics, cancellation and limits | working | Sorted feature validation, `productive_limits_test.go`, live-branch/step/payload tests | Legacy engine still retains its old multiple-invalid-feature diagnostic ordering | Keep the legacy limitation explicit; do not silently reinterpret old requests |
+| Corpus typed trace comparison | partial | Accepted/rejected typed derivations captured explicitly, `corpus.go`; browser capture/save/compile/run | Seeded expectations are revision-sensitive; selected cases/filter/diff UI still absent | New adapter rejects `revision_sensitive_case`; external exact seeded replay supported |
+| Compiler/cache/compile-reference identity | working | `Versions`, compiler-pinned requests/ref/cache keys; storage restart tests, frontend readiness pin test | Native backend adapter version not selected | Keep dependencies rebuildable and exact |
+| Persistence, mixed revisions, Age isolation and ZIP guard | working | `TestProductiveMixedRevisionsPinnedScriptRestartAndArchive`, pinned-hidden-source test, HTTP tests | No automatic corpus migration | World schema 3 for retained/pinned schema-2 bodies only |
+| API/capability report/authoring UI | working | `capabilities.go`, HTTP endpoint, productive structured editor, Laboratory typed trace view; 8 isolated browser flows | Recursive grammar/history unsupported in new adapter; old engine retains its existing subset | Keep unsupported tabs explicit |
+| Windows/Linux and SQLite/PostgreSQL portability | working | `scripts/languages-a1-replay.mjs`, extended real runtime smoke, restart/import replay; all full result bytes/goldens checked | No native dependency portability claim | Repeat these gates for A2 |
+| Full Milestone A / backend Milestone B | partial | Narrow A1 and repeated varied benchmarks in BACKEND_DECISION_A1 | General optimized composition/inverse, process-cold/peak memory and native comparison remain | A2 first; candidate backend only if evidence requires it |
+
+Additional correctness finding during continuation: seeded selection incorporates
+the source revision. Saving a case changes that revision and can change the
+expected selection. Schema 2 therefore rejects seeded corpus cases explicitly;
+the UI explains using an all-candidates capture instead. Legacy behavior is
+documented, not silently redefined. Neither limitation is called resolved for
+every old request.
+
+Actual continuation commands/results and portability details are appended to
+[VERIFICATION.md](VERIFICATION.md). No native library, AI/model call, new service,
+dependency lockfile change, source-grid change or retired-terrain test change was
+introduced. C–G and the remaining H extensions are still unsupported/partial as
+the original table states; this is completion of the first justified slice only.

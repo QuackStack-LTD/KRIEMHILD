@@ -4,8 +4,213 @@ import (
 	"context"
 	"kriemhild/internal/history"
 	"kriemhild/internal/languages"
+	"kriemhild/internal/languages/spike"
+	"os"
 	"testing"
 )
+
+func TestProductiveMixedRevisionsPinnedScriptRestartAndArchive(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	db, err := Open(ctx, dir, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { db.Close() }()
+	doc := history.New("Disposable productive portability")
+	if err = db.CreateHistory(ctx, doc); err != nil {
+		t.Fatal(err)
+	}
+	world, age := doc.World.ID, doc.World.CurrentAge
+	raw, err := os.ReadFile("../languages/testdata/productive.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	definition, err := languages.Decode(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	old := languages.Clone(definition)
+	old.Schema = 1
+	old.Productive = nil
+	old.Lexicon = nil
+	doc, err = db.SaveLinguisticDefinition(ctx, world, age, "language", doc.World.Revision, languages.Canonical(old), languages.State{}, "Retain schema 1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	oldHash := languages.Hash(old)
+	raw, err = os.ReadFile("../languages/testdata/script.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	script, err := languages.DecodeScript(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc, err = db.SaveLinguisticDefinition(ctx, world, age, "script", doc.World.Revision, languages.Canonical(script), languages.State{}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err = os.ReadFile("../languages/testdata/reference.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	reference, err := languages.Decode(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	definition.Orthography = reference.Orthography
+	doc, err = db.SaveLinguisticDefinition(ctx, world, age, "language", doc.World.Revision, languages.Canonical(definition), languages.State{}, "Explicit schema-2 revision")
+	if err != nil {
+		t.Fatal(err)
+	}
+	head := languages.Hash(definition)
+	state := doc.Entity(age, definition.LanguageID).Language
+	if len(state.Revisions) != 2 || state.Revisions[0].Schema != 1 || state.Revisions[1].Schema != 2 || state.Active != "" {
+		t.Fatal("schema transition migrated/activated old source", state)
+	}
+	deps, err := db.LanguageDependencies(ctx, definition)
+	if err != nil {
+		t.Fatal(err)
+	}
+	artifact := languages.Compile(ctx, definition, deps)
+	doc, err = db.RecordLanguageCompile(ctx, world, age, definition.LanguageID, doc.World.Revision, artifact.Report())
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc, err = db.ActivateLanguage(ctx, world, age, definition.LanguageID, head, doc.World.Revision)
+	if err != nil {
+		t.Fatal(err)
+	}
+	script.Name = "Changed current script draft"
+	doc, err = db.SaveLinguisticDefinition(ctx, world, age, "script", doc.World.Revision, languages.Canonical(script), languages.State{}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc, err = db.UpdateHistory(ctx, world, doc.World.Revision, func(d *history.Document) error {
+		return d.Apply(history.Command{Kind: "age", Mode: "branch", AgeID: age, Name: "Productive successor"})
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	nextAge := doc.World.CurrentAge
+	if doc.Entity(nextAge, definition.LanguageID).Language.Draft != head || doc.Entity(nextAge, definition.LanguageID).Language.Compiled[0].Compiler != languages.ProductiveCompiler {
+		t.Fatal("Age inheritance lost schema-2 compiler/state")
+	}
+	nextDefinition := languages.Clone(definition)
+	nextDefinition.Notes = "Only the successor Age draft changes"
+	doc, err = db.SaveLinguisticDefinition(ctx, world, nextAge, "language", doc.World.Revision, languages.Canonical(nextDefinition), languages.State{}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if doc.Entity(age, definition.LanguageID).Language.Draft != head || len(doc.Entity(age, definition.LanguageID).Language.Revisions) != 2 {
+		t.Fatal("saving successor changed source Age")
+	}
+	if err = db.Close(); err != nil {
+		t.Fatal(err)
+	}
+	db, err = Open(ctx, dir, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	q := languages.Request{Request: spike.Request{Revision: head, Engine: languages.ProductiveEngine, Operation: "inflect", Lexeme: "stone", Features: languages.Features{"number": "many", "shape": "framed"}, Policy: "all", Limit: 64}, Adapter: languages.ProductiveAdapter, Compiler: languages.ProductiveCompiler}
+	expected := string(languages.Canonical(artifact.Execute(ctx, q)))
+	blob, err := db.LinguisticDefinition(ctx, world, age, definition.LanguageID, head)
+	if err != nil {
+		t.Fatal(err)
+	}
+	restored, err := languages.Decode(blob)
+	if err != nil {
+		t.Fatal(err)
+	}
+	deps, err = db.LanguageDependencies(ctx, restored)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(languages.Canonical(languages.Compile(ctx, restored, deps).Execute(ctx, q))) != expected {
+		t.Fatal("restart or script draft changed productive replay")
+	}
+	bundle, err := db.HistoryBundle(ctx, world)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bundle.Schema != 3 || bundle.Validate() != nil {
+		t.Fatal("schema-3 portable bundle invalid", bundle.Schema)
+	}
+	for _, schema := range []int{1, 2} {
+		bad := languages.Clone(bundle)
+		bad.Schema = schema
+		if bad.Validate() == nil {
+			t.Fatal("old archive schema accepted productive content")
+		}
+	}
+	bad := languages.Clone(bundle)
+	for i := range bad.Document.Entities {
+		e := &bad.Document.Entities[i]
+		if e.Language != nil {
+			e.Language.Revisions[1].Schema = 1
+		}
+	}
+	if bad.Validate() == nil {
+		t.Fatal("reference/body schema mismatch accepted")
+	}
+	copyDB, err := Open(ctx, t.TempDir(), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer copyDB.Close()
+	if err = copyDB.ImportHistory(ctx, bundle); err != nil {
+		t.Fatal(err)
+	}
+	blob, err = copyDB.LinguisticDefinition(ctx, world, age, definition.LanguageID, oldHash)
+	if err != nil || string(blob) != string(languages.Canonical(old)) {
+		t.Fatal("import changed schema-1 revision", err)
+	}
+	blob, err = copyDB.LinguisticDefinition(ctx, world, age, definition.LanguageID, head)
+	if err != nil {
+		t.Fatal(err)
+	}
+	restored, err = languages.Decode(blob)
+	if err != nil {
+		t.Fatal(err)
+	}
+	deps, err = copyDB.LanguageDependencies(ctx, restored)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(languages.Canonical(languages.Compile(ctx, restored, deps).Execute(ctx, q))) != expected {
+		t.Fatal("import changed productive replay")
+	}
+	delete(bundle.Blobs, definition.Orthography.Script.Revision)
+	if bundle.Validate() == nil {
+		t.Fatal("missing pinned script accepted")
+	}
+}
+
+func TestProductivePinnedBodyRequiresArchiveThreeWithoutCurrentAgeRecord(t *testing.T) {
+	raw, err := os.ReadFile("../languages/testdata/productive.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	source, err := languages.Decode(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc := history.New("Synthetic retained dependency")
+	target := languages.Definition{Schema: 1, LanguageID: history.ID(), Name: "Retained provenance", Lexical: &languages.LexicalModel{Sources: []languages.LexicalSource{{ID: "authored-source", Kind: "cognate", LanguageID: source.LanguageID, Revision: languages.Hash(source), AgeID: history.ID()}}}}
+	ref := languages.RevisionRef{Hash: languages.Hash(target), Schema: 1, Canonicalizer: languages.CanonicalVersion, Size: len(languages.Canonical(target))}
+	doc.Entities = append(doc.Entities, history.Entity{ID: target.LanguageID, AgeID: doc.World.CurrentAge, Kind: "language", Name: target.Name, Language: &languages.State{Draft: ref.Hash, Revisions: []languages.RevisionRef{ref}}})
+	blobs := map[string][]byte{ref.Hash: languages.Canonical(target), languages.Hash(source): languages.Canonical(source)}
+	if hasProductiveRevisions(doc) {
+		t.Fatal("fixture unexpectedly retained a visible schema-2 reference")
+	}
+	if validateLinguisticBundle(doc, blobs, 2) == nil {
+		t.Fatal("old archive schema accepted a pinned productive body")
+	}
+	if err = validateLinguisticBundle(doc, blobs, 3); err != nil {
+		t.Fatal("schema 3 lost retained source after Age removal", err)
+	}
+}
 
 func TestLanguageRevisionsAgesRestartAndPortability(t *testing.T) {
 	ctx := context.Background()

@@ -1,0 +1,14 @@
+{
+  "revision": "8492e7dc99f30a1d4bab66c3cb8960c4d744426719731b629fb58d0fe0038f04",
+  "engine": "languages/2",
+  "adapter": "finite-compose/1",
+  "compiler": "languages-compiler/2",
+  "operation": "inflect",
+  "policy": "all",
+  "limit": 64,
+  "lexeme": "stone",
+  "features": {
+    "number": "many",
+    "shape": "framed"
+  }
+}

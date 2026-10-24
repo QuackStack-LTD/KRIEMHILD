@@ -16,6 +16,86 @@ import (
 	"time"
 )
 
+func TestLanguagesProductiveAPIAndCapabilities(t *testing.T) {
+	s, db, owner, viewer, d := secureFixture(t)
+	share(t, db, owner, viewer, d.World.ID, "viewer")
+	basePath := "/api/worlds/" + d.World.ID + "/languages"
+	age := d.World.CurrentAge
+	capabilities := secured(s, viewer, "GET", basePath+"/capabilities", "")
+	if capabilities.Code != 200 || !strings.Contains(capabilities.Body.String(), `"finite-compose/1"`) || !strings.Contains(capabilities.Body.String(), `"unsupported"`) {
+		t.Fatal("capabilities not sourced from adapter", capabilities.Code, capabilities.Body)
+	}
+	raw, err := os.ReadFile("../languages/testdata/productive.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	definition, err := languages.Decode(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := func(v any) string { return string(languages.Canonical(v)) }
+	response := secured(s, owner, "POST", basePath, body(map[string]any{"ageId": age, "revision": d.World.Revision, "kind": "language", "definition": definition, "metadata": languages.State{}}))
+	if response.Code != 200 {
+		t.Fatal(response.Code, response.Body)
+	}
+	if err = json.Unmarshal(response.Body.Bytes(), &d); err != nil {
+		t.Fatal(err)
+	}
+	head := d.Entity(age, definition.LanguageID).Language.Draft
+	envelope := map[string]any{"ageId": age, "revision": d.World.Revision, "definitionRevision": head}
+	path := basePath + "/" + definition.LanguageID
+	if response = secured(s, viewer, "POST", path+"/compile", body(envelope)); response.Code != 403 {
+		t.Fatal("viewer compiled productive source")
+	}
+	response = secured(s, owner, "POST", path+"/compile", body(envelope))
+	if response.Code != 200 {
+		t.Fatal(response.Code, response.Body)
+	}
+	var compiled struct {
+		Document *history.Document `json:"document"`
+		Report   languages.Report  `json:"report"`
+	}
+	if err = json.Unmarshal(response.Body.Bytes(), &compiled); err != nil {
+		t.Fatal(err)
+	}
+	if compiled.Report.Compiler != languages.ProductiveCompiler || !compiled.Report.Ready["inflect"] || compiled.Report.Forms != 0 {
+		t.Fatal("API did not compile productive plans", compiled.Report)
+	}
+	d = compiled.Document
+	q := languages.Request{Request: spike.Request{Revision: head, Engine: languages.ProductiveEngine, Operation: "analyze", Segments: []string{"p", "a", "d", "a"}, Policy: "all", Limit: 64}, Adapter: languages.ProductiveAdapter, Compiler: languages.ProductiveCompiler}
+	envelope["request"] = q
+	response = secured(s, viewer, "POST", path+"/run", body(envelope))
+	if response.Code != 200 {
+		t.Fatal(response.Code, response.Body)
+	}
+	var result struct {
+		Result  languages.Result  `json:"result"`
+		Context map[string]string `json:"context"`
+	}
+	if err = json.Unmarshal(response.Body.Bytes(), &result); err != nil {
+		t.Fatal(err)
+	}
+	if result.Result.Status != "ambiguous" || result.Result.KnownValid != 2 || len(result.Result.Derivations) != 2 || result.Context["worldId"] != d.World.ID || result.Context["ageId"] != age {
+		t.Fatal("API lost analyses/provenance", response.Body)
+	}
+	before, err := db.History(context.Background(), d.World.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if before.World.Revision != d.World.Revision {
+		t.Fatal("run mutated a World")
+	}
+	q.Engine = languages.EngineVersion
+	envelope["request"] = q
+	response = secured(s, viewer, "POST", path+"/run", body(envelope))
+	if response.Code != 200 || !strings.Contains(response.Body.String(), `"incompatible_engine"`) {
+		t.Fatal("API used fallback adapter", response.Body)
+	}
+	if response = secured(s, accountFixture{}, "GET", basePath+"/capabilities", ""); response.Code != 401 {
+		t.Fatal("capability route bypassed authentication")
+	}
+}
+
 func TestLanguagesPersistCompileRunAndRoles(t *testing.T) {
 	s, db, owner, viewer, d := secureFixture(t)
 	share(t, db, owner, viewer, d.World.ID, "viewer")

@@ -73,6 +73,282 @@ test.describe("Languages persisted authoring lifecycle", () => {
         (await request.delete(`/api/worlds/${world}`, { headers })).ok(),
       ).toBeTruthy();
   });
+  test("productive rules execute with typed traces, explicit capture and narrow-screen editing", async ({
+    page,
+    request,
+  }) => {
+    let doc = await (await request.get(`/api/worlds/${world}`)).json();
+    const definition = JSON.parse(
+      await readFile("internal/languages/testdata/productive.json", "utf8"),
+    );
+    const saved = await request.post(`/api/worlds/${world}/languages`, {
+      headers,
+      data: {
+        ageId: age,
+        revision: doc.world.revision,
+        kind: "language",
+        definition,
+        metadata: {},
+      },
+    });
+    expect(saved.ok(), await saved.text()).toBeTruthy();
+    await page.goto(
+      `/worlds/${world}/languages?language=${definition.languageId}`,
+    );
+    await page
+      .getByRole("button", { name: "Compile saved revision", exact: true })
+      .click();
+    await expect(
+      page.getByText("Compile report saved for this revision."),
+    ).toBeVisible();
+    await expect(
+      page.getByText("parse: unsupported", { exact: true }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Laboratory", exact: true }).click();
+    await page
+      .getByRole("combobox", { name: "Lexeme", exact: true })
+      .selectOption("stone");
+    await page
+      .getByRole("combobox", { name: "number", exact: true })
+      .selectOption("many");
+    await page
+      .getByRole("combobox", { name: "shape", exact: true })
+      .selectOption("framed");
+    await page
+      .getByRole("button", { name: "Run operation", exact: true })
+      .click();
+    await expect(
+      page.locator(".language-results article>strong").first(),
+    ).toHaveText("i p a d a");
+    await page
+      .getByText("Typed morpheme boundaries and allomorph decisions", {
+        exact: true,
+      })
+      .click();
+    await expect(
+      page.locator(".language-results details[open] pre"),
+    ).toContainText('"boundary": "morpheme"');
+    await page
+      .getByRole("button", {
+        name: "Save result as regression case",
+        exact: true,
+      })
+      .click();
+    await page
+      .getByRole("textbox", { name: "Regression case ID", exact: true })
+      .fill("authored-framed-stone");
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Save", exact: true })
+      .click();
+    await expect(
+      page.getByText(/Regression case added to your draft/),
+    ).toBeVisible();
+    // Capturing is a draft change, not a mutation of the authoritative body.
+    doc = await (await request.get(`/api/worlds/${world}`)).json();
+    expect(
+      doc.entities.find((e) => e.id === definition.languageId).language
+        .revisions,
+    ).toHaveLength(1);
+    await page.getByRole("button", { name: "Save draft", exact: true }).click();
+    await expect(
+      page.getByText("Draft saved. Compilation and activation are separate."),
+    ).toBeVisible();
+    await page
+      .getByRole("button", { name: "Compile saved revision", exact: true })
+      .click();
+    await expect(
+      page.getByText("Compile report saved for this revision."),
+    ).toBeVisible();
+    await page
+      .getByRole("combobox", { name: "Operation", exact: true })
+      .selectOption("regression");
+    await page
+      .getByRole("button", { name: "Run operation", exact: true })
+      .click();
+    await expect(page.locator(".language-results>h3")).toHaveText("success");
+    await page.getByRole("button", { name: "Morphology", exact: true }).click();
+    await page.setViewportSize({ width: 390, height: 844 });
+    const stratum = page.getByRole("group", { name: "Stratum", exact: true });
+    await stratum
+      .getByRole("textbox", { name: "Id", exact: true })
+      .first()
+      .fill("reviewed-stem-edge");
+    await expect(
+      page.getByRole("button", { name: "Compile saved revision", exact: true }),
+    ).toBeDisabled();
+    await page.keyboard.press("Tab");
+    expect(await page.evaluate(() => document.activeElement?.tagName)).not.toBe(
+      "BODY",
+    );
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth + 1,
+      ),
+    ).toBeTruthy();
+    await mkdir(".cache/languages/browser", { recursive: true });
+    await page.screenshot({
+      path: ".cache/languages/browser/productive-mobile.png",
+      fullPage: true,
+    });
+    await page.getByRole("button", { name: "Save draft", exact: true }).click();
+    await expect(
+      page.getByText("Draft saved. Compilation and activation are separate."),
+    ).toBeVisible();
+    await page.reload();
+    await page.getByRole("button", { name: "Morphology", exact: true }).click();
+    await expect(
+      page
+        .getByRole("group", { name: "Stratum", exact: true })
+        .getByRole("textbox", { name: "Id", exact: true })
+        .first(),
+    ).toHaveValue("reviewed-stem-edge");
+  });
+  test("productive opt-in creates an empty draft and large cell editors paginate", async ({
+    page,
+    request,
+  }) => {
+    await page.goto(`/worlds/${world}/languages`);
+    await page
+      .getByRole("button", { name: "Create language or script", exact: true })
+      .click();
+    const dialog = page.getByRole("dialog");
+    await dialog
+      .getByRole("textbox", { name: "Name", exact: true })
+      .fill("Empty productive authoring");
+    await dialog.getByRole("button", { name: "Continue", exact: true }).click();
+    await dialog.getByRole("button", { name: "Continue", exact: true }).click();
+    await dialog
+      .getByRole("combobox", { name: "Linguistic engine", exact: true })
+      .selectOption("2");
+    await dialog.getByRole("button", { name: "Continue", exact: true }).click();
+    await dialog.getByRole("button", { name: "Continue", exact: true }).click();
+    await dialog
+      .getByRole("button", { name: "Save draft", exact: true })
+      .click();
+    await expect(dialog).toHaveCount(0);
+    let doc = await (await request.get(`/api/worlds/${world}`)).json();
+    const record = doc.entities.find(
+      (e) => e.name === "Empty productive authoring",
+    );
+    const source = await (
+      await request.get(
+        `/api/worlds/${world}/languages/${record.id}?age=${age}`,
+      )
+    ).json();
+    expect(source.schema).toBe(2);
+    expect(source.productive.paradigms).toEqual([]);
+    expect(source.lexicon).toEqual([]);
+    expect(record.language.compiled || []).toEqual([]);
+    const fixture = JSON.parse(
+      await readFile("internal/languages/testdata/productive.json", "utf8"),
+    );
+    fixture.languageId = record.id;
+    fixture.name = source.name;
+    for (let i = 0; i < 24; i++)
+      fixture.productive.paradigms[0].cells.push({
+        id: `authored-extra-${i}`,
+        features: { number: "one", shape: "plain" },
+        operations: [],
+      });
+    const saved = await request.post(`/api/worlds/${world}/languages`, {
+      headers,
+      data: {
+        ageId: age,
+        revision: doc.world.revision,
+        kind: "language",
+        definition: fixture,
+        metadata: {},
+      },
+    });
+    expect(saved.ok(), await saved.text()).toBeTruthy();
+    await page.reload();
+    await page.getByRole("button", { name: "Morphology", exact: true }).click();
+    const cells = page.getByRole("group", { name: "Cells 27", exact: true });
+    await expect(cells.locator(":scope > details")).toHaveCount(20);
+    await cells
+      .getByRole("button", { name: "Next cells", exact: true })
+      .click();
+    await expect(cells.locator(":scope > details")).toHaveCount(7);
+    await cells
+      .getByRole("searchbox", { name: "Find cells", exact: true })
+      .fill("authored-extra-23");
+    await expect(cells.locator(":scope > details")).toHaveCount(1);
+    await page.setViewportSize({ width: 390, height: 844 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth + 1,
+      ),
+    ).toBeTruthy();
+  });
+  test("short settlement banner contains collection and World/Age navigation", async ({
+    page,
+    request,
+  }) => {
+    let doc = await (await request.get(`/api/worlds/${world}`)).json();
+    const id = "77777777777777777777777777777777";
+    const response = await request.post(`/api/worlds/${world}`, {
+      headers,
+      data: {
+        kind: "entity",
+        ageId: age,
+        revision: doc.world.revision,
+        entity: {
+          id,
+          ageId: age,
+          kind: "city",
+          name: "Disposable banner city",
+          properties: {},
+        },
+      },
+    });
+    expect(response.ok(), await response.text()).toBeTruthy();
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`/worlds/${world}/profile?entity=${id}&age=${age}`);
+      const banner = page.locator(".settlement-banner");
+      await expect(
+        banner.getByRole("button", {
+          name: "Back to collection",
+          exact: false,
+        }),
+      ).toBeVisible();
+      await expect(banner.locator(".profile-breadcrumb")).toContainText(
+        "Disposable Languages browser audit",
+      );
+      const boxes = await banner.evaluate((el) => {
+        const box = (n) => {
+          const r = n.getBoundingClientRect();
+          return {
+            top: r.top,
+            bottom: r.bottom,
+            height: r.height,
+            left: r.left,
+            right: r.right,
+          };
+        };
+        return {
+          banner: box(el),
+          nav: box(el.querySelector(".profile-breadcrumb")),
+          details: box(el.querySelector(".settlement-banner-details")),
+        };
+      });
+      expect(boxes.banner.height).toBeLessThanOrEqual(280);
+      expect(boxes.nav.top).toBeGreaterThanOrEqual(boxes.banner.top);
+      expect(boxes.nav.bottom).toBeLessThanOrEqual(boxes.details.top + 16);
+      expect(boxes.details.bottom).toBeLessThanOrEqual(boxes.banner.bottom + 1);
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth + 1,
+        ),
+      ).toBeTruthy();
+      await mkdir(".cache/languages/browser", { recursive: true });
+      await page.screenshot({
+        path: `.cache/languages/browser/banner-${width}.png`,
+        fullPage: true,
+      });
+    }
+  });
   test("saving in a locally selected Age preserves the view and other Age states", async ({
     page,
     request,

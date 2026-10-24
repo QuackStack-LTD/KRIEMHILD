@@ -4,8 +4,8 @@ import useUnsavedChanges from "./ui/useUnsavedChanges.js";
 import { confirmAction, requestText } from "./ui/feedback.js";
 import { historyRequest } from "../history.js";
 import {
-  ENGINE,
-  ADAPTER,
+  matchingCompile,
+  emptyProductive,
   sections,
   blankDefinition,
   blankScript,
@@ -24,6 +24,7 @@ import {
   lexiconSchema,
   lexicalSchema,
   morphologySchema,
+  productiveSchema,
   syntaxSchema,
   graphemesSchema,
   mappingsSchema,
@@ -38,26 +39,28 @@ function Diagnostics({ report }) {
     <section className="language-diagnostics" aria-label="Compile diagnostics">
       <h3>Operation readiness</h3>
       <div className="language-readiness">
-        {[
-          "generate",
-          "validate",
-          "inflect",
-          "analyze",
-          "analyze-written",
-          "realize",
-          "paradigm",
-          "parse",
-          "write",
-          "regression",
-        ].map((op) => (
-          <span key={op} data-ready={!!report.ready?.[op]}>
-            {op}: {report.ready?.[op] ? "ready" : "needs dependencies"}
+        {(
+          report.capabilities ||
+          Object.keys(report.ready)
+            .sort()
+            .map((operation) => ({ operation, support: "supported" }))
+        ).map(({ operation: op, support, scope }) => (
+          <span key={op} title={scope} data-ready={!!report.ready?.[op]}>
+            {op}:{" "}
+            {support === "unsupported"
+              ? "unsupported"
+              : report.ready?.[op]
+                ? "ready"
+                : "needs dependencies"}
           </span>
         ))}
       </div>
       <p>
-        {report.forms} compiled forms · {report.states} relation states ·{" "}
-        {report.engine} · {report.adapter}
+        {report.schema === 2
+          ? "Lazy rule composition · no pre-expanded forms"
+          : `${report.forms} compiled forms · ${report.states} relation states`}{" "}
+        · {report.engine} · {report.adapter}
+        {report.compiler ? ` · ${report.compiler}` : ""}
       </p>
       <ul>
         {report.diagnostics?.map((d, i) => (
@@ -84,7 +87,8 @@ function CreateLanguage({ onClose, onCreate, records }) {
     [status, setStatus] = useState(""),
     [parent, setParent] = useState(""),
     [modules, setModules] = useState({}),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [schema, setSchema] = useState(1);
   const titles = [
     "Identity",
     "Lineage",
@@ -101,8 +105,13 @@ function CreateLanguage({ onClose, onCreate, records }) {
           : blankDefinition(name.trim());
       if (kind === "language") {
         if (modules.phonology) d.phonology = emptyPhonology();
-        if (modules.morphology) d.morphology = emptyMorphology();
-        if (modules.syntax) d.syntax = emptySyntax();
+        if (schema === 2) {
+          d.schema = 2;
+          d.productive = emptyProductive();
+        } else {
+          if (modules.morphology) d.morphology = emptyMorphology();
+          if (modules.syntax) d.syntax = emptySyntax();
+        }
       }
       await onCreate(kind, d, {
         kind: "",
@@ -204,12 +213,27 @@ function CreateLanguage({ onClose, onCreate, records }) {
         </>
       ) : step === 2 ? (
         <>
+          {kind === "language" && (
+            <label>
+              Linguistic engine
+              <select
+                value={schema}
+                onChange={(e) => setSchema(Number(e.target.value))}
+              >
+                <option value={1}>Finite definitions · schema 1</option>
+                <option value={2}>Productive composition · schema 2</option>
+              </select>
+            </label>
+          )}
           <p>
             Enable only the modules you intend to author. Empty modules remain
             incomplete; no example language is inserted.
           </p>
           {kind === "language" &&
-            ["phonology", "morphology", "syntax"].map((m) => (
+            (schema === 2
+              ? ["phonology"]
+              : ["phonology", "morphology", "syntax"]
+            ).map((m) => (
               <label key={m}>
                 <input
                   type="checkbox"
@@ -221,6 +245,15 @@ function CreateLanguage({ onClose, onCreate, records }) {
                 {m}
               </label>
             ))}
+          {kind === "language" && schema === 2 && (
+            <p>
+              Productive composition adds explicitly authored allomorphs,
+              circumfixes and a boundary rule stratum. Grammar and historical
+              evolution remain available in schema 1. Existing languages are not
+              migrated. Inverse analysis can reach an explicit work limit on
+              large inventories.
+            </p>
+          )}
         </>
       ) : step === 3 ? (
         <>
@@ -277,13 +310,15 @@ function Laboratory({
     [limit, setLimit] = useState(32),
     [construction, setConstruction] = useState(""),
     [roles, setRoles] = useState({});
-  const grammatical = definition.morphology?.features || [],
+  const grammatical =
+      (definition.productive || definition.morphology)?.features || [],
     c = definition.syntax?.constructions?.find((c) => c.id === construction);
   function execute() {
     const q = {
       revision,
-      engine: ENGINE,
-      adapter: ADAPTER,
+      engine: report.engine,
+      adapter: report.adapter,
+      ...(report.compiler ? { compiler: report.compiler } : {}),
       operation: op,
       policy: ["realize", "regression"].includes(op) ? "explicit" : policy,
       limit,
@@ -320,18 +355,12 @@ function Laboratory({
         <label>
           Operation
           <select value={op} onChange={(e) => setOp(e.target.value)}>
-            {[
-              "generate",
-              "validate",
-              "inflect",
-              "paradigm",
-              "analyze",
-              "analyze-written",
-              "realize",
-              "write",
-              "parse",
-              "regression",
-            ].map((v) => (
+            {(
+              report?.capabilities
+                ?.filter((c) => c.support !== "unsupported")
+                .map((c) => c.operation) ||
+              Object.keys(report?.ready || {}).sort()
+            ).map((v) => (
               <option key={v} value={v}>
                 {v}
                 {report?.ready?.[v] ? "" : " — needs dependencies"}
@@ -557,9 +586,20 @@ function Laboratory({
       {result && (
         <div className="language-results" role="status">
           <h3>{result.status}</h3>
-          {canEdit && result.input?.operation !== "regression" && (
-            <button onClick={onSaveTest}>Save result as regression case</button>
+          {result.schema === 2 && result.input?.policy === "seeded" && (
+            <p>
+              Seeded choice includes this exact revision. To save a regression
+              case, run with All candidates first; saving expectations changes
+              the revision.
+            </p>
           )}
+          {canEdit &&
+            result.input?.operation !== "regression" &&
+            !(result.schema === 2 && result.input?.policy === "seeded") && (
+              <button onClick={onSaveTest}>
+                Save result as regression case
+              </button>
+            )}
           <p>
             {result.knownValid} known valid · {result.examined} examined ·{" "}
             {result.rejected} rejected
@@ -590,6 +630,20 @@ function Laboratory({
               </details>
             </article>
           ))}
+          {result.derivations?.length > 0 && (
+            <details>
+              <summary>
+                Typed morpheme boundaries and allomorph decisions
+              </summary>
+              <pre>{JSON.stringify(result.derivations, null, 2)}</pre>
+            </details>
+          )}
+          {result.rejectedDerivations?.length > 0 && (
+            <details>
+              <summary>Rejected productive paths</summary>
+              <pre>{JSON.stringify(result.rejectedDerivations, null, 2)}</pre>
+            </details>
+          )}
           {result.sentences?.map((s, i) => (
             <article key={i}>
               <strong dir="auto">{s.written}</strong>
@@ -647,6 +701,8 @@ function Laboratory({
                   revision: result.revision,
                   engine: result.engine,
                   adapter: result.adapter,
+                  schema: result.schema,
+                  compiler: result.compiler,
                   kernel: result.kernel,
                   dependencies: result.dependencies,
                 },
@@ -779,10 +835,8 @@ export default function Languages({ doc, age, onDocument, query, onNavigate }) {
       setVersion(hash);
       baseHead.current = head;
       setReport(
-        state?.compiled?.find(
-          (c) =>
-            c.revision === hash && c.engine === ENGINE && c.adapter === ADAPTER,
-        )?.report || null,
+        state?.compiled?.find((c) => matchingCompile(c, hash, d))?.report ||
+          null,
       );
       setResult(null);
       setConflict(false);
@@ -857,12 +911,8 @@ export default function Languages({ doc, age, onDocument, query, onNavigate }) {
       setVersion(s.draftRevision);
       baseHead.current = s.draftRevision;
       setReport(
-        s.compiled?.find(
-          (c) =>
-            c.revision === s.draftRevision &&
-            c.engine === ENGINE &&
-            c.adapter === ADAPTER,
-        )?.report || null,
+        s.compiled?.find((c) => matchingCompile(c, s.draftRevision, definition))
+          ?.report || null,
       );
       setNote("");
       setResult(null);
@@ -1030,6 +1080,12 @@ export default function Languages({ doc, age, onDocument, query, onNavigate }) {
         request,
         expectedStatus: result.status,
         expected: result.candidates,
+        ...(result.derivations
+          ? { expectedDerivations: result.derivations }
+          : {}),
+        ...(result.rejectedDerivations
+          ? { expectedRejectedDerivations: result.rejectedDerivations }
+          : {}),
         expectedSentences: result.sentences,
         expectedDiagnostics: result.diagnostics,
         notes: "",
@@ -1072,12 +1128,15 @@ export default function Languages({ doc, age, onDocument, query, onNavigate }) {
     context = {
       segments: definition?.phonology?.segments || [],
       classes: definition?.phonology?.classes || [],
+      boundaries:
+        definition?.schema === 2
+          ? [{ id: "word" }, { id: "morpheme" }]
+          : [{ id: "word" }],
     },
     stats = definitionStats(definition),
     isScript = record?.kind === "script",
-    compiled = state?.compiled?.some(
-      (c) =>
-        c.revision === version && c.engine === ENGINE && c.adapter === ADAPTER,
+    compiled = state?.compiled?.some((c) =>
+      matchingCompile(c, version, definition),
     ),
     fresh = !dirty && report?.revision === version && compiled;
   function edit(key, value) {
@@ -1529,54 +1588,89 @@ export default function Languages({ doc, age, onDocument, query, onNavigate }) {
                     )}
                   </>
                 ) : section === "Morphology" ? (
-                  <>
-                    <h3>Features and paradigms</h3>
-                    <p>
-                      No grammatical inventory is imposed. This adapter executes
-                      prefix, suffix, zero and lexical suppletion. Other
-                      authored mechanisms remain drafts and produce explicit
-                      compile diagnostics.
-                    </p>
-                    {definition.morphology ? (
+                  definition.schema === 2 ? (
+                    <>
+                      <h3>Productive composition</h3>
+                      <p>
+                        Operations attach to the whole current form in authored
+                        order. Every allomorph needs explicit conditions and
+                        first/all precedence. Circumfixes require both affixes.
+                        Boundaries remain through the named rule stratum and are
+                        erased before surface validation. Infixes, reduplication
+                        and interdigitation are unsupported.
+                      </p>
                       <StructuredEditor
-                        label="Morphology"
-                        schema={morphologySchema}
-                        value={definition.morphology}
-                        onChange={(v) => edit("morphology", v)}
+                        label="Productive morphology"
+                        schema={productiveSchema}
+                        value={definition.productive || emptyProductive()}
+                        onChange={(v) => edit("productive", v)}
                         context={context}
                       />
-                    ) : (
-                      <button
-                        onClick={() => edit("morphology", emptyMorphology())}
-                      >
-                        Enable morphology
-                      </button>
-                    )}
-                  </>
+                    </>
+                  ) : (
+                    <>
+                      <h3>Features and paradigms</h3>
+                      <p>
+                        No grammatical inventory is imposed. This adapter
+                        executes prefix, suffix, zero and lexical suppletion.
+                        Other authored mechanisms remain drafts and produce
+                        explicit compile diagnostics.
+                      </p>
+                      {definition.morphology ? (
+                        <StructuredEditor
+                          label="Morphology"
+                          schema={morphologySchema}
+                          value={definition.morphology}
+                          onChange={(v) => edit("morphology", v)}
+                          context={context}
+                        />
+                      ) : (
+                        <button
+                          onClick={() => edit("morphology", emptyMorphology())}
+                        >
+                          Enable morphology
+                        </button>
+                      )}
+                    </>
+                  )
                 ) : section === "Syntax" ? (
-                  <>
-                    <h3>Constructions and agreement</h3>
-                    <p>
-                      Realize explicit role/lexeme structures with flat feature
-                      agreement. Nested constructions and recursive typed
-                      structures are retained in imported definitions but are
-                      not executable in this adapter. This is not a general
-                      translator.
-                    </p>
-                    {definition.syntax ? (
-                      <StructuredEditor
-                        label="Syntax"
-                        schema={syntaxSchema}
-                        value={definition.syntax}
-                        onChange={(v) => edit("syntax", v)}
-                        context={context}
-                      />
-                    ) : (
-                      <button onClick={() => edit("syntax", emptySyntax())}>
-                        Enable syntax
-                      </button>
-                    )}
-                  </>
+                  definition.schema === 2 ? (
+                    <>
+                      <h3>Grammar is not implemented in productive/1</h3>
+                      <p>
+                        Use schema 1 for the existing flat grammar. Recursive
+                        grammar will require a separate versioned increment.
+                        Imported syntax data remains retained.
+                      </p>
+                      {definition.syntax && (
+                        <pre>{JSON.stringify(definition.syntax, null, 2)}</pre>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <h3>Constructions and agreement</h3>
+                      <p>
+                        Realize explicit role/lexeme structures with flat
+                        feature agreement. Nested constructions and recursive
+                        typed structures are retained in imported definitions
+                        but are not executable in this adapter. This is not a
+                        general translator.
+                      </p>
+                      {definition.syntax ? (
+                        <StructuredEditor
+                          label="Syntax"
+                          schema={syntaxSchema}
+                          value={definition.syntax}
+                          onChange={(v) => edit("syntax", v)}
+                          context={context}
+                        />
+                      ) : (
+                        <button onClick={() => edit("syntax", emptySyntax())}>
+                          Enable syntax
+                        </button>
+                      )}
+                    </>
+                  )
                 ) : section === "Scripts" ? (
                   isScript ? (
                     <>
@@ -1718,7 +1812,22 @@ export default function Languages({ doc, age, onDocument, query, onNavigate }) {
                           </li>
                         ))}
                     </ol>
-                    {!isScript && (
+                    {!isScript && definition.schema === 2 && (
+                      <>
+                        <p>
+                          Historical evolution is not implemented for
+                          productive/1. Retained revisions and draft restoration
+                          remain available above. Imported historical source
+                          data is preserved.
+                        </p>
+                        {definition.history && (
+                          <pre>
+                            {JSON.stringify(definition.history, null, 2)}
+                          </pre>
+                        )}
+                      </>
+                    )}
+                    {!isScript && definition.schema !== 2 && (
                       <LanguageHistory
                         doc={doc}
                         age={age}

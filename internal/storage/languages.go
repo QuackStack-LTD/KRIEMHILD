@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"kriemhild/internal/history"
 	"kriemhild/internal/languages"
@@ -30,6 +31,27 @@ func hasLinguisticRecords(d *history.Document) bool {
 		}
 	}
 	return false
+}
+func hasProductiveRevisions(d *history.Document) bool {
+	for _, e := range d.Entities {
+		if e.Language != nil {
+			for _, ref := range e.Language.Revisions {
+				if ref.Schema == languages.ProductiveSchemaVersion {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+func linguisticSchema(raw []byte) int {
+	var h struct {
+		Schema int `json:"schema"`
+	}
+	if json.Unmarshal(raw, &h) != nil {
+		return 0
+	}
+	return h.Schema
 }
 func definitionOwner(raw []byte, kind string) (string, error) {
 	if kind == "language" {
@@ -239,7 +261,13 @@ func (s *Store) SaveLinguisticDefinition(ctx context.Context, world, age, kind s
 		if len(state.Revisions) >= languages.MaxRevisions {
 			return nil, fmt.Errorf("revision limit reached; export this language before starting a new revision series")
 		}
-		state.Revisions = append(state.Revisions, languages.RevisionRef{Hash: h, Schema: languages.SchemaVersion, Canonicalizer: languages.CanonicalVersion, Size: len(body), Parent: state.Draft, CreatedAt: time.Now().UnixMilli(), Author: Actor(ctx), Note: note})
+		var header struct {
+			Schema int `json:"schema"`
+		}
+		if err := json.Unmarshal(body, &header); err != nil {
+			return nil, err
+		}
+		state.Revisions = append(state.Revisions, languages.RevisionRef{Hash: h, Schema: header.Schema, Canonicalizer: languages.CanonicalVersion, Size: len(body), Parent: state.Draft, CreatedAt: time.Now().UnixMilli(), Author: Actor(ctx), Note: note})
 	}
 	state.Draft = h
 	state.Kind = metadata.Kind
@@ -290,6 +318,9 @@ func (s *Store) LinguisticDefinition(ctx context.Context, world, age, id, revisi
 	raw, err := linguisticBlob(ctx, tx, revision, e.Kind, id, r.Size)
 	if err != nil {
 		return nil, err
+	}
+	if linguisticSchema(raw) != r.Schema {
+		return nil, fmt.Errorf("definition reference schema does not match its immutable body")
 	}
 	return raw, tx.Commit()
 }
@@ -355,14 +386,15 @@ func (s *Store) RecordLanguageCompile(ctx context.Context, world, age, id string
 		if e == nil || e.Deleted || e.Language == nil || e.Language.Ref(report.Revision) == nil {
 			return fmt.Errorf("language revision not found")
 		}
-		if report.Engine != languages.EngineVersion || report.Adapter != languages.AdapterVersion {
+		refSchema := e.Language.Ref(report.Revision).Schema
+		if !languages.CompatibleVersions(refSchema, report.Engine, report.Adapter, report.Compiler) || refSchema == 2 && report.Schema != 2 {
 			return fmt.Errorf("unsupported compiler version")
 		}
 		state := languages.Clone(e.Language)
-		ref := languages.CompileRef{Revision: report.Revision, Engine: report.Engine, Adapter: report.Adapter, Dependencies: report.Dependencies, Report: report}
+		ref := languages.CompileRef{Revision: report.Revision, Engine: report.Engine, Adapter: report.Adapter, Compiler: report.Compiler, Dependencies: report.Dependencies, Report: report}
 		found := false
 		for i, c := range state.Compiled {
-			if c.Revision == ref.Revision && c.Engine == ref.Engine && c.Adapter == ref.Adapter {
+			if c.Revision == ref.Revision && c.Engine == ref.Engine && c.Adapter == ref.Adapter && c.Compiler == ref.Compiler {
 				state.Compiled[i] = ref
 				found = true
 				break
@@ -385,7 +417,7 @@ func (s *Store) ActivateLanguage(ctx context.Context, world, age, id, definition
 			return fmt.Errorf("language revision not found")
 		}
 		for _, c := range e.Language.Compiled {
-			if c.Revision == definition && c.Engine == languages.EngineVersion && c.Adapter == languages.AdapterVersion && len(languages.Operations(c.Report)) > 0 {
+			if c.Revision == definition && languages.CompatibleVersions(e.Language.Ref(definition).Schema, c.Engine, c.Adapter, c.Report.Compiler) && len(languages.Operations(c.Report)) > 0 {
 				e.Language = languages.Clone(e.Language)
 				e.Language.Active = definition
 				return nil
@@ -431,7 +463,7 @@ func collectLinguisticBodies(ctx context.Context, q historyQuery, d *history.Doc
 	}
 	return walkLinguisticBodies(d, blobs, load)
 }
-func validateLinguisticBundle(d *history.Document, blobs map[string][]byte) error {
+func validateLinguisticBundle(d *history.Document, blobs map[string][]byte, archiveSchema int) error {
 	load := func(ref languages.RevisionRef, kind, owner string) ([]byte, error) {
 		raw := blobs[ref.Hash]
 		id, err := definitionOwner(raw, kind)
@@ -441,6 +473,9 @@ func validateLinguisticBundle(d *history.Document, blobs map[string][]byte) erro
 		canonical, err := canonicalDefinition(raw, kind)
 		if err != nil || !bytes.Equal(raw, canonical) {
 			return nil, fmt.Errorf("archive definition is not canonical for its declared version")
+		}
+		if linguisticSchema(raw) == 2 && archiveSchema < 3 {
+			return nil, fmt.Errorf("Pinned productive definitions require World archive schema 3")
 		}
 		return raw, nil
 	}
@@ -463,6 +498,9 @@ func walkLinguisticBodies(d *history.Document, blobs map[string][]byte, load fun
 		raw, err := load(ref, kind, owner)
 		if err != nil {
 			return err
+		}
+		if ref.Schema != 0 && linguisticSchema(raw) != ref.Schema {
+			return fmt.Errorf("definition reference schema does not match its immutable body")
 		}
 		visited[key] = true
 		blobs[ref.Hash] = raw

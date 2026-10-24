@@ -22,7 +22,8 @@ async function api(path, body) {
 }
 assert.match(await (await fetch(base + "/")).text(), /id="root"/);
 const definition = await json("reference.json"),
-  script = await json("script.json");
+  script = await json("script.json"),
+  productive = await json("productive.json");
 let doc;
 if (phase === "create") {
   doc = await api("/api/worlds", {
@@ -55,6 +56,28 @@ if (phase === "create") {
     revision: doc.world.revision,
     definitionRevision: compiled.report.revision,
   });
+  doc = await api(`/api/worlds/${doc.world.id}/languages`, {
+    ageId: doc.world.currentAge,
+    revision: doc.world.revision,
+    kind: "language",
+    definition: productive,
+    metadata: {},
+    note: "Productive A1 fixture",
+  });
+  const productivePath = `/api/worlds/${doc.world.id}/languages/${productive.languageId}`;
+  const productiveCompile = await api(productivePath + "/compile", {
+    ageId: doc.world.currentAge,
+    revision: doc.world.revision,
+    definitionRevision: (await json("productive-inflect.request.json"))
+      .revision,
+  });
+  assert.equal(productiveCompile.report.compiler, "languages-compiler/2");
+  assert.equal(productiveCompile.report.forms, 0);
+  doc = await api(productivePath + "/activate", {
+    ageId: doc.world.currentAge,
+    revision: productiveCompile.document.world.revision,
+    definitionRevision: productiveCompile.report.revision,
+  });
 } else {
   assert.equal(phase, "restart");
   doc = await api(`/api/worlds/${existing}`);
@@ -80,6 +103,24 @@ for (const name of ["inflect", "seeded", "parse", "corpus"]) {
     expected,
     `${name} result differs in real Linux runtime`,
   );
+}
+for (const name of ["productive-inflect", "productive-inverse"]) {
+  const request = await json(`${name}.request.json`);
+  const actual = await api(
+    `/api/worlds/${world}/languages/${productive.languageId}/run`,
+    {
+      ageId: age,
+      revision: doc.world.revision,
+      definitionRevision: request.revision,
+      request,
+    },
+  );
+  assert.deepEqual(actual.result, await json(`${name}.golden.json`));
+  assert.deepEqual(actual.context, {
+    worldId: world,
+    ageId: age,
+    languageId: productive.languageId,
+  });
 }
 const latest = await api(`/api/worlds/${world}`);
 assert.equal(
@@ -157,6 +198,19 @@ const replay = await api(
   },
 );
 assert.deepEqual(replay.result, await json("inflect.golden.json"));
+for (const name of ["productive-inflect", "productive-inverse"]) {
+  const request = await json(`${name}.request.json`);
+  const actual = await api(
+    `/api/worlds/${imported.world.id}/languages/${productive.languageId}/run`,
+    {
+      ageId: age,
+      revision: imported.world.revision,
+      definitionRevision: request.revision,
+      request,
+    },
+  );
+  assert.deepEqual(actual.result, await json(`${name}.golden.json`));
+}
 assert.ok(
   (
     await fetch(base + `/api/worlds/${imported.world.id}`, {
@@ -183,6 +237,10 @@ console.log(
       "immutable-source",
       "portable-zip",
       "portable-import-replay",
+      "productive-circumfix",
+      "productive-inverse",
+      "typed-traces",
+      "schema-3-world-zip",
       phase === "create" ? "historical-apply" : "restart-persistence",
     ],
   }),

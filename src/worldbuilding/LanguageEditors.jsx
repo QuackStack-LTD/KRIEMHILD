@@ -19,6 +19,81 @@ const rule = object({
   left: selectors,
   right: selectors,
 });
+const boundaryRule = object({
+  ...rule.fields,
+  domain: { type: "choice", options: ["morpheme"] },
+});
+export const productiveSchema = object({
+  version: { type: "choice", options: ["productive/1"] },
+  features: array(feature, () => ({ id: newID(), values: [] })),
+  paradigms: array(
+    object({
+      id: text,
+      cells: array(
+        object({
+          id: text,
+          features,
+          operations: array(
+            object({
+              id: text,
+              kind: {
+                type: "choice",
+                options: ["zero", "prefix", "suffix", "circumfix"],
+              },
+              policy: { type: "choice", options: ["first", "all"] },
+              allomorphs: array(
+                object({
+                  id: text,
+                  when: object({
+                    features,
+                    category: text,
+                    previous: text,
+                    left: selectors,
+                    right: selectors,
+                  }),
+                  prefix: tokens,
+                  suffix: tokens,
+                }),
+                () => ({
+                  id: newID(),
+                  when: {
+                    features: {},
+                    category: "",
+                    previous: "",
+                    left: [],
+                    right: [],
+                  },
+                  prefix: [],
+                  suffix: [],
+                }),
+              ),
+            }),
+            () => ({
+              id: newID(),
+              kind: "zero",
+              policy: "first",
+              allomorphs: [],
+            }),
+          ),
+        }),
+        () => ({ id: newID(), features: {}, operations: [] }),
+      ),
+    }),
+    () => ({ id: newID(), cells: [] }),
+  ),
+  stratum: object({
+    id: text,
+    boundaryPolicy: { type: "choice", options: ["retain-until-surface"] },
+    rules: array(boundaryRule, () => ({
+      id: newID(),
+      domain: "morpheme",
+      input: [],
+      output: [],
+      left: [],
+      right: [],
+    })),
+  }),
+});
 export const phonologySchema = object({
   features: array(feature, () => ({ id: newID(), values: [] })),
   segments: array(
@@ -408,7 +483,7 @@ export function StructuredEditor({
     );
   if (schema.type === "object")
     return (
-      <div className="language-object">
+      <div className="language-object" role="group" aria-label={label}>
         {Object.entries(schema.fields).map(([key, child]) => (
           <StructuredEditor
             key={key}
@@ -432,7 +507,7 @@ export function StructuredEditor({
           ? context.segments
           : kind === "class"
             ? context.classes
-            : [{ id: "word" }];
+            : context.boundaries || [{ id: "word" }];
     return (
       <div className="language-inline">
         <label>

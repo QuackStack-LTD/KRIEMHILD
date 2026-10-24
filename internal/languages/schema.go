@@ -50,6 +50,7 @@ type State struct {
 	Compiled    []CompileRef  `json:"compiled,omitempty"`
 }
 type CompileRef struct {
+	Compiler     string      `json:"compiler,omitempty"`
 	Revision     string      `json:"revision"`
 	Engine       string      `json:"engine"`
 	Adapter      string      `json:"adapter"`
@@ -139,15 +140,18 @@ type HistoricalException struct {
 	Segments []string `json:"segments"`
 }
 type RegressionCase struct {
-	ExpectedDiagnostics []Diagnostic      `json:"expectedDiagnostics,omitempty"`
-	ID                  string            `json:"id"`
-	Request             Request           `json:"request"`
-	ExpectedStatus      string            `json:"expectedStatus"`
-	Expected            []spike.Candidate `json:"expected"`
-	ExpectedSentences   []Sentence        `json:"expectedSentences,omitempty"`
-	Notes               string            `json:"notes"`
+	ExpectedRejectedDerivations []ProductiveDerivation `json:"expectedRejectedDerivations,omitempty"`
+	ExpectedDerivations         []ProductiveDerivation `json:"expectedDerivations,omitempty"`
+	ExpectedDiagnostics         []Diagnostic           `json:"expectedDiagnostics,omitempty"`
+	ID                          string                 `json:"id"`
+	Request                     Request                `json:"request"`
+	ExpectedStatus              string                 `json:"expectedStatus"`
+	Expected                    []spike.Candidate      `json:"expected"`
+	ExpectedSentences           []Sentence             `json:"expectedSentences,omitempty"`
+	Notes                       string                 `json:"notes"`
 }
 type Definition struct {
+	Productive  *ProductiveModel  `json:"productive,omitempty"`
 	Lexical     *LexicalModel     `json:"lexical,omitempty"`
 	Schema      int               `json:"schema"`
 	LanguageID  string            `json:"languageId"`
@@ -167,22 +171,26 @@ type RoleInput struct {
 }
 type Request struct {
 	spike.Request
+	Compiler     string               `json:"compiler,omitempty"`
 	Adapter      string               `json:"adapter"`
 	Construction string               `json:"construction,omitempty"`
 	Roles        map[string]RoleInput `json:"roles,omitempty"`
 }
 type Report struct {
-	Revision           string          `json:"revision"`
-	Engine             string          `json:"engine"`
-	Adapter            string          `json:"adapter"`
-	Kernel             string          `json:"kernel"`
-	Status             string          `json:"status"`
-	Ready              map[string]bool `json:"ready"`
-	Dependencies       []ScriptRef     `json:"dependencies,omitempty"`
-	Diagnostics        []Diagnostic    `json:"diagnostics"`
-	DiagnosticsOmitted int             `json:"diagnosticsOmitted"`
-	Forms              int             `json:"forms"`
-	States             int             `json:"states"`
+	Capabilities       []OperationCapability `json:"capabilities,omitempty"`
+	Schema             int                   `json:"schema,omitempty"`
+	Compiler           string                `json:"compiler,omitempty"`
+	Revision           string                `json:"revision"`
+	Engine             string                `json:"engine"`
+	Adapter            string                `json:"adapter"`
+	Kernel             string                `json:"kernel"`
+	Status             string                `json:"status"`
+	Ready              map[string]bool       `json:"ready"`
+	Dependencies       []ScriptRef           `json:"dependencies,omitempty"`
+	Diagnostics        []Diagnostic          `json:"diagnostics"`
+	DiagnosticsOmitted int                   `json:"diagnosticsOmitted"`
+	Forms              int                   `json:"forms"`
+	States             int                   `json:"states"`
 }
 type Sentence struct {
 	Gloss        []GlossWord                `json:"gloss,omitempty"`
@@ -200,6 +208,10 @@ type GlossWord struct {
 	Features Features `json:"features"`
 }
 type Result struct {
+	RejectedDerivations []ProductiveDerivation `json:"rejectedDerivations,omitempty"`
+	Schema              int                    `json:"schema,omitempty"`
+	Compiler            string                 `json:"compiler,omitempty"`
+	Derivations         []ProductiveDerivation `json:"derivations,omitempty"`
 	spike.Result
 	Adapter      string       `json:"adapter"`
 	Kernel       string       `json:"kernel"`
@@ -228,14 +240,36 @@ func Decode(raw []byte) (Definition, error) {
 	if err := spike.DecodeJSON(raw, &d); err != nil {
 		return d, err
 	}
-	if d.Schema != SchemaVersion || !ValidID(d.LanguageID) || strings.TrimSpace(d.Name) == "" || len(d.Name) > 160 || len(d.Notes) > 8192 {
-		return d, fmt.Errorf("choose schema 1, a language identity and a name of at most 160 bytes")
+	if (d.Schema != SchemaVersion && d.Schema != ProductiveSchemaVersion) || !ValidID(d.LanguageID) || strings.TrimSpace(d.Name) == "" || len(d.Name) > 160 || len(d.Notes) > 8192 {
+		return d, fmt.Errorf("choose supported language schema 1 or 2, a language identity and a name of at most 160 bytes")
+	}
+	if d.Schema == 1 && d.Productive != nil || d.Schema == 2 && d.Morphology != nil {
+		return d, fmt.Errorf("productive rules require schema 2; schema 2 cannot also contain legacy morphology")
+	}
+	if d.Schema == 1 {
+		var fields map[string]json.RawMessage
+		if err := json.Unmarshal(raw, &fields); err != nil {
+			return d, err
+		}
+		if _, present := fields["productive"]; present {
+			return d, fmt.Errorf("productive is a schema-2 field, including when null; schema 1 is not reinterpreted")
+		}
 	}
 	if len(d.Lexicon) > 1000 || len(d.Tests) > 128 {
 		return d, fmt.Errorf("definition exceeds 1,000 lexemes or 128 regression cases")
 	}
 	if d.Lexical != nil && (len(d.Lexical.Morphemes) > 1000 || len(d.Lexical.Entries) > 1000 || len(d.Lexical.Relations) > 2000 || len(d.Lexical.Derivations) > 1000 || len(d.Lexical.Sources) > 128 || len(d.Lexical.Attestations) > 2000) {
 		return d, fmt.Errorf("lexical structure exceeds its bounded inventories")
+	}
+	if d.Schema == 2 {
+		if err := productiveShape(d.Productive); err != nil {
+			return d, err
+		}
+		for _, lex := range d.Lexicon {
+			if len(lex.Underlying) > 256 || len(lex.Features) > 64 || len(lex.Senses) > 32 || len(lex.Overrides) > 64 {
+				return d, fmt.Errorf("lexicon: productive lexical entry exceeds bounded form/features/senses/overrides")
+			}
+		}
 	}
 	return d, nil
 }
@@ -279,7 +313,7 @@ func ValidateState(s *State) error {
 	}
 	seen := map[string]bool{}
 	for _, r := range s.Revisions {
-		if !ValidHash(r.Hash) || seen[r.Hash] || r.Schema != SchemaVersion || r.Canonicalizer != CanonicalVersion || r.Size < 2 || r.Size > MaxDefinitionBytes || len(r.Note) > 1000 || len(r.Author) > 256 {
+		if !ValidHash(r.Hash) || seen[r.Hash] || (r.Schema != SchemaVersion && r.Schema != ProductiveSchemaVersion) || r.Canonicalizer != CanonicalVersion || r.Size < 2 || r.Size > MaxDefinitionBytes || len(r.Note) > 1000 || len(r.Author) > 256 {
 			return fmt.Errorf("invalid immutable definition reference")
 		}
 		if r.Parent != "" && !seen[r.Parent] {
@@ -296,7 +330,7 @@ func ValidateState(s *State) error {
 		}
 	}
 	for _, c := range s.Compiled {
-		if !seen[c.Revision] || c.Engine == "" || c.Adapter == "" || c.Report.Revision != c.Revision || c.Report.Engine != c.Engine || c.Report.Adapter != c.Adapter || len(c.Report.Diagnostics) > 256 || len(c.Dependencies) > 8 {
+		if !seen[c.Revision] || c.Engine == "" || c.Adapter == "" || c.Report.Revision != c.Revision || c.Report.Engine != c.Engine || c.Report.Adapter != c.Adapter || c.Report.Compiler != c.Compiler || len(c.Report.Diagnostics) > 256 || len(c.Dependencies) > 8 {
 			return fmt.Errorf("invalid compile reference")
 		}
 	}
