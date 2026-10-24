@@ -1,0 +1,218 @@
+{
+  "schema": 1,
+  "languageId": "phase0-reference",
+  "name": "Phase 0 authored reference language",
+  "notes": "An explicitly authored test fixture, never seeded into production Worlds. Number one/many is a choice for this fixture, not a linguistic universal.",
+  "phonology": {
+    "features": [
+      { "id": "type", "values": ["vowel", "consonant"] },
+      { "id": "voice", "values": ["voiced", "voiceless"] },
+      { "id": "place", "values": ["labial", "alveolar"] },
+      { "id": "height", "values": ["open", "close"] }
+    ],
+    "segments": [
+      {
+        "id": "a",
+        "label": "a",
+        "phonemic": true,
+        "features": { "type": "vowel", "voice": "voiced", "height": "open" }
+      },
+      {
+        "id": "i",
+        "label": "i",
+        "phonemic": true,
+        "features": { "type": "vowel", "voice": "voiced", "height": "close" }
+      },
+      {
+        "id": "p",
+        "label": "p",
+        "phonemic": true,
+        "features": {
+          "type": "consonant",
+          "voice": "voiceless",
+          "place": "labial"
+        }
+      },
+      {
+        "id": "t",
+        "label": "t",
+        "phonemic": true,
+        "features": {
+          "type": "consonant",
+          "voice": "voiceless",
+          "place": "alveolar"
+        }
+      },
+      {
+        "id": "n",
+        "label": "n",
+        "phonemic": true,
+        "features": {
+          "type": "consonant",
+          "voice": "voiced",
+          "place": "alveolar"
+        }
+      },
+      {
+        "id": "d",
+        "label": "d̪",
+        "phonemic": false,
+        "features": {
+          "type": "consonant",
+          "voice": "voiced",
+          "place": "alveolar"
+        }
+      }
+    ],
+    "classes": [
+      { "id": "V", "features": { "type": "vowel" } },
+      { "id": "C", "features": { "type": "consonant" } },
+      {
+        "id": "voiceless-alveolar",
+        "features": {
+          "type": "consonant",
+          "voice": "voiceless",
+          "place": "alveolar"
+        }
+      }
+    ],
+    "templates": [
+      {
+        "id": "vowel-consonant-vowel",
+        "slots": [{ "class": "V" }, { "class": "C" }, { "class": "V" }]
+      },
+      {
+        "id": "consonant-vowel-consonant",
+        "slots": [{ "class": "C" }, { "class": "V" }, { "class": "C" }]
+      }
+    ],
+    "allowed": [
+      {
+        "id": "word-cvc",
+        "slots": [{ "class": "C" }, { "class": "V" }, { "class": "C" }]
+      },
+      {
+        "id": "word-cvcv",
+        "slots": [
+          { "class": "C" },
+          { "class": "V" },
+          { "class": "C" },
+          { "class": "V" }
+        ]
+      },
+      {
+        "id": "word-vcv",
+        "slots": [{ "class": "V" }, { "class": "C" }, { "class": "V" }]
+      },
+      {
+        "id": "word-vcvv",
+        "slots": [
+          { "class": "V" },
+          { "class": "C" },
+          { "class": "V" },
+          { "class": "V" }
+        ]
+      }
+    ],
+    "forbidden": [
+      {
+        "id": "no-double-n",
+        "slots": [{ "segment": "n" }, { "segment": "n" }]
+      },
+      {
+        "id": "no-ipi",
+        "slots": [{ "segment": "i" }, { "segment": "p" }, { "segment": "i" }]
+      }
+    ],
+    "rules": [
+      {
+        "id": "intervocalic-voicing",
+        "domain": "word",
+        "input": [{ "segment": "t" }],
+        "output": ["d"],
+        "left": [{ "class": "V" }],
+        "right": [{ "class": "V" }]
+      }
+    ]
+  },
+  "lexicon": [
+    {
+      "id": "stone",
+      "category": "noun",
+      "senses": [{ "id": "stone-material", "meaning": "stone material" }],
+      "underlying": ["p", "a", "t"],
+      "features": {},
+      "paradigm": "count",
+      "overrides": []
+    },
+    {
+      "id": "rock",
+      "category": "noun",
+      "senses": [{ "id": "rock-object", "meaning": "a rock" }],
+      "underlying": ["p", "a", "t"],
+      "features": {},
+      "paradigm": "count",
+      "overrides": []
+    },
+    {
+      "id": "person",
+      "category": "noun",
+      "senses": [{ "id": "person-individual", "meaning": "a person" }],
+      "underlying": ["n", "a", "n"],
+      "features": {},
+      "paradigm": "count",
+      "overrides": [
+        {
+          "cell": "count-many",
+          "ruleId": "person-many-suppletion",
+          "segments": ["n", "i", "n"]
+        }
+      ]
+    },
+    {
+      "id": "tree",
+      "category": "noun",
+      "senses": [{ "id": "tree-plant", "meaning": "a tree" }],
+      "underlying": ["a", "t", "a"],
+      "features": {},
+      "paradigm": "count",
+      "overrides": []
+    }
+  ],
+  "morphology": {
+    "features": [{ "id": "number", "values": ["one", "many"] }],
+    "paradigms": [
+      {
+        "id": "count",
+        "cells": [
+          {
+            "id": "count-one",
+            "features": { "number": "one" },
+            "operations": [
+              { "id": "count-one-zero", "kind": "zero", "segments": [] }
+            ]
+          },
+          {
+            "id": "count-many",
+            "features": { "number": "many" },
+            "operations": [
+              { "id": "count-many-suffix", "kind": "suffix", "segments": ["a"] }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "orthography": {
+    "id": "reference-transcription",
+    "normalization": "NFC",
+    "mappings": [
+      { "id": "spell-a", "segment": "a", "grapheme": "a" },
+      { "id": "spell-i", "segment": "i", "grapheme": "i" },
+      { "id": "spell-p", "segment": "p", "grapheme": "p" },
+      { "id": "spell-t", "segment": "t", "grapheme": "t" },
+      { "id": "spell-n", "segment": "n", "grapheme": "n" },
+      { "id": "spell-d", "segment": "d", "grapheme": "d̪" }
+    ]
+  }
+}

@@ -1,0 +1,7 @@
+**
+!go.mod
+!go.sum
+!internal/
+!internal/languages/
+!internal/languages/spike/
+!internal/languages/spike/**
