@@ -1,9 +1,10 @@
 # Proposed Languages schema contract
 
-**Architectural model approved; serialized contract remains pre-release.** This separates the intended
+**Architectural model approved; initial schema 1 storage/API round-trips verified.** This separates the intended
 product contract from the deliberately smaller executable Phase 0 spike. Product
-implementation should not publish a version until this contract is agreed and
-the storage/API round-trip is tested.
+implementation publishes its supported subset in `internal/languages` and
+[README.md](README.md). Advanced contracts below remain broader than the initial
+executable grammar; retaining a source structure does not make it executable.
 
 ## Identity and revision envelopes
 

@@ -9,6 +9,7 @@ import (
 	"io"
 	"kriemhild/internal/auth"
 	"kriemhild/internal/history"
+	"kriemhild/internal/languages"
 	"kriemhild/internal/legacyterrain"
 	"kriemhild/internal/storage"
 	terrainmodel "kriemhild/internal/terrain/model"
@@ -62,6 +63,8 @@ type session struct {
 	composed        map[string][]byte
 }
 type Server struct {
+	languageCache    *languages.Cache
+	languageSlots    chan struct{}
 	terrainTileCache *terraintiles.Cache
 	terrainJobs      map[string]*terrainJob
 	limits           requestLimits
@@ -89,8 +92,9 @@ func New(dist string) *Server {
 	return NewWithOptions(dist, Options{})
 }
 func NewWithOptions(dist string, options Options) *Server {
-	s := &Server{sessions: map[string]*session{}, mux: http.NewServeMux(), slots: make(chan struct{}, 4), detailSlots: make(chan struct{}, 3)}
+	s := &Server{sessions: map[string]*session{}, mux: http.NewServeMux(), slots: make(chan struct{}, 4), detailSlots: make(chan struct{}, 3), languageSlots: make(chan struct{}, 2)}
 	s.projects = options.Projects
+	s.languageCache = languages.NewCache(16 << 20)
 	s.auth = options.Auth
 	s.live = map[*liveClient]bool{}
 	s.cacheRoot = options.CacheDir

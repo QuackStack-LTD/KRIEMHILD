@@ -3,6 +3,7 @@ import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests",
   testMatch: [
+    "languages.browser.spec.mjs",
     "ui.browser.spec.mjs",
     "terrain.browser.spec.mjs",
     "terrain-save.browser.spec.mjs",

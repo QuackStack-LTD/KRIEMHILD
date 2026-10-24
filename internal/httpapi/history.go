@@ -27,9 +27,10 @@ func validHistoryRoute(path string) bool {
 			return false
 		}
 	}
-	return len(p) == 2 || (len(p) == 3 && strings.Contains("|graph|terrains|atlas|characters|profile|networks|years|organizations|culture|flora|biosphere|magic|library|writing|", "|"+p[2]+"|"))
+	return len(p) == 2 || (len(p) == 3 && strings.Contains("|graph|terrains|atlas|characters|profile|networks|years|organizations|culture|flora|biosphere|magic|library|writing|languages|", "|"+p[2]+"|"))
 }
 func (s *Server) historyRoutes() {
+	s.languageRoutes()
 	s.writingRoutes()
 	s.libraryRoutes()
 	s.biosphereRoutes()

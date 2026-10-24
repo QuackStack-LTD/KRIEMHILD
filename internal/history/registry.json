@@ -1,5 +1,15 @@
 {
   "types": {
+    "language": {
+      "category": "languages",
+      "spatial": false,
+      "label": "Language"
+    },
+    "script": {
+      "category": "languages",
+      "spatial": false,
+      "label": "Script"
+    },
     "continent": {
       "category": "geography",
       "spatial": true,

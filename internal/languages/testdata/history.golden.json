@@ -1,0 +1,712 @@
+{
+  "status": "success",
+  "engine": "languages/1",
+  "adapter": "token-relation/1",
+  "sourceRevision": "9d5c2c6d141549aac64bc61da9ca7c9ef37cea3cfd876a8f1a728be23994d778",
+  "targetRevision": "d6081307adb82c4f447a317598cd41d61140d575380e7860fd5c6ecffc3f958d",
+  "previewHash": "a0993cacd5c4ab548a3c498f08919744cf117e72573085e04fc8797f7f0cd62f",
+  "changes": [
+    {
+      "lexeme": "stone",
+      "before": [
+        "p",
+        "a",
+        "t"
+      ],
+      "after": [
+        "p",
+        "a",
+        "d"
+      ],
+      "trace": [
+        {
+          "stage": "lexicon",
+          "ruleId": "stone",
+          "before": [],
+          "after": [
+            "p",
+            "a",
+            "t"
+          ]
+        },
+        {
+          "stage": "morphology",
+          "ruleId": "historical-zero",
+          "before": [
+            "p",
+            "a",
+            "t"
+          ],
+          "after": [
+            "p",
+            "a",
+            "t"
+          ]
+        },
+        {
+          "stage": "phonology",
+          "ruleId": "historical-voicing",
+          "before": [
+            "p",
+            "a",
+            "t"
+          ],
+          "after": [
+            "p",
+            "a",
+            "d"
+          ]
+        }
+      ]
+    },
+    {
+      "lexeme": "rock",
+      "before": [
+        "p",
+        "a",
+        "t"
+      ],
+      "after": [
+        "p",
+        "a",
+        "d"
+      ],
+      "trace": [
+        {
+          "stage": "lexicon",
+          "ruleId": "rock",
+          "before": [],
+          "after": [
+            "p",
+            "a",
+            "t"
+          ]
+        },
+        {
+          "stage": "morphology",
+          "ruleId": "historical-zero",
+          "before": [
+            "p",
+            "a",
+            "t"
+          ],
+          "after": [
+            "p",
+            "a",
+            "t"
+          ]
+        },
+        {
+          "stage": "phonology",
+          "ruleId": "historical-voicing",
+          "before": [
+            "p",
+            "a",
+            "t"
+          ],
+          "after": [
+            "p",
+            "a",
+            "d"
+          ]
+        }
+      ]
+    },
+    {
+      "lexeme": "person",
+      "before": [
+        "n",
+        "a",
+        "n"
+      ],
+      "after": [
+        "n",
+        "i",
+        "n"
+      ],
+      "trace": [
+        {
+          "stage": "historical-exception",
+          "ruleId": "person-exception",
+          "before": [
+            "n",
+            "a",
+            "n"
+          ],
+          "after": [
+            "n",
+            "i",
+            "n"
+          ]
+        }
+      ]
+    },
+    {
+      "lexeme": "tree",
+      "before": [
+        "a",
+        "t",
+        "a"
+      ],
+      "after": [
+        "a",
+        "d",
+        "a"
+      ],
+      "trace": [
+        {
+          "stage": "lexicon",
+          "ruleId": "tree",
+          "before": [],
+          "after": [
+            "a",
+            "t",
+            "a"
+          ]
+        },
+        {
+          "stage": "morphology",
+          "ruleId": "historical-zero",
+          "before": [
+            "a",
+            "t",
+            "a"
+          ],
+          "after": [
+            "a",
+            "t",
+            "a"
+          ]
+        },
+        {
+          "stage": "phonology",
+          "ruleId": "historical-voicing",
+          "before": [
+            "a",
+            "t",
+            "a"
+          ],
+          "after": [
+            "a",
+            "d",
+            "a"
+          ]
+        }
+      ]
+    }
+  ],
+  "diagnostics": [],
+  "target": {
+    "schema": 1,
+    "languageId": "33333333333333333333333333333333",
+    "name": "Reference descendant",
+    "notes": "Authored regression fixture; never inserted into a new language automatically.",
+    "phonology": {
+      "features": [
+        {
+          "id": "type",
+          "values": [
+            "vowel",
+            "consonant"
+          ]
+        },
+        {
+          "id": "voice",
+          "values": [
+            "voiced",
+            "voiceless"
+          ]
+        },
+        {
+          "id": "place",
+          "values": [
+            "labial",
+            "alveolar"
+          ]
+        },
+        {
+          "id": "height",
+          "values": [
+            "open",
+            "close"
+          ]
+        }
+      ],
+      "segments": [
+        {
+          "id": "a",
+          "label": "a",
+          "phonemic": true,
+          "features": {
+            "height": "open",
+            "type": "vowel",
+            "voice": "voiced"
+          }
+        },
+        {
+          "id": "i",
+          "label": "i",
+          "phonemic": true,
+          "features": {
+            "height": "close",
+            "type": "vowel",
+            "voice": "voiced"
+          }
+        },
+        {
+          "id": "p",
+          "label": "p",
+          "phonemic": true,
+          "features": {
+            "place": "labial",
+            "type": "consonant",
+            "voice": "voiceless"
+          }
+        },
+        {
+          "id": "t",
+          "label": "t",
+          "phonemic": true,
+          "features": {
+            "place": "alveolar",
+            "type": "consonant",
+            "voice": "voiceless"
+          }
+        },
+        {
+          "id": "n",
+          "label": "n",
+          "phonemic": true,
+          "features": {
+            "place": "alveolar",
+            "type": "consonant",
+            "voice": "voiced"
+          }
+        },
+        {
+          "id": "d",
+          "label": "d̪",
+          "phonemic": false,
+          "features": {
+            "place": "alveolar",
+            "type": "consonant",
+            "voice": "voiced"
+          }
+        }
+      ],
+      "classes": [
+        {
+          "id": "V",
+          "features": {
+            "type": "vowel"
+          }
+        },
+        {
+          "id": "C",
+          "features": {
+            "type": "consonant"
+          }
+        },
+        {
+          "id": "voiceless-alveolar",
+          "features": {
+            "place": "alveolar",
+            "type": "consonant",
+            "voice": "voiceless"
+          }
+        }
+      ],
+      "templates": [
+        {
+          "id": "vowel-consonant-vowel",
+          "slots": [
+            {
+              "class": "V"
+            },
+            {
+              "class": "C"
+            },
+            {
+              "class": "V"
+            }
+          ]
+        },
+        {
+          "id": "consonant-vowel-consonant",
+          "slots": [
+            {
+              "class": "C"
+            },
+            {
+              "class": "V"
+            },
+            {
+              "class": "C"
+            }
+          ]
+        }
+      ],
+      "allowed": [
+        {
+          "id": "word-cvc",
+          "slots": [
+            {
+              "class": "C"
+            },
+            {
+              "class": "V"
+            },
+            {
+              "class": "C"
+            }
+          ]
+        },
+        {
+          "id": "word-cvcv",
+          "slots": [
+            {
+              "class": "C"
+            },
+            {
+              "class": "V"
+            },
+            {
+              "class": "C"
+            },
+            {
+              "class": "V"
+            }
+          ]
+        },
+        {
+          "id": "word-vcv",
+          "slots": [
+            {
+              "class": "V"
+            },
+            {
+              "class": "C"
+            },
+            {
+              "class": "V"
+            }
+          ]
+        },
+        {
+          "id": "word-vcvv",
+          "slots": [
+            {
+              "class": "V"
+            },
+            {
+              "class": "C"
+            },
+            {
+              "class": "V"
+            },
+            {
+              "class": "V"
+            }
+          ]
+        }
+      ],
+      "forbidden": [
+        {
+          "id": "no-double-n",
+          "slots": [
+            {
+              "segment": "n"
+            },
+            {
+              "segment": "n"
+            }
+          ]
+        },
+        {
+          "id": "no-ipi",
+          "slots": [
+            {
+              "segment": "i"
+            },
+            {
+              "segment": "p"
+            },
+            {
+              "segment": "i"
+            }
+          ]
+        }
+      ],
+      "rules": [
+        {
+          "id": "intervocalic-voicing",
+          "domain": "word",
+          "input": [
+            {
+              "segment": "t"
+            }
+          ],
+          "output": [
+            "d"
+          ],
+          "left": [
+            {
+              "class": "V"
+            }
+          ],
+          "right": [
+            {
+              "class": "V"
+            }
+          ]
+        }
+      ]
+    },
+    "lexicon": [
+      {
+        "id": "person",
+        "category": "noun",
+        "senses": [
+          {
+            "id": "person-individual",
+            "meaning": "a person"
+          }
+        ],
+        "underlying": [
+          "n",
+          "i",
+          "n"
+        ],
+        "features": {},
+        "paradigm": "count",
+        "overrides": [
+          {
+            "cell": "count-many",
+            "ruleId": "person-many-suppletion",
+            "segments": [
+              "n",
+              "i",
+              "n"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "rock",
+        "category": "noun",
+        "senses": [
+          {
+            "id": "rock-object",
+            "meaning": "a rock"
+          }
+        ],
+        "underlying": [
+          "p",
+          "a",
+          "d"
+        ],
+        "features": {},
+        "paradigm": "count",
+        "overrides": []
+      },
+      {
+        "id": "stone",
+        "category": "noun",
+        "senses": [
+          {
+            "id": "stone-material",
+            "meaning": "stone material"
+          }
+        ],
+        "underlying": [
+          "p",
+          "a",
+          "d"
+        ],
+        "features": {},
+        "paradigm": "count",
+        "overrides": []
+      },
+      {
+        "id": "tree",
+        "category": "noun",
+        "senses": [
+          {
+            "id": "tree-plant",
+            "meaning": "a tree"
+          }
+        ],
+        "underlying": [
+          "a",
+          "d",
+          "a"
+        ],
+        "features": {},
+        "paradigm": "count",
+        "overrides": []
+      }
+    ],
+    "morphology": {
+      "features": [
+        {
+          "id": "number",
+          "values": [
+            "one",
+            "many"
+          ]
+        }
+      ],
+      "paradigms": [
+        {
+          "id": "count",
+          "cells": [
+            {
+              "id": "count-one",
+              "features": {
+                "number": "one"
+              },
+              "operations": [
+                {
+                  "id": "count-one-zero",
+                  "kind": "zero",
+                  "segments": []
+                }
+              ]
+            },
+            {
+              "id": "count-many",
+              "features": {
+                "number": "many"
+              },
+              "operations": [
+                {
+                  "id": "count-many-suffix",
+                  "kind": "suffix",
+                  "segments": [
+                    "a"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "syntax": {
+      "types": [],
+      "structures": [],
+      "constructions": [
+        {
+          "id": "pair",
+          "meaning": "Authored paired nouns",
+          "roles": [
+            {
+              "id": "left",
+              "category": "noun",
+              "features": {
+                "number": "many"
+              }
+            },
+            {
+              "id": "right",
+              "category": "noun",
+              "features": {}
+            }
+          ],
+          "order": [
+            {
+              "role": "left"
+            },
+            {
+              "role": "right"
+            }
+          ],
+          "agreements": [
+            {
+              "id": "number-agreement",
+              "leftRole": "left",
+              "rightRole": "right",
+              "features": [
+                "number"
+              ]
+            }
+          ],
+          "separator": " / "
+        }
+      ]
+    },
+    "orthography": {
+      "script": {
+        "id": "22222222222222222222222222222222",
+        "revision": "71c608c5aba1c9848539bbe4138c8f0e8c3a937e42d1e23c49589da3ba5bce4e"
+      },
+      "normalization": "NFC",
+      "mappings": [
+        {
+          "id": "spell-a",
+          "segment": "a",
+          "grapheme": "a"
+        },
+        {
+          "id": "spell-i",
+          "segment": "i",
+          "grapheme": "i"
+        },
+        {
+          "id": "spell-p",
+          "segment": "p",
+          "grapheme": "p"
+        },
+        {
+          "id": "spell-t",
+          "segment": "t",
+          "grapheme": "t"
+        },
+        {
+          "id": "spell-n",
+          "segment": "n",
+          "grapheme": "n"
+        },
+        {
+          "id": "spell-d",
+          "segment": "d",
+          "grapheme": "d̪"
+        }
+      ]
+    },
+    "history": {
+      "sourceLanguage": "11111111111111111111111111111111",
+      "sourceRevision": "9d5c2c6d141549aac64bc61da9ca7c9ef37cea3cfd876a8f1a728be23994d778",
+      "sourceAge": "44444444444444444444444444444444",
+      "changes": [
+        {
+          "id": "historical-voicing",
+          "domain": "word",
+          "input": [
+            {
+              "segment": "t"
+            }
+          ],
+          "output": [
+            "d"
+          ],
+          "left": [],
+          "right": []
+        }
+      ],
+      "exceptions": [
+        {
+          "lexeme": "person",
+          "ruleId": "person-exception",
+          "segments": [
+            "n",
+            "i",
+            "n"
+          ]
+        }
+      ],
+      "notes": "Controlled source-to-target lexical batch."
+    },
+    "tests": []
+  }
+}

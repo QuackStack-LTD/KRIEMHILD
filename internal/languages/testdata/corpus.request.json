@@ -1,0 +1,8 @@
+{
+  "revision": "9d5c2c6d141549aac64bc61da9ca7c9ef37cea3cfd876a8f1a728be23994d778",
+  "engine": "languages/1",
+  "operation": "regression",
+  "policy": "explicit",
+  "limit": 32,
+  "adapter": "token-relation/1"
+}

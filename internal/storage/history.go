@@ -386,6 +386,9 @@ func (s *Store) HistoryBundle(ctx context.Context, id string) (Bundle, error) {
 	if err != nil {
 		return b, err
 	}
+	if hasLinguisticRecords(d) {
+		b.Schema = 2
+	}
 	for _, m := range d.Maps {
 		if m.Snapshot == "" {
 			return b, fmt.Errorf("map has not been saved")
@@ -431,6 +434,9 @@ func (s *Store) HistoryBundle(ctx context.Context, id string) (Bundle, error) {
 			b.Blobs[v.Hash] = data
 		}
 	}
+	if err = collectLinguisticBodies(ctx, tx, d, b.Blobs); err != nil {
+		return b, err
+	}
 	rows, err := tx.QueryContext(ctx, `SELECT id FROM writer_projects WHERE world_id=$1`, id)
 	if err != nil {
 		return b, err
@@ -459,12 +465,18 @@ func (s *Store) HistoryBundle(ctx context.Context, id string) (Bundle, error) {
 	return b, tx.Commit()
 }
 func (b Bundle) Validate() error {
-	if b.Format != "KRIEMHILD-WORLD" || b.Schema != 1 || b.Document == nil {
+	if b.Format != "KRIEMHILD-WORLD" || (b.Schema != 1 && b.Schema != 2) || b.Document == nil {
 		return fmt.Errorf("unsupported World archive")
+	}
+	if b.Schema == 1 && hasLinguisticRecords(b.Document) {
+		return fmt.Errorf("Languages require World archive schema 2; a schema 1 reader would discard their definitions")
 	}
 	b.Document.MigrateFamilyViews()
 	b.Document.SyncYears()
 	if err := b.Document.Validate(); err != nil {
+		return err
+	}
+	if err := validateLinguisticBundle(b.Document, b.Blobs); err != nil {
 		return err
 	}
 	for _, m := range b.Document.Maps {

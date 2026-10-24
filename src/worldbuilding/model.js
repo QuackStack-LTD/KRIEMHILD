@@ -9,7 +9,7 @@ function canonical(v){if(Array.isArray(v))return v.map(canonical);if(v&&typeof v
 function signature(doc,e){
  const relations=doc.relations.filter(r=>r.ageId===e.ageId&&(r.source===e.id||r.destination===e.id)).map(({ageId,id,...r})=>r).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)));
  const shapes=doc.representations.filter(r=>r.ageId===e.ageId&&r.entityId===e.id).map(r=>({mapId:r.mapId,shape:r.shape})).sort((a,b)=>a.mapId.localeCompare(b.mapId));
- return JSON.stringify(canonical({name:e.name,kind:e.kind,names:e.names||[],properties:e.properties,relations,shapes}));
+ return JSON.stringify(canonical({name:e.name,kind:e.kind,names:e.names||[],properties:e.properties,language:e.language,script:e.script,relations,shapes}));
 }
 export function compareAge(doc,age){
  const source=doc.ages.find(a=>a.id===age)?.inheritedFrom,previous=new Map(activeEntities(doc,source).map(e=>[identity(e),e]));

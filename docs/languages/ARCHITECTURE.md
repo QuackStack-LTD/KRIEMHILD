@@ -2,6 +2,10 @@
 
 Status: **Model approved by the author; Phase 0 prototype verified; product integration in progress.**
 Audited revision: `d05c02859916f06844b1206a7bd9cb8113ab03cb`.
+The approved model now has an additive product integration; its supported subset
+and recorded checks are in [README.md](README.md) and
+[VERIFICATION.md](VERIFICATION.md). The table below preserves the Phase 0 plan;
+it does not claim every advanced capability is complete.
 The supplied Languages brief requires an architecture note before broad changes
 and an agreed schema proposal at the Phase 0 exit. The executable spike is
 isolated from the running application and authors' databases.

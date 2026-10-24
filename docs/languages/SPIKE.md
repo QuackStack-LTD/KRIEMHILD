@@ -1,9 +1,12 @@
 # Phase 0 executable experiment
 
-The isolated implementation is `internal/languages/spike`, with a CLI under
-`internal/languages/spike/cmd/linguistic-spike`. It is not wired into product
-routes or the running author's database. No model API, prompt call, remote
-linguistic service or invented fallback exists in the experiment.
+The Phase 0 implementation is `internal/languages/spike`, with its original CLI
+under `internal/languages/spike/cmd/linguistic-spike`. Phase 0 was isolated from
+product routes and author data. The approved product integration now consumes
+this verified kernel behind the separately versioned `internal/languages`
+adapter; its public schema and scripts are documented in [README.md](README.md).
+No model API, prompt call, remote linguistic service or invented fallback exists
+in either implementation.
 
 ## Executable subset and semantics
 

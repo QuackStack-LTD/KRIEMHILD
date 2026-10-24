@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "scriptId": "22222222222222222222222222222222",
+  "name": "Reference transcription",
+  "notes": "Authored Unicode test inventory.",
+  "direction": "ltr",
+  "graphemes": [
+    {
+      "id": "spell-a",
+      "text": "a"
+    },
+    {
+      "id": "spell-i",
+      "text": "i"
+    },
+    {
+      "id": "spell-p",
+      "text": "p"
+    },
+    {
+      "id": "spell-t",
+      "text": "t"
+    },
+    {
+      "id": "spell-n",
+      "text": "n"
+    },
+    {
+      "id": "spell-d",
+      "text": "d̪"
+    }
+  ]
+}

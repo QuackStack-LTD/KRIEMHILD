@@ -76,6 +76,9 @@ func (s *Server) authorize(w http.ResponseWriter, r *http.Request) bool {
 	if mutating(r) {
 		permission = "edit"
 	}
+	if isLanguageCompute(r) && (strings.HasSuffix(r.URL.Path, "/run") || strings.HasSuffix(r.URL.Path, "/validate") || strings.HasSuffix(r.URL.Path, "/history-preview")) {
+		permission = "view"
+	}
 	if len(p) < 2 {
 		return false
 	}
@@ -297,6 +300,23 @@ func (s *Server) secureServe(w http.ResponseWriter, r *http.Request) {
 	}
 	if strings.HasPrefix(r.URL.Path, "/api/collaboration/") {
 		if s.authorize(w, r) {
+			s.mux.ServeHTTP(w, r)
+		}
+		return
+	}
+	if isLanguageCompute(r) {
+		// Only immutable language work bypasses the map gate. Each handler must
+		// reauthorize through publishLanguage before disclosing or persisting it.
+		s.accessMu.Lock()
+		_, _, err := s.auth.User(r)
+		allowed := false
+		if err != nil {
+			fail(w, 401, "Sign in to continue")
+		} else {
+			allowed = s.authorize(w, r)
+		}
+		s.accessMu.Unlock()
+		if allowed {
 			s.mux.ServeHTTP(w, r)
 		}
 		return

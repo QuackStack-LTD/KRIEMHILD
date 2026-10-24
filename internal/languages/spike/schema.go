@@ -1,5 +1,6 @@
-// Package spike is the isolated Phase 0 linguistic-engine experiment.
-// It is not wired into product routes, persisted Worlds, or a stable public API.
+// Package spike is the verified Phase 0 finite-relation kernel. The product
+// languages package now uses it behind its versioned adapter. This fixture
+// schema is not the public persisted definition or independent-script schema.
 package spike
 
 import (
@@ -242,11 +243,23 @@ func checkJSON(d *json.Decoder, depth int) error {
 }
 func Decode(raw []byte) (Definition, error) {
 	var def Definition
+	if err := DecodeJSON(raw, &def); err != nil {
+		return def, err
+	}
+	if def.Schema != SchemaVersion || strings.TrimSpace(def.LanguageID) == "" || strings.TrimSpace(def.Name) == "" {
+		return def, fmt.Errorf("unsupported schema or missing language identity/name")
+	}
+	return def, nil
+}
+
+// DecodeJSON applies the same strict, bounded Unicode/JSON transport contract to
+// product envelopes. It performs no linguistic validation or default insertion.
+func DecodeJSON(raw []byte, target any) error {
 	if len(raw) > 2<<20 {
-		return def, fmt.Errorf("definition exceeds 2 MiB spike limit")
+		return fmt.Errorf("JSON exceeds 2 MiB limit")
 	}
 	if !utf8.Valid(raw) {
-		return def, fmt.Errorf("definition is not valid UTF-8")
+		return fmt.Errorf("JSON is not valid UTF-8")
 	}
 	// encoding/json replaces lone UTF-16 surrogates with U+FFFD. Reject them
 	// instead of silently changing an author's segment, grapheme or identifier.
@@ -265,38 +278,35 @@ func Decode(raw []byte) (Definition, error) {
 			if raw[i] == 'u' && i+4 < len(raw) {
 				n, err := strconv.ParseUint(string(raw[i+1:i+5]), 16, 16)
 				if err != nil {
-					return def, fmt.Errorf("invalid Unicode escape")
+					return fmt.Errorf("invalid Unicode escape")
 				}
 				i += 4
 				if n >= 0xD800 && n <= 0xDBFF {
 					if i+6 >= len(raw) || raw[i+1] != '\\' || raw[i+2] != 'u' {
-						return def, fmt.Errorf("unpaired Unicode surrogate")
+						return fmt.Errorf("unpaired Unicode surrogate")
 					}
 					low, err := strconv.ParseUint(string(raw[i+3:i+7]), 16, 16)
 					if err != nil || low < 0xDC00 || low > 0xDFFF {
-						return def, fmt.Errorf("unpaired Unicode surrogate")
+						return fmt.Errorf("unpaired Unicode surrogate")
 					}
 					i += 6
 				} else if n >= 0xDC00 && n <= 0xDFFF {
-					return def, fmt.Errorf("unpaired Unicode surrogate")
+					return fmt.Errorf("unpaired Unicode surrogate")
 				}
 			}
 		}
 	}
 	d := json.NewDecoder(bytes.NewReader(raw))
 	if err := checkJSON(d, 0); err != nil {
-		return def, err
+		return err
 	}
 	if _, err := d.Token(); err != io.EOF {
-		return def, fmt.Errorf("expected exactly one definition")
+		return fmt.Errorf("expected exactly one definition")
 	}
 	d = json.NewDecoder(bytes.NewReader(raw))
 	d.DisallowUnknownFields()
-	if err := d.Decode(&def); err != nil {
-		return def, err
+	if err := d.Decode(target); err != nil {
+		return err
 	}
-	if def.Schema != SchemaVersion || strings.TrimSpace(def.LanguageID) == "" || strings.TrimSpace(def.Name) == "" {
-		return def, fmt.Errorf("unsupported schema or missing language identity/name")
-	}
-	return def, nil
+	return nil
 }
