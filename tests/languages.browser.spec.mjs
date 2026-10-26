@@ -362,6 +362,50 @@ test.describe("Languages persisted authoring lifecycle", () => {
       });
     }
   });
+  test("indexed inverse profile runs through saved revision and exposes actual pruning", async ({
+    page,
+    request,
+  }) => {
+    let doc = await (await request.get(`/api/worlds/${world}`)).json();
+    const definition = JSON.parse(
+      await readFile("internal/languages/testdata/indexed.json", "utf8"),
+    );
+    const saved = await request.post(`/api/worlds/${world}/languages`, {
+      headers,
+      data: {
+        ageId: age,
+        revision: doc.world.revision,
+        kind: "language",
+        definition,
+        metadata: {},
+      },
+    });
+    expect(saved.ok(), await saved.text()).toBeTruthy();
+    await page.goto(
+      `/worlds/${world}/languages?language=${definition.languageId}`,
+    );
+    await page
+      .getByRole("button", { name: "Compile saved revision", exact: true })
+      .click();
+    await expect(
+      page.getByText("Compile report saved for this revision."),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Laboratory", exact: true }).click();
+    await page
+      .getByRole("combobox", { name: "Operation", exact: true })
+      .selectOption("analyze");
+    await page
+      .getByRole("textbox", { name: "Segment IDs", exact: true })
+      .fill("p a d a");
+    await page
+      .getByRole("button", { name: "Run operation", exact: true })
+      .click();
+    await expect(page.locator(".language-results>h3")).toHaveText("ambiguous");
+    await expect(page.locator(".language-results article")).toHaveCount(2);
+    await expect(
+      page.getByText(/Indexed inverse: 9 eligible cells/),
+    ).toBeVisible();
+  });
   test("saving in a locally selected Age preserves the view and other Age states", async ({
     page,
     request,

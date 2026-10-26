@@ -8,10 +8,17 @@ const (
 	ProductiveAdapter       = "finite-compose/1"
 	ProductiveCompiler      = "languages-compiler/2"
 	ProductiveVersion       = "productive/1"
+	IndexedSchemaVersion    = 3
+	IndexedEngine           = "languages/3"
+	IndexedAdapter          = "finite-compose/2"
+	IndexedCompiler         = "languages-compiler/3"
 )
 
 // Versions dispatches by authored schema, never by a process-wide mutable mode.
 func Versions(d Definition) (engine, adapter, compiler string) {
+	if d.Schema == IndexedSchemaVersion {
+		return IndexedEngine, IndexedAdapter, IndexedCompiler
+	}
 	if d.Schema == ProductiveSchemaVersion {
 		return ProductiveEngine, ProductiveAdapter, ProductiveCompiler
 	}
@@ -19,8 +26,9 @@ func Versions(d Definition) (engine, adapter, compiler string) {
 }
 func CompatibleVersions(schema int, engine, adapter, compiler string) bool {
 	e, a, c := Versions(Definition{Schema: schema})
-	return (schema == 1 || schema == 2) && engine == e && adapter == a && compiler == c
+	return (schema == 1 || ProductiveSchema(schema)) && engine == e && adapter == a && compiler == c
 }
+func ProductiveSchema(schema int) bool { return schema == 2 || schema == 3 }
 
 type ProductiveModel struct {
 	Version   string               `json:"version"`

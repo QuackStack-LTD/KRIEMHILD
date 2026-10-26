@@ -1,6 +1,12 @@
 export const ENGINE = "languages/1";
 export const ADAPTER = "token-relation/1";
 export function definitionVersions(d) {
+  if (d?.schema === 3)
+    return {
+      engine: "languages/3",
+      adapter: "finite-compose/2",
+      compiler: "languages-compiler/3",
+    };
   return d?.schema === 2
     ? {
         engine: "languages/2",

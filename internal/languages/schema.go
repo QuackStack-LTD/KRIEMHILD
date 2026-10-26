@@ -208,6 +208,7 @@ type GlossWord struct {
 	Features Features `json:"features"`
 }
 type Result struct {
+	Inverse             *InverseMetrics        `json:"inverse,omitempty"`
 	RejectedDerivations []ProductiveDerivation `json:"rejectedDerivations,omitempty"`
 	Schema              int                    `json:"schema,omitempty"`
 	Compiler            string                 `json:"compiler,omitempty"`
@@ -240,10 +241,10 @@ func Decode(raw []byte) (Definition, error) {
 	if err := spike.DecodeJSON(raw, &d); err != nil {
 		return d, err
 	}
-	if (d.Schema != SchemaVersion && d.Schema != ProductiveSchemaVersion) || !ValidID(d.LanguageID) || strings.TrimSpace(d.Name) == "" || len(d.Name) > 160 || len(d.Notes) > 8192 {
-		return d, fmt.Errorf("choose supported language schema 1 or 2, a language identity and a name of at most 160 bytes")
+	if (d.Schema != SchemaVersion && !ProductiveSchema(d.Schema)) || !ValidID(d.LanguageID) || strings.TrimSpace(d.Name) == "" || len(d.Name) > 160 || len(d.Notes) > 8192 {
+		return d, fmt.Errorf("choose supported language schema 1, 2 or 3, a language identity and a name of at most 160 bytes")
 	}
-	if d.Schema == 1 && d.Productive != nil || d.Schema == 2 && d.Morphology != nil {
+	if d.Schema == 1 && d.Productive != nil || ProductiveSchema(d.Schema) && d.Morphology != nil {
 		return d, fmt.Errorf("productive rules require schema 2; schema 2 cannot also contain legacy morphology")
 	}
 	if d.Schema == 1 {
@@ -261,7 +262,7 @@ func Decode(raw []byte) (Definition, error) {
 	if d.Lexical != nil && (len(d.Lexical.Morphemes) > 1000 || len(d.Lexical.Entries) > 1000 || len(d.Lexical.Relations) > 2000 || len(d.Lexical.Derivations) > 1000 || len(d.Lexical.Sources) > 128 || len(d.Lexical.Attestations) > 2000) {
 		return d, fmt.Errorf("lexical structure exceeds its bounded inventories")
 	}
-	if d.Schema == 2 {
+	if ProductiveSchema(d.Schema) {
 		if err := productiveShape(d.Productive); err != nil {
 			return d, err
 		}
@@ -313,7 +314,7 @@ func ValidateState(s *State) error {
 	}
 	seen := map[string]bool{}
 	for _, r := range s.Revisions {
-		if !ValidHash(r.Hash) || seen[r.Hash] || (r.Schema != SchemaVersion && r.Schema != ProductiveSchemaVersion) || r.Canonicalizer != CanonicalVersion || r.Size < 2 || r.Size > MaxDefinitionBytes || len(r.Note) > 1000 || len(r.Author) > 256 {
+		if !ValidHash(r.Hash) || seen[r.Hash] || (r.Schema != SchemaVersion && !ProductiveSchema(r.Schema)) || r.Canonicalizer != CanonicalVersion || r.Size < 2 || r.Size > MaxDefinitionBytes || len(r.Note) > 1000 || len(r.Author) > 256 {
 			return fmt.Errorf("invalid immutable definition reference")
 		}
 		if r.Parent != "" && !seen[r.Parent] {

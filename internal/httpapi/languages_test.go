@@ -16,6 +16,50 @@ import (
 	"time"
 )
 
+func TestLanguagesIndexedAPIUsesPinnedAdapterAndReadGate(t *testing.T) {
+	s, db, owner, viewer, doc := secureFixture(t)
+	share(t, db, owner, viewer, doc.World.ID, "viewer")
+	raw, err := os.ReadFile("../languages/testdata/indexed.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	definition, err := languages.Decode(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	age := doc.World.CurrentAge
+	base := "/api/worlds/" + doc.World.ID + "/languages"
+	body := func(v any) string { return string(languages.Canonical(v)) }
+	response := secured(s, owner, "POST", base, body(map[string]any{"ageId": age, "revision": doc.World.Revision, "kind": "language", "definition": definition, "metadata": languages.State{}}))
+	if response.Code != 200 {
+		t.Fatal(response.Code, response.Body)
+	}
+	if err = json.Unmarshal(response.Body.Bytes(), &doc); err != nil {
+		t.Fatal(err)
+	}
+	path := base + "/" + definition.LanguageID
+	envelope := map[string]any{"ageId": age, "revision": doc.World.Revision, "definitionRevision": languages.Hash(definition)}
+	response = secured(s, owner, "POST", path+"/compile", body(envelope))
+	if response.Code != 200 {
+		t.Fatal(response.Code, response.Body)
+	}
+	q := languages.Request{Request: spike.Request{Revision: languages.Hash(definition), Engine: languages.IndexedEngine, Operation: "analyze", Segments: []string{"p", "a", "d", "a"}, Policy: "all", Limit: 64}, Adapter: languages.IndexedAdapter, Compiler: languages.IndexedCompiler}
+	envelope["request"] = q
+	response = secured(s, viewer, "POST", path+"/run", body(envelope))
+	if response.Code != 200 || !strings.Contains(response.Body.String(), `"survivor-trie/1"`) || !strings.Contains(response.Body.String(), `"knownValid":2`) {
+		t.Fatal(response.Code, response.Body)
+	}
+	if response = secured(s, accountFixture{}, "POST", path+"/run", body(envelope)); response.Code != 401 {
+		t.Fatal("private indexed result bypassed session gate", response.Code)
+	}
+	q.Adapter = languages.ProductiveAdapter
+	envelope["request"] = q
+	response = secured(s, viewer, "POST", path+"/run", body(envelope))
+	if !strings.Contains(response.Body.String(), `"incompatible_engine"`) {
+		t.Fatal("fallback adapter used", response.Body)
+	}
+}
+
 func TestLanguagesProductiveAPIAndCapabilities(t *testing.T) {
 	s, db, owner, viewer, d := secureFixture(t)
 	share(t, db, owner, viewer, d.World.ID, "viewer")

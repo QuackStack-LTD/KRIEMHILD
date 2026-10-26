@@ -16,7 +16,7 @@ func (a *Artifact) checkCorpus() []Diagnostic {
 	diagnostics := []Diagnostic{}
 	seen := map[string]bool{}
 	for _, c := range a.definition.Tests {
-		if a.definition.Schema == 2 && c.Request.Policy == "seeded" {
+		if ProductiveSchema(a.definition.Schema) && c.Request.Policy == "seeded" {
 			diagnostics = append(diagnostics, Diagnostic{Code: "revision_sensitive_case", Severity: "error", Module: "tests", RuleID: c.ID, Path: "tests.request.policy", Message: "Seeded choice includes the definition revision, which changes when saving expectations. Capture an all-candidates run as a corpus case; replay seeded requests externally against their exact immutable revision."})
 		}
 		if c.ID == "" || len(c.ID) > 80 || seen[c.ID] || c.Request.Revision != "" || c.Request.Operation == "regression" || c.Request.Engine != a.report.Engine || c.Request.Adapter != a.report.Adapter || c.Request.Compiler != a.report.Compiler || c.ExpectedStatus == "" || len(c.Expected) > 256 || len(c.ExpectedSentences) > 256 || len(c.ExpectedDerivations) > 256 || len(c.ExpectedRejectedDerivations) > 256 || len(c.Notes) > 2000 {

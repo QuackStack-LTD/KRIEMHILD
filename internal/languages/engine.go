@@ -24,9 +24,9 @@ func Compile(ctx context.Context, source Definition, scripts map[ScriptRef]Scrip
 	d := Clone(source)
 	a := &Artifact{definition: d, grammar: map[string]Construction{}, report: Report{Revision: Hash(d), Engine: EngineVersion, Adapter: AdapterVersion, Kernel: spike.EngineVersion, Status: "incomplete", Ready: map[string]bool{}, Diagnostics: []Diagnostic{}}}
 	a.report.Engine, a.report.Adapter, a.report.Compiler = Versions(d)
-	if d.Schema == ProductiveSchemaVersion {
+	if ProductiveSchema(d.Schema) {
 		a.report.Schema = d.Schema
-		a.report.Capabilities = Capabilities()[1].Operations
+		a.report.Capabilities = Capabilities()[d.Schema-1].Operations
 		for _, c := range a.report.Capabilities {
 			a.report.Ready[c.Operation] = false
 		}
@@ -74,7 +74,7 @@ func Compile(ctx context.Context, source Definition, scripts map[ScriptRef]Scrip
 		seen[Hash(v)] = true
 	}
 	for _, v := range mr.Diagnostics {
-		if d.Schema == 2 && (v.Module == "morphology" || v.Module == "lexicon") {
+		if ProductiveSchema(d.Schema) && (v.Module == "morphology" || v.Module == "lexicon") {
 			continue
 		}
 		if v.Module == "orthography" {
@@ -147,7 +147,7 @@ func Compile(ctx context.Context, source Definition, scripts map[ScriptRef]Scrip
 			}
 		}
 	}
-	if d.Schema == 2 {
+	if ProductiveSchema(d.Schema) {
 		add(a.compileProductive(ctx))
 		if d.Syntax != nil || d.History != nil {
 			add([]Diagnostic{{Code: "unsupported_module", Severity: "error", Module: "productive", Path: "syntax/history", Message: "A1 does not execute schema-2 grammar or historical changes. Keep using schema 1 for those operations."}})
@@ -194,7 +194,7 @@ func (a *Artifact) Execute(ctx context.Context, q Request) Result {
 	}
 	if q.Engine != a.report.Engine || q.Adapter != a.report.Adapter || q.Compiler != a.report.Compiler {
 		message := "Select the exact supported engine and adapter; no fallback is applied."
-		if a.definition.Schema == 2 {
+		if ProductiveSchema(a.definition.Schema) {
 			message = "Select the exact supported engine, adapter and compiler; no fallback is applied."
 		}
 		return fail("incompatible_engine", message)
@@ -208,10 +208,10 @@ func (a *Artifact) Execute(ctx context.Context, q Request) Result {
 	if q.Operation == "regression" {
 		return a.runCorpus(ctx, q, out)
 	}
-	if a.definition.Schema == 2 && (q.Operation == "inflect" || q.Operation == "paradigm" || q.Operation == "analyze" || q.Operation == "analyze-written") {
+	if ProductiveSchema(a.definition.Schema) && (q.Operation == "inflect" || q.Operation == "paradigm" || q.Operation == "analyze" || q.Operation == "analyze-written") {
 		return a.executeProductive(ctx, q, out)
 	}
-	if a.definition.Schema == 2 && (q.Operation == "realize" || q.Operation == "parse") {
+	if ProductiveSchema(a.definition.Schema) && (q.Operation == "realize" || q.Operation == "parse") {
 		return fail("unsupported_operation", "Schema-2 grammar is not implemented by A1; schema-1 grammar remains available.")
 	}
 	if q.Operation == "realize" {

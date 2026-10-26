@@ -1,5 +1,10 @@
 # Languages: versioned product engine
 
+Brief 3 starts with [BRIEF_3_AUDIT.md](BRIEF_3_AUDIT.md). The explicitly opted-in
+schema-3 [indexed inverse adapter](INDEXED_A2.md) preserves A1 alongside the new
+path; existing definitions are not migrated. The A1 description below continues
+to describe schema 2, including its enumeration limit.
+
 The continuation audit is [CONTINUATION_AUDIT.md](CONTINUATION_AUDIT.md).
 The first delivered increment, **A1**, adds an opt-in productive adapter alongside
 the existing engine. It does not replace the verified kernel or migrate saved

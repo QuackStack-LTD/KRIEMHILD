@@ -297,7 +297,7 @@ func (s *Server) computeLanguage(w http.ResponseWriter, r *http.Request) {
 		result := artifact.Execute(ctx, req.Request)
 		s.publishLanguage(w, r, func() {
 			envelope := map[string]any{"result": result, "report": report, "runtime": map[string]any{"cacheHit": cacheHit, "accountedArtifactBytes": artifact.AccountedBytes()}}
-			if definition.Schema == 2 {
+			if languages.ProductiveSchema(definition.Schema) {
 				envelope["context"] = map[string]string{"worldId": world, "ageId": req.AgeID, "languageId": id}
 			}
 			respond(w, 200, envelope)

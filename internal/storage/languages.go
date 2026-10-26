@@ -36,7 +36,7 @@ func hasProductiveRevisions(d *history.Document) bool {
 	for _, e := range d.Entities {
 		if e.Language != nil {
 			for _, ref := range e.Language.Revisions {
-				if ref.Schema == languages.ProductiveSchemaVersion {
+				if languages.ProductiveSchema(ref.Schema) {
 					return true
 				}
 			}
@@ -52,6 +52,22 @@ func linguisticSchema(raw []byte) int {
 		return 0
 	}
 	return h.Schema
+}
+func linguisticArchiveSchema(raw []byte) int {
+	var h struct {
+		Schema   int    `json:"schema"`
+		ScriptID string `json:"scriptId"`
+	}
+	if json.Unmarshal(raw, &h) != nil {
+		return 2
+	}
+	if h.Schema == 3 || h.Schema == 2 && h.ScriptID != "" {
+		return 4
+	}
+	if h.Schema == 2 {
+		return 3
+	}
+	return 2
 }
 func definitionOwner(raw []byte, kind string) (string, error) {
 	if kind == "language" {
@@ -387,7 +403,7 @@ func (s *Store) RecordLanguageCompile(ctx context.Context, world, age, id string
 			return fmt.Errorf("language revision not found")
 		}
 		refSchema := e.Language.Ref(report.Revision).Schema
-		if !languages.CompatibleVersions(refSchema, report.Engine, report.Adapter, report.Compiler) || refSchema == 2 && report.Schema != 2 {
+		if !languages.CompatibleVersions(refSchema, report.Engine, report.Adapter, report.Compiler) || languages.ProductiveSchema(refSchema) && report.Schema != refSchema {
 			return fmt.Errorf("unsupported compiler version")
 		}
 		state := languages.Clone(e.Language)
@@ -474,8 +490,8 @@ func validateLinguisticBundle(d *history.Document, blobs map[string][]byte, arch
 		if err != nil || !bytes.Equal(raw, canonical) {
 			return nil, fmt.Errorf("archive definition is not canonical for its declared version")
 		}
-		if linguisticSchema(raw) == 2 && archiveSchema < 3 {
-			return nil, fmt.Errorf("Pinned productive definitions require World archive schema 3")
+		if required := linguisticArchiveSchema(raw); archiveSchema < required {
+			return nil, fmt.Errorf("Pinned linguistic definitions require World archive schema %d", required)
 		}
 		return raw, nil
 	}

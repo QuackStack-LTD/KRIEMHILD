@@ -31,6 +31,8 @@ const cases = [
     `${name}.request.json`,
   ]),
   ["productive-seeded", "productive.json", "@seeded.json"],
+  ["indexed-compile", "indexed.json", null],
+  ["indexed-inverse", "indexed.json", "indexed-inverse.request.json"],
 ];
 const results = [];
 for (const [name, definition, request] of cases) {

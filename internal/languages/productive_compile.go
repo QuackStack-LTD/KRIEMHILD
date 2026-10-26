@@ -8,6 +8,7 @@ import (
 )
 
 type productiveIndex struct {
+	inverse   *inverseIndex
 	features  map[string]map[string]bool
 	paradigms map[string]ProductiveParadigm
 	lexemes   map[string]spike.Lexeme
@@ -302,6 +303,15 @@ func (a *Artifact) compileProductive(ctx context.Context) []Diagnostic {
 			a.report.Ready[op] = ready
 		}
 		a.report.Ready["analyze-written"] = ready && a.report.Ready["write"]
+		if ready && d.Schema == IndexedSchemaVersion {
+			if err := a.buildInverse(ctx); err != nil {
+				a.report.Ready["analyze"] = false
+				a.report.Ready["analyze-written"] = false
+				if f, ok := err.(*productiveFailure); ok {
+					diagnostics = append(diagnostics, f.diagnostic)
+				}
+			}
+		}
 	}
 	return diagnostics
 }

@@ -356,7 +356,7 @@ func (a *Artifact) composeCell(budget *productiveBudget, lex spike.Lexeme, cell 
 	return forms, nil
 }
 
-func (a *Artifact) executeProductive(ctx context.Context, q Request, out Result) Result {
+func (a *Artifact) executeProductive(ctx context.Context, q Request, out Result) (result Result) {
 	fail := func(code, id, path, message string) Result {
 		out.Status = code
 		out.Candidates = []spike.Candidate{}
@@ -392,12 +392,40 @@ func (a *Artifact) executeProductive(ctx context.Context, q Request, out Result)
 		}
 	}
 	budget := &productiveBudget{ctx: ctx}
+	var indexed map[inverseRecord]bool
+	if !forward && a.definition.Schema == IndexedSchemaVersion {
+		metrics := &InverseMetrics{}
+		defer func() {
+			metrics.Steps = budget.steps
+			metrics.PayloadBytes = budget.bytes
+			metrics.Stop = result.Status
+			result.Inverse = metrics
+		}()
+		if a.productive.inverse == nil {
+			return fail("missing_dependency", "", "inverse.index", "Recompile this revision to rebuild its derived inverse index.")
+		}
+		var err error
+		indexed, err = a.productive.inverse.possible(q, budget, metrics)
+		if err != nil {
+			var f *productiveFailure
+			if errors.As(err, &f) {
+				return fail(f.diagnostic.Code, f.diagnostic.RuleID, f.diagnostic.Path, f.diagnostic.Message)
+			}
+			return fail("execution_limit", "", "inverse", err.Error())
+		}
+	}
 	forms := []productiveForm{}
-	for _, lex := range a.definition.Lexicon {
+	for li, lex := range a.definition.Lexicon {
 		if forward && lex.ID != q.Lexeme {
 			continue
 		}
-		for _, cell := range a.productive.paradigms[lex.Paradigm].Cells {
+		for ci, cell := range a.productive.paradigms[lex.Paradigm].Cells {
+			if indexed != nil && !indexed[inverseRecord{li, ci}] {
+				if ctx.Err() != nil {
+					return fail("cancelled", "", "inverse", ctx.Err().Error())
+				}
+				continue
+			}
 			if err := budget.charge(1, 0); err != nil {
 				var f *productiveFailure
 				if errors.As(err, &f) {

@@ -56,7 +56,7 @@ function Diagnostics({ report }) {
         ))}
       </div>
       <p>
-        {report.schema === 2
+        {report.schema >= 2
           ? "Lazy rule composition · no pre-expanded forms"
           : `${report.forms} compiled forms · ${report.states} relation states`}{" "}
         · {report.engine} · {report.adapter}
@@ -105,8 +105,8 @@ function CreateLanguage({ onClose, onCreate, records }) {
           : blankDefinition(name.trim());
       if (kind === "language") {
         if (modules.phonology) d.phonology = emptyPhonology();
-        if (schema === 2) {
-          d.schema = 2;
+        if (schema >= 2) {
+          d.schema = schema;
           d.productive = emptyProductive();
         } else {
           if (modules.morphology) d.morphology = emptyMorphology();
@@ -230,7 +230,7 @@ function CreateLanguage({ onClose, onCreate, records }) {
             incomplete; no example language is inserted.
           </p>
           {kind === "language" &&
-            (schema === 2
+            (schema >= 2
               ? ["phonology"]
               : ["phonology", "morphology", "syntax"]
             ).map((m) => (
@@ -245,7 +245,7 @@ function CreateLanguage({ onClose, onCreate, records }) {
                 {m}
               </label>
             ))}
-          {kind === "language" && schema === 2 && (
+          {kind === "language" && schema >= 2 && (
             <p>
               Productive composition adds explicitly authored allomorphs,
               circumfixes and a boundary rule stratum. Grammar and historical
@@ -586,7 +586,7 @@ function Laboratory({
       {result && (
         <div className="language-results" role="status">
           <h3>{result.status}</h3>
-          {result.schema === 2 && result.input?.policy === "seeded" && (
+          {result.schema >= 2 && result.input?.policy === "seeded" && (
             <p>
               Seeded choice includes this exact revision. To save a regression
               case, run with All candidates first; saving expectations changes
@@ -595,7 +595,7 @@ function Laboratory({
           )}
           {canEdit &&
             result.input?.operation !== "regression" &&
-            !(result.schema === 2 && result.input?.policy === "seeded") && (
+            !(result.schema >= 2 && result.input?.policy === "seeded") && (
               <button onClick={onSaveTest}>
                 Save result as regression case
               </button>
@@ -605,6 +605,13 @@ function Laboratory({
             {result.rejected} rejected
             {result.truncated ? " · Display truncated" : ""}
           </p>
+          {result.inverse && (
+            <p>
+              Indexed inverse: {result.inverse.eligible} eligible cells ·{" "}
+              {result.inverse.pruned} pruned · {result.inverse.steps} steps ·{" "}
+              {result.inverse.stop}. Index {result.inverse.version}.
+            </p>
+          )}
           {result.diagnostics?.map((d, i) => (
             <p key={i}>
               {d.code}: {d.message}
@@ -1129,7 +1136,7 @@ export default function Languages({ doc, age, onDocument, query, onNavigate }) {
       segments: definition?.phonology?.segments || [],
       classes: definition?.phonology?.classes || [],
       boundaries:
-        definition?.schema === 2
+        definition?.schema >= 2
           ? [{ id: "word" }, { id: "morpheme" }]
           : [{ id: "word" }],
     },
@@ -1588,7 +1595,7 @@ export default function Languages({ doc, age, onDocument, query, onNavigate }) {
                     )}
                   </>
                 ) : section === "Morphology" ? (
-                  definition.schema === 2 ? (
+                  definition.schema >= 2 ? (
                     <>
                       <h3>Productive composition</h3>
                       <p>
@@ -1634,7 +1641,7 @@ export default function Languages({ doc, age, onDocument, query, onNavigate }) {
                     </>
                   )
                 ) : section === "Syntax" ? (
-                  definition.schema === 2 ? (
+                  definition.schema >= 2 ? (
                     <>
                       <h3>Grammar is not implemented in productive/1</h3>
                       <p>
@@ -1812,7 +1819,7 @@ export default function Languages({ doc, age, onDocument, query, onNavigate }) {
                           </li>
                         ))}
                     </ol>
-                    {!isScript && definition.schema === 2 && (
+                    {!isScript && definition.schema >= 2 && (
                       <>
                         <p>
                           Historical evolution is not implemented for
@@ -1827,7 +1834,7 @@ export default function Languages({ doc, age, onDocument, query, onNavigate }) {
                         )}
                       </>
                     )}
-                    {!isScript && definition.schema !== 2 && (
+                    {!isScript && definition.schema < 2 && (
                       <LanguageHistory
                         doc={doc}
                         age={age}

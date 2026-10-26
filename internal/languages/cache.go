@@ -27,14 +27,18 @@ func NewCache(budget int64) *Cache {
 	return &Cache{budget: budget, order: list.New(), entries: map[string]*list.Element{}}
 }
 func ArtifactKey(world, age string, d Definition) string {
-	if d.Schema == 2 {
+	if ProductiveSchema(d.Schema) {
 		e, a, c := Versions(d)
 		return Hash(struct{ World, Age, Revision, Engine, Adapter, Compiler string }{world, age, Hash(d), e, a, c})
 	}
 	return Hash(struct{ World, Age, Revision, Engine, Adapter string }{world, age, Hash(d), EngineVersion, AdapterVersion})
 }
 func (a *Artifact) AccountedBytes() int64 {
-	return int64(len(Canonical(a.definition)))*12 + int64(a.report.States)*1024 + int64(a.report.Forms)*4096 + int64(len(Canonical(a.report)))*4 + 65536
+	size := int64(len(Canonical(a.definition)))*12 + int64(a.report.States)*1024 + int64(a.report.Forms)*4096 + int64(len(Canonical(a.report)))*4 + 65536
+	if a.productive != nil && a.productive.inverse != nil {
+		size += int64(a.productive.inverse.bytes)
+	}
+	return size
 }
 func (c *Cache) Get(key string) *Artifact {
 	c.mu.Lock()
