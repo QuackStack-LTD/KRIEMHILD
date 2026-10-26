@@ -50,7 +50,8 @@ known-valid counts. Accounted storage is not a measured peak heap.
 ## Current measured evidence
 
 Windows amd64 / Intel i5-6300HQ / four CPUs / Go 1.27.1. Existing varied
-`productiveInventory`: 16/128/1,000 entries, >900 distinct long stems at 1,000,
+`productiveInventory`: 16/128/1,000 entries (1,000 is the current authored-source
+lexeme limit), >900 distinct long stems at 1,000,
 deliberate homophones, polysemy, 53 suppletions, suffix/circumfix/zero/conditions.
 Five samples of three operations per benchmark. Cold means compile + request
 with source already loaded, not OS/process cold. Concurrent desktop activity

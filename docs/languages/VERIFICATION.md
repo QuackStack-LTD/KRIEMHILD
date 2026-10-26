@@ -1,5 +1,15 @@
 # Languages implementation verification
 
+Current Brief 3 evidence is in [BRIEF_3_AUDIT.md](BRIEF_3_AUDIT.md), including
+starting revision, current commands/results, acceptance matrix and explicit gaps.
+[A2](INDEXED_A2.md) completes the varied 1,000-entry inverse through a derived
+index. [Custom Scripts](CUSTOM_SCRIPTS.md) have real drawing/import/composition,
+publication, deterministic rendering and restart/ZIP replay. Current checks
+include 143 Node tests, 13 browser flows, 14 repeated Windows/Linux replay cases
+and fresh SQLite/PostgreSQL runtime tests. Generic smoke-route, retired-terrain
+and Biosphere-formatting limitations remain visible in the audit. Older sections
+below are historical evidence, not claims about support for new schemas.
+
 The author explicitly approved the architectural model after Phase 0, committed
 as `b64058229d6b456ff5ce892940e89c9d9d5703e2`. This additive integration implements
 the supported initial engine described in [README.md](README.md); it does not

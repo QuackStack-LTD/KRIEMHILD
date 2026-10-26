@@ -1,5 +1,11 @@
 # Languages continuation audit
 
+The current Brief 3 audit and delivered A2/custom Script evidence are in
+[BRIEF_3_AUDIT.md](BRIEF_3_AUDIT.md). The tables below preserve the historical
+continuation/A1 starting states; current capability and gap matrices supersede
+their inverse-index and custom-renderer limitations for explicitly opted-in new
+schemas only. Existing saved definitions are not migrated.
+
 Audited source: `6aed8ff27b2f4bd7a43734eb81a6ee6250ff1402`, branch
 `rebuild/continuous-terrain`. The working tree was clean. This audit distinguishes
 the product adapter from the frozen Phase 0 kernel. ARCHITECTURE and SPIKE retain
