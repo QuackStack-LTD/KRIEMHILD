@@ -15,11 +15,11 @@ import (
 
 func isLanguageCompute(r *http.Request) bool {
 	p := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
-	return r.Method == "POST" && len(p) == 6 && p[0] == "api" && p[1] == "worlds" && p[3] == "languages" && (p[5] == "compile" || p[5] == "run" || p[5] == "validate" || p[5] == "history-preview" || p[5] == "history-apply")
+	return r.Method == "POST" && len(p) == 6 && p[0] == "api" && p[1] == "worlds" && p[3] == "languages" && (p[5] == "compile" || p[5] == "run" || p[5] == "validate" || p[5] == "history-preview" || p[5] == "history-apply" || p[5] == "render-script" || p[5] == "import-svg")
 }
 func (s *Server) languageRoutes() {
 	s.mux.HandleFunc("GET /api/worlds/{world}/languages/capabilities", func(w http.ResponseWriter, r *http.Request) {
-		respond(w, 200, map[string]any{"profiles": languages.Capabilities()})
+		respond(w, 200, map[string]any{"profiles": languages.Capabilities(), "scripts": languages.ScriptCapabilities()})
 	})
 	s.mux.HandleFunc("POST /api/worlds/{world}/languages", s.saveLanguage)
 	s.mux.HandleFunc("GET /api/worlds/{world}/languages/{language}", s.getLanguage)
@@ -30,7 +30,24 @@ func (s *Server) languageRoutes() {
 	s.mux.HandleFunc("POST /api/worlds/{world}/languages/{language}/run", s.computeLanguage)
 	s.mux.HandleFunc("POST /api/worlds/{world}/languages/{language}/history-preview", s.computeLanguage)
 	s.mux.HandleFunc("POST /api/worlds/{world}/languages/{language}/history-apply", s.computeLanguage)
+	s.mux.HandleFunc("POST /api/worlds/{world}/languages/{language}/render-script", s.computeLanguage)
+	s.mux.HandleFunc("POST /api/worlds/{world}/languages/{language}/import-svg", s.computeLanguage)
 }
+
+type languageComputeRequest struct {
+	AgeID              string                        `json:"ageId"`
+	Revision           int                           `json:"revision"`
+	DefinitionRevision string                        `json:"definitionRevision"`
+	Definition         json.RawMessage               `json:"definition,omitempty"`
+	Request            languages.Request             `json:"request"`
+	ScriptRequest      languages.ScriptRenderRequest `json:"scriptRequest,omitempty"`
+	SVG                string                        `json:"svg,omitempty"`
+	GlyphID            string                        `json:"glyphId,omitempty"`
+	GlyphName          string                        `json:"glyphName,omitempty"`
+	PreviewHash        string                        `json:"previewHash,omitempty"`
+	Approved           bool                          `json:"approved,omitempty"`
+}
+
 func languageDecode(w http.ResponseWriter, r *http.Request, v any) error {
 	raw, err := io.ReadAll(http.MaxBytesReader(w, r.Body, languages.MaxDefinitionBytes))
 	if err != nil {
@@ -169,15 +186,7 @@ func (s *Server) computeLanguage(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
-	var req struct {
-		AgeID              string            `json:"ageId"`
-		Revision           int               `json:"revision"`
-		DefinitionRevision string            `json:"definitionRevision"`
-		Definition         json.RawMessage   `json:"definition,omitempty"`
-		Request            languages.Request `json:"request"`
-		PreviewHash        string            `json:"previewHash,omitempty"`
-		Approved           bool              `json:"approved,omitempty"`
-	}
+	var req languageComputeRequest
 	if err := languageDecode(w, r, &req); err != nil {
 		fail(w, 400, err.Error())
 		return
@@ -186,7 +195,7 @@ func (s *Server) computeLanguage(w http.ResponseWriter, r *http.Request) {
 	op := r.URL.Path[strings.LastIndex(r.URL.Path, "/")+1:]
 	var raw []byte
 	var err error
-	if op == "validate" && len(req.Definition) > 0 {
+	if (op == "validate" || op == "render-script" || op == "import-svg") && len(req.Definition) > 0 {
 		raw = req.Definition
 	} else {
 		if len(req.Definition) > 0 {
@@ -198,6 +207,17 @@ func (s *Server) computeLanguage(w http.ResponseWriter, r *http.Request) {
 			fail(w, 404, "Language revision not found")
 			return
 		}
+	}
+	var header struct {
+		ScriptID string `json:"scriptId"`
+	}
+	if json.Unmarshal(raw, &header) == nil && header.ScriptID != "" {
+		s.computeScript(ctx, w, r, req, raw, op)
+		return
+	}
+	if op == "render-script" || op == "import-svg" {
+		fail(w, 400, "This action requires an independent Script revision")
+		return
 	}
 	definition, err := languages.Decode(raw)
 	if err != nil || definition.LanguageID != id {

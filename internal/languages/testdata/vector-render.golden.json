@@ -1,0 +1,169 @@
+{
+  "status": "success",
+  "scriptId": "77777777777777777777777777777777",
+  "revision": "62afbd7ba0e95015e4e22d9125b80c38e5c9a0905009705cf26182bdf615c1e9",
+  "engine": "vector-script/1",
+  "adapter": "sign-layout/1",
+  "compiler": "vector-script-compiler/1",
+  "input": {
+    "revision": "62afbd7ba0e95015e4e22d9125b80c38e5c9a0905009705cf26182bdf615c1e9",
+    "engine": "vector-script/1",
+    "adapter": "sign-layout/1",
+    "compiler": "vector-script-compiler/1",
+    "sequenceId": "mixed-phrase"
+  },
+  "sequence": {
+    "id": "mixed-phrase",
+    "name": "Authored mixed phrase",
+    "items": [
+      {
+        "kind": "group",
+        "children": [
+          {
+            "kind": "sign",
+            "sign": "syllable-ka",
+            "reading": "ka-reading",
+            "roles": [
+              "syllabic"
+            ]
+          },
+          {
+            "kind": "sign",
+            "sign": "word-sun",
+            "reading": "sun-reading",
+            "roles": [
+              "logographic",
+              "semantic"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "sign",
+        "sign": "living-marker",
+        "roles": [
+          "classifier"
+        ]
+      }
+    ]
+  },
+  "signs": [
+    {
+      "path": "sequence.items.0.children.0",
+      "sign": "syllable-ka",
+      "glyph": "ka",
+      "reading": "ka-reading",
+      "text": "ka",
+      "grapheme": "é",
+      "roles": [
+        "syllabic"
+      ],
+      "associations": [
+        {
+          "kind": "phoneme",
+          "value": "authored syllable ka"
+        }
+      ],
+      "x": 0,
+      "baseline": 1000,
+      "scale": 1,
+      "advance": 1080
+    },
+    {
+      "path": "sequence.items.0.children.1",
+      "sign": "word-sun",
+      "glyph": "sun",
+      "reading": "sun-reading",
+      "text": "sol",
+      "grapheme": "",
+      "roles": [
+        "logographic",
+        "semantic"
+      ],
+      "associations": [
+        {
+          "kind": "meaning",
+          "value": "authored day-star"
+        }
+      ],
+      "x": 1080,
+      "baseline": 1000,
+      "scale": 1,
+      "advance": 1080
+    },
+    {
+      "path": "sequence.items.1",
+      "sign": "living-marker",
+      "glyph": "living",
+      "reading": "",
+      "text": "",
+      "grapheme": "",
+      "roles": [
+        "classifier"
+      ],
+      "associations": [
+        {
+          "kind": "classifier",
+          "value": "living"
+        }
+      ],
+      "x": 2160,
+      "baseline": 1000,
+      "scale": 0.75,
+      "advance": 530
+    }
+  ],
+  "trace": [
+    {
+      "stage": "group-start",
+      "path": "sequence.items.0",
+      "x": 0,
+      "baseline": 1000
+    },
+    {
+      "stage": "resolve-sign",
+      "path": "sequence.items.0.children.0",
+      "sign": "syllable-ka",
+      "glyph": "ka",
+      "reading": "ka-reading",
+      "roles": [
+        "syllabic"
+      ],
+      "x": 0,
+      "baseline": 1000
+    },
+    {
+      "stage": "resolve-sign",
+      "path": "sequence.items.0.children.1",
+      "sign": "word-sun",
+      "glyph": "sun",
+      "reading": "sun-reading",
+      "roles": [
+        "logographic",
+        "semantic"
+      ],
+      "x": 1080,
+      "baseline": 1000
+    },
+    {
+      "stage": "group-end",
+      "path": "sequence.items.0",
+      "x": 2160,
+      "baseline": 1000
+    },
+    {
+      "stage": "resolve-sign",
+      "path": "sequence.items.1",
+      "sign": "living-marker",
+      "glyph": "living",
+      "roles": [
+        "classifier"
+      ],
+      "x": 2160,
+      "baseline": 1000
+    }
+  ],
+  "choices": [],
+  "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"-250 -250 3410 1900\" role=\"img\" aria-label=\"Authored mixed phrase\"><title>Authored mixed phrase</title><g data-sign=\"syllable-ka\" data-glyph=\"ka\" transform=\"translate(0 200) scale(1)\"><path d=\"M 100 800 L 500 100 L 900 800 Z\" fill=\"none\" stroke=\"#182126\" stroke-width=\"24\"/></g><g data-sign=\"word-sun\" data-glyph=\"sun\" transform=\"translate(1080 200) scale(1)\"><path d=\"M 150 150 L 850 150 L 850 850 L 150 850 Z\" fill=\"none\" stroke=\"#182126\" stroke-width=\"24\"/></g><g data-sign=\"living-marker\" data-glyph=\"living\" transform=\"translate(2160 400) scale(0.75)\"><path d=\"M 200 500 Q 500 50 800 500 Q 500 950 200 500 Z\" fill=\"none\" stroke=\"#182126\" stroke-width=\"24\"/></g></svg>",
+  "diagnostics": []
+}

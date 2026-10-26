@@ -73,12 +73,13 @@ type Grapheme struct {
 	GlyphAsset string `json:"glyphAsset,omitempty"`
 }
 type ScriptDefinition struct {
-	Schema    int        `json:"schema"`
-	ScriptID  string     `json:"scriptId"`
-	Name      string     `json:"name"`
-	Notes     string     `json:"notes"`
-	Direction string     `json:"direction"`
-	Graphemes []Grapheme `json:"graphemes"`
+	Writing   *WritingSystem `json:"writing,omitempty"`
+	Schema    int            `json:"schema"`
+	ScriptID  string         `json:"scriptId"`
+	Name      string         `json:"name"`
+	Notes     string         `json:"notes"`
+	Direction string         `json:"direction"`
+	Graphemes []Grapheme     `json:"graphemes"`
 }
 
 // Values are explicitly tagged. A variable is a unification variable, never
@@ -279,8 +280,22 @@ func DecodeScript(raw []byte) (ScriptDefinition, error) {
 	if err := spike.DecodeJSON(raw, &d); err != nil {
 		return d, err
 	}
-	if d.Schema != SchemaVersion || !ValidID(d.ScriptID) || strings.TrimSpace(d.Name) == "" || len(d.Name) > 160 || len(d.Notes) > 8192 || len(d.Graphemes) > 512 {
+	if (d.Schema != SchemaVersion && d.Schema != 2) || !ValidID(d.ScriptID) || strings.TrimSpace(d.Name) == "" || len(d.Name) > 160 || len(d.Notes) > 8192 || len(d.Graphemes) > 512 {
 		return d, fmt.Errorf("invalid script identity, schema, name or size")
+	}
+	if d.Schema == 1 {
+		var fields map[string]json.RawMessage
+		if err := json.Unmarshal(raw, &fields); err != nil {
+			return d, err
+		}
+		if _, ok := fields["writing"]; ok {
+			return d, fmt.Errorf("writing requires explicit Script schema 2, including when null")
+		}
+	}
+	if d.Schema == 2 {
+		if err := vectorShape(d.Writing); err != nil {
+			return d, err
+		}
 	}
 	if d.Direction != "undecided" && d.Direction != "ltr" && d.Direction != "rtl" && d.Direction != "ttb" {
 		return d, fmt.Errorf("choose an explicit script direction or undecided")

@@ -405,6 +405,34 @@ test.describe("Languages persisted authoring lifecycle", () => {
     await expect(
       page.getByText(/Indexed inverse: 9 eligible cells/),
     ).toBeVisible();
+    await page
+      .getByRole("button", { name: "Create language or script", exact: true })
+      .click();
+    const dialog = page.getByRole("dialog");
+    await dialog
+      .getByRole("textbox", { name: "Name", exact: true })
+      .fill("Empty indexed authoring");
+    await dialog.getByRole("button", { name: "Continue", exact: true }).click();
+    await dialog.getByRole("button", { name: "Continue", exact: true }).click();
+    await dialog
+      .getByRole("combobox", { name: "Linguistic engine", exact: true })
+      .selectOption("3");
+    await dialog.getByRole("button", { name: "Continue", exact: true }).click();
+    await dialog.getByRole("button", { name: "Continue", exact: true }).click();
+    await dialog
+      .getByRole("button", { name: "Save draft", exact: true })
+      .click();
+    await expect(dialog).toHaveCount(0);
+    doc = await (await request.get(`/api/worlds/${world}`)).json();
+    const empty = doc.entities.find(
+      (e) => e.name === "Empty indexed authoring",
+    );
+    const source = await (
+      await request.get(`/api/worlds/${world}/languages/${empty.id}?age=${age}`)
+    ).json();
+    expect(source.schema).toBe(3);
+    expect(source.productive.paradigms).toEqual([]);
+    expect(source.lexicon).toEqual([]);
   });
   test("saving in a locally selected Age preserves the view and other Age states", async ({
     page,

@@ -34,7 +34,9 @@ func run() error {
 	definitionPath := flag.String("definition", "", "Authored language definition JSON")
 	requestPath := flag.String("request", "", "Exact versioned execution request JSON")
 	sourcePath := flag.String("source", "", "Pinned source definition for historical preview")
-	operation := flag.String("operation", "compile", "compile, run, history-preview, script-check")
+	operation := flag.String("operation", "compile", "compile, run, history-preview, script-check, script-compile, script-render, svg-import")
+	glyphID := flag.String("glyph-id", "imported-glyph", "Stable glyph identity for SVG normalization")
+	glyphName := flag.String("glyph-name", "Imported artwork", "Authored glyph name for SVG normalization")
 	var scriptPaths paths
 	flag.Var(&scriptPaths, "script", "Pinned script JSON; repeat for each dependency")
 	flag.Parse()
@@ -56,6 +58,38 @@ func run() error {
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")
 	encoder.SetEscapeHTML(true)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if *operation == "svg-import" {
+		raw, err := read(*sourcePath)
+		if err != nil {
+			return err
+		}
+		result, err := languages.ImportGlyphSVG(ctx, string(raw), *glyphID, *glyphName)
+		if err != nil {
+			return err
+		}
+		return encoder.Encode(result)
+	}
+	if *operation == "script-compile" || *operation == "script-render" {
+		if len(scripts) != 1 {
+			return fmt.Errorf("script execution requires exactly one pinned script")
+		}
+		for _, script := range scripts {
+			if *operation == "script-compile" {
+				return encoder.Encode(languages.CompileScript(ctx, script))
+			}
+			raw, err := read(*requestPath)
+			if err != nil {
+				return err
+			}
+			var q languages.ScriptRenderRequest
+			if err = spike.DecodeJSON(raw, &q); err != nil {
+				return err
+			}
+			return encoder.Encode(languages.RenderScript(ctx, script, q))
+		}
+	}
 	if *operation == "script-check" {
 		if len(scripts) != 1 {
 			return fmt.Errorf("script-check requires exactly one script")
@@ -72,8 +106,6 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
 	if *operation == "history-preview" {
 		raw, err := read(*sourcePath)
 		if err != nil {

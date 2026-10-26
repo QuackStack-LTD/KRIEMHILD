@@ -33,26 +33,40 @@ const cases = [
   ["productive-seeded", "productive.json", "@seeded.json"],
   ["indexed-compile", "indexed.json", null],
   ["indexed-inverse", "indexed.json", "indexed-inverse.request.json"],
+  ["vector-compile", "vector-script.json", null],
+  ["vector-render", "vector-script.json", "vector-render.request.json"],
+  ["vector-import", "vector-import.svg", null],
 ];
 const results = [];
 for (const [name, definition, request] of cases) {
-  const args = (root, requestRoot) => [
-    "-definition",
-    `${root}/${definition}`,
-    ...(definition === "reference.json"
-      ? ["-script", `${root}/script.json`]
-      : []),
-    ...(request
-      ? [
-          "-operation",
-          "run",
-          "-request",
-          request.startsWith("@")
-            ? `${requestRoot}/${request.slice(1)}`
-            : `${root}/${request}`,
-        ]
-      : []),
-  ];
+  const args = (root, requestRoot) =>
+    name === "vector-import"
+      ? ["-operation", "svg-import", "-source", `${root}/${definition}`]
+      : name.startsWith("vector-")
+        ? [
+            "-operation",
+            request ? "script-render" : "script-compile",
+            "-script",
+            `${root}/${definition}`,
+            ...(request ? ["-request", `${root}/${request}`] : []),
+          ]
+        : [
+            "-definition",
+            `${root}/${definition}`,
+            ...(definition === "reference.json"
+              ? ["-script", `${root}/script.json`]
+              : []),
+            ...(request
+              ? [
+                  "-operation",
+                  "run",
+                  "-request",
+                  request.startsWith("@")
+                    ? `${requestRoot}/${request.slice(1)}`
+                    : `${root}/${request}`,
+                ]
+              : []),
+          ];
   let previous;
   for (let repeat = 0; repeat < 2; repeat++) {
     const windows = execFileSync(executable, args(fixtures, requests));
@@ -71,7 +85,7 @@ for (const [name, definition, request] of cases) {
     assert.ok(windows.equals(linux), `${name}: platform bytes differ`);
     if (previous)
       assert.ok(previous.equals(windows), `${name}: process replay differs`);
-    if (request && !request.startsWith("@")) {
+    if ((request && !request.startsWith("@")) || name === "vector-import") {
       assert.deepEqual(
         JSON.parse(windows),
         JSON.parse(readFileSync(`${fixtures}/${name}.golden.json`, "utf8")),

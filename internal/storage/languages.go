@@ -399,14 +399,14 @@ func (s *Store) LanguageHistoricalSource(ctx context.Context, target languages.D
 func (s *Store) RecordLanguageCompile(ctx context.Context, world, age, id string, revision int, report languages.Report) (*history.Document, error) {
 	return s.UpdateHistory(ctx, world, revision, func(d *history.Document) error {
 		e := d.Entity(age, id)
-		if e == nil || e.Deleted || e.Language == nil || e.Language.Ref(report.Revision) == nil {
+		if e == nil || e.Deleted || linguisticState(e) == nil || linguisticState(e).Ref(report.Revision) == nil {
 			return fmt.Errorf("language revision not found")
 		}
-		refSchema := e.Language.Ref(report.Revision).Schema
-		if !languages.CompatibleVersions(refSchema, report.Engine, report.Adapter, report.Compiler) || languages.ProductiveSchema(refSchema) && report.Schema != refSchema {
+		refSchema := linguisticState(e).Ref(report.Revision).Schema
+		if !compatibleLinguisticCompile(e.Kind, refSchema, report.Engine, report.Adapter, report.Compiler) || languages.ProductiveSchema(refSchema) && report.Schema != refSchema {
 			return fmt.Errorf("unsupported compiler version")
 		}
-		state := languages.Clone(e.Language)
+		state := languages.Clone(linguisticState(e))
 		ref := languages.CompileRef{Revision: report.Revision, Engine: report.Engine, Adapter: report.Adapter, Compiler: report.Compiler, Dependencies: report.Dependencies, Report: report}
 		found := false
 		for i, c := range state.Compiled {
@@ -422,20 +422,29 @@ func (s *Store) RecordLanguageCompile(ctx context.Context, world, age, id string
 			}
 			state.Compiled = append(state.Compiled, ref)
 		}
-		e.Language = state
+		if e.Kind == "script" {
+			e.Script = state
+		} else {
+			e.Language = state
+		}
 		return nil
 	})
 }
 func (s *Store) ActivateLanguage(ctx context.Context, world, age, id, definition string, revision int) (*history.Document, error) {
 	return s.UpdateHistory(ctx, world, revision, func(d *history.Document) error {
 		e := d.Entity(age, id)
-		if e == nil || e.Deleted || e.Language == nil || e.Language.Ref(definition) == nil {
+		if e == nil || e.Deleted || linguisticState(e) == nil || linguisticState(e).Ref(definition) == nil {
 			return fmt.Errorf("language revision not found")
 		}
-		for _, c := range e.Language.Compiled {
-			if c.Revision == definition && languages.CompatibleVersions(e.Language.Ref(definition).Schema, c.Engine, c.Adapter, c.Report.Compiler) && len(languages.Operations(c.Report)) > 0 {
-				e.Language = languages.Clone(e.Language)
-				e.Language.Active = definition
+		for _, c := range linguisticState(e).Compiled {
+			if c.Revision == definition && compatibleLinguisticCompile(e.Kind, linguisticState(e).Ref(definition).Schema, c.Engine, c.Adapter, c.Report.Compiler) && len(languages.Operations(c.Report)) > 0 {
+				state := languages.Clone(linguisticState(e))
+				state.Active = definition
+				if e.Kind == "script" {
+					e.Script = state
+				} else {
+					e.Language = state
+				}
 				return nil
 			}
 		}
@@ -558,4 +567,11 @@ func walkLinguisticBodies(d *history.Document, blobs map[string][]byte, load fun
 		}
 	}
 	return nil
+}
+
+func compatibleLinguisticCompile(kind string, schema int, engine, adapter, compiler string) bool {
+	if kind == "script" {
+		return languages.CompatibleScriptVersions(schema, engine, adapter, compiler)
+	}
+	return languages.CompatibleVersions(schema, engine, adapter, compiler)
 }

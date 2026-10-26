@@ -32,6 +32,8 @@ import {
 } from "./LanguageEditors.jsx";
 import "./languages.css";
 import LanguageHistory from "./LanguageHistory.jsx";
+import GlyphWorkbench from "./GlyphWorkbench.jsx";
+import { emptyWriting } from "./vector-script.js";
 
 function Diagnostics({ report }) {
   if (!report) return null;
@@ -103,6 +105,11 @@ function CreateLanguage({ onClose, onCreate, records }) {
         kind === "script"
           ? blankScript(name.trim())
           : blankDefinition(name.trim());
+      if (kind === "script" && schema === 2) {
+        d.schema = 2;
+        d.direction = "ltr";
+        d.writing = emptyWriting();
+      }
       if (kind === "language") {
         if (modules.phonology) d.phonology = emptyPhonology();
         if (schema >= 2) {
@@ -161,6 +168,7 @@ function CreateLanguage({ onClose, onCreate, records }) {
               onChange={(e) => {
                 setKind(e.target.value);
                 setParent("");
+                setSchema(1);
               }}
             >
               <option value="language">Language</option>
@@ -210,6 +218,18 @@ function CreateLanguage({ onClose, onCreate, records }) {
               </select>
             </label>
           )}
+          {kind === "script" && (
+            <label>
+              Script model
+              <select
+                value={schema}
+                onChange={(e) => setSchema(Number(e.target.value))}
+              >
+                <option value={1}>Unicode mapping metadata · schema 1</option>
+                <option value={2}>Custom vector glyphs · schema 2</option>
+              </select>
+            </label>
+          )}
         </>
       ) : step === 2 ? (
         <>
@@ -222,6 +242,9 @@ function CreateLanguage({ onClose, onCreate, records }) {
               >
                 <option value={1}>Finite definitions · schema 1</option>
                 <option value={2}>Productive composition · schema 2</option>
+                <option value={3}>
+                  Indexed inverse composition · schema 3
+                </option>
               </select>
             </label>
           )}
@@ -1286,7 +1309,7 @@ export default function Languages({ doc, age, onDocument, query, onNavigate }) {
                 <button disabled={!!busy || !dirty || !canEdit} onClick={save}>
                   Save draft
                 </button>
-                {!isScript && (
+                {(!isScript || definition.schema === 2) && (
                   <>
                     <button
                       disabled={!!busy}
@@ -1680,32 +1703,50 @@ export default function Languages({ doc, age, onDocument, query, onNavigate }) {
                   )
                 ) : section === "Scripts" ? (
                   isScript ? (
-                    <>
-                      <h3>Independent script</h3>
-                      <label>
-                        Writing direction
-                        <select
-                          value={definition.direction}
-                          onChange={(e) => edit("direction", e.target.value)}
-                        >
-                          {["undecided", "ltr", "rtl", "ttb"].map((v) => (
-                            <option key={v}>{v}</option>
-                          ))}
-                        </select>
-                      </label>
-                      <p>
-                        Unicode strings are preserved as authored. Glyph asset
-                        references are retained metadata; custom glyph rendering
-                        is not implemented.
-                      </p>
-                      <StructuredEditor
-                        label="Graphemes"
-                        schema={graphemesSchema}
-                        value={definition.graphemes}
-                        onChange={(v) => edit("graphemes", v)}
-                        context={context}
+                    definition.schema === 2 ? (
+                      <GlyphWorkbench
+                        key={`${selected}:${version}`}
+                        definition={definition}
+                        onChange={(writing) => edit("writing", writing)}
+                        onDirection={(direction) =>
+                          edit("direction", direction)
+                        }
+                        world={doc.world.id}
+                        age={age.id}
+                        id={selected}
+                        version={version}
+                        compiled={compiled}
+                        dirty={dirty}
+                        canEdit={canEdit && !busy}
                       />
-                    </>
+                    ) : (
+                      <>
+                        <h3>Independent script</h3>
+                        <label>
+                          Writing direction
+                          <select
+                            value={definition.direction}
+                            onChange={(e) => edit("direction", e.target.value)}
+                          >
+                            {["undecided", "ltr", "rtl", "ttb"].map((v) => (
+                              <option key={v}>{v}</option>
+                            ))}
+                          </select>
+                        </label>
+                        <p>
+                          Unicode strings are preserved as authored. Glyph asset
+                          references are retained metadata; custom glyph
+                          rendering is not implemented.
+                        </p>
+                        <StructuredEditor
+                          label="Graphemes"
+                          schema={graphemesSchema}
+                          value={definition.graphemes}
+                          onChange={(v) => edit("graphemes", v)}
+                          context={context}
+                        />
+                      </>
+                    )
                   ) : (
                     <>
                       <h3>Orthography and pinned script</h3>

@@ -1,6 +1,12 @@
 export const ENGINE = "languages/1";
 export const ADAPTER = "token-relation/1";
 export function definitionVersions(d) {
+  if (d?.scriptId && d?.schema === 2)
+    return {
+      engine: "vector-script/1",
+      adapter: "sign-layout/1",
+      compiler: "vector-script-compiler/1",
+    };
   if (d?.schema === 3)
     return {
       engine: "languages/3",

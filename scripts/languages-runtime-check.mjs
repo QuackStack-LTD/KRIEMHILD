@@ -23,7 +23,9 @@ async function api(path, body) {
 assert.match(await (await fetch(base + "/")).text(), /id="root"/);
 const definition = await json("reference.json"),
   script = await json("script.json"),
-  productive = await json("productive.json");
+  productive = await json("productive.json"),
+  indexed = await json("indexed.json"),
+  vector = await json("vector-script.json");
 let doc;
 if (phase === "create") {
   doc = await api("/api/worlds", {
@@ -78,6 +80,41 @@ if (phase === "create") {
     revision: productiveCompile.document.world.revision,
     definitionRevision: productiveCompile.report.revision,
   });
+  for (const [kind, body, state, requestName, compiler] of [
+    [
+      "language",
+      indexed,
+      "language",
+      "indexed-inverse",
+      "languages-compiler/3",
+    ],
+    ["script", vector, "script", "vector-render", "vector-script-compiler/1"],
+  ]) {
+    doc = await api(`/api/worlds/${doc.world.id}/languages`, {
+      ageId: doc.world.currentAge,
+      revision: doc.world.revision,
+      kind,
+      definition: body,
+      metadata: {},
+      note: "Brief 3 runtime fixture",
+    });
+    const id = body.languageId || body.scriptId,
+      targetPath = `/api/worlds/${doc.world.id}/languages/${id}`,
+      hash = doc.entities.find((e) => e.id === id)[state].draftRevision;
+    assert.equal(hash, (await json(`${requestName}.request.json`)).revision);
+    const compiled = await api(targetPath + "/compile", {
+      ageId: doc.world.currentAge,
+      revision: doc.world.revision,
+      definitionRevision: hash,
+    });
+    assert.equal(compiled.report.compiler, compiler);
+    assert.equal(compiled.report.status, "compiled");
+    doc = await api(targetPath + "/activate", {
+      ageId: doc.world.currentAge,
+      revision: compiled.document.world.revision,
+      definitionRevision: hash,
+    });
+  }
 } else {
   assert.equal(phase, "restart");
   doc = await api(`/api/worlds/${existing}`);
@@ -89,6 +126,27 @@ if (phase === "create") {
 const world = doc.world.id,
   age = doc.world.currentAge,
   path = `/api/worlds/${world}/languages/${definition.languageId}`;
+async function brief3Replay(worldID) {
+  for (const [name, id, field, output] of [
+    ["indexed-inverse", indexed.languageId, "request", "result"],
+    ["vector-render", vector.scriptId, "scriptRequest", "scriptResult"],
+  ]) {
+    const request = await json(`${name}.request.json`);
+    const actual = await api(`/api/worlds/${worldID}/languages/${id}/run`, {
+      ageId: age,
+      definitionRevision: request.revision,
+      [field]: request,
+    });
+    assert.deepEqual(
+      actual[output],
+      await json(`${name}.golden.json`),
+      `${phase} ${name}: replay differs after persistence/import`,
+    );
+    assert.equal(actual.context.worldId, worldID);
+    assert.equal(actual.context.ageId, age);
+  }
+}
+await brief3Replay(world);
 for (const name of ["inflect", "seeded", "parse", "corpus"]) {
   const request = await json(`${name}.request.json`),
     expected = await json(`${name}.golden.json`);
@@ -184,6 +242,7 @@ assert.ok(
 );
 const imported = await importedResponse.json();
 assert.notEqual(imported.world.id, world);
+await brief3Replay(imported.world.id);
 const importedDefinition = await api(
   `/api/worlds/${imported.world.id}/languages/${definition.languageId}?age=${age}`,
 );
@@ -240,7 +299,10 @@ console.log(
       "productive-circumfix",
       "productive-inverse",
       "typed-traces",
-      "schema-3-world-zip",
+      "schema-4-world-zip",
+      "indexed-inverse-rebuilt",
+      "vector-mixed-readings-roles-layout",
+      "brief3-pinned-replay-after-import",
       phase === "create" ? "historical-apply" : "restart-persistence",
     ],
   }),

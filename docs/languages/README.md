@@ -5,6 +5,14 @@ schema-3 [indexed inverse adapter](INDEXED_A2.md) preserves A1 alongside the new
 path; existing definitions are not migrated. The A1 description below continues
 to describe schema 2, including its enumeration limit.
 
+[Custom vector Scripts](CUSTOM_SCRIPTS.md) add an independent opt-in Script
+schema 2: draw/import normalized glyphs, author roles/readings and structured
+sequences, preview LTR/RTL output, then save/compile/activate immutable revisions
+in the existing Scripts workspace. Unicode Script schema 1 remains compatible.
+Sequence spelling, vertical layout, font export, prosody and recursive grammar
+are explicitly unsupported. Current results and the completion/gap matrices are
+recorded in [BRIEF_3_AUDIT.md](BRIEF_3_AUDIT.md).
+
 The continuation audit is [CONTINUATION_AUDIT.md](CONTINUATION_AUDIT.md).
 The first delivered increment, **A1**, adds an opt-in productive adapter alongside
 the existing engine. It does not replace the verified kernel or migrate saved
@@ -44,7 +52,7 @@ unchanged `kriemhild-typed-json/1`. Requests must pin engine, adapter **and comp
 Compile references and cache keys include compiler; the source hash includes all
 authored rules and pinned dependency hashes. Schema-1 requests still omit compiler
 and retain their existing result bytes; capability metadata names their implicit
-compiler `languages-compiler/1`. Scripts remain schema 1. No automatic migration
+compiler `languages-compiler/1`. A1's pinned Unicode Scripts remain schema 1. No automatic migration
 changes a source body, Age state, active revision or script dependency.
 
 `GET /api/worlds/{world}/languages/capabilities` reports the actual supported

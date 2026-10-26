@@ -1,0 +1,7 @@
+{
+  "revision": "62afbd7ba0e95015e4e22d9125b80c38e5c9a0905009705cf26182bdf615c1e9",
+  "engine": "vector-script/1",
+  "adapter": "sign-layout/1",
+  "compiler": "vector-script-compiler/1",
+  "sequenceId": "mixed-phrase"
+}

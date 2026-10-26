@@ -1,0 +1,54 @@
+{
+  "glyph": {
+    "id": "imported-glyph",
+    "name": "Imported artwork",
+    "viewBox": [
+      0,
+      0,
+      100,
+      100
+    ],
+    "baseline": 80,
+    "advance": 100,
+    "bearing": 0,
+    "scale": 1,
+    "paths": [
+      {
+        "id": "path-1",
+        "commands": [
+          {
+            "op": "M",
+            "values": [
+              10,
+              90
+            ]
+          },
+          {
+            "op": "L",
+            "values": [
+              50,
+              10
+            ]
+          },
+          {
+            "op": "L",
+            "values": [
+              90,
+              90
+            ]
+          },
+          {
+            "op": "Z",
+            "values": []
+          }
+        ],
+        "fill": "none",
+        "stroke": "#223344",
+        "strokeWidth": 1
+      }
+    ]
+  },
+  "warnings": [
+    "SVG converted to inert absolute path commands; original markup is not retained."
+  ]
+}

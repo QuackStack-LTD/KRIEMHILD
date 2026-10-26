@@ -50,3 +50,14 @@ func Capabilities() []EngineCapability {
 	}
 	return out
 }
+
+func ScriptCapabilities() []EngineCapability {
+	return []EngineCapability{
+		{Schema: 1, Canonicalizer: CanonicalVersion, Operations: []OperationCapability{{"unicode-source", "supported", "Independent pinned Unicode source used by language writing mappings."}, {"render", "unsupported", "Glyph asset/direction metadata is not artwork or executable layout."}}},
+		{Schema: 2, Engine: VectorEngine, Adapter: VectorAdapter, Compiler: VectorCompiler, Canonicalizer: CanonicalVersion, Operations: []OperationCapability{
+			{"render", "supported", "Bounded normalized vectors, explicit readings/roles, LTR/RTL, horizontal groups and authored line breaks."},
+			{"import-svg", "supported", "Bounded passive SVG paths/shapes normalized to inert internal geometry; no external resources."},
+			{"vertical", "unsupported", "No vertical shaping/layout."}, {"font-export", "unsupported", "No installable font generation."}, {"sequence-spelling", "unsupported", "No ordered spelling-rule executor."},
+		}},
+	}
+}
