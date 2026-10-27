@@ -2,7 +2,7 @@ FROM golang:1.27-alpine
 WORKDIR /src
 ENV CGO_ENABLED=0
 COPY go.mod go.sum ./
-RUN go mod download golang.org/x/text
+RUN go mod download golang.org/x/text github.com/rivo/uniseg
 COPY internal/languages ./internal/languages
 COPY cmd/languages ./cmd/languages
 RUN go test -mod=readonly ./internal/languages/... && go vet ./internal/languages/... ./cmd/languages && go build -mod=readonly -trimpath -o /out/languages ./cmd/languages

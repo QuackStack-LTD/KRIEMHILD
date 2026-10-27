@@ -34,6 +34,7 @@ import "./languages.css";
 import LanguageHistory from "./LanguageHistory.jsx";
 import GlyphWorkbench from "./GlyphWorkbench.jsx";
 import { emptyWriting } from "./vector-script.js";
+import SequenceOrthography from "./SequenceOrthography.jsx";
 
 function Diagnostics({ report }) {
   if (!report) return null;
@@ -245,6 +246,7 @@ function CreateLanguage({ onClose, onCreate, records }) {
                 <option value={3}>
                   Indexed inverse composition · schema 3
                 </option>
+                <option value={4}>Sequence orthography ? schema 4</option>
               </select>
             </label>
           )}
@@ -380,7 +382,11 @@ function Laboratory({
           <select value={op} onChange={(e) => setOp(e.target.value)}>
             {(
               report?.capabilities
-                ?.filter((c) => c.support !== "unsupported")
+                ?.filter(
+                  (c) =>
+                    c.support !== "unsupported" &&
+                    !["spell", "unspell", "graphemes"].includes(c.operation),
+                )
                 .map((c) => c.operation) ||
               Object.keys(report?.ready || {}).sort()
             ).map((v) => (
@@ -1747,6 +1753,20 @@ export default function Languages({ doc, age, onDocument, query, onNavigate }) {
                         />
                       </>
                     )
+                  ) : definition.schema === 4 ? (
+                    <SequenceOrthography
+                      key={`${selected}:${version}`}
+                      definition={definition}
+                      onChange={(value) => edit("sequenceWriting", value)}
+                      scripts={scripts}
+                      world={doc.world.id}
+                      age={age.id}
+                      id={selected}
+                      version={version}
+                      report={report}
+                      fresh={fresh}
+                      canEdit={canEdit}
+                    />
                   ) : (
                     <>
                       <h3>Orthography and pinned script</h3>

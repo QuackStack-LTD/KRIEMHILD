@@ -7,6 +7,12 @@ export function definitionVersions(d) {
       adapter: "sign-layout/1",
       compiler: "vector-script-compiler/1",
     };
+  if (d?.schema === 4)
+    return {
+      engine: "languages/4",
+      adapter: "sequence-compose/1",
+      compiler: "languages-compiler/4",
+    };
   if (d?.schema === 3)
     return {
       engine: "languages/3",

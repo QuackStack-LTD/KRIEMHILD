@@ -36,6 +36,10 @@ const cases = [
   ["vector-compile", "vector-script.json", null],
   ["vector-render", "vector-script.json", "vector-render.request.json"],
   ["vector-import", "vector-import.svg", null],
+  ["sequence-compile", "sequence.json", null],
+  ["sequence-forward", "sequence.json", "sequence-forward.request.json"],
+  ["sequence-inverse", "sequence.json", "sequence-inverse.request.json"],
+  ["sequence-unicode", "sequence.json", "sequence-unicode.request.json"],
 ];
 const results = [];
 for (const [name, definition, request] of cases) {
@@ -55,7 +59,9 @@ for (const [name, definition, request] of cases) {
             `${root}/${definition}`,
             ...(definition === "reference.json"
               ? ["-script", `${root}/script.json`]
-              : []),
+              : definition === "sequence.json"
+                ? ["-script", `${root}/sequence-script.json`]
+                : []),
             ...(request
               ? [
                   "-operation",

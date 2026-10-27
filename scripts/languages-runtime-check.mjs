@@ -25,7 +25,9 @@ const definition = await json("reference.json"),
   script = await json("script.json"),
   productive = await json("productive.json"),
   indexed = await json("indexed.json"),
-  vector = await json("vector-script.json");
+  vector = await json("vector-script.json"),
+  sequenceScript = await json("sequence-script.json"),
+  sequence = await json("sequence.json");
 let doc;
 if (phase === "create") {
   doc = await api("/api/worlds", {
@@ -89,6 +91,20 @@ if (phase === "create") {
       "languages-compiler/3",
     ],
     ["script", vector, "script", "vector-render", "vector-script-compiler/1"],
+    [
+      "script",
+      sequenceScript,
+      "script",
+      "sequence-script",
+      "vector-script-compiler/1",
+    ],
+    [
+      "language",
+      sequence,
+      "language",
+      "sequence-forward",
+      "languages-compiler/4",
+    ],
   ]) {
     doc = await api(`/api/worlds/${doc.world.id}/languages`, {
       ageId: doc.world.currentAge,
@@ -101,7 +117,8 @@ if (phase === "create") {
     const id = body.languageId || body.scriptId,
       targetPath = `/api/worlds/${doc.world.id}/languages/${id}`,
       hash = doc.entities.find((e) => e.id === id)[state].draftRevision;
-    assert.equal(hash, (await json(`${requestName}.request.json`)).revision);
+    if (requestName !== "sequence-script")
+      assert.equal(hash, (await json(`${requestName}.request.json`)).revision);
     const compiled = await api(targetPath + "/compile", {
       ageId: doc.world.currentAge,
       revision: doc.world.revision,
@@ -130,6 +147,9 @@ async function brief3Replay(worldID) {
   for (const [name, id, field, output] of [
     ["indexed-inverse", indexed.languageId, "request", "result"],
     ["vector-render", vector.scriptId, "scriptRequest", "scriptResult"],
+    ["sequence-forward", sequence.languageId, "request", "result"],
+    ["sequence-inverse", sequence.languageId, "request", "result"],
+    ["sequence-unicode", sequence.languageId, "request", "result"],
   ]) {
     const request = await json(`${name}.request.json`);
     const actual = await api(`/api/worlds/${worldID}/languages/${id}/run`, {
@@ -299,7 +319,9 @@ console.log(
       "productive-circumfix",
       "productive-inverse",
       "typed-traces",
-      "schema-4-world-zip",
+      "schema-5-world-zip",
+      "sequence-forward-provenance-pinned-vector",
+      "sequence-inverse-before-a2-homophones",
       "indexed-inverse-rebuilt",
       "vector-mixed-readings-roles-layout",
       "brief3-pinned-replay-after-import",
