@@ -272,6 +272,9 @@ func rewriteStage(b *spellingBudget, stage SpellingStage, in []SpellingValue) (S
 		end := pos + len(selected.Input)
 		s, r := provenance(in[pos:end], selected.ID)
 		for _, u := range selected.Output {
+			if u.Sign != nil {
+				u = Clone(u)
+			}
 			trace.After = append(trace.After, SpellingValue{u, s, r})
 		}
 		action := "replaced"
@@ -338,6 +341,7 @@ func (a *Artifact) spellRun(b *spellingBudget, input []OrthoUnit) (SpellingRun, 
 		if r.Status != "success" {
 			return run, spellingError(r.Status, "", "render", "Pinned Script rendering failed; inspect glyph/reading dependencies.")
 		}
+		r = Clone(r)
 		run.Render = &r
 	}
 	run.ID = Hash(struct {
@@ -530,8 +534,9 @@ func (a *Artifact) executeSpelling(ctx context.Context, q Request, out Result) R
 			return fail(err)
 		}
 		if len(forms) > 0 {
-			run.Form = &forms[i]
-			run.Derivation = &derivations[i]
+			form, derivation := Clone(forms[i]), Clone(derivations[i])
+			run.Form = &form
+			run.Derivation = &derivation
 			run.ID = Hash(struct{ Revision, Form string }{a.report.Revision, Hash(derivations[i])})
 		}
 		r.Spellings = append(r.Spellings, run)

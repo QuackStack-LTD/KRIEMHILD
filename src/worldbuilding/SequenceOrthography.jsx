@@ -341,7 +341,7 @@ export default function SequenceOrthography({
           if (!c.signal.aborted) setScript(next);
         })
         .catch((e) => {
-          if (e.name !== "AbortError") setError(e.message);
+          if (e.name !== "AbortError" && !c.signal.aborted) setError(e.message);
         });
     return () => c.abort();
   }, [world, age, w.script.id, w.script.revision]);
@@ -350,6 +350,7 @@ export default function SequenceOrthography({
     pending.current?.abort();
     setBusy(false);
     setResult(null);
+    setError("");
     setChoice("");
   }, [definition, op, mode, lexeme, features, units, text, analyze]);
   useEffect(() => () => pending.current?.abort(), []);

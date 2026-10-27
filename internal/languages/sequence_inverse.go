@@ -238,8 +238,8 @@ func (a *Artifact) unspell(b *spellingBudget, q Request, out Result, fail func(e
 				if w.InputLayer == "surface-boundaries" && !unitsEqual(derivationUnits(c, analysis.Derivations[i], w.InputLayer), units) {
 					continue
 				}
-				p.Analyses = append(p.Analyses, c)
-				p.Derivations = append(p.Derivations, analysis.Derivations[i])
+				p.Analyses = append(p.Analyses, Clone(c))
+				p.Derivations = append(p.Derivations, Clone(analysis.Derivations[i]))
 			}
 			if len(p.Analyses) == 0 {
 				continue

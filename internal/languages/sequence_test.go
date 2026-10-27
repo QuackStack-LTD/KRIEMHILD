@@ -40,6 +40,25 @@ func sequenceQuery(a *Artifact, op string) Request {
 	q.Limit = 128
 	return q
 }
+func TestSequenceArtifactOwnsDependenciesAndResults(t *testing.T) {
+	d, script := sequenceFixture(t)
+	a := sequenceArtifact(t, d, script)
+	q := sequenceQuery(a, "spell")
+	q.Segments = []string{"n", "i", "n"}
+	first := a.Execute(context.Background(), q)
+	expected := string(Canonical(first))
+	if first.Status != "success" {
+		t.Fatal(first.Status)
+	}
+	script.Writing.Glyphs[0].Paths[0].Commands[0].Values[0] = 432
+	script.Writing.Signs[1].Associations[0].Value = "changed caller metadata"
+	d.SequenceWriting.Stages[1].Rules[0].Output[0].Sign.Sign = "caller draft"
+	first.Spelling.Spellings[0].Output[0].Unit.Sign.Sign = "changed returned sign"
+	first.Spelling.Spellings[0].Render.Signs[0].Associations[0].Value = "changed returned metadata"
+	if actual := a.Execute(context.Background(), q); string(Canonical(actual)) != expected {
+		t.Fatal("caller/result mutation changed compiled snapshot", actual.Status)
+	}
+}
 func TestSequenceNormalizedFullGolden(t *testing.T) {
 	_, script := sequenceFixture(t)
 	raw, err := os.ReadFile("testdata/sequence-normalized.json")

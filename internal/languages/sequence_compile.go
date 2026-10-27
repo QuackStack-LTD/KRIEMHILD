@@ -44,6 +44,7 @@ func (a *Artifact) compileSpelling(ctx context.Context, scripts map[ScriptRef]Sc
 			bad("missing_dependency", "", "sequenceWriting.script", "Correct the pinned Script glyphs/readings/layout before spelling.")
 			out = append(out, r.Diagnostics...)
 		} else {
+			script = Clone(script)
 			a.spellingScript = &script
 		}
 	}
