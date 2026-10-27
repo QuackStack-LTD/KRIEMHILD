@@ -18,7 +18,7 @@ type EngineCapability struct {
 // dependency readiness. It is metadata, not a linguistic result or cache input.
 func Capabilities() []EngineCapability {
 	out := []EngineCapability{}
-	for _, schema := range []int{1, 2, 3} {
+	for _, schema := range []int{1, 2, 3, 4} {
 		e, a, c := Versions(Definition{Schema: schema})
 		if schema == 1 {
 			c = "languages-compiler/1"
@@ -41,10 +41,15 @@ func Capabilities() []EngineCapability {
 					scope = "A1 does not execute schema-2 grammar."
 				}
 			}
-			if schema == 3 && (op == "analyze" || op == "analyze-written") {
+			if schema >= 3 && (op == "analyze" || op == "analyze-written") {
 				scope = "survivor-trie/1 prunes impossible lexical cells, then composes every eligible analysis within explicit budgets."
 			}
 			profile.Operations = append(profile.Operations, OperationCapability{op, support, scope})
+		}
+		if schema == 4 {
+			for _, op := range []string{"spell", "unspell", "graphemes"} {
+				profile.Operations = append(profile.Operations, OperationCapability{op, "supported", "sequence-orthography/1 finite typed stages; pinned Unicode 15.0 clusters and Script 2 renderer; inverse readiness excludes lossy stages."})
+			}
 		}
 		out = append(out, profile)
 	}

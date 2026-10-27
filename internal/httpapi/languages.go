@@ -262,12 +262,12 @@ func (s *Server) computeLanguage(w http.ResponseWriter, r *http.Request) {
 	deps := map[languages.ScriptRef]languages.ScriptDefinition{}
 	if op == "validate" && len(req.Definition) > 0 {
 		// Unsaved input has not passed Save's dependency-ownership check.
-		if o := definition.Orthography; o != nil {
-			body, e := s.projects.LinguisticDefinition(ctx, world, req.AgeID, o.Script.ID, o.Script.Revision)
+		for _, ref := range languages.ScriptDependencies(definition) {
+			body, e := s.projects.LinguisticDefinition(ctx, world, req.AgeID, ref.ID, ref.Revision)
 			if e == nil {
 				script, e := languages.DecodeScript(body)
 				if e == nil {
-					deps[o.Script] = script
+					deps[ref] = script
 				}
 			}
 		}

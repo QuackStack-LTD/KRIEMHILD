@@ -16,6 +16,9 @@ const (
 
 // Versions dispatches by authored schema, never by a process-wide mutable mode.
 func Versions(d Definition) (engine, adapter, compiler string) {
+	if d.Schema == 4 {
+		return SequenceEngine, SequenceAdapter, SequenceCompiler
+	}
 	if d.Schema == IndexedSchemaVersion {
 		return IndexedEngine, IndexedAdapter, IndexedCompiler
 	}
@@ -28,7 +31,7 @@ func CompatibleVersions(schema int, engine, adapter, compiler string) bool {
 	e, a, c := Versions(Definition{Schema: schema})
 	return (schema == 1 || ProductiveSchema(schema)) && engine == e && adapter == a && compiler == c
 }
-func ProductiveSchema(schema int) bool { return schema == 2 || schema == 3 }
+func ProductiveSchema(schema int) bool { return schema == 2 || schema == 3 || schema == 4 }
 
 type ProductiveModel struct {
 	Version   string               `json:"version"`

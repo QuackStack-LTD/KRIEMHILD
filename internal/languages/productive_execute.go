@@ -393,7 +393,7 @@ func (a *Artifact) executeProductive(ctx context.Context, q Request, out Result)
 	}
 	budget := &productiveBudget{ctx: ctx}
 	var indexed map[inverseRecord]bool
-	if !forward && a.definition.Schema == IndexedSchemaVersion {
+	if !forward && a.definition.Schema >= IndexedSchemaVersion {
 		metrics := &InverseMetrics{}
 		defer func() {
 			metrics.Steps = budget.steps

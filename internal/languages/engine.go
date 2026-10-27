@@ -11,6 +11,7 @@ import (
 // Artifact is immutable after construction. Each operation uses only validated
 // dependencies; a broken script or grammar cannot disable phonological work.
 type Artifact struct {
+	spellingScript                 *ScriptDefinition
 	definition                     Definition
 	report                         Report
 	phonology, morphology, written *spike.Compiled
@@ -155,6 +156,7 @@ func Compile(ctx context.Context, source Definition, scripts map[ScriptRef]Scrip
 	} else {
 		add(a.compileGrammar())
 	}
+	add(a.compileSpelling(ctx, scripts))
 	add(a.checkLexical())
 	add(a.checkCorpus())
 	if d.History != nil && d.Schema == 1 {
@@ -204,6 +206,15 @@ func (a *Artifact) Execute(ctx context.Context, q Request) Result {
 	}
 	if q.Limit < 1 || q.Limit > 256 || len(q.Seed) > 1024 || len(q.Features) > 64 || len(q.Segments) > 256 || len(q.Text) > 4096 || len(q.Roles) > 16 || len(q.Lexeme) > 80 || len(q.Template) > 80 || len(q.Construction) > 80 {
 		return fail("invalid_input", "Request exceeds the documented feature, role, text, seed, segment or candidate bounds.")
+	}
+	if q.Operation == "spell" || q.Operation == "unspell" || q.Operation == "graphemes" {
+		if a.definition.Schema != 4 {
+			return fail("unsupported_operation", "Sequence spelling requires explicit language schema 4.")
+		}
+		return a.executeSpelling(ctx, q, out)
+	}
+	if q.Spelling != nil {
+		return fail("invalid_input", "Spelling input belongs only to sequence spelling operations.")
 	}
 	if q.Operation == "regression" {
 		return a.runCorpus(ctx, q, out)

@@ -16,6 +16,9 @@ func (a *Artifact) checkCorpus() []Diagnostic {
 	diagnostics := []Diagnostic{}
 	seen := map[string]bool{}
 	for _, c := range a.definition.Tests {
+		if a.definition.Schema == 4 && (c.Request.Operation == "spell" || c.Request.Operation == "unspell" || c.Request.Operation == "graphemes") {
+			diagnostics = append(diagnostics, Diagnostic{Code: "unsupported_case", Severity: "error", Module: "tests", RuleID: c.ID, Path: "tests", Message: "Sequence results require complete structured expectations; use external pinned full-result goldens until typed corpus expectations are added."})
+		}
 		if ProductiveSchema(a.definition.Schema) && c.Request.Policy == "seeded" {
 			diagnostics = append(diagnostics, Diagnostic{Code: "revision_sensitive_case", Severity: "error", Module: "tests", RuleID: c.ID, Path: "tests.request.policy", Message: "Seeded choice includes the definition revision, which changes when saving expectations. Capture an all-candidates run as a corpus case; replay seeded requests externally against their exact immutable revision."})
 		}

@@ -38,6 +38,9 @@ func (a *Artifact) AccountedBytes() int64 {
 	if a.productive != nil && a.productive.inverse != nil {
 		size += int64(a.productive.inverse.bytes)
 	}
+	if a.spellingScript != nil {
+		size += int64(len(Canonical(*a.spellingScript))) * 12
+	}
 	return size
 }
 func (c *Cache) Get(key string) *Artifact {

@@ -1,0 +1,392 @@
+{
+  "schema": 2,
+  "scriptId": "77777777777777777777777777777777",
+  "name": "Authored vector script",
+  "notes": "Synthetic mixed signs; no installed font or automatic translation.",
+  "direction": "ltr",
+  "graphemes": [],
+  "writing": {
+    "version": "vector-script/1",
+    "profile": "mixed",
+    "unitsPerEm": 1000,
+    "lineHeight": 1400,
+    "spacing": 80,
+    "glyphs": [
+      {
+        "id": "ka",
+        "name": "Triangle",
+        "viewBox": [
+          0,
+          0,
+          1000,
+          1000
+        ],
+        "baseline": 800,
+        "advance": 1000,
+        "bearing": 0,
+        "scale": 1,
+        "paths": [
+          {
+            "id": "outline",
+            "commands": [
+              {
+                "op": "M",
+                "values": [
+                  100,
+                  800
+                ]
+              },
+              {
+                "op": "L",
+                "values": [
+                  500,
+                  100
+                ]
+              },
+              {
+                "op": "L",
+                "values": [
+                  900,
+                  800
+                ]
+              },
+              {
+                "op": "Z",
+                "values": []
+              }
+            ],
+            "fill": "none",
+            "stroke": "#182126",
+            "strokeWidth": 24
+          }
+        ]
+      },
+      {
+        "id": "sun",
+        "name": "Square sun",
+        "viewBox": [
+          0,
+          0,
+          1000,
+          1000
+        ],
+        "baseline": 800,
+        "advance": 1000,
+        "bearing": 0,
+        "scale": 1,
+        "paths": [
+          {
+            "id": "outline",
+            "commands": [
+              {
+                "op": "M",
+                "values": [
+                  150,
+                  150
+                ]
+              },
+              {
+                "op": "L",
+                "values": [
+                  850,
+                  150
+                ]
+              },
+              {
+                "op": "L",
+                "values": [
+                  850,
+                  850
+                ]
+              },
+              {
+                "op": "L",
+                "values": [
+                  150,
+                  850
+                ]
+              },
+              {
+                "op": "Z",
+                "values": []
+              }
+            ],
+            "fill": "none",
+            "stroke": "#182126",
+            "strokeWidth": 24
+          }
+        ]
+      },
+      {
+        "id": "living",
+        "name": "Classifier",
+        "viewBox": [
+          0,
+          0,
+          1000,
+          1000
+        ],
+        "baseline": 800,
+        "advance": 600,
+        "bearing": 0,
+        "scale": 0.75,
+        "paths": [
+          {
+            "id": "outline",
+            "commands": [
+              {
+                "op": "M",
+                "values": [
+                  200,
+                  500
+                ]
+              },
+              {
+                "op": "Q",
+                "values": [
+                  500,
+                  50,
+                  800,
+                  500
+                ]
+              },
+              {
+                "op": "Q",
+                "values": [
+                  500,
+                  950,
+                  200,
+                  500
+                ]
+              },
+              {
+                "op": "Z",
+                "values": []
+              }
+            ],
+            "fill": "none",
+            "stroke": "#182126",
+            "strokeWidth": 24
+          }
+        ]
+      }
+    ],
+    "signs": [
+      {
+        "id": "syllable-ka",
+        "label": "Authored ka",
+        "glyph": "ka",
+        "grapheme": "e\u0301",
+        "roles": [
+          "syllabic"
+        ],
+        "readings": [
+          {
+            "id": "ka-reading",
+            "text": "ka",
+            "when": {}
+          }
+        ],
+        "associations": [
+          {
+            "kind": "phoneme",
+            "value": "authored syllable ka"
+          }
+        ]
+      },
+      {
+        "id": "word-sun",
+        "label": "Authored sun word",
+        "glyph": "sun",
+        "grapheme": "",
+        "roles": [
+          "logographic",
+          "semantic"
+        ],
+        "readings": [
+          {
+            "id": "sun-reading",
+            "text": "sol",
+            "when": {}
+          }
+        ],
+        "associations": [
+          {
+            "kind": "meaning",
+            "value": "authored day-star"
+          }
+        ]
+      },
+      {
+        "id": "living-marker",
+        "label": "Silent classifier",
+        "glyph": "living",
+        "grapheme": "",
+        "roles": [
+          "classifier"
+        ],
+        "readings": [],
+        "associations": [
+          {
+            "kind": "classifier",
+            "value": "living"
+          }
+        ]
+      },
+      {
+        "id": "polyphonic",
+        "label": "Contextual/dual sign",
+        "glyph": "ka",
+        "grapheme": "",
+        "roles": [
+          "phonetic",
+          "semantic"
+        ],
+        "readings": [
+          {
+            "id": "front",
+            "text": "ke",
+            "when": {
+              "vowel": "front"
+            }
+          },
+          {
+            "id": "back",
+            "text": "ka",
+            "when": {
+              "vowel": "back"
+            }
+          }
+        ],
+        "associations": [
+          {
+            "kind": "morpheme",
+            "value": "authored root"
+          }
+        ]
+      },
+      {
+        "id": "spell-acute",
+        "label": "Authored acute",
+        "glyph": "ka",
+        "grapheme": "e\u0301",
+        "roles": [
+          "phonetic"
+        ],
+        "readings": [
+          {
+            "id": "read-acute",
+            "text": "e\u0301",
+            "when": {}
+          }
+        ],
+        "associations": []
+      },
+      {
+        "id": "spell-i",
+        "label": "Authored i",
+        "glyph": "ka",
+        "grapheme": "i",
+        "roles": [
+          "phonetic"
+        ],
+        "readings": [
+          {
+            "id": "read-i",
+            "text": "i",
+            "when": {}
+          }
+        ],
+        "associations": []
+      },
+      {
+        "id": "spell-p",
+        "label": "Authored p",
+        "glyph": "ka",
+        "grapheme": "p",
+        "roles": [
+          "phonetic"
+        ],
+        "readings": [
+          {
+            "id": "read-p",
+            "text": "p",
+            "when": {}
+          }
+        ],
+        "associations": []
+      },
+      {
+        "id": "spell-d",
+        "label": "Authored d",
+        "glyph": "ka",
+        "grapheme": "d",
+        "roles": [
+          "phonetic"
+        ],
+        "readings": [
+          {
+            "id": "read-d",
+            "text": "d",
+            "when": {}
+          }
+        ],
+        "associations": []
+      },
+      {
+        "id": "spell-n",
+        "label": "Authored n",
+        "glyph": "ka",
+        "grapheme": "n",
+        "roles": [
+          "phonetic"
+        ],
+        "readings": [
+          {
+            "id": "read-n",
+            "text": "n",
+            "when": {}
+          }
+        ],
+        "associations": []
+      }
+    ],
+    "sequences": [
+      {
+        "id": "mixed-phrase",
+        "name": "Authored mixed phrase",
+        "items": [
+          {
+            "kind": "group",
+            "children": [
+              {
+                "kind": "sign",
+                "sign": "syllable-ka",
+                "reading": "ka-reading",
+                "roles": [
+                  "syllabic"
+                ]
+              },
+              {
+                "kind": "sign",
+                "sign": "word-sun",
+                "reading": "sun-reading",
+                "roles": [
+                  "logographic",
+                  "semantic"
+                ]
+              }
+            ]
+          },
+          {
+            "kind": "sign",
+            "sign": "living-marker",
+            "roles": [
+              "classifier"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

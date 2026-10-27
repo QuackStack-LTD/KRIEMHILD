@@ -152,25 +152,27 @@ type RegressionCase struct {
 	Notes                       string                 `json:"notes"`
 }
 type Definition struct {
-	Productive  *ProductiveModel  `json:"productive,omitempty"`
-	Lexical     *LexicalModel     `json:"lexical,omitempty"`
-	Schema      int               `json:"schema"`
-	LanguageID  string            `json:"languageId"`
-	Name        string            `json:"name"`
-	Notes       string            `json:"notes"`
-	Phonology   *spike.Phonology  `json:"phonology"`
-	Lexicon     []spike.Lexeme    `json:"lexicon"`
-	Morphology  *spike.Morphology `json:"morphology"`
-	Syntax      *Syntax           `json:"syntax"`
-	Orthography *Orthography      `json:"orthography"`
-	History     *Historical       `json:"history"`
-	Tests       []RegressionCase  `json:"tests"`
+	SequenceWriting *SequenceWriting  `json:"sequenceWriting,omitempty"`
+	Productive      *ProductiveModel  `json:"productive,omitempty"`
+	Lexical         *LexicalModel     `json:"lexical,omitempty"`
+	Schema          int               `json:"schema"`
+	LanguageID      string            `json:"languageId"`
+	Name            string            `json:"name"`
+	Notes           string            `json:"notes"`
+	Phonology       *spike.Phonology  `json:"phonology"`
+	Lexicon         []spike.Lexeme    `json:"lexicon"`
+	Morphology      *spike.Morphology `json:"morphology"`
+	Syntax          *Syntax           `json:"syntax"`
+	Orthography     *Orthography      `json:"orthography"`
+	History         *Historical       `json:"history"`
+	Tests           []RegressionCase  `json:"tests"`
 }
 type RoleInput struct {
 	Lexeme   string   `json:"lexeme"`
 	Features Features `json:"features"`
 }
 type Request struct {
+	Spelling *SpellingRequest `json:"spelling,omitempty"`
 	spike.Request
 	Compiler     string               `json:"compiler,omitempty"`
 	Adapter      string               `json:"adapter"`
@@ -209,6 +211,7 @@ type GlossWord struct {
 	Features Features `json:"features"`
 }
 type Result struct {
+	Spelling            *SpellingResult        `json:"spelling,omitempty"`
 	Inverse             *InverseMetrics        `json:"inverse,omitempty"`
 	RejectedDerivations []ProductiveDerivation `json:"rejectedDerivations,omitempty"`
 	Schema              int                    `json:"schema,omitempty"`
@@ -243,7 +246,18 @@ func Decode(raw []byte) (Definition, error) {
 		return d, err
 	}
 	if (d.Schema != SchemaVersion && !ProductiveSchema(d.Schema)) || !ValidID(d.LanguageID) || strings.TrimSpace(d.Name) == "" || len(d.Name) > 160 || len(d.Notes) > 8192 {
-		return d, fmt.Errorf("choose supported language schema 1, 2 or 3, a language identity and a name of at most 160 bytes")
+		return d, fmt.Errorf("choose supported language schema 1, 2, 3 or 4, a language identity and a name of at most 160 bytes")
+	}
+	if d.Schema != 4 {
+		var fields map[string]json.RawMessage
+		if err := json.Unmarshal(raw, &fields); err != nil {
+			return d, err
+		}
+		if _, ok := fields["sequenceWriting"]; ok {
+			return d, fmt.Errorf("sequenceWriting requires explicit language schema 4, including when null")
+		}
+	} else if err := spellingShape(d.SequenceWriting); err != nil {
+		return d, err
 	}
 	if d.Schema == 1 && d.Productive != nil || ProductiveSchema(d.Schema) && d.Morphology != nil {
 		return d, fmt.Errorf("productive rules require schema 2; schema 2 cannot also contain legacy morphology")

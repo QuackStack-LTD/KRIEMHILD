@@ -61,6 +61,9 @@ func linguisticArchiveSchema(raw []byte) int {
 	if json.Unmarshal(raw, &h) != nil {
 		return 2
 	}
+	if h.Schema == 4 && h.ScriptID == "" {
+		return 5
+	}
 	if h.Schema == 3 || h.Schema == 2 && h.ScriptID != "" {
 		return 4
 	}
@@ -233,9 +236,9 @@ func (s *Store) SaveLinguisticDefinition(ctx context.Context, world, age, kind s
 				}
 			}
 		}
-		if o := v.Orthography; o != nil {
-			e := d.Entity(age, o.Script.ID)
-			if e == nil || e.Kind != "script" || e.Script.Ref(o.Script.Revision) == nil {
+		for _, ref := range languages.ScriptDependencies(v) {
+			e := d.Entity(age, ref.ID)
+			if e == nil || e.Kind != "script" || e.Script.Ref(ref.Revision) == nil {
 				return nil, fmt.Errorf("pin an existing script revision in this Age")
 			}
 		}
@@ -364,21 +367,17 @@ func linguisticBlob(ctx context.Context, q historyQuery, revision, kind, owner s
 
 func (s *Store) LanguageDependencies(ctx context.Context, d languages.Definition) (map[languages.ScriptRef]languages.ScriptDefinition, error) {
 	result := map[languages.ScriptRef]languages.ScriptDefinition{}
-	if d.Orthography == nil {
-		return result, nil
+	for _, ref := range languages.ScriptDependencies(d) {
+		raw, err := linguisticBlob(ctx, s.db, ref.Revision, "script", ref.ID, 0)
+		if err != nil {
+			return nil, err
+		}
+		script, err := languages.DecodeScript(raw)
+		if err != nil {
+			return nil, err
+		}
+		result[ref] = script
 	}
-	ref := d.Orthography.Script
-	// This internal lookup is reached only after reading an owned language body;
-	// Save and import validate that body's pinned dependencies.
-	raw, err := linguisticBlob(ctx, s.db, ref.Revision, "script", ref.ID, 0)
-	if err != nil {
-		return nil, err
-	}
-	script, err := languages.DecodeScript(raw)
-	if err != nil {
-		return nil, err
-	}
-	result[ref] = script
 	return result, nil
 }
 
@@ -541,8 +540,8 @@ func walkLinguisticBodies(d *history.Document, blobs map[string][]byte, load fun
 					}
 				}
 			}
-			if o := definition.Orthography; o != nil {
-				if err := visit(languages.RevisionRef{Hash: o.Script.Revision}, "script", o.Script.ID, depth+1); err != nil {
+			for _, ref := range languages.ScriptDependencies(definition) {
+				if err := visit(languages.RevisionRef{Hash: ref.Revision}, "script", ref.ID, depth+1); err != nil {
 					return err
 				}
 			}

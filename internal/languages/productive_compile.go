@@ -303,7 +303,7 @@ func (a *Artifact) compileProductive(ctx context.Context) []Diagnostic {
 			a.report.Ready[op] = ready
 		}
 		a.report.Ready["analyze-written"] = ready && a.report.Ready["write"]
-		if ready && d.Schema == IndexedSchemaVersion {
+		if ready && d.Schema >= IndexedSchemaVersion {
 			if err := a.buildInverse(ctx); err != nil {
 				a.report.Ready["analyze"] = false
 				a.report.Ready["analyze-written"] = false

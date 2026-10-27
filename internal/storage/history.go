@@ -475,7 +475,7 @@ func (s *Store) HistoryBundle(ctx context.Context, id string) (Bundle, error) {
 	return b, tx.Commit()
 }
 func (b Bundle) Validate() error {
-	if b.Format != "KRIEMHILD-WORLD" || (b.Schema != 1 && b.Schema != 2 && b.Schema != 3 && b.Schema != 4) || b.Document == nil {
+	if b.Format != "KRIEMHILD-WORLD" || (b.Schema != 1 && b.Schema != 2 && b.Schema != 3 && b.Schema != 4 && b.Schema != 5) || b.Document == nil {
 		return fmt.Errorf("unsupported World archive")
 	}
 	if b.Schema == 1 && hasLinguisticRecords(b.Document) {
