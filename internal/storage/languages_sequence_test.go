@@ -50,7 +50,7 @@ func TestLanguageSequenceImmutableRestartArchiveAndOwnership(t *testing.T) {
 	save("language", d)
 	compile := func(source languages.Definition) {
 		t.Helper()
-		a := languages.Compile(ctx, source, map[languages.ScriptRef]languages.ScriptDefinition{{script.ScriptID, languages.Hash(script)}: script})
+		a := languages.Compile(ctx, source, map[languages.ScriptRef]languages.ScriptDefinition{{ID: script.ScriptID, Revision: languages.Hash(script)}: script})
 		if !a.Report().Ready["spell"] {
 			t.Fatal(a.Report())
 		}

@@ -157,7 +157,7 @@ func TestSequenceBoundariesNormalizationAndSnapshotOrder(t *testing.T) {
 	q.Segments = []string{"a"}
 	r = a.Execute(context.Background(), q)
 	run := r.Spelling.Spellings[0]
-	if run.Text != "\u00e9" || run.Stages[1].Original != "e\u0301" || run.Stages[1].Normalized != "\u00e9" || a.report.Ready["unspell"] {
+	if run.Text != "\u00e9" || run.Stages[1].Normalization != "NFC" || run.Stages[1].Original != "e\u0301" || run.Stages[1].Normalized != "\u00e9" || a.report.Ready["unspell"] {
 		t.Fatal("normalization hidden or inverse guessed", r)
 	}
 	q = sequenceQuery(a, "unspell")

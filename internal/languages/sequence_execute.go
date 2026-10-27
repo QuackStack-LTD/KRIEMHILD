@@ -20,16 +20,17 @@ type SpellingMatch struct {
 	Action string `json:"action"`
 }
 type SpellingTrace struct {
-	Stage       string          `json:"stage"`
-	Kind        string          `json:"kind"`
-	InputLayer  string          `json:"inputLayer"`
-	OutputLayer string          `json:"outputLayer"`
-	OffsetUnit  string          `json:"offsetUnit"`
-	Before      []SpellingValue `json:"before"`
-	After       []SpellingValue `json:"after"`
-	Matches     []SpellingMatch `json:"matches"`
-	Original    string          `json:"original,omitempty"`
-	Normalized  string          `json:"normalized,omitempty"`
+	Normalization string          `json:"normalization,omitempty"`
+	Stage         string          `json:"stage"`
+	Kind          string          `json:"kind"`
+	InputLayer    string          `json:"inputLayer"`
+	OutputLayer   string          `json:"outputLayer"`
+	OffsetUnit    string          `json:"offsetUnit"`
+	Before        []SpellingValue `json:"before"`
+	After         []SpellingValue `json:"after"`
+	Matches       []SpellingMatch `json:"matches"`
+	Original      string          `json:"original,omitempty"`
+	Normalized    string          `json:"normalized,omitempty"`
 }
 type SpellingRun struct {
 	ID         string                `json:"id"`
@@ -197,6 +198,7 @@ func resegment(b *spellingBudget, values []SpellingValue) ([]SpellingValue, []Gr
 func rewriteStage(b *spellingBudget, stage SpellingStage, in []SpellingValue) (SpellingTrace, error) {
 	trace := SpellingTrace{Stage: stage.ID, Kind: stage.Kind, InputLayer: stage.InputLayer, OutputLayer: stage.OutputLayer, OffsetUnit: offsetUnit(stage.InputLayer), Before: in, After: []SpellingValue{}, Matches: []SpellingMatch{}}
 	if stage.Kind == "normalize" {
+		trace.Normalization = stage.Normalization
 		for _, v := range in {
 			trace.Original += v.Unit.Value
 		}
