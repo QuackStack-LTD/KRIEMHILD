@@ -220,8 +220,11 @@ func (a *Artifact) unspell(b *spellingBudget, q Request, out Result, fail func(e
 					inner.Segments = append(inner.Segments, u.Value)
 				}
 			}
+			if len(inner.Segments) > 256 {
+				return fail(spellingError("execution_limit", "", "inverse.morphology", "A2 accepts at most 256 surface segments; orthographic preimages were not discarded as no-result."))
+			}
 			analysis := a.Execute(b.ctx, inner)
-			if analysis.Status == "execution_limit" || analysis.Status == "cancelled" || analysis.Status == "candidate_limit" {
+			if analysis.Status != "success" && analysis.Status != "ambiguous" && analysis.Status != "no_valid_candidate" {
 				return fail(spellingError(analysis.Status, "", "inverse.morphology", "A2 did not return a complete morphological set."))
 			}
 			p.MorphologyStatus = analysis.Status

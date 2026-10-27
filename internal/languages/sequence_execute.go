@@ -411,7 +411,16 @@ func (a *Artifact) executeSpelling(ctx context.Context, q Request, out Result) R
 	if q.Policy != "all" {
 		return fail(spellingError("invalid_policy", "", "policy", "Sequence operations require all; no seeded or implicit choice is supported."))
 	}
+	if q.Template != "" || q.Construction != "" || len(q.Roles) > 0 || q.Seed != "" {
+		return fail(spellingError("invalid_input", "", "request", "Remove fields unrelated to sequence operations; nothing is silently ignored."))
+	}
+	if q.Spelling != nil && q.Operation != "graphemes" && q.Spelling.Selection != nil {
+		return fail(spellingError("invalid_input", "", "selection", "Cluster selection belongs to the graphemes operation."))
+	}
 	if q.Operation == "graphemes" {
+		if q.Lexeme != "" || len(q.Segments) > 0 || len(q.Features) > 0 || q.Spelling != nil && (len(q.Spelling.Units) > 0 || q.Spelling.Analyze || q.Spelling.Choice != "") {
+			return fail(spellingError("invalid_input", "", "request", "Grapheme processing takes exact text and optional cluster selection only."))
+		}
 		var err error
 		r.Clusters, err = SegmentGraphemes(ctx, q.Text)
 		if err != nil {
@@ -449,6 +458,9 @@ func (a *Artifact) executeSpelling(ctx context.Context, q Request, out Result) R
 	}
 	if q.Text != "" {
 		return fail(spellingError("invalid_input", "", "text", "Forward spelling uses source units or a lexeme, not an undeclared text layer."))
+	}
+	if q.Spelling != nil && q.Spelling.Choice != "" || q.Lexeme == "" && len(q.Features) > 0 {
+		return fail(spellingError("invalid_input", "", "request", "Forward selection is explicit through the lexical form; inverse choices and unused feature bundles are not applied."))
 	}
 	if q.Spelling != nil && q.Spelling.Analyze {
 		return fail(spellingError("invalid_input", "", "spelling.analyze", "Morphological analysis follows inverse spelling only."))

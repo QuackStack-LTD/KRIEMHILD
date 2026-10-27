@@ -46,7 +46,7 @@ func TestSequenceForwardProvenanceGoldens(t *testing.T) {
 	if !a.report.Ready["spell"] || !a.report.Ready["unspell"] {
 		t.Fatal(a.report)
 	}
-	for _, name := range []string{"sequence-forward", "sequence-inverse"} {
+	for _, name := range []string{"sequence-forward", "sequence-inverse", "sequence-unicode"} {
 		raw, e := os.ReadFile("testdata/" + name + ".request.json")
 		if e != nil {
 			t.Fatal(e)

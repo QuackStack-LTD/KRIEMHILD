@@ -1,0 +1,167 @@
+{
+  "spelling": {
+    "version": "sequence-orthography/1",
+    "segmentation": "uniseg/0.4.7-unicode/15.0.0",
+    "normalizer": "x-text/0.29.0-unicode/15.0.0",
+    "inputLayer": "",
+    "outputLayer": "",
+    "script": {
+      "id": "",
+      "revision": ""
+    },
+    "renderer": "",
+    "rendererAdapter": "",
+    "rendererCompiler": "",
+    "steps": 1,
+    "clusters": [
+      {
+        "index": 0,
+        "text": "A",
+        "byteStart": 0,
+        "byteEnd": 1,
+        "utf16Start": 0,
+        "utf16End": 1,
+        "codePoints": [
+          "U+0041"
+        ]
+      },
+      {
+        "index": 1,
+        "text": "👩‍💻",
+        "byteStart": 1,
+        "byteEnd": 12,
+        "utf16Start": 1,
+        "utf16End": 6,
+        "codePoints": [
+          "U+1F469",
+          "U+200D",
+          "U+1F4BB"
+        ]
+      },
+      {
+        "index": 2,
+        "text": "é",
+        "byteStart": 12,
+        "byteEnd": 15,
+        "utf16Start": 6,
+        "utf16End": 8,
+        "codePoints": [
+          "U+0065",
+          "U+0301"
+        ]
+      },
+      {
+        "index": 3,
+        "text": "🇺🇦",
+        "byteStart": 15,
+        "byteEnd": 23,
+        "utf16Start": 8,
+        "utf16End": 12,
+        "codePoints": [
+          "U+1F1FA",
+          "U+1F1E6"
+        ]
+      },
+      {
+        "index": 4,
+        "text": "👍🏽",
+        "byteStart": 23,
+        "byteEnd": 31,
+        "utf16Start": 12,
+        "utf16End": 16,
+        "codePoints": [
+          "U+1F44D",
+          "U+1F3FD"
+        ]
+      },
+      {
+        "index": 5,
+        "text": "😀",
+        "byteStart": 31,
+        "byteEnd": 35,
+        "utf16Start": 16,
+        "utf16End": 18,
+        "codePoints": [
+          "U+1F600"
+        ]
+      },
+      {
+        "index": 6,
+        "text": "é",
+        "byteStart": 35,
+        "byteEnd": 37,
+        "utf16Start": 18,
+        "utf16End": 19,
+        "codePoints": [
+          "U+00E9"
+        ]
+      },
+      {
+        "index": 7,
+        "text": "ẹ́",
+        "byteStart": 37,
+        "byteEnd": 42,
+        "utf16Start": 19,
+        "utf16End": 22,
+        "codePoints": [
+          "U+0065",
+          "U+0301",
+          "U+0323"
+        ]
+      }
+    ],
+    "selection": {
+      "start": 1,
+      "end": 2
+    },
+    "spellings": [],
+    "preimages": []
+  },
+  "schema": 4,
+  "compiler": "languages-compiler/4",
+  "status": "success",
+  "languageId": "88888888888888888888888888888888",
+  "revision": "57d62c51f97c83715b0fbf4b147a910b5d66fd8700191523f7a14459cd782cd5",
+  "engine": "languages/4",
+  "canonicalizer": "kriemhild-typed-json/1",
+  "selection": "sha256-canonical-candidates/1",
+  "request": {
+    "revision": "57d62c51f97c83715b0fbf4b147a910b5d66fd8700191523f7a14459cd782cd5",
+    "engine": "languages/4",
+    "operation": "graphemes",
+    "text": "A👩‍💻é🇺🇦👍🏽😀éẹ́",
+    "policy": "all",
+    "limit": 128
+  },
+  "candidates": [],
+  "diagnostics": [],
+  "truncated": false,
+  "examined": 0,
+  "knownValid": 0,
+  "rejected": 0,
+  "diagnosticsOmitted": 0,
+  "adapter": "sequence-compose/1",
+  "kernel": "languages-spike/1",
+  "input": {
+    "spelling": {
+      "selection": {
+        "start": 1,
+        "end": 2
+      }
+    },
+    "revision": "57d62c51f97c83715b0fbf4b147a910b5d66fd8700191523f7a14459cd782cd5",
+    "engine": "languages/4",
+    "operation": "graphemes",
+    "text": "A👩‍💻é🇺🇦👍🏽😀éẹ́",
+    "policy": "all",
+    "limit": 128,
+    "compiler": "languages-compiler/4",
+    "adapter": "sequence-compose/1"
+  },
+  "dependencies": [
+    {
+      "id": "77777777777777777777777777777777",
+      "revision": "e50260f7197fd260b418f4578be091b415927c863a70a7ed057dbb198cc5a849"
+    }
+  ]
+}

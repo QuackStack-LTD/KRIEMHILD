@@ -2,8 +2,76 @@ package languages
 
 import (
 	"context"
+	"strings"
 	"testing"
 )
+
+type sequenceCancelContext struct {
+	context.Context
+	remaining int
+}
+
+func (c *sequenceCancelContext) Err() error {
+	c.remaining--
+	if c.remaining <= 0 {
+		return context.Canceled
+	}
+	return nil
+}
+
+func TestSequenceBoundaryInverseAndInnerCancellationAndTraceLimit(t *testing.T) {
+	d, s := sequenceFixture(t)
+	d.SequenceWriting.Stages = d.SequenceWriting.Stages[:1]
+	d.SequenceWriting.InputLayer = "surface-boundaries"
+	d.SequenceWriting.Stages[0].InputLayer = "surface-boundaries"
+	d.SequenceWriting.Stages[0].Rules = append(d.SequenceWriting.Stages[0].Rules, SpellingRule{ID: "visible-boundary", Input: []OrthoUnit{{Kind: "boundary", Value: "morpheme"}}, Output: []OrthoUnit{{Kind: "grapheme", Value: "="}}})
+	a := sequenceArtifact(t, d, s)
+	q := sequenceQuery(a, "spell")
+	q.Lexeme = "stone"
+	q.Features = Features{"number": "many", "shape": "plain"}
+	r := a.Execute(context.Background(), q)
+	if r.Status != "success" {
+		t.Fatal(r)
+	}
+	text := r.Spelling.Spellings[0].Text
+	q = sequenceQuery(a, "unspell")
+	q.Text = text
+	q.Spelling = &SpellingRequest{Analyze: true}
+	r = a.Execute(context.Background(), q)
+	if r.Status != "ambiguous" || r.KnownValid != 2 || r.Spelling.Preimages[0].Units[3].Kind != "boundary" {
+		t.Fatal("A2 boundary stream was not reproduced", r)
+	}
+	q = sequenceQuery(a, "spell")
+	q.Segments = []string{"p", "a", "d", "a"}
+	ctx := &sequenceCancelContext{Context: context.Background(), remaining: 35}
+	r = a.Execute(ctx, q)
+	if r.Status != "cancelled" || len(r.Spelling.Spellings) > 0 {
+		t.Fatal("inner matching ignored cancellation", r.Status)
+	}
+	d, s = sequenceFixture(t)
+	d.SequenceWriting.Stages = []SpellingStage{}
+	d.SequenceWriting.Inverse = "unsupported"
+	for i := 0; i < 8; i++ {
+		layer := "grapheme"
+		kind := "grapheme"
+		if i == 0 {
+			layer = "surface"
+			kind = "segment"
+		}
+		id := string(rune('a'+i)) + strings.Repeat("r", 79)
+		d.SequenceWriting.Stages = append(d.SequenceWriting.Stages, SpellingStage{ID: string(rune('a'+i)) + "-stage", Kind: "rewrite", InputLayer: layer, OutputLayer: "grapheme", Unmatched: "reject", Rules: []SpellingRule{{ID: id, Input: []OrthoUnit{{Kind: kind, Value: "p"}}, Output: []OrthoUnit{{Kind: "grapheme", Value: "p"}}}}})
+	}
+	a = sequenceArtifact(t, d, s)
+	q = sequenceQuery(a, "spell")
+	q.Spelling = &SpellingRequest{Units: []OrthoUnit{}}
+	for i := 0; i < 512; i++ {
+		q.Spelling.Units = append(q.Spelling.Units, OrthoUnit{Kind: "segment", Value: "p"})
+	}
+	r = a.Execute(context.Background(), q)
+	if r.Status != "execution_limit" || len(r.Spelling.Spellings) > 0 || r.Diagnostics[0].Path != "trace" {
+		t.Fatal("trace limit returned partial or wrong status", r.Status, r.Diagnostics)
+	}
+}
 
 func TestSequenceInverseExhaustiveFiniteDomainAndClusterMerging(t *testing.T) {
 	d, s := sequenceFixture(t)

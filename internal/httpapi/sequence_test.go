@@ -47,7 +47,7 @@ func TestLanguagesSequenceAPIReadinessPermissionsAndUnicode(t *testing.T) {
 	if w.Code != 200 || !strings.Contains(w.Body.String(), `"spell":true`) {
 		t.Fatal(w.Code, w.Body)
 	}
-	for _, name := range []string{"sequence-forward", "sequence-inverse"} {
+	for _, name := range []string{"sequence-forward", "sequence-inverse", "sequence-unicode"} {
 		var q languages.Request
 		json.Unmarshal(read(name+".request.json"), &q)
 		input["request"] = q

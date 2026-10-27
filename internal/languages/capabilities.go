@@ -47,6 +47,11 @@ func Capabilities() []EngineCapability {
 			profile.Operations = append(profile.Operations, OperationCapability{op, support, scope})
 		}
 		if schema == 4 {
+			for i := range profile.Operations {
+				if profile.Operations[i].Operation == "regression" {
+					profile.Operations[i].Scope = "Existing candidate/derivation cases only; structured sequence results use external full pinned goldens."
+				}
+			}
 			for _, op := range []string{"spell", "unspell", "graphemes"} {
 				profile.Operations = append(profile.Operations, OperationCapability{op, "supported", "sequence-orthography/1 finite typed stages; pinned Unicode 15.0 clusters and Script 2 renderer; inverse readiness excludes lossy stages."})
 			}
