@@ -40,6 +40,11 @@ const cases = [
   ["sequence-forward", "sequence.json", "sequence-forward.request.json"],
   ["sequence-inverse", "sequence.json", "sequence-inverse.request.json"],
   ["sequence-unicode", "sequence.json", "sequence-unicode.request.json"],
+  [
+    "sequence-normalized",
+    "sequence-normalized.json",
+    "sequence-normalized.request.json",
+  ],
 ];
 const results = [];
 for (const [name, definition, request] of cases) {
@@ -59,7 +64,7 @@ for (const [name, definition, request] of cases) {
             `${root}/${definition}`,
             ...(definition === "reference.json"
               ? ["-script", `${root}/script.json`]
-              : definition === "sequence.json"
+              : definition.startsWith("sequence")
                 ? ["-script", `${root}/sequence-script.json`]
                 : []),
             ...(request

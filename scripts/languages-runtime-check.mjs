@@ -105,6 +105,13 @@ if (phase === "create") {
       "sequence-forward",
       "languages-compiler/4",
     ],
+    [
+      "language",
+      await json("sequence-normalized.json"),
+      "language",
+      "sequence-normalized",
+      "languages-compiler/4",
+    ],
   ]) {
     doc = await api(`/api/worlds/${doc.world.id}/languages`, {
       ageId: doc.world.currentAge,
@@ -150,6 +157,7 @@ async function brief3Replay(worldID) {
     ["sequence-forward", sequence.languageId, "request", "result"],
     ["sequence-inverse", sequence.languageId, "request", "result"],
     ["sequence-unicode", sequence.languageId, "request", "result"],
+    ["sequence-normalized", sequence.languageId, "request", "result"],
   ]) {
     const request = await json(`${name}.request.json`);
     const actual = await api(`/api/worlds/${worldID}/languages/${id}/run`, {
@@ -321,6 +329,7 @@ console.log(
       "typed-traces",
       "schema-5-world-zip",
       "sequence-forward-provenance-pinned-vector",
+      "normalized-revision-activation-retains-old-spelling",
       "sequence-inverse-before-a2-homophones",
       "indexed-inverse-rebuilt",
       "vector-mixed-readings-roles-layout",

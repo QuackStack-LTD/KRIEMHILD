@@ -1,0 +1,14 @@
+{
+  "revision": "900472cecee98b459fe19f71b732ffc836d199dbcccd2b75b0b0dd67e7087642",
+  "engine": "languages/4",
+  "adapter": "sequence-compose/1",
+  "compiler": "languages-compiler/4",
+  "operation": "spell",
+  "lexeme": "stone",
+  "features": {
+    "number": "many",
+    "shape": "plain"
+  },
+  "policy": "all",
+  "limit": 128
+}

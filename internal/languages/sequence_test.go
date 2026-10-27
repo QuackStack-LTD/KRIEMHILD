@@ -40,6 +40,38 @@ func sequenceQuery(a *Artifact, op string) Request {
 	q.Limit = 128
 	return q
 }
+func TestSequenceNormalizedFullGolden(t *testing.T) {
+	_, script := sequenceFixture(t)
+	raw, err := os.ReadFile("testdata/sequence-normalized.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	d, err := Decode(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	a := sequenceArtifact(t, d, script)
+	raw, err = os.ReadFile("testdata/sequence-normalized.request.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var q Request
+	if err = json.Unmarshal(raw, &q); err != nil {
+		t.Fatal(err)
+	}
+	raw, err = os.ReadFile("testdata/sequence-normalized.golden.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var expected Result
+	if err = json.Unmarshal(raw, &expected); err != nil {
+		t.Fatal(err)
+	}
+	actual := a.Execute(context.Background(), q)
+	if a.report.Ready["unspell"] || string(Canonical(actual)) != string(Canonical(expected)) {
+		t.Fatal("normalization golden or lossy inverse readiness changed")
+	}
+}
 func TestSequenceForwardProvenanceGoldens(t *testing.T) {
 	d, s := sequenceFixture(t)
 	a := sequenceArtifact(t, d, s)
