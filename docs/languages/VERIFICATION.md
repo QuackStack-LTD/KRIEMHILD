@@ -1,5 +1,13 @@
 # Languages implementation verification
 
+Brief 4 current evidence is in [BRIEF_4_AUDIT.md](BRIEF_4_AUDIT.md). It records
+fresh baseline and delivery runs separately, explicit opt-in schema/compiler/
+archive decisions, spelling/Unicode/renderer goldens, inverse completeness over
+a controlled finite domain, browser publication/revision replay, platform and
+SQLite/PostgreSQL results, benchmarks and remaining limitations. Earlier sections
+remain historical evidence. The existing Biosphere formatting, generic smoke
+route and retired-terrain limitations have not been hidden or weakened.
+
 Current Brief 3 evidence is in [BRIEF_3_AUDIT.md](BRIEF_3_AUDIT.md), including
 starting revision, current commands/results, acceptance matrix and explicit gaps.
 [A2](INDEXED_A2.md) completes the varied 1,000-entry inverse through a derived

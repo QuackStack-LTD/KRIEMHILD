@@ -90,3 +90,84 @@ independent sign/glyph IDs, preview and inverse alternatives. Cluster selection
 uses server segmentation offsets, never environment-dependent Intl.Segmenter.
 Rule lists paginate; stale jobs are cancelled/superseded and editing stays usable.
 No second glyph editor or active imported SVG.
+
+## Application workflow and API
+
+Create a language with **Sequence orthography · schema 4**, or explicitly import
+such a revision. Existing languages do not migrate. In **Scripts**, select an
+exact Script 2 revision, author stages and rules, then use the existing Save draft,
+Validate, Compile saved revision, Activate and definition revision controls.
+The rule editor is paginated at 20 and reuses the existing Script workbench's
+artwork; this editor only references signs, readings and roles.
+
+The Scripts spelling laboratory offers composed lexical forms or explicitly
+supplied surface units (`|` denotes the declared morpheme boundary). Explicit
+units test orthography only, not lexical/phonotactic validity. Choose `spell`,
+`unspell` or `graphemes`; enabled state comes from server capabilities/readiness
+and exact saved compile identity. Draft edits are never executed as saved source.
+The ordinary Laboratory keeps its existing operations; sequence operations live
+beside their rules in Scripts. Run results expose stages/provenance, separate
+clusters/code points, sign/glyph IDs and a generated SVG image. Inverse choices
+retain the complete alternative set. Editing examples or source cancels obsolete
+work, including stale errors from dependency fetches.
+
+Use the existing `POST /api/worlds/{world}/languages/{language}/run` with its
+World/Age and `definitionRevision` envelope and an exact `request`. Schema 4
+requests pin `revision`, `engine=languages/4`, `adapter=sequence-compose/1`,
+`compiler=languages-compiler/4`, `policy=all`, and `limit` (1–128 for complete
+sequence result sets). `operation` selects spell/unspell/graphemes.
+
+- Spell: `lexeme` plus an authored `features` bundle, or `spelling.units` tagged
+  source units; `segments` is also accepted within its older 256-segment bound.
+- Unspell: exact `text` for grapheme output, or structured `spelling.units` for
+  sign output. `spelling.analyze=true` runs A2 afterward. `spelling.choice` marks
+  an explicitly selected returned preimage ID without discarding alternatives.
+- Graphemes: exact `text`, optionally `spelling.selection={start,end}` using
+  grapheme-cluster indices (half-open). `ClusterText` uses the returned UTF-16
+  boundaries for its read-only written-output selection; raw author input fields
+  remain ordinary Unicode text fields. No universal text-editor cursor claim.
+
+The response's ordinary `result` retains language identity/hash, compiler,
+adapter, canonical request and pinned dependencies. `result.spelling` contains
+source/output layers, segmentation/normalizer/renderer pins, deterministic work
+counts, structured spellings/preimages, clusters and selections. A spelling run
+retains its composed form and typed morphology when applicable. `stages` records
+normalization form, original/normalized text and named offsets. Render results
+retain exact Script revision and independent sign/glyph/reading/role identities.
+
+The orthography revision is the containing canonical language revision: there is
+no separately mutable orthography head. Rules, policies and all pins participate
+in that hash and existing World/Age/compiler artifact keys. Cached artifacts also
+account for the pinned Script source; no SVG is authoritative. Compile/execute
+uses existing permission capture, bounded compute and final authorization/CAS.
+World archive 5 traverses every retained rule-bearing revision and pinned Script,
+validating owners, schema/hash identity and missing/corrupt dependencies. Archive
+4 cannot silently accept these bodies. Source strings are never normalized on Save.
+
+## Precisely limited support
+
+Version 1 uses literal typed units, not natural classes, arbitrary regular
+expressions, variables or user code. Epsilon-input insertion is unsupported;
+consuming output expansion and explicit deletion are available. Deletion and
+normalization disable inverse for the entire pipeline. A declared inverse policy
+does not make a lossy stage executable. Inverse candidates are bounded preimages
+of these rules, not general phonological inversion. A2 still has its own
+256-segment and other budgets; failure propagates explicitly instead of becoming
+no-result. No output set is presented as exhaustive after a limit.
+
+Unicode support is the pinned UAX29 Unicode 15.0 extended-cluster implementation,
+tested with composed/decomposed strings, multiple marks, supplementary code
+points, ZWJ emoji, flags and modifiers. It is not support for later Unicode
+versions, arbitrary fonts, shaping or semantics. Normalization uses pinned x/text
+0.29.0 Unicode 15.0 tables. No stripping of combining marks. Newer Unicode data
+or changed interpretation requires version/policy and golden review.
+
+Sequence corpus expectations in the old candidate-only corpus format are
+explicitly rejected (`unsupported_case`); complete pinned external goldens are
+used here. A richer typed corpus expectation/editor is future work. Vertical
+layout, two-dimensional quadrats, advanced bidi, fonts, prosody, recursive grammar,
+semantic interpretation and generalized ligatures remain unsupported.
+
+The added Go-only dependency is rivo/uniseg v0.4.7 (MIT), pinned in go.mod/go.sum;
+its license is retained in [licenses/uniseg.txt](licenses/uniseg.txt). No native
+backend or CGO requirement was introduced.

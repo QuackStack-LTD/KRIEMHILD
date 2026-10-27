@@ -1,5 +1,13 @@
 # Languages: versioned product engine
 
+Brief 4 adds an explicit opt-in **language schema 4** spelling bridge:
+[specification and workflow](SEQUENCE_ORTHOGRAPHY.md),
+[current audit, commands and gaps](BRIEF_4_AUDIT.md). It connects productive
+surface/boundary streams to Unicode-15 grapheme clusters and pinned Script 2
+signs/rendering, with finite literal rules, explicit normalization, typed
+provenance and bounded eligible inverse spelling before optional A2 analysis.
+Existing schemas and goldens are retained without automatic migration.
+
 Brief 3 starts with [BRIEF_3_AUDIT.md](BRIEF_3_AUDIT.md). The explicitly opted-in
 schema-3 [indexed inverse adapter](INDEXED_A2.md) preserves A1 alongside the new
 path; existing definitions are not migrated. The A1 description below continues
@@ -9,8 +17,9 @@ to describe schema 2, including its enumeration limit.
 schema 2: draw/import normalized glyphs, author roles/readings and structured
 sequences, preview LTR/RTL output, then save/compile/activate immutable revisions
 in the existing Scripts workspace. Unicode Script schema 1 remains compatible.
-Sequence spelling, vertical layout, font export, prosody and recursive grammar
-are explicitly unsupported. Current results and the completion/gap matrices are
+Script 2 alone has no spelling-rule executor; language schema 4 supplies it.
+Vertical layout, font export, prosody and recursive grammar remain unsupported.
+The historical Brief 3 results and completion/gap matrices are
 recorded in [BRIEF_3_AUDIT.md](BRIEF_3_AUDIT.md).
 
 The continuation audit is [CONTINUATION_AUDIT.md](CONTINUATION_AUDIT.md).

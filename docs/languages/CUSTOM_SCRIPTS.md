@@ -1,5 +1,10 @@
 # Custom vector Scripts — first executable slice
 
+Brief 4 now connects languages to this renderer through opt-in language schema 4:
+[sequence orthography](SEQUENCE_ORTHOGRAPHY.md). Script schema 2 itself is
+unchanged; the rules live in immutable language source, with explicit Script pins.
+The independent glyph editor and its old revision behavior remain intact.
+
 Explicit opt-in **Script schema 2**, `vector-script/1`, `sign-layout/1`,
 `vector-script-compiler/1`. Create a Script, choose **Custom vector glyphs**,
 and open its **Scripts** tab. Existing Script schema 1 remains the independent
@@ -127,8 +132,10 @@ old revision replay, unsafe/safe SVG, mixed roles, ambiguity, ZIP import, narrow
 layout, pagination, keyboard access and stale previews. Current cross-platform
 and SQLite/PostgreSQL results are in [BRIEF_3_AUDIT.md](BRIEF_3_AUDIT.md).
 
-Sequence-level spelling remains **unsupported**, including automatic
-phonology-to-sign conversion and inverse spelling. Existing Script-1 Unicode
+Script 2 by itself has no sequence-level spelling rules. Language schema 4 adds
+authored finite phonology-to-grapheme-to-sign conversion and eligible bounded
+inverse spelling; this is explicit mapping, not automatic inferred orthography.
+Existing Script-1 Unicode
 mapping/normalization remains available to languages. Vertical layout, automatic
 bidi/shaping, installable fonts, general two-dimensional sign packing, prosody
 and recursive grammar execution remain **unsupported**. The next slice should
