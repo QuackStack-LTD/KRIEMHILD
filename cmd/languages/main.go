@@ -12,10 +12,13 @@ import (
 	"kriemhild/internal/languages"
 	"kriemhild/internal/languages/spike"
 	"os"
+	"strings"
 	"time"
 )
 
 type paths []string
+
+var corpusOutput bool
 
 func (p *paths) String() string     { return fmt.Sprint([]string(*p)) }
 func (p *paths) Set(s string) error { *p = append(*p, s); return nil }
@@ -103,6 +106,7 @@ func run() error {
 		}
 		report, err := languages.RunSequenceCorpus(ctx, corpus, resolve, *operation == "corpus-validate")
 		if err != nil {
+			corpusOutput = true
 			if encodeErr := encoder.Encode(report); encodeErr != nil {
 				return encodeErr
 			}
@@ -111,6 +115,7 @@ func run() error {
 			}
 			return &corpusExit{2, err.Error()}
 		}
+		corpusOutput = true
 		if err = encoder.Encode(report); err != nil {
 			return err
 		}
@@ -206,12 +211,23 @@ type corpusExit struct {
 func (e *corpusExit) Error() string { return e.message }
 func main() {
 	if err := run(); err != nil {
+		corpusMode := flag.Lookup("operation").Value.String()
+		if strings.HasPrefix(corpusMode, "corpus-") && !corpusOutput {
+			mode := "execute"
+			if corpusMode == "corpus-validate" {
+				mode = "validate"
+			}
+			_ = json.NewEncoder(os.Stdout).Encode(languages.CorpusReport{Version: languages.SequenceCorpusVersion, Mode: mode, Status: "invalid_corpus", Cases: []languages.CorpusCaseReport{}})
+		}
 		if err.Error() != "" {
 			fmt.Fprintln(os.Stderr, err)
 		}
 		var corpusError *corpusExit
 		if errors.As(err, &corpusError) {
 			os.Exit(corpusError.code)
+		}
+		if strings.HasPrefix(corpusMode, "corpus-") {
+			os.Exit(2)
 		}
 		os.Exit(1)
 	}
