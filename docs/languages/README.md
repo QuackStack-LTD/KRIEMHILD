@@ -1,5 +1,12 @@
 # Languages: versioned product engine
 
+Brief 5 adds a separate [typed sequence corpus](SEQUENCE_CORPUS.md), exact
+immutable pins, validation-only and read-only execution through the production
+engine, complete structured expectations and actionable JSON/text reports.
+[Current evidence and remaining coverage gaps](BRIEF_5_AUDIT.md) distinguish the
+four author-approved retained goldens from unreviewed future expectations.
+Language/Script/archive semantics and the candidate-only corpus are unchanged.
+
 Brief 4 adds an explicit opt-in **language schema 4** spelling bridge:
 [specification and workflow](SEQUENCE_ORTHOGRAPHY.md),
 [current audit, commands and gaps](BRIEF_4_AUDIT.md). It connects productive

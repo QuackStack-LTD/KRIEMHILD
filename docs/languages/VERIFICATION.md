@@ -1,5 +1,13 @@
 # Languages implementation verification
 
+Brief 5 current executions, compatibility review, corpus benchmark and completion
+matrix are in [BRIEF_5_AUDIT.md](BRIEF_5_AUDIT.md). The separate
+`sequence-corpus/1` runner verifies retained full sequence goldens without saving
+or activating source. Its API, CLI, malformed-input/limit tests, immutable replay
+and portability checks supplement the earlier engine tests. Four initial golden
+expectations were explicitly approved for reuse by the author; wider dedicated
+reviewed corpus coverage remains partial. No whole-repository green claim is made.
+
 Brief 4 current evidence is in [BRIEF_4_AUDIT.md](BRIEF_4_AUDIT.md). It records
 fresh baseline and delivery runs separately, explicit opt-in schema/compiler/
 archive decisions, spelling/Unicode/renderer goldens, inverse completeness over
