@@ -119,6 +119,7 @@ func TestSequenceCorpusStrictDecodeAndExpectationValidation(t *testing.T) {
 		{"reviewer", func(c *SequenceCorpus) { c.Cases[0].Review.Reviewer = "" }},
 		{"layer", func(c *SequenceCorpus) { c.Cases[0].InputLayer = "pixel" }},
 		{"status", func(c *SequenceCorpus) { c.Cases[0].Outcome = "no_result" }},
+		{"missing-output", func(c *SequenceCorpus) { c.Cases[0].Expected.Spelling = nil }},
 		{"raw-status", func(c *SequenceCorpus) { c.Cases[0].Expected.Status = "made-up"; c.Cases[0].Outcome = "rejected" }},
 		{"script", func(c *SequenceCorpus) { c.Cases[0].Expected.Spelling.Script.Revision = strings.Repeat("a", 64) }},
 		{"byte-span", func(c *SequenceCorpus) { c.Cases[2].Expected.Spelling.Clusters[1].ByteEnd++ }},

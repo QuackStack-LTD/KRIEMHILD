@@ -83,7 +83,7 @@ func CorpusOutcome(status string) string {
 		return "ambiguous"
 	case "no_result", "no_mapping", "no_valid_candidate":
 		return "no_result"
-	case "unsupported", "unsupported_inverse", "missing_dependency", "not_ready":
+	case "unsupported", "unsupported_inverse", "unsupported_normalization", "unsupported_operation", "missing_dependency", "not_ready":
 		return "unsupported"
 	case "cancelled":
 		return "cancelled"
@@ -256,14 +256,20 @@ func corpusStringsValid(v reflect.Value) bool {
 
 func validateCorpusResult(r Result) error {
 	switch r.Status {
-	case "success", "ambiguous", "choice_required", "no_result", "no_mapping", "no_valid_candidate", "unsupported", "unsupported_inverse", "missing_dependency", "not_ready", "cancelled", "execution_limit", "candidate_limit", "invalid_input", "invalid_unicode", "invalid_rule", "invalid_reference", "missing_glyph", "missing_reading":
+	case "success", "ambiguous", "choice_required", "no_result", "no_mapping", "no_valid_candidate", "unsupported", "unsupported_inverse", "unsupported_normalization", "unsupported_operation", "missing_dependency", "not_ready", "cancelled", "execution_limit", "candidate_limit", "invalid_input", "invalid_unicode", "invalid_rule", "invalid_reference", "invalid_unit", "invalid_selection", "invalid_policy", "unknown_segment", "missing_glyph", "missing_reading":
 	default:
 		return fmt.Errorf("unknown expected engine status")
 	}
 	if r.Spelling == nil {
+		if r.Status == "success" || r.Status == "ambiguous" {
+			return fmt.Errorf("successful sequence expectations require structured spelling output")
+		}
 		return nil
 	} // Rejections before spelling initialization.
 	s := r.Spelling
+	if (r.Status == "success" || r.Status == "ambiguous") && (r.Input.Operation == "spell" && len(s.Spellings) == 0 || r.Input.Operation == "unspell" && len(s.Preimages) == 0) {
+		return fmt.Errorf("successful spelling/inverse expectation cannot omit its complete result set")
+	}
 	if len(s.Spellings) > 128 || len(s.Preimages) > 128 || (CorpusOutcome(r.Status) == "limit_reached" || r.Status == "cancelled") && (len(s.Spellings) > 0 || len(s.Preimages) > 0) {
 		return fmt.Errorf("invalid result count or partial result labelled complete")
 	}
