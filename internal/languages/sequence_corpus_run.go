@@ -70,6 +70,9 @@ func prepareSequenceCorpus(ctx context.Context, c SequenceCorpus, resolve Corpus
 			return nil, corpusError(test.ID, "language identity/hash/schema mismatch")
 		}
 		w := d.SequenceWriting
+		if string(Canonical(test.Expected.Dependencies)) != string(Canonical(ScriptDependencies(d))) {
+			return nil, corpusError(test.ID, "expected dependency topology contradicts retained source")
+		}
 		if w.Script != p.Script || w.Segmentation != p.Segmentation || w.Normalizer != p.Normalizer || w.Renderer != p.Renderer || w.RendererAdapter != p.RendererAdapter || w.RendererCompiler != p.RendererCompiler {
 			return nil, corpusError(test.ID, "source contradicts Unicode/Script/renderer pins")
 		}
@@ -163,6 +166,9 @@ func RunSequenceCorpus(ctx context.Context, corpus SequenceCorpus, resolve Corpu
 				return false
 			}
 			work := 100000
+			if q.Operation == "spell" && q.Lexeme != "" {
+				work += 100000
+			}
 			if q.Spelling != nil && q.Spelling.Analyze {
 				work += 128 * 100000
 			}

@@ -259,7 +259,11 @@ func TestSequenceCorpusProductionInverseLimitsAndLossyReadiness(t *testing.T) {
 	c.Cases = c.Cases[1:2]
 	c.Cases[0].Request.Limit = 1
 	c.Cases[0].Expected.Input = c.Cases[0].Request
+	c.Cases[0].Expected.Request = c.Cases[0].Request.Request
 	r, err := RunSequenceCorpus(context.Background(), c, resolve, false)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err != nil || r.Status != "failed" || r.Cases[0].ActualOutcome != "limit_reached" || len(r.Cases[0].Actual.Spelling.Preimages) != 0 {
 		t.Fatal("production A2 limit lost", err, r.Status, r.Cases[0].ActualOutcome)
 	}

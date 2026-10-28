@@ -1592,6 +1592,11 @@ export default function Studio({ initialState, onExit }) {
           <button
             disabled={!state}
             aria-pressed={illustrating || !!mapSetup}
+            aria-describedby={
+              mapSetup?.step === "land"
+                ? "illustrator-land-instructions"
+                : undefined
+            }
             className={
               illustrating || mapSetup ? "studio-illustrator-active" : ""
             }
@@ -2048,6 +2053,22 @@ export default function Studio({ initialState, onExit }) {
               )}
             </svg>
           </ProjectionContext.Provider>
+          {mapSetup?.step === "land" && (
+            <div
+              className="studio-illustration-selection"
+              role="status"
+              id="illustrator-land-instructions"
+            >
+              <strong>
+                Illustrator selection mode · {landIDs.length} landmasses
+                selected
+              </strong>
+              <span>
+                Click land to select or deselect it. Drag a rectangle to add
+                islands, then create the illustrated map.
+              </span>
+            </div>
+          )}
           {state && loading > 0 && !show3D && (
             <div
               className="studio-detail-loading"

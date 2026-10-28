@@ -10,6 +10,41 @@ import { bounds } from "../src/continuous/geometry.js";
 // Explicitly opt in with an expendable continuous project. This test creates
 // an illustration draft and exports it; never point it at an author's project.
 const project = process.env.KRIEMHILD_ILLUSTRATOR_TEST_PROJECT;
+test("illustrator selection mode stays highlighted and explains land selection until cancelled", async ({
+  page,
+}) => {
+  test.skip(!project, "Requires a disposable terrain project.");
+  await page.goto(`/world/${project}/build`);
+  await expect(
+    page.getByRole("img", {
+      name: "Interactive continuous world map",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Medieval Illustrator", exact: true })
+    .click();
+  await page
+    .getByRole("textbox", { name: "Illustrated map name" })
+    .fill("Disposable mode check");
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  const active = page.getByRole("button", {
+    name: "Illustrator: select land",
+    exact: true,
+  });
+  await expect(active).toHaveAttribute("aria-pressed", "true");
+  await expect(active).toHaveCSS("background-color", "rgb(233, 207, 135)");
+  await expect(page.locator("#illustrator-land-instructions")).toBeVisible();
+  await page
+    .getByRole("button", { name: "Toggle settings panel", exact: true })
+    .click();
+  await expect(page.locator("#illustrator-land-instructions")).toBeVisible();
+  await active.click();
+  await expect(page.locator("#illustrator-land-instructions")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Medieval Illustrator", exact: true }),
+  ).toHaveAttribute("aria-pressed", "false");
+});
 test("selected seam-crossing land, inland water and export share one fitted extent", async ({
   page,
   request,
@@ -82,6 +117,15 @@ test("selected seam-crossing land, inland water and export share one fitted exte
     .fill("Disposable seam and lake map");
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await expect(page.getByText("0 selected", { exact: true })).toBeVisible();
+  const selectionMode = page.getByRole("button", {
+    name: "Illustrator: select land",
+    exact: true,
+  });
+  await expect(selectionMode).toHaveAttribute("aria-pressed", "true");
+  await expect(selectionMode).toHaveClass(/studio-illustrator-active/);
+  await expect(page.locator("#illustrator-land-instructions")).toContainText(
+    "Click land to select or deselect it",
+  );
   const click = await svg.evaluate((s, p) => {
     const r = s.getBoundingClientRect(),
       c = JSON.parse(s.dataset.camera),

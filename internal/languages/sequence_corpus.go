@@ -183,7 +183,7 @@ func ValidateSequenceCorpus(c SequenceCorpus) error {
 			return bad("unordered preimages only applies to inverse")
 		}
 		e := test.Expected
-		if e == nil || len(e.Tests) > 0 || string(Canonical(e.Input)) != string(Canonical(q)) || e.LanguageID != test.Pin.LanguageID || e.Canonicalizer != test.Pin.Canonicalizer || e.Revision != test.Pin.Revision || e.Engine != test.Pin.Engine || e.Adapter != test.Pin.Adapter || e.Compiler != test.Pin.Compiler || e.Schema != 4 || test.Outcome != CorpusOutcome(e.Status) {
+		if e == nil || len(e.Tests) > 0 || string(Canonical(e.Input)) != string(Canonical(q)) || string(Canonical(e.Request)) != string(Canonical(q.Request)) || e.LanguageID != test.Pin.LanguageID || e.Canonicalizer != test.Pin.Canonicalizer || e.Revision != test.Pin.Revision || e.Engine != test.Pin.Engine || e.Adapter != test.Pin.Adapter || e.Compiler != test.Pin.Compiler || e.Schema != 4 || test.Outcome != CorpusOutcome(e.Status) {
 			return bad("expectation identity/request/status inconsistent")
 		}
 		if e.Status == "" || len(Canonical(e)) > 256<<10 {

@@ -49,6 +49,24 @@
   font-weight: 700;
   box-shadow: 0 0 0 2px #e9cf8733;
 }
+.studio-illustration-selection {
+  position: absolute;
+  z-index: 4;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(540px, calc(100% - 32px));
+  padding: 10px 14px;
+  border: 1px solid #e9cf87;
+  border-radius: 5px;
+  background: #242018ed;
+  color: #ffe5a5;
+  pointer-events: none;
+}
+.studio-illustration-selection strong,
+.studio-illustration-selection span {
+  display: block;
+}
 .terrain-studio button:focus-visible,
 .terrain-studio input:focus-visible,
 .terrain-studio select:focus-visible,
