@@ -1591,13 +1591,25 @@ export default function Studio({ initialState, onExit }) {
         {mode !== "generate" && (
           <button
             disabled={!state}
-            aria-pressed={illustrating}
+            aria-pressed={illustrating || !!mapSetup}
+            className={
+              illustrating || mapSetup ? "studio-illustrator-active" : ""
+            }
             onClick={() => {
-              if (illustrating) leaveIllustration();
+              if (mapSetup) {
+                setupSequence.current++;
+                setCamera(mapSetup.camera);
+                setMapSetup(null);
+                setLandBox(null);
+              } else if (illustrating) leaveIllustration();
               else startIllustration();
             }}
           >
-            {illustrating ? "Construction mode" : "Medieval Illustrator"}
+            {mapSetup?.step === "land"
+              ? "Illustrator: select land"
+              : illustrating
+                ? "Illustrator active · return to construction"
+                : "Medieval Illustrator"}
           </button>
         )}
         <button

@@ -42,6 +42,13 @@
   border-color: #c1dcb7;
   font-weight: 600;
 }
+.terrain-studio button.studio-illustrator-active {
+  background: #e9cf87;
+  border-color: #ffe5a5;
+  color: #242018;
+  font-weight: 700;
+  box-shadow: 0 0 0 2px #e9cf8733;
+}
 .terrain-studio button:focus-visible,
 .terrain-studio input:focus-visible,
 .terrain-studio select:focus-visible,
