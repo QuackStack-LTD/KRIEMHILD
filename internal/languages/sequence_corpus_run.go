@@ -156,7 +156,9 @@ func RunSequenceCorpus(ctx context.Context, corpus SequenceCorpus, resolve Corpu
 	if validateOnly {
 		return out, nil
 	}
-	artifacts := map[string]*Artifact{}
+	// Reuse the production LRU reservation budget rather than retaining up to
+	// eight potentially large compiled relations for the entire corpus.
+	artifacts := NewCache(16 << 20)
 	stopped := ""
 	for i, test := range c.Cases {
 		r := CorpusCaseReport{ID: test.ID, Status: "completed", ExpectedOutcome: test.Outcome, Reviewed: test.Review.Status == "reviewed", Diffs: []CorpusDiff{}}
@@ -183,10 +185,10 @@ func RunSequenceCorpus(ctx context.Context, corpus SequenceCorpus, resolve Corpu
 			return true
 		}
 		if stopped == "" && charge(test.Request) {
-			a := artifacts[test.Pin.Revision]
+			a := artifacts.Get(test.Pin.Revision)
 			if a == nil {
 				a = Compile(ctx, prepared[i].definition, prepared[i].scripts)
-				artifacts[test.Pin.Revision] = a
+				artifacts.Put(test.Pin.Revision, a)
 			}
 			actual := a.Execute(ctx, Clone(test.Request))
 			r.Actual = &actual
