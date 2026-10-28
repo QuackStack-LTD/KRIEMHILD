@@ -175,6 +175,31 @@ async function brief3Replay(worldID) {
   }
 }
 await brief3Replay(world);
+async function sequenceCorpusReplay(worldID) {
+  const corpus = await json("sequence.corpus.json");
+  const target = `/api/worlds/${worldID}/languages/${sequence.languageId}/corpus`;
+  const before = await api(`/api/worlds/${worldID}`);
+  const validated = await api(target, { ageId: age, mode: "validate", corpus });
+  assert.equal(validated.corpus.status, "success");
+  assert.equal(validated.corpus.calls, 0);
+  const replayed = await api(target, { ageId: age, mode: "execute", corpus });
+  assert.equal(replayed.corpus.status, "success");
+  assert.equal(replayed.corpus.calls, 18);
+  assert.equal(replayed.corpus.cases[0].domainInputs, 7);
+  for (const c of replayed.corpus.cases) {
+    assert.equal(c.passed, true);
+    assert.deepEqual(
+      c.actual,
+      corpus.cases.find((e) => e.id === c.id).expected,
+    );
+  }
+  assert.equal(
+    (await api(`/api/worlds/${worldID}`)).world.revision,
+    before.world.revision,
+  );
+  return replayed.corpus;
+}
+const corpusReport = await sequenceCorpusReplay(world);
 for (const name of ["inflect", "seeded", "parse", "corpus"]) {
   const request = await json(`${name}.request.json`),
     expected = await json(`${name}.golden.json`);
@@ -271,6 +296,11 @@ assert.ok(
 const imported = await importedResponse.json();
 assert.notEqual(imported.world.id, world);
 await brief3Replay(imported.world.id);
+assert.deepEqual(
+  await sequenceCorpusReplay(imported.world.id),
+  corpusReport,
+  "Corpus structured result changed after ZIP import into a different World",
+);
 const importedDefinition = await api(
   `/api/worlds/${imported.world.id}/languages/${definition.languageId}?age=${age}`,
 );
@@ -334,6 +364,7 @@ console.log(
       "indexed-inverse-rebuilt",
       "vector-mixed-readings-roles-layout",
       "brief3-pinned-replay-after-import",
+      "sequence-corpus-exact-pins-read-only-18-calls-7-domain-inputs",
       phase === "create" ? "historical-apply" : "restart-persistence",
     ],
   }),

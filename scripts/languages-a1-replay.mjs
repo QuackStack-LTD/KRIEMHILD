@@ -45,39 +45,53 @@ const cases = [
     "sequence-normalized.json",
     "sequence-normalized.request.json",
   ],
+  ["sequence-corpus", "sequence.json", null],
 ];
 const results = [];
 for (const [name, definition, request] of cases) {
   const args = (root, requestRoot) =>
-    name === "vector-import"
-      ? ["-operation", "svg-import", "-source", `${root}/${definition}`]
-      : name.startsWith("vector-")
-        ? [
-            "-operation",
-            request ? "script-render" : "script-compile",
-            "-script",
-            `${root}/${definition}`,
-            ...(request ? ["-request", `${root}/${request}`] : []),
-          ]
-        : [
-            "-definition",
-            `${root}/${definition}`,
-            ...(definition === "reference.json"
-              ? ["-script", `${root}/script.json`]
-              : definition.startsWith("sequence")
-                ? ["-script", `${root}/sequence-script.json`]
+    name === "sequence-corpus"
+      ? [
+          "-operation",
+          "corpus-run",
+          "-corpus",
+          `${root}/sequence.corpus.json`,
+          "-corpus-definition",
+          `${root}/sequence.json`,
+          "-corpus-definition",
+          `${root}/sequence-normalized.json`,
+          "-script",
+          `${root}/sequence-script.json`,
+        ]
+      : name === "vector-import"
+        ? ["-operation", "svg-import", "-source", `${root}/${definition}`]
+        : name.startsWith("vector-")
+          ? [
+              "-operation",
+              request ? "script-render" : "script-compile",
+              "-script",
+              `${root}/${definition}`,
+              ...(request ? ["-request", `${root}/${request}`] : []),
+            ]
+          : [
+              "-definition",
+              `${root}/${definition}`,
+              ...(definition === "reference.json"
+                ? ["-script", `${root}/script.json`]
+                : definition.startsWith("sequence")
+                  ? ["-script", `${root}/sequence-script.json`]
+                  : []),
+              ...(request
+                ? [
+                    "-operation",
+                    "run",
+                    "-request",
+                    request.startsWith("@")
+                      ? `${requestRoot}/${request.slice(1)}`
+                      : `${root}/${request}`,
+                  ]
                 : []),
-            ...(request
-              ? [
-                  "-operation",
-                  "run",
-                  "-request",
-                  request.startsWith("@")
-                    ? `${requestRoot}/${request.slice(1)}`
-                    : `${root}/${request}`,
-                ]
-              : []),
-          ];
+            ];
   let previous;
   for (let repeat = 0; repeat < 2; repeat++) {
     const windows = execFileSync(executable, args(fixtures, requests));

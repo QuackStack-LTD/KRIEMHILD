@@ -64,6 +64,12 @@ func TestLanguageSequenceImmutableRestartArchiveAndOwnership(t *testing.T) {
 		}
 	}
 	compile(d)
+	normalized, err := languages.Decode(read("sequence-normalized.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	save("language", normalized)
+	compile(normalized)
 	var q languages.Request
 	if err = json.Unmarshal(read("sequence-forward.request.json"), &q); err != nil {
 		t.Fatal(err)
@@ -108,6 +114,17 @@ func TestLanguageSequenceImmutableRestartArchiveAndOwnership(t *testing.T) {
 		actual := languages.Compile(ctx, old, deps).Execute(ctx, q)
 		if string(languages.Canonical(actual)) != string(languages.Canonical(expected)) {
 			t.Fatal("pinned old spelling changed after newer activation/restart/import")
+		}
+		corpus, e := languages.DecodeSequenceCorpus(read("sequence.corpus.json"))
+		if e != nil {
+			t.Fatal(e)
+		}
+		resolver := func(ctx context.Context, kind, id, revision string) ([]byte, error) {
+			return store.LinguisticDefinition(ctx, world, age, id, revision)
+		}
+		report, e := languages.RunSequenceCorpus(ctx, corpus, resolver, false)
+		if e != nil || report.Status != "success" || report.Calls != 18 {
+			t.Fatal("corpus replay changed after newer activation/restart/archive", e, report.Status)
 		}
 	}
 	verify(db)

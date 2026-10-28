@@ -76,7 +76,7 @@ func (s *Server) authorize(w http.ResponseWriter, r *http.Request) bool {
 	if mutating(r) {
 		permission = "edit"
 	}
-	if isLanguageCompute(r) && (strings.HasSuffix(r.URL.Path, "/run") || strings.HasSuffix(r.URL.Path, "/validate") || strings.HasSuffix(r.URL.Path, "/history-preview") || strings.HasSuffix(r.URL.Path, "/render-script") || strings.HasSuffix(r.URL.Path, "/import-svg")) {
+	if isLanguageCompute(r) && (strings.HasSuffix(r.URL.Path, "/run") || strings.HasSuffix(r.URL.Path, "/validate") || strings.HasSuffix(r.URL.Path, "/history-preview") || strings.HasSuffix(r.URL.Path, "/render-script") || strings.HasSuffix(r.URL.Path, "/import-svg") || strings.HasSuffix(r.URL.Path, "/corpus")) {
 		permission = "view"
 	}
 	if len(p) < 2 {

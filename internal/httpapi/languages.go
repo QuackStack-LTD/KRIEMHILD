@@ -15,11 +15,11 @@ import (
 
 func isLanguageCompute(r *http.Request) bool {
 	p := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
-	return r.Method == "POST" && len(p) == 6 && p[0] == "api" && p[1] == "worlds" && p[3] == "languages" && (p[5] == "compile" || p[5] == "run" || p[5] == "validate" || p[5] == "history-preview" || p[5] == "history-apply" || p[5] == "render-script" || p[5] == "import-svg")
+	return r.Method == "POST" && len(p) == 6 && p[0] == "api" && p[1] == "worlds" && p[3] == "languages" && (p[5] == "compile" || p[5] == "run" || p[5] == "validate" || p[5] == "history-preview" || p[5] == "history-apply" || p[5] == "render-script" || p[5] == "import-svg" || p[5] == "corpus")
 }
 func (s *Server) languageRoutes() {
 	s.mux.HandleFunc("GET /api/worlds/{world}/languages/capabilities", func(w http.ResponseWriter, r *http.Request) {
-		respond(w, 200, map[string]any{"profiles": languages.Capabilities(), "scripts": languages.ScriptCapabilities()})
+		respond(w, 200, map[string]any{"profiles": languages.Capabilities(), "scripts": languages.ScriptCapabilities(), "corpora": map[string]any{"version": languages.SequenceCorpusVersion, "support": "supported", "modes": []string{"validate", "execute"}, "maxCases": 32, "scope": "External exact pinned sequence verification; candidate-only regression remains unchanged."}})
 	})
 	s.mux.HandleFunc("POST /api/worlds/{world}/languages", s.saveLanguage)
 	s.mux.HandleFunc("GET /api/worlds/{world}/languages/{language}", s.getLanguage)
@@ -28,6 +28,7 @@ func (s *Server) languageRoutes() {
 	s.mux.HandleFunc("POST /api/worlds/{world}/languages/{language}/compile", s.computeLanguage)
 	s.mux.HandleFunc("POST /api/worlds/{world}/languages/{language}/validate", s.computeLanguage)
 	s.mux.HandleFunc("POST /api/worlds/{world}/languages/{language}/run", s.computeLanguage)
+	s.mux.HandleFunc("POST /api/worlds/{world}/languages/{language}/corpus", s.sequenceCorpus)
 	s.mux.HandleFunc("POST /api/worlds/{world}/languages/{language}/history-preview", s.computeLanguage)
 	s.mux.HandleFunc("POST /api/worlds/{world}/languages/{language}/history-apply", s.computeLanguage)
 	s.mux.HandleFunc("POST /api/worlds/{world}/languages/{language}/render-script", s.computeLanguage)

@@ -278,6 +278,77 @@ test.describe("Sequence spelling persisted workflow", () => {
     const r = await run(page);
     expect(r.spelling.spellings[0].text).toBe("e\u0301");
   });
+  test("reviewed corpus replays retained revisions read-only after newer activation", async ({
+    page,
+    request,
+  }) => {
+    const language = await seed(request);
+    let doc = await (await request.get(`/api/worlds/${world}`)).json();
+    const normalized = JSON.parse(
+      await readFile(
+        "internal/languages/testdata/sequence-normalized.json",
+        "utf8",
+      ),
+    );
+    let r = await request.post(`/api/worlds/${world}/languages`, {
+      headers,
+      data: {
+        ageId: age,
+        revision: doc.world.revision,
+        kind: "language",
+        definition: normalized,
+        metadata: {},
+      },
+    });
+    expect(r.ok()).toBeTruthy();
+    doc = await r.json();
+    const corpus = JSON.parse(
+      await readFile(
+        "internal/languages/testdata/sequence.corpus.json",
+        "utf8",
+      ),
+    );
+    const definitionRevision = corpus.cases[3].pin.revision;
+    const path = `/api/worlds/${world}/languages/${language.languageId}`;
+    r = await request.post(path + "/compile", {
+      headers,
+      data: { ageId: age, revision: doc.world.revision, definitionRevision },
+    });
+    expect(r.ok()).toBeTruthy();
+    const compiled = await r.json();
+    r = await request.post(path + "/activate", {
+      headers,
+      data: {
+        ageId: age,
+        revision: compiled.document.world.revision,
+        definitionRevision,
+      },
+    });
+    expect(r.ok()).toBeTruthy();
+    doc = await r.json();
+    for (const mode of ["validate", "execute"]) {
+      r = await request.post(path + "/corpus", {
+        headers,
+        data: { ageId: age, mode, corpus },
+      });
+      expect(r.ok(), await r.text()).toBeTruthy();
+      const { corpus: report } = await r.json();
+      expect(report.status).toBe("success");
+      expect(report.calls).toBe(mode === "validate" ? 0 : 18);
+      for (const c of report.cases)
+        expect(c.actual).toEqual(
+          corpus.cases.find((e) => e.id === c.id).expected,
+        );
+    }
+    expect(
+      (await (await request.get(`/api/worlds/${world}`)).json()).world.revision,
+    ).toBe(doc.world.revision);
+    await open(page, language);
+    await expect(work(page)).toBeVisible();
+    await expect(
+      page.getByRole("combobox", { name: "Definition revision", exact: true }),
+    ).toBeVisible();
+  });
   test("rule validation is executable and large rule lists paginate", async ({
     page,
     request,

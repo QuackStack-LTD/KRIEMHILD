@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -35,6 +36,9 @@ func run() error {
 	requestPath := flag.String("request", "", "Exact versioned execution request JSON")
 	sourcePath := flag.String("source", "", "Pinned source definition for historical preview")
 	operation := flag.String("operation", "compile", "compile, run, history-preview, script-check, script-compile, script-render, svg-import")
+	corpusPath := flag.String("corpus", "", "Strict sequence-corpus/1 JSON for corpus-validate or corpus-run")
+	var corpusDefinitions paths
+	flag.Var(&corpusDefinitions, "corpus-definition", "Exact immutable language source; repeat for retained revisions")
 	glyphID := flag.String("glyph-id", "imported-glyph", "Stable glyph identity for SVG normalization")
 	glyphName := flag.String("glyph-name", "Imported artwork", "Authored glyph name for SVG normalization")
 	var scriptPaths paths
@@ -60,6 +64,65 @@ func run() error {
 	encoder.SetEscapeHTML(true)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+	if *operation == "corpus-validate" || *operation == "corpus-run" {
+		if *definitionPath != "" {
+			corpusDefinitions = append(corpusDefinitions, *definitionPath)
+		}
+		if len(corpusDefinitions) > 8 {
+			return &corpusExit{2, "at most eight immutable language files"}
+		}
+		bodies := map[string][]byte{}
+		for ref, s := range scripts {
+			bodies["script:"+ref.ID+":"+ref.Revision] = languages.Canonical(s)
+		}
+		for _, path := range corpusDefinitions {
+			raw, err := read(path)
+			if err != nil {
+				return &corpusExit{2, err.Error()}
+			}
+			d, err := languages.Decode(raw)
+			if err != nil {
+				return &corpusExit{2, err.Error()}
+			}
+			bodies["language:"+d.LanguageID+":"+languages.Hash(d)] = languages.Canonical(d)
+		}
+		raw, err := read(*corpusPath)
+		if err != nil {
+			return &corpusExit{2, err.Error()}
+		}
+		corpus, err := languages.DecodeSequenceCorpus(raw)
+		if err != nil {
+			return &corpusExit{2, err.Error()}
+		}
+		resolve := func(_ context.Context, kind, id, revision string) ([]byte, error) {
+			raw, ok := bodies[kind+":"+id+":"+revision]
+			if !ok {
+				return nil, fmt.Errorf("missing exact immutable pin")
+			}
+			return raw, nil
+		}
+		report, err := languages.RunSequenceCorpus(ctx, corpus, resolve, *operation == "corpus-validate")
+		if err != nil {
+			if encodeErr := encoder.Encode(report); encodeErr != nil {
+				return encodeErr
+			}
+			if report.Status == "cancelled" || report.Status == "limit_reached" {
+				return &corpusExit{3, err.Error()}
+			}
+			return &corpusExit{2, err.Error()}
+		}
+		if err = encoder.Encode(report); err != nil {
+			return err
+		}
+		fmt.Fprint(os.Stderr, languages.CorpusSummary(report))
+		if report.Status == "cancelled" || report.Status == "limit_reached" {
+			return &corpusExit{3, ""}
+		}
+		if report.Status != "success" {
+			return &corpusExit{1, ""}
+		}
+		return nil
+	}
 	if *operation == "svg-import" {
 		raw, err := read(*sourcePath)
 		if err != nil {
@@ -134,9 +197,22 @@ func run() error {
 	}
 	return encoder.Encode(artifact.Execute(ctx, request))
 }
+
+type corpusExit struct {
+	code    int
+	message string
+}
+
+func (e *corpusExit) Error() string { return e.message }
 func main() {
 	if err := run(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		if err.Error() != "" {
+			fmt.Fprintln(os.Stderr, err)
+		}
+		var corpusError *corpusExit
+		if errors.As(err, &corpusError) {
+			os.Exit(corpusError.code)
+		}
 		os.Exit(1)
 	}
 }
