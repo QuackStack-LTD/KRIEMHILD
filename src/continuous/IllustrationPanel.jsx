@@ -9,21 +9,57 @@ export default function IllustrationPanel({
   onSelect,
   objects,
   busy,
+  onSave,
+  saved,
+  progress,
 }) {
   return (
     <fieldset disabled={busy}>
       <h2>Medieval Illustrator</h2>
+      <button className="primary" onClick={onSave}>
+        Save illustration
+      </button>
+      {busy && progress && (
+        <p role="status">
+          {progress.phase}…{" "}
+          {progress.total > 1 ? `${progress.completed}/${progress.total}` : ""}
+        </p>
+      )}
+      <p>
+        Saves this illustrated map to Library. A focused map is also linked to
+        the place’s record and banner.
+      </p>
+      {saved && (
+        <p role="status">
+          Saved {saved.name} to {saved.folder}.{" "}
+          <a href={saved.href}>Open in Library</a>
+        </p>
+      )}
       <label>
         Map scope
-        <select value={config.scope} onChange={(e) => onScope(e.target.value)}>
+        <select
+          aria-label="Map scope"
+          value={config.scope}
+          onChange={(e) => onScope(e.target.value)}
+        >
           {["world", "continent", "country", "city"].map((v) => (
-            <option key={v}>{v}</option>
+            <option key={v} value={v}>
+              {
+                {
+                  world: "World",
+                  continent: "Selected land",
+                  country: "State",
+                  city: "Settlement",
+                }[v]
+              }
+            </option>
           ))}
         </select>
       </label>
       <label>
         Title
         <input
+          maxLength={160}
           value={config.title}
           onChange={(e) =>
             onChange({ ...config, title: e.target.value }, false)
@@ -43,7 +79,7 @@ export default function IllustrationPanel({
       </label>
       <p>
         Drag labels and annotations. Linked borders and settlements follow Map
-        Builder. Select a country or settlement below to focus its map.
+        Builder. Select a state or settlement below to focus its map.
       </p>
       <select
         aria-label="Focus geographical feature"
@@ -59,19 +95,22 @@ export default function IllustrationPanel({
             );
         }}
       >
-        <option value="">Open country or city map…</option>
+        <option value="">Open a state or settlement map…</option>
         {entities
-          .filter((e) =>
-            [
-              "country",
-              "state",
-              "kingdom",
-              "empire",
-              "capital",
-              "city",
-              "town",
-              "village",
-            ].includes(e.kind),
+          .filter(
+            (e) =>
+              e.recordStatus !== "draft" &&
+              [
+                "country",
+                "state",
+                "kingdom",
+                "empire",
+                "capital",
+                "city",
+                "town",
+                "village",
+                "hamlet",
+              ].includes(e.kind),
           )
           .map((e) => (
             <option key={e.id} value={e.id}>

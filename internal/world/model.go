@@ -20,25 +20,50 @@ type Layer struct {
 	Order   int    `json:"order"`
 }
 type Entity struct {
-	LabelName string                 `json:"labelName,omitempty"`
-	LogicalID string                 `json:"logicalId,omitempty"`
-	River     *terrain.DetailFeature `json:"river,omitempty"`
-	Cells     []int                  `json:"cells,omitempty"`
-	SourceID  string                 `json:"sourceId,omitempty"`
-	ID        string                 `json:"id"`
-	Name      string                 `json:"name"`
-	Kind      string                 `json:"kind"`
-	Layer     string                 `json:"layer"`
-	ParentID  string                 `json:"parentId,omitempty"`
-	Geometry  string                 `json:"geometry"`
-	Points    [][2]float64           `json:"points"`
-	Color     string                 `json:"color"`
-	MinDetail float64                `json:"minDetail"`
-	Created   *int                   `json:"created,omitempty"`
-	Destroyed *int                   `json:"destroyed,omitempty"`
-	Notes     string                 `json:"notes,omitempty"`
-	Deleted   bool                   `json:"deleted,omitempty"`
+	PlaceholderName string                 `json:"placeholderName,omitempty"`
+	RecordStatus    string                 `json:"recordStatus,omitempty"` // empty preserves legacy published shapes
+	LabelName       string                 `json:"labelName,omitempty"`
+	LogicalID       string                 `json:"logicalId,omitempty"`
+	River           *terrain.DetailFeature `json:"river,omitempty"`
+	Cells           []int                  `json:"cells,omitempty"`
+	SourceID        string                 `json:"sourceId,omitempty"`
+	ID              string                 `json:"id"`
+	Name            string                 `json:"name"`
+	Kind            string                 `json:"kind"`
+	Layer           string                 `json:"layer"`
+	ParentID        string                 `json:"parentId,omitempty"`
+	Geometry        string                 `json:"geometry"`
+	Points          [][2]float64           `json:"points"`
+	Color           string                 `json:"color"`
+	MinDetail       float64                `json:"minDetail"`
+	Created         *int                   `json:"created,omitempty"`
+	Destroyed       *int                   `json:"destroyed,omitempty"`
+	Notes           string                 `json:"notes,omitempty"`
+	Deleted         bool                   `json:"deleted,omitempty"`
 }
+
+// Placeholder names never publish a new map object. This also recognizes old
+// generated labels while allowing the author's own names without a quota/list.
+func MeaningfulName(e Entity) bool {
+	name := strings.TrimSpace(e.Name)
+	if e.PlaceholderName != "" && strings.EqualFold(name, strings.TrimSpace(e.PlaceholderName)) {
+		return false
+	}
+	if name == "" {
+		return false
+	}
+	short := e.ID
+	if len(short) > 8 {
+		short = short[:8]
+	}
+	for _, placeholder := range []string{e.Kind, e.Kind + " " + short, e.Kind + " " + e.ID, "New " + e.Kind, "New town", "New city", "New village", "New capital", "New hamlet", "New country", "New kingdom", "New empire", "New place", "New feature", "New settlement", "New state", "New object"} {
+		if strings.EqualFold(name, placeholder) {
+			return false
+		}
+	}
+	return true
+}
+
 type Operation struct {
 	River    *terrain.DetailFeature `json:"river,omitempty"`
 	ID       string                 `json:"id"`
@@ -81,7 +106,26 @@ type State struct {
 	Operations                  map[string]Operation `json:"modifications"`
 	entityIndex, operationIndex *Index
 	dirty                       map[string]bool
+	recovered                   map[string]bool
 	W, H                        float64 `json:"-"`
+}
+
+// Clone retains pending persistence flags while rebuilding independent indexes.
+// JSON alone loses these flags and can save history without its entity parts.
+func (s *State) Clone() (*State, error) {
+	data, err := json.Marshal(s)
+	if err != nil {
+		return nil, err
+	}
+	var next State
+	if err = json.Unmarshal(data, &next); err != nil {
+		return nil, err
+	}
+	next.Reindex(int(s.W)+1, int(s.H)+1)
+	for key, value := range s.dirty {
+		next.dirty[key] = value
+	}
+	return &next, nil
 }
 
 func New(w, h int) *State {
@@ -93,6 +137,89 @@ func New(w, h int) *State {
 	s.Reindex(w, h)
 	return s
 }
+func (s *State) recoverHistoryEntities() error {
+	// Older settlement batch clones dropped dirty entity parts while saving the
+	// complete undo entry. Recover only absent identities from that stored entry,
+	// at the saved cursor; existing parts always take precedence. All recovered
+	// data still passes the normal ID, geometry, graph and history validation.
+	candidates := map[string]Entity{}
+	for i, c := range s.Header.History {
+		if c.Key != "entities" && !strings.HasPrefix(c.Key, "entity/") {
+			continue
+		}
+		read := func(raw json.RawMessage) ([]Entity, error) {
+			var entries []Entity
+			if c.Key == "entities" {
+				if err := json.Unmarshal(raw, &entries); err != nil {
+					return nil, err
+				}
+			} else {
+				var e Entity
+				if err := json.Unmarshal(raw, &e); err != nil {
+					return nil, err
+				}
+				entries = []Entity{e}
+			}
+			return entries, nil
+		}
+		before, err := read(c.Before)
+		if err != nil {
+			return fmt.Errorf("invalid entity history")
+		}
+		for _, e := range before {
+			if _, ok := candidates[e.ID]; !ok {
+				candidates[e.ID] = e
+			}
+		}
+		if i < s.Header.Cursor {
+			after, err := read(c.After)
+			if err != nil {
+				return fmt.Errorf("invalid entity history")
+			}
+			for _, e := range after {
+				candidates[e.ID] = e
+			}
+		}
+	}
+	for id, e := range candidates {
+		if _, ok := s.Entities[id]; !ok {
+			s.Entities[id] = e
+			if s.recovered == nil {
+				s.recovered = map[string]bool{}
+			}
+			s.recovered[id] = true
+		}
+	}
+	for id := range s.recovered {
+		e, exists := s.Entities[id]
+		if !exists {
+			delete(s.recovered, id)
+			continue
+		}
+		validation := e
+		if validation.Deleted {
+			validation.ParentID = ""
+		}
+		if err := s.ValidateEntity(validation); err != nil {
+			return err
+		}
+		if !e.Deleted {
+			s.entityIndex.Put(id, e.Bounds(), e.MinDetail)
+		}
+	}
+	return nil
+}
+
+func (s *State) MarkRecoveredParts() {
+	for id := range s.recovered {
+		if _, ok := s.Entities[id]; ok {
+			s.dirty["entity/"+id] = true
+		} else {
+			delete(s.recovered, id)
+		}
+	}
+}
+func (s *State) RecoveredParts() int { return len(s.recovered) }
 func (s *State) Reindex(w, h int) {
 	s.W = float64(w - 1)
 	s.H = float64(h - 1)
@@ -182,7 +309,10 @@ func validID(id string) bool {
 	return true
 }
 func (s *State) ValidateEntity(e Entity) error {
-	if len(e.LabelName) > 200 {
+	if e.RecordStatus != "" && e.RecordStatus != "draft" && e.RecordStatus != "published" {
+		return fmt.Errorf("invalid record publication state")
+	}
+	if len(e.LabelName) > 200 || len(e.PlaceholderName) > 160 {
 		return fmt.Errorf("map label exceeds 200 characters")
 	}
 	if !validID(e.ID) || len(e.Name) > 160 || (strings.TrimSpace(e.Name) == "" && e.Kind != "house") || len(e.Kind) > 80 || e.Kind == "" || len(e.Notes) > 8192 || !finite(e.MinDetail) || e.MinDetail < 0 || e.MinDetail > 8 {
@@ -583,6 +713,9 @@ func (s *State) Validate(w, h int) error {
 		return fmt.Errorf("invalid world metadata")
 	}
 	s.Reindex(w, h)
+	if err := s.recoverHistoryEntities(); err != nil {
+		return err
+	}
 	for id, a := range s.Artworks {
 		if id != a.ID {
 			return fmt.Errorf("artwork identity mismatch")
@@ -737,7 +870,29 @@ func AllowedGeometry(layer, kind, geometry string) bool {
 // pending commands or marking unrelated inherited entities as local edits.
 func (s *State) RefreshRepresentations(shapes map[string]Entity) {
 	dirty := s.dirty
+	referenced := map[string]bool{}
+	for _, c := range s.Header.History {
+		if strings.HasPrefix(c.Key, "entity/") {
+			referenced[strings.TrimPrefix(c.Key, "entity/")] = true
+		} else if c.Key == "entities" {
+			for _, raw := range []json.RawMessage{c.Before, c.After} {
+				var entries []Entity
+				_ = json.Unmarshal(raw, &entries)
+				for _, e := range entries {
+					referenced[e.ID] = true
+				}
+			}
+		}
+	}
 	for id, shape := range s.Entities {
+		if shape.RecordStatus == "draft" {
+			shapes[id] = shape
+			continue
+		}
+		if _, exists := shapes[id]; !exists && referenced[id] {
+			shape.Deleted = true
+			shapes[id] = shape
+		}
 		if !HasAuthoredName(shape.Name) {
 			if _, exists := shapes[id]; !exists {
 				shapes[id] = shape
@@ -759,4 +914,16 @@ func (s *State) RefreshRepresentations(shapes map[string]Entity) {
 func HasAuthoredName(name string) bool {
 	name = strings.TrimSpace(name)
 	return name != "" && !strings.HasPrefix(strings.ToLower(name), "example-")
+}
+
+// A display placeholder does not publish the object as a World record.
+func RecordName(e Entity) string {
+	if name := strings.TrimSpace(e.Name); name != "" {
+		return name
+	}
+	kind := strings.ReplaceAll(e.Kind, "-", " ")
+	if kind == "" {
+		kind = "Place"
+	}
+	return kind + " " + e.ID[:min(8, len(e.ID))]
 }

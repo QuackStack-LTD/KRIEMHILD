@@ -1,0 +1,24 @@
+﻿01-fit 0 0 2 1 covered
+02-gradual 0.7620343104171656 0.3127600712541041 0.18252779440611827 0.09126389720305914 covered
+03-rapid-retry 0.8230518092358466 0.3378033495125734 0.03699942823963847 0.018499714119819235 covered
+node.exe : node:internal/modules/run_main:107
+At C:\Users\tomyi\worldbuilding\KRIEMHILD\tests\preview-climate-validate.ps1:11 char:3
++   & $File @Arguments 2>&1 | Out-File -LiteralPath (Join-Path $evidenc ...
++   ~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (node:internal/modules/run_main:107:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: failed tile did not recover
+    at file:///C:/Users/tomyi/worldbuilding/KRIEMHILD/tests/run-continuous-investigation.mjs:154:10 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
+
+Node.js v24.21.0

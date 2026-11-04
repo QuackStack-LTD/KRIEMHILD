@@ -1,0 +1,439 @@
+{
+  "schema": 3,
+  "languageId": "55555555555555555555555555555555",
+  "name": "Authored productive fixture",
+  "notes": "A1: noun suffix, conditioned allomorphs, circumfix, suppletion and homophones.",
+  "phonology": {
+    "features": [
+      {
+        "id": "type",
+        "values": [
+          "vowel",
+          "consonant"
+        ]
+      }
+    ],
+    "segments": [
+      {
+        "id": "a",
+        "label": "a",
+        "phonemic": true,
+        "features": {
+          "type": "vowel"
+        }
+      },
+      {
+        "id": "i",
+        "label": "i",
+        "phonemic": true,
+        "features": {
+          "type": "vowel"
+        }
+      },
+      {
+        "id": "p",
+        "label": "p",
+        "phonemic": true,
+        "features": {
+          "type": "consonant"
+        }
+      },
+      {
+        "id": "t",
+        "label": "t",
+        "phonemic": true,
+        "features": {
+          "type": "consonant"
+        }
+      },
+      {
+        "id": "d",
+        "label": "d",
+        "phonemic": false,
+        "features": {
+          "type": "consonant"
+        }
+      },
+      {
+        "id": "n",
+        "label": "n",
+        "phonemic": true,
+        "features": {
+          "type": "consonant"
+        }
+      }
+    ],
+    "classes": [
+      {
+        "id": "V",
+        "features": {
+          "type": "vowel"
+        }
+      },
+      {
+        "id": "C",
+        "features": {
+          "type": "consonant"
+        }
+      }
+    ],
+    "templates": [
+      {
+        "id": "template-CVC",
+        "slots": [
+          {
+            "class": "C"
+          },
+          {
+            "class": "V"
+          },
+          {
+            "class": "C"
+          }
+        ]
+      }
+    ],
+    "allowed": [
+      {
+        "id": "CVC",
+        "slots": [
+          {
+            "class": "C"
+          },
+          {
+            "class": "V"
+          },
+          {
+            "class": "C"
+          }
+        ]
+      },
+      {
+        "id": "VCV",
+        "slots": [
+          {
+            "class": "V"
+          },
+          {
+            "class": "C"
+          },
+          {
+            "class": "V"
+          }
+        ]
+      },
+      {
+        "id": "CVCV",
+        "slots": [
+          {
+            "class": "C"
+          },
+          {
+            "class": "V"
+          },
+          {
+            "class": "C"
+          },
+          {
+            "class": "V"
+          }
+        ]
+      },
+      {
+        "id": "VCVCV",
+        "slots": [
+          {
+            "class": "V"
+          },
+          {
+            "class": "C"
+          },
+          {
+            "class": "V"
+          },
+          {
+            "class": "C"
+          },
+          {
+            "class": "V"
+          }
+        ]
+      }
+    ],
+    "forbidden": [],
+    "rules": []
+  },
+  "lexicon": [
+    {
+      "id": "stone",
+      "category": "noun",
+      "senses": [
+        {
+          "id": "stone-material",
+          "meaning": "stone material"
+        },
+        {
+          "id": "stone-weight",
+          "meaning": "stone weight"
+        }
+      ],
+      "underlying": [
+        "p",
+        "a",
+        "t"
+      ],
+      "features": {},
+      "paradigm": "noun",
+      "overrides": []
+    },
+    {
+      "id": "rock",
+      "category": "noun",
+      "senses": [
+        {
+          "id": "rock-sense",
+          "meaning": "rock"
+        }
+      ],
+      "underlying": [
+        "p",
+        "a",
+        "t"
+      ],
+      "features": {},
+      "paradigm": "noun",
+      "overrides": []
+    },
+    {
+      "id": "person",
+      "category": "noun",
+      "senses": [
+        {
+          "id": "person-sense",
+          "meaning": "person"
+        }
+      ],
+      "underlying": [
+        "n",
+        "a",
+        "n"
+      ],
+      "features": {},
+      "paradigm": "noun",
+      "overrides": [
+        {
+          "cell": "many",
+          "ruleId": "person-suppletion",
+          "segments": [
+            "n",
+            "i",
+            "n"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tree",
+      "category": "noun",
+      "senses": [
+        {
+          "id": "tree-sense",
+          "meaning": "tree"
+        }
+      ],
+      "underlying": [
+        "a",
+        "t",
+        "a"
+      ],
+      "features": {},
+      "paradigm": "noun",
+      "overrides": []
+    }
+  ],
+  "morphology": null,
+  "productive": {
+    "version": "productive/1",
+    "features": [
+      {
+        "id": "number",
+        "values": [
+          "one",
+          "many"
+        ]
+      },
+      {
+        "id": "shape",
+        "values": [
+          "plain",
+          "framed"
+        ]
+      }
+    ],
+    "paradigms": [
+      {
+        "id": "noun",
+        "cells": [
+          {
+            "id": "one",
+            "features": {
+              "number": "one",
+              "shape": "plain"
+            },
+            "operations": [
+              {
+                "id": "singular-zero",
+                "kind": "zero",
+                "policy": "first",
+                "allomorphs": [
+                  {
+                    "id": "zero",
+                    "when": {},
+                    "prefix": [],
+                    "suffix": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "many",
+            "features": {
+              "number": "many",
+              "shape": "plain"
+            },
+            "operations": [
+              {
+                "id": "plural-suffix",
+                "kind": "suffix",
+                "policy": "first",
+                "allomorphs": [
+                  {
+                    "id": "after-t",
+                    "when": {
+                      "features": {
+                        "number": "many"
+                      },
+                      "category": "noun",
+                      "right": [
+                        {
+                          "segment": "t"
+                        }
+                      ]
+                    },
+                    "prefix": [],
+                    "suffix": [
+                      "a"
+                    ]
+                  },
+                  {
+                    "id": "after-n",
+                    "when": {
+                      "right": [
+                        {
+                          "segment": "n"
+                        }
+                      ]
+                    },
+                    "prefix": [],
+                    "suffix": [
+                      "i"
+                    ]
+                  },
+                  {
+                    "id": "else-a",
+                    "when": {},
+                    "prefix": [],
+                    "suffix": [
+                      "a"
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "framed",
+            "features": {
+              "number": "many",
+              "shape": "framed"
+            },
+            "operations": [
+              {
+                "id": "frame",
+                "kind": "circumfix",
+                "policy": "first",
+                "allomorphs": [
+                  {
+                    "id": "i-a-frame",
+                    "when": {},
+                    "prefix": [
+                      "i"
+                    ],
+                    "suffix": [
+                      "a"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "after-frame",
+                "kind": "zero",
+                "policy": "first",
+                "allomorphs": [
+                  {
+                    "id": "frame-confirm",
+                    "when": {
+                      "previous": "frame",
+                      "left": [
+                        {
+                          "boundary": "word"
+                        },
+                        {
+                          "segment": "i"
+                        }
+                      ]
+                    },
+                    "prefix": [],
+                    "suffix": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "stratum": {
+      "id": "stem-edge",
+      "boundaryPolicy": "retain-until-surface",
+      "rules": [
+        {
+          "id": "t-before-a-suffix",
+          "domain": "morpheme",
+          "input": [
+            {
+              "segment": "t"
+            }
+          ],
+          "output": [
+            "d"
+          ],
+          "left": [],
+          "right": [
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "a"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "syntax": null,
+  "orthography": null,
+  "history": null,
+  "tests": []
+}

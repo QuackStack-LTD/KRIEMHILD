@@ -1,7 +1,14 @@
 # Terrain and Biosphere causal pipeline
 
-New generation uses the following order. Stored worlds are restored from their
-saved fields and detail tiles; none of these stages run merely to open a world.
+The active continuous terrain pipeline now connects its completed physical
+snapshot to geological history, groundwater and resource systems. See
+[Terrain Resources](TERRAIN_RESOURCES.md) for the current implementation,
+coordinates, saved-data behavior, preview controls and limits.
+
+The sequence below describes the retained legacy generator and compatibility
+model. Stored worlds retain their saved fields and detail tiles. Opening an old
+continuous terrain's new resource preview can derive a missing inventory in
+memory, without regenerating geography or writing its saved World.
 
 1. Establish geographic scale, seeded plates and continental foundations.
 2. Union filled continental fields, subtract geological cuts, and preserve an irregular ocean frame on **all four sides**. Wrapped

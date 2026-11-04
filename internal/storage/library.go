@@ -60,7 +60,7 @@ func (s *Store) SaveLibraryFile(ctx context.Context, worldID string, revision in
 	}
 	return d, tx.Commit()
 }
-func (s *Store) LibraryContent(ctx context.Context, worldID, age, id, version string) ([]byte, history.LibraryVersion, error) {
+func (s *Store) LibraryContent(ctx context.Context, worldID, age, id, version string, variant ...string) ([]byte, history.LibraryVersion, error) {
 	tx, err := s.beginHistory(ctx, true)
 	if err != nil {
 		return nil, history.LibraryVersion{}, err
@@ -89,6 +89,11 @@ func (s *Store) LibraryContent(ctx context.Context, worldID, age, id, version st
 		}
 	}
 	var data []byte
+	if len(variant) > 0 && variant[0] == "banner" && v.Banner != nil {
+		v.Hash = v.Banner.Hash
+		v.Size = v.Banner.Size
+		v.MIME = "image/png"
+	}
 	if err = tx.QueryRowContext(ctx, "SELECT data FROM history_blobs WHERE hash=$1", v.Hash).Scan(&data); err != nil {
 		return nil, v, err
 	}

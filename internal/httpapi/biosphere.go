@@ -38,6 +38,18 @@ func (s *Server) biosphereTerrain(r *http.Request, d *history.Document, age, id 
 	if err = expandJSON(raw, &e); err != nil || e == nil {
 		return biosphere.State{}, fmt.Errorf("this terrain has no physical environment; generate terrain with environment layers enabled")
 	}
+	// Older continuous snapshots can acquire the same physical resource bridge
+	// read-only. Do not save or mutate the immutable author's terrain snapshot.
+	if e.NaturalSource == "" {
+		if snapshot, readErr := s.savedResourceSnapshot(r.Context(), root.Snapshot); readErr == nil && snapshot.p != nil {
+			copyEnv := *snapshot.e
+			copyEnv.Fields = make(map[string][]float64, len(snapshot.e.Fields))
+			for k, v := range snapshot.e.Fields {
+				copyEnv.Fields[k] = v
+			}
+			e = &copyEnv
+		}
+	}
 	categories := []string{}
 	raw, err = s.projects.SnapshotPart(r.Context(), root.Snapshot, "checkpoint")
 	if err == nil {

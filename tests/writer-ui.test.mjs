@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
 import { build } from 'esbuild';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { resolve, join } from 'node:path';
 import React,{act} from 'react';
@@ -12,6 +12,7 @@ Object.defineProperty(globalThis,'navigator',{value:dom.window.navigator,configu
 globalThis.IS_REACT_ACT_ENVIRONMENT=true;globalThis.requestAnimationFrame=fn=>setTimeout(fn,0);globalThis.cancelAnimationFrame=clearTimeout;
 dom.window.HTMLElement.prototype.getClientRects=()=>[{width:100,height:40}];dom.window.Range.prototype.getClientRects=()=>[];dom.window.Range.prototype.getBoundingClientRect=()=>({top:0,left:0,bottom:0,right:0});
 const {createRoot}=await import('react-dom/client');
+await mkdir(resolve('.tools'),{recursive:true});
 const temp=await mkdtemp(resolve('.tools/writer-ui-'));const output=join(temp,'components.mjs');
 await build({stdin:{contents:`export {default as Writing} from './src/worldbuilding/Writing.jsx';export {default as useWriter} from './src/worldbuilding/writer/useWriter.js';export {default as UIProvider} from './src/worldbuilding/ui/UIProvider.jsx';`,resolveDir:process.cwd(),loader:'jsx'},outfile:output,bundle:true,format:'esm',platform:'node',packages:'external',jsx:'automatic',loader:{'.css':'empty'}});
 const {Writing,useWriter,UIProvider}=await import(pathToFileURL(output));

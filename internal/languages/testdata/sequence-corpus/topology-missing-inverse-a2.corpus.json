@@ -1,0 +1,119 @@
+{
+  "version": "sequence-corpus/1",
+  "id": "brief6-topology-missing-inverse-a2",
+  "bounds": {
+    "calls": 1,
+    "work": 13000000,
+    "reportBytes": 262144
+  },
+  "cases": [
+    {
+      "id": "topology-missing-inverse-a2",
+      "description": "A2 rejects a silently disappeared pre-erasure boundary",
+      "tags": ["brief6", "topology-missing-inverse-a2"],
+      "review": {
+        "status": "reviewed",
+        "reviewer": "Codex (independent derivation; not human approval)",
+        "provenance": "Retained sequence-inverse.golden.json proves both p,a,d,a analyses contain a morpheme boundary at pre-erasure index 3. Reverse of the explicit full-stream rule yields no boundary, so exact topology filters both analyses. Work: initial/resegment 3 + inverse queue/rule/append/terminal/rewrite 11 + final replay 9 + established A2 297 = 320. No mapping or derivation inferred."
+      },
+      "pin": {
+        "languageId": "88888888888888888888888888888888",
+        "revision": "4ea9f1bbafc70bef1e18b7dcc35655c92bc1db6c0745a8260cad2ac66e8a1fbf",
+        "schema": 4,
+        "canonicalizer": "kriemhild-typed-json/1",
+        "engine": "languages/4",
+        "adapter": "sequence-compose/1",
+        "compiler": "languages-compiler/4",
+        "segmentation": "uniseg/0.4.7-unicode/15.0.0",
+        "normalizer": "x-text/0.29.0-unicode/15.0.0",
+        "script": {
+          "id": "77777777777777777777777777777777",
+          "revision": "e50260f7197fd260b418f4578be091b415927c863a70a7ed057dbb198cc5a849"
+        },
+        "renderer": "vector-script/1",
+        "rendererAdapter": "sign-layout/1",
+        "rendererCompiler": "vector-script-compiler/1"
+      },
+      "inputLayer": "grapheme",
+      "request": {
+        "spelling": {
+          "analyze": true
+        },
+        "revision": "4ea9f1bbafc70bef1e18b7dcc35655c92bc1db6c0745a8260cad2ac66e8a1fbf",
+        "engine": "languages/4",
+        "operation": "unspell",
+        "text": "M",
+        "policy": "all",
+        "limit": 128,
+        "compiler": "languages-compiler/4",
+        "adapter": "sequence-compose/1"
+      },
+      "outcome": "no_result",
+      "comparison": "exact",
+      "expected": {
+        "spelling": {
+          "version": "sequence-orthography/1",
+          "segmentation": "uniseg/0.4.7-unicode/15.0.0",
+          "normalizer": "x-text/0.29.0-unicode/15.0.0",
+          "inputLayer": "surface-boundaries",
+          "outputLayer": "grapheme",
+          "script": {
+            "id": "77777777777777777777777777777777",
+            "revision": "e50260f7197fd260b418f4578be091b415927c863a70a7ed057dbb198cc5a849"
+          },
+          "renderer": "vector-script/1",
+          "rendererAdapter": "sign-layout/1",
+          "rendererCompiler": "vector-script-compiler/1",
+          "steps": 320,
+          "clusters": [],
+          "spellings": [],
+          "preimages": []
+        },
+        "schema": 4,
+        "compiler": "languages-compiler/4",
+        "status": "no_result",
+        "languageId": "88888888888888888888888888888888",
+        "revision": "4ea9f1bbafc70bef1e18b7dcc35655c92bc1db6c0745a8260cad2ac66e8a1fbf",
+        "engine": "languages/4",
+        "canonicalizer": "kriemhild-typed-json/1",
+        "selection": "sha256-canonical-candidates/1",
+        "request": {
+          "revision": "4ea9f1bbafc70bef1e18b7dcc35655c92bc1db6c0745a8260cad2ac66e8a1fbf",
+          "engine": "languages/4",
+          "operation": "unspell",
+          "text": "M",
+          "policy": "all",
+          "limit": 128
+        },
+        "candidates": [],
+        "diagnostics": [],
+        "truncated": false,
+        "examined": 0,
+        "knownValid": 0,
+        "rejected": 0,
+        "diagnosticsOmitted": 0,
+        "adapter": "sequence-compose/1",
+        "kernel": "languages-spike/1",
+        "input": {
+          "spelling": {
+            "analyze": true
+          },
+          "revision": "4ea9f1bbafc70bef1e18b7dcc35655c92bc1db6c0745a8260cad2ac66e8a1fbf",
+          "engine": "languages/4",
+          "operation": "unspell",
+          "text": "M",
+          "policy": "all",
+          "limit": 128,
+          "compiler": "languages-compiler/4",
+          "adapter": "sequence-compose/1"
+        },
+        "dependencies": [
+          {
+            "id": "77777777777777777777777777777777",
+            "revision": "e50260f7197fd260b418f4578be091b415927c863a70a7ed057dbb198cc5a849"
+          }
+        ]
+      }
+    }
+  ]
+}

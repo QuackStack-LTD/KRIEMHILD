@@ -3,13 +3,23 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useMemo,
   useState,
 } from "react";
 import { request, defaults, presets } from "./api.js";
 import TileSurface from "./TileSurface.jsx";
-import { normalizeCamera, visibleTiles } from "./camera.js";
+import ViewportSurface, { ViewportLayer } from "./ViewportSurface.jsx";
+import { ProjectionContext } from "./MapProjection.js";
+import { mapProjection } from "./projection.js";
+import { clipLine, clipPolygon, intersects } from "./clip.js";
+import {
+  normalizeCamera,
+  visibleTiles,
+  visibleViewport,
+  reliefResolution,
+} from "./camera.js";
 import {
   screenToMap,
   viewport,
@@ -17,13 +27,45 @@ import {
   mapToProject,
   FeatureIndex,
 } from "./geometry.js";
-import { riverFeatures, riverWidth, riverVisible } from "./rivers.js";
+import { riverFeatures, riverWidth } from "./rivers.js";
 import { generationSpec } from "./seed.js";
+import { GeographicQuery } from "./geographic-query.js";
+import {
+  CartographicGeometry,
+  cartographicLevel,
+  cartographicLevels,
+} from "./cartography.js";
+import { pathText } from "./geographic-path.js";
+import { FrameNavigator } from "./frame-navigator.js";
+import { prepareGeographicExport } from "./export-geography.js";
+import {
+  readPreviewQuality,
+  savePreviewQuality,
+  previewRequest,
+  previewPresets,
+  previewHelp,
+} from "./preview-quality.js";
 import { bounds as geometryBounds } from "./geometry.js";
 import { newIllustration, buildIllustration } from "./illustration.js";
 import IllustrationScene from "./IllustrationScene.jsx";
 import IllustrationPanel from "./IllustrationPanel.jsx";
+import { exportTerrain, illustrationAssets } from "./illustration-export.js";
+import {
+  landPaths,
+  toggleLand,
+  rectangleLand,
+  selectedLand,
+  illustrationFootprint,
+  illustrationMeshBounds,
+} from "./land-selection.js";
+import Dialog from "../worldbuilding/ui/Dialog.jsx";
 import "./studio.css";
+import TerrainResourceReport from "./TerrainResourceReport.jsx";
+import {
+  resourceDistance,
+  resourceRing,
+  resourceQuery,
+} from "./terrain-resources.js";
 
 const uid = () => crypto.randomUUID().replaceAll("-", "");
 const layerFor = (kind) =>
@@ -34,6 +76,7 @@ const layerFor = (kind) =>
     landmark: "natural-features",
     house: "buildings",
     country: "countries",
+    state: "countries",
   })[kind] || "settlements";
 const initialCamera = { x: 0, y: 0, w: 2, h: 1 };
 const Terrain3D = lazy(() => import("./Terrain3D.jsx"));
@@ -46,17 +89,25 @@ function download(blob, name) {
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 const toMap = (p, state) => [(p[0] / (state.W - 1)) * 2, p[1] / (state.H - 1)];
-const pointsText = (points, state) =>
-  points.map((p) => toMap(p, state).join(",")).join(" ");
 
 export default function Studio({ initialState, onExit }) {
   const [show3D, setShow3D] = useState(false);
+  const [resourcesOpen, setResourcesOpen] = useState(false),
+    [resourceCenter, setResourceCenter] = useState(null),
+    [resourceRadius, setResourceRadius] = useState(5),
+    [resourcePan, setResourcePan] = useState(false);
   const [exportWidth, setExportWidth] = useState(2048);
+  const [previewQuality, setPreviewQuality] = useState(readPreviewQuality);
+  const [previewSaved, setPreviewSaved] = useState(true);
+  useEffect(() => {
+    setPreviewSaved(savePreviewQuality(previewQuality));
+  }, [previewQuality]);
   const [state, setState] = useState(initialState || null),
     [spec, setSpec] = useState({
       ...defaults,
       ...initialState?.continuous?.spec,
       version: defaults.version,
+      reliefVersion: defaults.reliefVersion,
       seed: "",
     });
   const [hillshade, setHillshade] = useState(
@@ -71,17 +122,45 @@ export default function Studio({ initialState, onExit }) {
     [artSelected, setArtSelected] = useState(null),
     [artTerrain, setArtTerrain] = useState(null);
   const [worldContext, setWorldContext] = useState(null);
+  const [savedIllustration, setSavedIllustration] = useState(null);
+  const [illustrationProgress, setIllustrationProgress] = useState(null);
+  const imageAssets = useRef(null);
+  const [mapSetup, setMapSetup] = useState(null);
+  const [landComponents, setLandComponents] = useState([]);
+  const [landIDs, setLandIDs] = useState([]);
+  const [landBox, setLandBox] = useState(null);
+  const setupSequence = useRef(0);
   const savedView =
     initialState?.projectUI?.continuousView ||
     initialState?.project?.view ||
     {};
   const [mode, setMode] = useState(
-      savedView.mode ||
+      (new URLSearchParams(location.search).get("workspace") === "atlas"
+        ? "atlas"
+        : null) ||
+        savedView.mode ||
         (location.pathname.endsWith("/build") ? "map" : "generate"),
     ),
-    [style, setStyle] = useState(savedView.style || "natural");
+    [style, setStyle] = useState(
+      !savedView.style ||
+        ["physical-atlas", "atlas", "natural"].includes(savedView.style)
+        ? "terrain"
+        : savedView.style,
+    );
   const [camera, setCamera] = useState(normalizeCamera(savedView.camera)),
-    [width, setWidth] = useState(1000);
+    [width, setWidth] = useState(1000),
+    [height, setHeight] = useState(500);
+  const cameraRef = useRef(camera);
+  const constructionCamera = useRef(camera);
+  const savedCamera =
+    illustrating || mapSetup ? constructionCamera.current : camera;
+  cameraRef.current = camera;
+  const navigation = useRef(null);
+  navigation.current ||= new FrameNavigator(() => cameraRef.current, setCamera);
+  useEffect(() => {
+    navigation.current.cancel();
+  }, [camera]);
+  useEffect(() => () => navigation.current.cancel(), []);
   const [entities, setEntities] = useState([]),
     [rivers, setRivers] = useState([]),
     [coasts, setCoasts] = useState(null),
@@ -97,6 +176,10 @@ export default function Studio({ initialState, onExit }) {
   const [radius, setRadius] = useState(100),
     [amount, setAmount] = useState(300),
     [name, setName] = useState("New feature");
+  const [drawingType, setDrawingType] = useState({
+    state: "country",
+    settlement: "town",
+  });
   const [settlement, setSettlement] = useState(null),
     [settlementSpec, setSettlementSpec] = useState({
       name: "New town",
@@ -113,12 +196,70 @@ export default function Studio({ initialState, onExit }) {
     jobRef = useRef(null),
     active = useRef(state),
     accepted = useRef(initialState || null),
+    attachment = useRef(null),
+    viewWriter = useRef({ client: crypto.randomUUID(), sequence: 0 }),
     cancelled = useRef(false),
-    inspectAbort = useRef(null);
+    geographicQuery = useRef(null);
+  geographicQuery.current ||= new GeographicQuery();
+  const sourceIdentity = `${state?.worldId}:${state?.id}`;
+  geographicQuery.current.source(sourceIdentity, state?.project?.revision);
+  const [inspectionPoint, setInspectionPoint] = useState(null);
   active.current = state;
   const query = useRef(new URLSearchParams(location.search));
+  useEffect(() => {
+    if (query.current.get("tileDebug") !== "1") return;
+    // Reproducible geographic views for diagnostics, independent of event timing.
+    const restore = (event) => setCamera(normalizeCamera(event.detail));
+    window.addEventListener("terrain-diagnostic-camera", restore);
+    return () =>
+      window.removeEventListener("terrain-diagnostic-camera", restore);
+  }, []);
+  // Keep the original path only as an explicit regression comparison tool.
+  const viewportRenderer = query.current.get("terrainRenderer") !== "tiles";
+  const [renderRetry, setRenderRetry] = useState(0);
+  const [renderError, setRenderError] = useState("");
+  const [renderDiagnostics, setRenderDiagnostics] = useState(null);
+  const [terrainProgress, setTerrainProgress] = useState(null);
+  const [hydrologyDiagnostics, setHydrologyDiagnostics] = useState(null);
+  const geometryCache = useRef(new CartographicGeometry());
+  const presentation = useRef();
+  presentation.current = cartographicLevel(camera.w, presentation.current);
+  const detailLevel = presentation.current;
   const base = `sessions/${state?.id}`;
+  const resourceMaximum = Math.min(
+    5000,
+    Math.PI * (state?.continuous?.spec.radiusKm ?? 6371),
+  );
   const displayStyle = illustrating ? "atlas" : style;
+  const wrapIllustration = !!(illustrating && art?.regions?.length);
+  const illustrationCoverage = useMemo(
+    () => illustrationFootprint(art?.regions || []),
+    [art?.regions],
+  );
+  const previewInfo = previewRequest({ camera, width, height }, previewQuality);
+  const geographicViewport = visibleViewport(camera, width, height);
+  const projection = useMemo(
+    () => mapProjection(camera, width, height),
+    [camera, width, height],
+  );
+  const drawPoint = (p) => projection.point(p);
+  const landPath = (regions) =>
+    regions
+      .map(
+        (p) =>
+          pathText(clipPolygon(p, projection.bounds).map(drawPoint)) + " Z",
+      )
+      .join(" ");
+  const drawProjectPoint = (p) => drawPoint(projectToMap(p, state));
+  const drawProjectPoints = (points) =>
+    points
+      .map(drawProjectPoint)
+      .map((p) => p.join(","))
+      .join(" ");
+  const drawPath = (points) =>
+    clipLine(points, projection.bounds)
+      .map((part) => pathText(part.map(drawPoint)))
+      .join(" ");
   const artObjects = useMemo(
     () =>
       art && state
@@ -133,19 +274,22 @@ export default function Studio({ initialState, onExit }) {
     else {
       setArt(null);
       setArtSelected(null);
-      setIllustrating(false);
+      if (illustrating) leaveIllustration();
     }
   }, [state?.project?.revision]);
   useEffect(() => {
     if (!illustrating || !art || !state) return;
-    const abort = new AbortController(),
-      [x, y, w, h] = art.bounds;
+    const abort = new AbortController();
     setArtTerrain(null);
-    request(
-      `${base}/terrain/mesh?west=${Math.max(-180, x * 180 - 180)}&east=${Math.min(180, (x + w) * 180 - 180)}&north=${Math.min(90, 90 - y * 180)}&south=${Math.max(-90, 90 - (y + h) * 180)}`,
-      undefined,
-      "GET",
-      abort.signal,
+    Promise.all(
+      illustrationMeshBounds(art).map(([west, south, east, north]) =>
+        request(
+          `${base}/terrain/mesh?west=${west}&east=${east}&north=${north}&south=${south}`,
+          undefined,
+          "GET",
+          abort.signal,
+        ),
+      ),
     )
       .then(setArtTerrain)
       .catch((e) => {
@@ -165,6 +309,7 @@ export default function Studio({ initialState, onExit }) {
     return () => abort.abort();
   }, [state?.historyWorldId, state?.historicalMap?.ageId]);
   function changeArt(next, commit = false) {
+    setSavedIllustration(null);
     setArt(next);
     if (commit)
       void run(() => command({ kind: "illustration", illustration: next }));
@@ -184,7 +329,7 @@ export default function Studio({ initialState, onExit }) {
     setArtSelected({ ...o, ...patch });
     changeArt(next, commit);
   }
-  function artScope(scope, focus) {
+  function artScope(scope, focus, options = {}) {
     let extent = scope === "world" ? initialCamera : camera;
     if (focus) {
       const b = geometryBounds(focus.points.map((p) => projectToMap(p, state))),
@@ -196,24 +341,143 @@ export default function Studio({ initialState, onExit }) {
         h: Math.max(0.0001, b.h + pad * 2),
       };
     }
+    extent = options.extent || extent;
     const next = newIllustration(scope, extent, focus?.id || "");
-    const saved = state.project.illustrations?.[next.id];
-    const current =
-      saved && focus ? { ...saved, bounds: next.bounds } : saved || next;
-    changeArt(current, !saved || !!focus);
-    setCamera(
-      saved && !focus
-        ? {
-            x: saved.bounds[0],
-            y: saved.bounds[1],
-            w: saved.bounds[2],
-            h: saved.bounds[3],
-          }
-        : extent,
-    );
+    next.id =
+      options.fresh ||
+      (art && (art.scope !== scope || (art.focus || "") !== (focus?.id || "")))
+        ? `medieval-${uid()}`
+        : art?.id || next.id;
+    next.title =
+      options.title ||
+      art?.title ||
+      (focus?.name ? `${focus.name} atlas` : next.title);
+    if (options.regions) {
+      next.regions = options.regions;
+      next.landIds = options.landIds;
+      next.landKey = options.landKey;
+    }
+    if (art && !options.fresh) {
+      next.style = art.style;
+      next.layers = art.layers;
+      next.objects = art.objects;
+    }
+    changeArt(next, true);
+    setCamera(extent);
     setArtSelected(null);
     setIllustrating(true);
     setTool("select");
+  }
+  function startIllustration() {
+    setResourcesOpen(false);
+    constructionCamera.current = camera;
+    const focus = selected?.recordStatus !== "draft" ? selected : null;
+    const inherited = entities.find(
+      (e) => (e.logicalId || e.id) === state.historicalMap?.entityId,
+    );
+    setMapSetup({
+      step: "name",
+      title: art?.title || "",
+      resume: !!art,
+      focus: focus || inherited || null,
+      kind: focus || inherited ? "place" : "land",
+      camera,
+    });
+  }
+  function leaveIllustration() {
+    setIllustrating(false);
+    setCamera(constructionCamera.current);
+  }
+  async function setupIllustration() {
+    const setup = { ...mapSetup };
+    if (!setup.title.trim()) return;
+    if (setup.resume && art && setup.title.trim() === art.title) {
+      const currentLand = art.landKey
+        ? await request(`${base}/terrain/land-selection?key=1`)
+        : null;
+      if (currentLand && currentLand.sourceKey !== art.landKey) {
+        setError(
+          "The landscape changed. Select the connected land for this map again.",
+        );
+        setup.resume = false;
+      } else {
+        setCamera({
+          x: art.bounds[0],
+          y: art.bounds[1],
+          w: art.bounds[2],
+          h: art.bounds[3],
+        });
+        setIllustrating(true);
+        setMapSetup(null);
+        return;
+      }
+    }
+    const serial = ++setupSequence.current;
+    if (setup.kind === "place" && setup.focus) {
+      artScope(
+        ["country", "state", "kingdom", "empire"].includes(setup.focus.kind)
+          ? "country"
+          : "city",
+        setup.focus,
+        { fresh: true, title: setup.title.trim() },
+      );
+      setMapSetup(null);
+      return;
+    }
+    setMapSetup({ ...setup, step: "land", loading: true });
+    setLandIDs([]);
+    setCamera(initialCamera);
+    setIllustrating(false);
+    try {
+      const data = await request(`${base}/terrain/land-selection`);
+      if (serial !== setupSequence.current) return;
+      if (active.current?.project.revision !== data.revision)
+        throw Error("The terrain changed; start land selection again.");
+      setLandComponents(
+        data.components
+          .map((c) => ({
+            ...c,
+            paths: landPaths(c.paths, (0.05 * 2) / data.sourceWidth),
+          }))
+          .filter((c) => c.paths.length),
+      );
+      setMapSetup({
+        ...setup,
+        step: "land",
+        loading: false,
+        revision: data.revision,
+        landKey: data.sourceKey,
+      });
+    } catch (e) {
+      if (serial === setupSequence.current) {
+        setError(e.message);
+        setMapSetup(null);
+      }
+    }
+  }
+  function createSelectedMap() {
+    if (active.current.project.revision !== mapSetup.revision) {
+      setError("The source changed; start land selection again.");
+      return;
+    }
+    const selection = selectedLand(landComponents, landIDs);
+    if (!selection) return;
+    if (selection.regions.reduce((n, p) => n + p.length, 0) > 80000) {
+      setError(
+        "This selection exceeds the map geometry budget. Select a smaller region.",
+      );
+      return;
+    }
+    artScope("continent", null, {
+      fresh: true,
+      title: mapSetup.title.trim(),
+      extent: selection.bounds,
+      regions: selection.regions,
+      landIds: landIDs,
+      landKey: mapSetup.landKey,
+    });
+    setMapSetup(null);
+    setLandBox(null);
   }
   const run = async (work) => {
     setError("");
@@ -243,24 +507,36 @@ export default function Studio({ initialState, onExit }) {
           setRivers(r.rivers || []);
           setCoasts(r.coasts);
           setLegend(r.legend || {});
+          setHydrologyDiagnostics(r.hydrology || null);
         }
       })
       .catch((e) => setError(e.message));
     return () => {
       alive = false;
     };
-  }, [state?.id, refresh]);
-  useEffect(() => {
-    const observer = new ResizeObserver((entries) =>
-      setWidth(entries[0].contentRect.width),
-    );
-    if (stage.current) observer.observe(stage.current);
-    return () => observer.disconnect();
+  }, [state?.id, invalidations, refresh]);
+  useLayoutEffect(() => {
+    const element = svg.current;
+    const measure = () => {
+      const rect = element.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        setWidth(rect.width);
+        setHeight(rect.height);
+      }
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    window.addEventListener("resize", measure);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measure);
+    };
   }, []);
   useEffect(
     () => () => {
       cancelled.current = true;
-      inspectAbort.current?.abort();
+      geographicQuery.current.cancel();
       if (jobRef.current)
         request(
           `terrain/generation-jobs/${jobRef.current}`,
@@ -281,7 +557,10 @@ export default function Studio({ initialState, onExit }) {
     return () => window.removeEventListener("beforeunload", warn);
   }, []);
   async function command(body) {
-    const s = active.current;
+    const s =
+      body.kind === "entity" || body.kind === "move-family"
+        ? await ensureWorldMap()
+        : active.current;
     if (!s) return;
     const result = await request(`sessions/${s.id}/world`, {
       ...body,
@@ -300,52 +579,71 @@ export default function Studio({ initialState, onExit }) {
         },
       ]);
     }
-    setState((v) => ({
-      ...v,
-      project: result.project || v.project,
-      continuous: v.continuous
-        ? { ...v.continuous, analysisStale: result.analysisStale }
-        : v.continuous,
+    const next = {
+      ...active.current,
+      project: result.project || s.project,
+      continuous: s.continuous
+        ? { ...s.continuous, analysisStale: result.analysisStale }
+        : s.continuous,
       unsaved: true,
-    }));
+    };
+    active.current = next;
+    setState(next);
     await refresh(s);
     return result;
   }
   async function save() {
-    const s = active.current;
+    const s = await ensureWorldMap();
     if (!s) return;
-    await request(`sessions/${s.id}/world`, {
-      kind: "view",
+    const sequence = ++viewWriter.current.sequence;
+    const result = await request(`sessions/${s.id}/save`, {
       revision: s.project.revision,
-      view: { camera, style, mode, showRivers, hillshade },
+      view: { camera: savedCamera, style, mode, showRivers, hillshade },
+      client: viewWriter.current.client,
+      sequence,
     });
-    const result = await request(`sessions/${s.id}/save`, {});
-    setState((v) => ({
-      ...v,
-      project: result.project || v.project,
-      unsaved: false,
-    }));
+    if (active.current?.id !== s.id) return;
+    const next = {
+      ...active.current,
+      project: result.project || active.current.project,
+      projectUI: result.projectUI || active.current.projectUI,
+      unsaved: sequence !== viewWriter.current.sequence,
+    };
+    active.current = next;
+    setState(next);
   }
   useEffect(() => {
     if (!state?.id) return;
     const id = state.id,
+      sequence = ++viewWriter.current.sequence,
       timer = setTimeout(
         () =>
           request(`sessions/${id}/view`, {
             ui: {
-              continuousView: { camera, style, mode, showRivers, hillshade },
+              continuousView: {
+                camera: savedCamera,
+                style,
+                mode,
+                showRivers,
+                hillshade,
+              },
             },
             merge: true,
+            client: viewWriter.current.client,
+            sequence,
           })
             .then((result) => {
-              if (active.current?.id === id)
+              if (
+                active.current?.id === id &&
+                sequence === viewWriter.current.sequence
+              )
                 setState((v) => ({ ...v, unsaved: result.unsaved }));
             })
             .catch((e) => setError(e.message)),
         700,
       );
     return () => clearTimeout(timer);
-  }, [state?.id, camera, style, mode, showRivers, hillshade]);
+  }, [state?.id, savedCamera, style, mode, showRivers, hillshade]);
   useEffect(() => {
     if (!autoSave || !state?.historicalMap || !state.unsaved || busy) return;
     const timer = setTimeout(() => run(save), 30000);
@@ -355,6 +653,7 @@ export default function Studio({ initialState, onExit }) {
     const key = (e) => {
       if (e.target.matches("input,textarea,select")) return;
       if (e.key === "Escape") {
+        setResourcesOpen(false);
         setArtSelected(null);
         setDraft([]);
         setSelected(null);
@@ -416,9 +715,20 @@ export default function Studio({ initialState, onExit }) {
       setJob(null);
     }
   }
-  async function accept() {
+  async function ensureWorldMap() {
     const s = active.current;
     if (!s) return;
+    if (s.historicalMap) return s;
+    if (attachment.current?.session === s.id) return attachment.current.promise;
+    const promise = attachWorldMap(s);
+    attachment.current = { session: s.id, promise };
+    try {
+      return await promise;
+    } finally {
+      if (attachment.current?.promise === promise) attachment.current = null;
+    }
+  }
+  async function attachWorldMap(s) {
     let worldId = query.current.get("world"),
       ageId = query.current.get("age");
     if (!worldId) {
@@ -434,15 +744,20 @@ export default function Studio({ initialState, onExit }) {
       name: `Terrain · ${s.continuous.spec.seed}`,
     });
     const next = await request(`sessions/${s.id}/world/state`);
+    active.current = next;
     setState(next);
     accepted.current = next;
-    setMode("map");
-    setTool("inspect");
     history.replaceState(
       {},
       "",
       `/world/${next.worldId}/build?${query.current}`,
     );
+    return next;
+  }
+  async function accept() {
+    await ensureWorldMap();
+    setMode("map");
+    setTool("inspect");
   }
   async function discard() {
     if (state && !state.historicalMap)
@@ -466,19 +781,23 @@ export default function Studio({ initialState, onExit }) {
     ];
   }
   function inspect(p) {
-    inspectAbort.current?.abort();
-    const abort = new AbortController();
-    inspectAbort.current = abort;
-    request(
-      `${base}/terrain/sample?lon=${p[0] * 180 - 180}&lat=${90 - p[1] * 180}`,
-      undefined,
-      "GET",
-      abort.signal,
-    )
-      .then(setSample)
-      .catch((e) => {
-        if (e.name !== "AbortError") setError(e.message);
-      });
+    setInspectionPoint({
+      point: p,
+      identity: sourceIdentity,
+      revision: state.project.revision,
+    });
+    setSample(null);
+    geographicQuery.current
+      .select(
+        {
+          session: state.id,
+          identity: sourceIdentity,
+          revision: state.project.revision,
+          point: p,
+        },
+        setSample,
+      )
+      .catch((e) => setError(e.message));
   }
   async function clickMap(p) {
     if (!state || p[0] < 0 || p[0] > 2 || p[1] < 0 || p[1] > 1) return;
@@ -493,10 +812,12 @@ export default function Studio({ initialState, onExit }) {
           seed: 12345,
         });
         setSettlement(d);
-        const span =
+        const span = Math.max(
+          0.00008,
           (d.preview.radiusMetres /
             (state.continuous.spec.radiusKm * 1000 * Math.PI)) *
-          3.8;
+            3.8,
+        );
         setCamera({
           x: p[0] - span / 2,
           y: p[1] - span / 4,
@@ -506,26 +827,27 @@ export default function Studio({ initialState, onExit }) {
       });
       return;
     }
-    if (["road", "country", "border"].includes(tool)) {
+    if (["road", "country", "state", "settlement", "border"].includes(tool)) {
       setDraft((d) => [...d, toWorld(p)]);
       return;
     }
     if (["landmark", "label", "house"].includes(tool)) {
-      await run(() =>
-        command({
-          kind: "entity",
-          entity: {
-            id: uid(),
-            name,
-            kind: tool,
-            geometry: "point",
-            points: [toWorld(p)],
-            layer: layerFor(tool),
-            color: "#e4c989",
-            minDetail: 0,
-          },
-        }),
-      );
+      const id = uid();
+      const shape = {
+        id,
+        name: name === "New feature" ? `${tool} ${id.slice(0, 8)}` : name,
+        kind: tool,
+        geometry: "point",
+        points: [toWorld(p)],
+        layer: layerFor(tool),
+        color: "#e4c989",
+        minDetail: 0,
+      };
+      await run(async () => {
+        await command({ kind: "entity", entity: shape });
+        setSelected({ ...shape, recordStatus: "draft" });
+        setTool("select");
+      });
       return;
     }
     if (
@@ -567,26 +889,48 @@ export default function Studio({ initialState, onExit }) {
     }
   }
   async function finish() {
-    const polygon = tool === "country";
+    const polygon = ["country", "state", "settlement"].includes(tool);
     if (draft.length < (polygon ? 3 : 2)) return;
-    await command({
-      kind: "entity",
-      entity: {
-        id: uid(),
-        name,
-        kind: tool,
-        geometry: polygon ? "polygon" : "line",
-        points: draft,
-        layer: layerFor(tool),
-        color: polygon ? "#c49d65" : "#e7cfaa",
-        minDetail: 0,
-      },
-    });
+    const id = uid();
+    const kind = drawingType[tool] || tool;
+    const shape = {
+      id,
+      name: name === "New feature" ? `${kind} ${id.slice(0, 8)}` : name,
+      kind,
+      geometry: polygon ? "polygon" : "line",
+      points: draft,
+      layer: layerFor(tool),
+      color: polygon ? "#c49d65" : "#e7cfaa",
+      minDetail: 0,
+    };
+    await command({ kind: "entity", entity: shape });
+    setSelected({ ...shape, recordStatus: "draft" });
+    setTool("select");
     setDraft([]);
   }
   function down(e) {
     if (e.button !== 0) return;
     e.currentTarget.setPointerCapture(e.pointerId);
+    if (resourcesOpen && !resourcePan && !e.shiftKey) {
+      const center = position(e);
+      setResourceCenter(center);
+      drag.current = { resourceCenter: center, start: [e.clientX, e.clientY] };
+      return;
+    }
+    if (resourcesOpen) {
+      drag.current = {
+        resourcePan: true,
+        start: [e.clientX, e.clientY],
+        camera,
+        point: position(e),
+        moved: false,
+      };
+      return;
+    }
+    if (mapSetup?.step === "land") {
+      drag.current = { landStart: position(e), start: [e.clientX, e.clientY] };
+      return;
+    }
     if (state && (tool === "select" || tool === "inspect")) {
       const hits = featureIndex.pick(
         position(e),
@@ -596,6 +940,7 @@ export default function Studio({ initialState, onExit }) {
         ? hits[(hits.findIndex((f) => f.id === selected?.id) + 1) % hits.length]
         : hits[0];
       if (hit?.river) {
+        inspect(position(e));
         setRiverSelection(hit.river);
         setSelected(null);
         return;
@@ -632,6 +977,33 @@ export default function Studio({ initialState, onExit }) {
     const d = drag.current,
       dx = e.clientX - d.start[0],
       dy = e.clientY - d.start[1];
+    if (d.resourceCenter) {
+      if (Math.hypot(dx, dy) > 4)
+        setResourceRadius(
+          Math.max(
+            0.05,
+            Math.min(
+              resourceMaximum,
+              resourceDistance(
+                d.resourceCenter,
+                p,
+                state.continuous.spec.radiusKm,
+              ),
+            ),
+          ),
+        );
+      return;
+    }
+    if (d.landStart) {
+      const a = d.landStart;
+      setLandBox({
+        x: Math.min(a[0], p[0]),
+        y: Math.min(a[1], p[1]),
+        w: Math.abs(a[0] - p[0]),
+        h: Math.abs(a[1] - p[1]),
+      });
+      return;
+    }
     if (Math.hypot(dx, dy) > 4) d.moved = true;
     if (d.vertex != null) {
       setSelected((v) => ({
@@ -653,7 +1025,7 @@ export default function Studio({ initialState, onExit }) {
       return;
     }
     if (d.moved)
-      setCamera({
+      navigation.current.transform(() => ({
         ...d.camera,
         x:
           d.camera.x -
@@ -661,12 +1033,30 @@ export default function Studio({ initialState, onExit }) {
         y:
           d.camera.y -
           dy / viewport(svg.current.getBoundingClientRect(), d.camera).scale,
-      });
+      }));
   }
   function up(e) {
     const d = drag.current;
     drag.current = null;
     if (!d) return;
+    if (d.resourceCenter || d.resourcePan) return;
+    if (d.landStart) {
+      if (!mapSetup?.loading) {
+        const p = position(e);
+        if (Math.hypot(e.clientX - d.start[0], e.clientY - d.start[1]) > 4)
+          setLandIDs((ids) =>
+            rectangleLand(landComponents, ids, {
+              x: Math.min(d.landStart[0], p[0]),
+              y: Math.min(d.landStart[1], p[1]),
+              w: Math.abs(p[0] - d.landStart[0]),
+              h: Math.abs(p[1] - d.landStart[1]),
+            }),
+          );
+        else setLandIDs((ids) => toggleLand(landComponents, ids, p));
+      }
+      setLandBox(null);
+      return;
+    }
     if ((d.vertex != null || d.entity) && d.moved) {
       run(() =>
         command(
@@ -688,9 +1078,14 @@ export default function Studio({ initialState, onExit }) {
   }
   function zoom(e) {
     e.preventDefault();
-    const p = position(e),
+    const rect = svg.current.getBoundingClientRect(),
+      x = e.clientX,
+      y = e.clientY,
       factor = Math.exp(Math.max(-0.4, Math.min(0.4, e.deltaY * 0.0015)));
-    setCamera((c) => {
+    navigation.current.transform((c) => {
+      // Batched wheel events can share a listener from an earlier render. Use
+      // the SAME current camera for both pointer conversion and zooming.
+      const p = screenToMap(x, y, rect, c);
       const w = Math.max(0.00008, Math.min(3, c.w * factor)),
         f = w / c.w;
       return {
@@ -707,66 +1102,91 @@ export default function Studio({ initialState, onExit }) {
     element.addEventListener("wheel", zoom, { passive: false });
     return () => element.removeEventListener("wheel", zoom);
   }, [camera, width]);
-  async function exportMap(format) {
+  async function exportMap(
+    format,
+    outputCamera = camera,
+    outputState = active.current,
+  ) {
     if (!svg.current) return;
-    if ((exportWidth * exportWidth * camera.h) / camera.w > 16777216)
+    if (format === "assets" && exportWidth > 4096)
+      throw Error(
+        "Choose an export width up to 4096 pixels to save a square map and banner.",
+      );
+    if (
+      (exportWidth * exportWidth * outputCamera.h) / outputCamera.w >
+      16777216
+    )
       throw Error("Choose a smaller export width for this tall view.");
     const clone = svg.current.cloneNode(true);
+    if (!illustrating)
+      prepareGeographicExport(
+        clone,
+        geometryCache.current.derive({
+          identity: sourceIdentity,
+          revision: outputState.project.revision,
+          rivers,
+          coasts,
+          level: detailLevel,
+          fast: false,
+        }),
+        projection.point,
+        outputCamera,
+      );
     clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
     clone.setAttribute("width", String(exportWidth));
-    clone.setAttribute("height", String((exportWidth * camera.h) / camera.w));
+    clone.setAttribute(
+      "height",
+      String((exportWidth * outputCamera.h) / outputCamera.w),
+    );
+    const exportBounds = projection.box(outputCamera);
+    const landMask = clone.querySelector("#selected-illustration-land path");
+    if (landMask && art?.regions)
+      landMask.setAttribute(
+        "d",
+        illustrationCoverage
+          .map(
+            (p) =>
+              pathText(clipPolygon(p, outputCamera).map(projection.point)) +
+              " Z",
+          )
+          .join(" "),
+      );
+    clone.setAttribute(
+      "viewBox",
+      `${exportBounds.x} ${exportBounds.y} ${exportBounds.w} ${exportBounds.h}`,
+    );
+    for (const mask of clone.querySelectorAll("mask")) {
+      mask.setAttribute("x", String(exportBounds.x));
+      mask.setAttribute("y", String(exportBounds.y));
+      mask.setAttribute("width", String(exportBounds.w));
+      mask.setAttribute("height", String(exportBounds.h));
+    }
+    // Preview transactions are editor state, not export quality or content.
+    for (const frame of clone.querySelectorAll(
+      '[aria-label="Committed terrain viewport"]',
+    ))
+      for (const key of [
+        "data-generation",
+        "data-phase",
+        "data-pixel-width",
+        "data-pixel-height",
+      ])
+        frame.removeAttribute(key);
     for (const selected of clone.querySelectorAll(
       '[aria-label="Illustration selection"], [data-editor-handle]',
     ))
       selected.remove();
-    for (const terrain of clone.querySelectorAll(
-      '[aria-label="Continuous terrain tiles"]',
-    )) {
-      terrain.replaceChildren();
-      const queue = visibleTiles(camera, exportWidth, 1);
-      const worker = async () => {
-        while (queue.length) {
-          const t = queue.shift();
-          const r = await fetch(
-            `/api/${base}/terrain/tiles/${t.z}/${t.x}/${t.y}?size=${t.size}&style=${terrain.getAttribute("data-terrain-style") || displayStyle}&strict=1&revision=${state.project.revision}`,
-          );
-          if (!r.ok)
-            throw Error(
-              "Export terrain changed or could not be sampled; retry the export.",
-            );
-          const blob = await r.blob();
-          const uri = await new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.readAsDataURL(blob);
-          });
-          const img = document.createElementNS(
-            "http://www.w3.org/2000/svg",
-            "image",
-          );
-          for (const [k, v] of Object.entries({
-            href: uri,
-            x: t.x * t.span,
-            y: t.y * t.span,
-            width: t.span,
-            height: t.span,
-            preserveAspectRatio: "none",
-          }))
-            img.setAttribute(k, String(v));
-          terrain.appendChild(img);
-        }
-      };
-      await Promise.all([worker(), worker(), worker()]);
-    }
-    for (const img of clone.querySelectorAll("image")) {
-      const blob = await (await fetch(img.getAttribute("href"))).blob();
-      const uri = await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.readAsDataURL(blob);
-      });
-      img.setAttribute("href", uri);
-    }
+    await exportTerrain(clone, {
+      camera: outputCamera,
+      width: exportWidth,
+      projection,
+      session: outputState.id,
+      revision: outputState.project.revision,
+      identity: JSON.stringify([outputState.id, outputState.project.revision]),
+      wrapLongitude: wrapIllustration,
+      onProgress: setIllustrationProgress,
+    });
+    if (format === "assets") return illustrationAssets(clone, exportWidth);
     const blob = new Blob([new XMLSerializer().serializeToString(clone)], {
       type: "image/svg+xml",
     });
@@ -784,11 +1204,13 @@ export default function Studio({ initialState, onExit }) {
       });
       const c = document.createElement("canvas");
       c.width = exportWidth;
-      c.height = Math.round((exportWidth * camera.h) / camera.w);
+      c.height = Math.round((exportWidth * outputCamera.h) / outputCamera.w);
       c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
       const png = await new Promise((resolve) =>
         c.toBlob(resolve, "image/png"),
       );
+      if (!png) throw Error("The illustration image could not be rendered.");
+      if (format === "snapshot") return png;
       if (format === "png") {
         download(png, "KRIEMHILD-map.png");
         return;
@@ -807,6 +1229,97 @@ export default function Studio({ initialState, onExit }) {
     }
   }
   const diagnostics = state?.continuous?.diagnostics;
+  async function saveIllustration() {
+    if (!art) return;
+    const started = performance.now();
+    setSavedIllustration(null);
+    const design = art;
+    await ensureWorldMap();
+    if (
+      JSON.stringify(active.current.project.illustrations?.[design.id]) !==
+      JSON.stringify(design)
+    )
+      await command({ kind: "illustration", illustration: design });
+    if (active.current.unsaved) await save();
+    const source = active.current;
+    const sourceMs = performance.now() - started;
+    const assetKey = JSON.stringify([
+      source.id,
+      source.project.revision,
+      design,
+      invalidations,
+      entities,
+      rivers.length,
+      exportWidth,
+      hillshade,
+      artTerrain?.bounds,
+    ]);
+    setIllustrationProgress({
+      phase: "Preparing map images",
+      completed: 0,
+      total: 1,
+    });
+    const cached = imageAssets.current?.key === assetKey;
+    const assets = cached
+      ? imageAssets.current.assets
+      : await exportMap("assets", {
+          x: design.bounds[0],
+          y: design.bounds[1],
+          w: design.bounds[2],
+          h: design.bounds[3],
+        });
+    imageAssets.current = { key: assetKey, assets };
+    const rasterMs = performance.now() - started - sourceMs;
+    if (
+      active.current?.id !== source.id ||
+      active.current.project.revision !== source.project.revision
+    )
+      throw Error(
+        "The map changed while rendering; save the illustration again.",
+      );
+    const form = new FormData();
+    form.append(
+      "metadata",
+      JSON.stringify({
+        sourceRevision: source.project.revision,
+        illustration: design,
+      }),
+    );
+    form.append("file", assets.map, "illustration.png");
+    form.append("banner", assets.banner, "banner.png");
+    setIllustrationProgress({
+      phase: "Saving map and banner",
+      completed: 0,
+      total: 1,
+    });
+    const response = await fetch(
+      `/api/sessions/${source.id}/illustrated-maps`,
+      { method: "POST", body: form },
+    );
+    const result = await response.json();
+    if (!response.ok)
+      throw Error(result.error || "Could not save the illustration.");
+    setWorldContext(result.document);
+    const saves = (window.__illustrationSaveLog ||= []);
+    saves.push({
+      sourceMs,
+      rasterMs,
+      totalMs: performance.now() - started,
+      serverTiming: response.headers.get("Server-Timing"),
+      cached,
+    });
+    if (saves.length > 20) saves.shift();
+    setIllustrationProgress(null);
+    const folder = result.document.entities.find(
+      (e) =>
+        e.id === result.archiveId && e.ageId === source.historicalMap.ageId,
+    );
+    setSavedIllustration({
+      name: design.title,
+      folder: folder?.name || "Illustrated maps",
+      href: `/worlds/${source.historyWorldId}/library?age=${source.historicalMap.ageId}&record=${result.fileId}`,
+    });
+  }
   const visibleEntities = entities
     .filter(
       (e) =>
@@ -817,10 +1330,10 @@ export default function Studio({ initialState, onExit }) {
     .filter((e) => {
       const b = geometryBounds(e.points.map((p) => projectToMap(p, state)));
       return (
-        b.x <= camera.x + camera.w &&
-        b.x + b.w >= camera.x &&
-        b.y <= camera.y + camera.h &&
-        b.y + b.h >= camera.y
+        b.x <= geographicViewport.x + geographicViewport.w &&
+        b.x + b.w >= geographicViewport.x &&
+        b.y <= geographicViewport.y + geographicViewport.h &&
+        b.y + b.h >= geographicViewport.y
       );
     })
     .sort(
@@ -829,6 +1342,40 @@ export default function Studio({ initialState, onExit }) {
         state.project.layers.find((l) => l.id === b.layer).order,
     );
   const riverShapes = useMemo(() => riverFeatures(rivers), [rivers]);
+  const geography = useMemo(
+    () =>
+      geometryCache.current.derive({
+        identity: sourceIdentity,
+        revision: state?.project?.revision,
+        rivers,
+        coasts,
+        level: detailLevel,
+        fast: previewQuality.preset === "performance",
+        pixel: 1 / projection.scale,
+      }),
+    [
+      sourceIdentity,
+      state?.project?.revision,
+      rivers,
+      coasts,
+      detailLevel,
+      previewQuality.preset,
+      projection.scale,
+    ],
+  );
+  const displayedRivers = useMemo(
+    () =>
+      (style === "river-network" ? riverShapes : geography.rivers)
+        .filter((f) => intersects(f.bounds, projection.bounds))
+        .map((f) => ({
+          feature: f,
+          path: clipLine(f.points, projection.bounds)
+            .map((part) => pathText(part.map(projection.point)))
+            .join(" "),
+        }))
+        .filter((f) => f.path),
+    [style, riverShapes, geography, projection],
+  );
   const featureIndex = useMemo(
     () =>
       new FeatureIndex([
@@ -836,18 +1383,7 @@ export default function Studio({ initialState, onExit }) {
           ...e,
           points: e.points.map((p) => projectToMap(p, state)),
         })),
-        ...(showRivers
-          ? riverShapes.filter((f) =>
-              riverVisible(
-                f.river,
-                camera.w > 0.8
-                  ? "world"
-                  : camera.w > 0.15
-                    ? "continent"
-                    : "local",
-              ),
-            )
-          : []),
+        ...(showRivers ? displayedRivers.map((f) => f.feature) : []),
       ]),
     [
       entities,
@@ -856,8 +1392,12 @@ export default function Studio({ initialState, onExit }) {
       camera.y,
       camera.w,
       camera.h,
+      width,
+      height,
       showRivers,
       riverShapes,
+      geography,
+      displayedRivers,
     ],
   );
   function feature(e, preview = false) {
@@ -866,7 +1406,7 @@ export default function Studio({ initialState, onExit }) {
     const common = {
       key: e.id,
       stroke: isSelected ? "#fff4b1" : e.color || "#ddba7b",
-      strokeWidth: (camera.w / width) * (e.kind === "road" ? 2 : 1.2),
+      strokeWidth: e.kind === "road" ? 2 : 1.2,
       fill:
         f.geometry === "polygon"
           ? e.kind === "house"
@@ -895,17 +1435,38 @@ export default function Studio({ initialState, onExit }) {
       },
     };
     return (
-      <g key={e.id} opacity={preview ? 0.65 : 1}>
+      <g key={e.id} data-map-feature={e.id} opacity={preview ? 0.65 : 1}>
         {f.geometry === "polygon" ? (
-          <polygon {...common} points={pointsText(f.points, state)} />
+          <>
+            <polygon
+              {...common}
+              stroke="none"
+              points={projection.points(
+                clipPolygon(
+                  f.points.map((p) => projectToMap(p, state)),
+                  projection.bounds,
+                ),
+              )}
+            />
+            <path
+              {...common}
+              fill="none"
+              d={drawPath(
+                [...f.points, f.points[0]].map((p) => projectToMap(p, state)),
+              )}
+            />
+          </>
         ) : f.geometry === "line" ? (
-          <polyline {...common} points={pointsText(f.points, state)} />
+          <path
+            {...common}
+            d={drawPath(f.points.map((p) => projectToMap(p, state)))}
+          />
         ) : (
           <circle
             {...common}
-            cx={toMap(f.points[0], state)[0]}
-            cy={toMap(f.points[0], state)[1]}
-            r={(camera.w / width) * 4}
+            cx={drawProjectPoint(f.points[0])[0]}
+            cy={drawProjectPoint(f.points[0])[1]}
+            r={4}
             fill={e.color}
           />
         )}
@@ -914,10 +1475,10 @@ export default function Studio({ initialState, onExit }) {
           f.kind !== "road" &&
           f.kind !== "district" && (
             <text
-              x={toMap(f.points[0], state)[0]}
-              y={toMap(f.points[0], state)[1] - (camera.w / width) * 8}
+              x={drawProjectPoint(f.points[0])[0]}
+              y={drawProjectPoint(f.points[0])[1] - 8}
               fill="#f0e6c8"
-              fontSize={(camera.w / width) * 12}
+              fontSize={12}
               textAnchor="middle"
               pointerEvents="none"
             >
@@ -929,6 +1490,93 @@ export default function Studio({ initialState, onExit }) {
   }
   return (
     <div className="terrain-studio">
+      {mapSetup?.step === "name" && (
+        <Dialog
+          title="Name illustrated map"
+          onClose={() => {
+            setupSequence.current++;
+            setMapSetup(null);
+          }}
+          onSubmit={setupIllustration}
+          trackChanges={false}
+          actions={
+            <>
+              <button type="button" data-dialog-dismiss>
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="primary"
+                disabled={!mapSetup.title.trim()}
+              >
+                Continue
+              </button>
+            </>
+          }
+        >
+          <label>
+            Map name
+            <input
+              aria-label="Illustrated map name"
+              autoFocus
+              required
+              maxLength={160}
+              value={mapSetup.title}
+              onChange={(e) =>
+                setMapSetup({ ...mapSetup, title: e.target.value })
+              }
+            />
+          </label>
+          {Object.values(state.project.illustrations || {}).length > 0 && (
+            <label>
+              Saved map
+              <select
+                aria-label="Saved illustrated map"
+                value={mapSetup.resume ? art?.id || "" : ""}
+                onChange={(e) => {
+                  const saved = state.project.illustrations[e.target.value];
+                  if (saved) {
+                    setArt(saved);
+                    setMapSetup({
+                      ...mapSetup,
+                      resume: true,
+                      title: saved.title,
+                      kind: saved.focus ? "place" : "land",
+                      focus: entities.find((e) => e.id === saved.focus) || null,
+                    });
+                  } else setMapSetup({ ...mapSetup, resume: false, title: "" });
+                }}
+              >
+                <option value="">Create a new map</option>
+                {Object.values(state.project.illustrations).map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          {mapSetup.focus && (
+            <label>
+              Map content
+              <select
+                aria-label="Illustrated map content"
+                value={mapSetup.kind}
+                onChange={(e) =>
+                  setMapSetup({
+                    ...mapSetup,
+                    kind: e.target.value,
+                    resume: false,
+                  })
+                }
+              >
+                <option value="place">{mapSetup.focus.name}</option>
+                <option value="land">Choose continents and islands</option>
+              </select>
+            </label>
+          )}
+        </Dialog>
+      )}
       <header className="studio-top">
         <button
           className="studio-brand"
@@ -951,6 +1599,7 @@ export default function Studio({ initialState, onExit }) {
         </span>
         <nav aria-label="World editors">
           {[
+            ["atlas", "Atlas"],
             ["generate", "Terrain Generator"],
             ["map", "Map Builder"],
             ["settlement", "Settlement Builder"],
@@ -958,13 +1607,18 @@ export default function Studio({ initialState, onExit }) {
             <button
               key={id}
               aria-current={mode === id ? "page" : undefined}
-              disabled={id !== "generate" && !state}
-              onClick={() => {
-                setMode(id);
-                if (id === "generate") setIllustrating(false);
-                setTool(id === "settlement" ? "site" : "inspect");
-                setDraft([]);
-              }}
+              disabled={busy || (id !== "generate" && !state)}
+              onClick={() =>
+                run(async () => {
+                  if (id !== "generate") await ensureWorldMap();
+                  setMode(id);
+                  setResourcesOpen(false);
+                  if (id === "generate" || id === "atlas")
+                    if (illustrating) leaveIllustration();
+                  setTool(id === "settlement" ? "settlement" : "inspect");
+                  setDraft([]);
+                })
+              }
             >
               {label}
             </button>
@@ -985,20 +1639,53 @@ export default function Studio({ initialState, onExit }) {
         <button disabled={!state} onClick={() => setShow3D(true)}>
           3D Terrain
         </button>
+        {(mode === "map" || mode === "settlement" || mode === "atlas") && (
+          <button
+            disabled={!state}
+            aria-pressed={resourcesOpen}
+            onClick={() => {
+              if (illustrating) leaveIllustration();
+              if (mapSetup) {
+                setupSequence.current++;
+                setMapSetup(null);
+                setLandBox(null);
+              }
+              setResourcesOpen((v) => !v);
+              setSelected(null);
+              setDraft([]);
+              setPanel(true);
+            }}
+          >
+            Terrain Resources
+          </button>
+        )}
         {mode !== "generate" && (
           <button
             disabled={!state}
-            aria-pressed={illustrating}
+            aria-pressed={illustrating || !!mapSetup}
+            aria-describedby={
+              mapSetup?.step === "land"
+                ? "illustrator-land-instructions"
+                : undefined
+            }
+            className={
+              illustrating || mapSetup ? "studio-illustrator-active" : ""
+            }
             onClick={() => {
-              if (illustrating) setIllustrating(false);
-              else
-                artScope(
-                  mode === "settlement" ? "city" : "world",
-                  mode === "settlement" && selected ? selected : undefined,
-                );
+              if (mapSetup) {
+                setupSequence.current++;
+                setCamera(mapSetup.camera);
+                setMapSetup(null);
+                setLandBox(null);
+              } else if (illustrating) leaveIllustration();
+              else startIllustration();
             }}
           >
-            {illustrating ? "Construction mode" : "Medieval Illustrator"}
+            {mapSetup?.step === "land"
+              ? "Illustrator: select land"
+              : illustrating
+                ? "Illustrator active · return to construction"
+                : "Medieval Illustrator"}
           </button>
         )}
         <button
@@ -1016,15 +1703,15 @@ export default function Studio({ initialState, onExit }) {
       )}
       <div className="studio-body">
         <nav className="studio-rail" aria-label="Map tools">
-          {(mode === "generate"
+          {(mode === "generate" || mode === "atlas"
             ? ["inspect"]
             : mode === "settlement"
-              ? ["site", "select", "road", "house", "landmark"]
+              ? ["settlement", "select", "road", "house", "landmark", "site"]
               : [
                   "inspect",
                   "select",
                   "road",
-                  "country",
+                  "state",
                   "border",
                   "landmark",
                   "label",
@@ -1036,7 +1723,7 @@ export default function Studio({ initialState, onExit }) {
                 ]
           ).map((t) => (
             <button
-              title={t}
+              title={t === "site" ? "Generate settlement layout" : t}
               key={t}
               aria-pressed={tool === t}
               onClick={() => {
@@ -1044,7 +1731,13 @@ export default function Studio({ initialState, onExit }) {
                 setDraft([]);
               }}
             >
-              {t}
+              {t === "site"
+                ? "Generate layout"
+                : t === "state"
+                  ? "State"
+                  : t === "settlement"
+                    ? "Settlement"
+                    : t}
             </button>
           ))}
           <hr />
@@ -1063,198 +1756,430 @@ export default function Studio({ initialState, onExit }) {
           </button>
         </nav>
         <main className="studio-stage" ref={stage}>
-          <svg
-            ref={svg}
-            role="img"
-            aria-label="Interactive continuous world map"
-            tabIndex={0}
-            viewBox={`${camera.x} ${camera.y} ${camera.w} ${camera.h}`}
-            onPointerDown={down}
-            onPointerMove={move}
-            onPointerUp={up}
-            onPointerCancel={() => {
-              drag.current = null;
-            }}
-          >
-            <rect x="-100" y="-100" width="200" height="200" fill="#101d2a" />
-            {state && (
-              <>
-                <TileSurface
+          <ProjectionContext.Provider value={projection}>
+            <svg
+              ref={svg}
+              role="img"
+              aria-label="Interactive continuous world map"
+              tabIndex={0}
+              viewBox={`0 0 ${width} ${height}`}
+              data-camera={JSON.stringify(camera)}
+              onPointerDown={down}
+              onPointerMove={move}
+              onPointerUp={up}
+              onPointerCancel={() => {
+                drag.current = null;
+              }}
+            >
+              <rect
+                x="0"
+                y="0"
+                width={width}
+                height={height}
+                fill={illustrating ? "#e9d9af" : "#101d2a"}
+              />
+              {state && (
+                <ViewportSurface
+                  wrapLongitude={wrapIllustration}
+                  active={viewportRenderer}
                   enabled={!show3D}
                   session={state.id}
                   revision={state.project.revision}
                   invalidations={invalidations}
-                  style={displayStyle}
                   identity={`${state.worldId}:${state.id}`}
                   camera={camera}
                   width={width}
+                  height={height}
+                  previewQuality={illustrating ? undefined : previewQuality}
+                  previewHillshade={
+                    illustrating || displayStyle === "terrain"
+                      ? undefined
+                      : hillshade
+                  }
+                  onDiagnostics={setRenderDiagnostics}
+                  onProgress={setTerrainProgress}
+                  detailLevel={detailLevel}
+                  retry={renderRetry}
                   onLoading={setLoading}
-                />
-                {hillshade > 0 && !illustrating && (
-                  <g
-                    style={{ mixBlendMode: "multiply" }}
-                    opacity={hillshade}
-                    pointerEvents="none"
-                  >
-                    <TileSurface
-                      enabled={!show3D}
-                      session={state.id}
-                      revision={state.project.revision}
-                      invalidations={invalidations}
-                      style="hillshade"
-                      identity={`${state.worldId}:${state.id}`}
-                      camera={camera}
-                      width={width}
-                    />
-                  </g>
-                )}
-                {showRivers && !illustrating && (
-                  <g
-                    fill="none"
-                    stroke="#71b7d3"
-                    strokeOpacity=".7"
-                    pointerEvents="none"
-                  >
-                    {rivers
-                      .filter(
-                        (r) =>
-                          style === "river-network" ||
-                          riverVisible(
-                            r,
-                            camera.w > 0.8
-                              ? "world"
-                              : camera.w > 0.15
-                                ? "continent"
-                                : "local",
-                          ),
-                      )
-                      .map((r) => (
+                  onError={setRenderError}
+                  styles={[
+                    displayStyle,
+                    ...(displayStyle !== "terrain" &&
+                    !illustrating &&
+                    hillshade > 0 &&
+                    previewQuality.preset !== "performance"
+                      ? ["hillshade"]
+                      : []),
+                    ...(illustrating ? ["relief-shadow", "shore-ink"] : []),
+                    ...(showRivers || illustrating ? ["river-mask"] : []),
+                  ]}
+                >
+                  <defs>
+                    {illustrating && art?.regions?.length > 0 && (
+                      <mask
+                        id="selected-illustration-land"
+                        maskUnits="userSpaceOnUse"
+                        x="0"
+                        y="0"
+                        width={width}
+                        height={height}
+                      >
                         <path
-                          key={r.id}
-                          stroke={
-                            style === "river-network"
-                              ? {
-                                  major: "#17488c",
-                                  regional: "#328bd3",
-                                  stream: "#6fcce4",
-                                  ephemeral: "#9b7345",
-                                  distributary: "#36aaaa",
-                                }[r.class] || "#71b7d3"
-                              : undefined
-                          }
-                          strokeDasharray={
-                            r.class === "ephemeral"
-                              ? `${(camera.w / width) * 3} ${(camera.w / width) * 2}`
-                              : undefined
-                          }
-                          strokeWidth={riverWidth(
-                            r,
-                            camera.w / width,
-                            state.continuous.spec.radiusKm,
-                          )}
-                          d={r.path
-                            .map(
-                              (p, i) =>
-                                `${i === 0 || Math.abs(p[0] - r.path[i - 1][0]) > Math.PI ? "M" : "L"}${(p[0] + Math.PI) / Math.PI},${0.5 - p[1] / Math.PI}`,
-                            )
-                            .join(" ")}
+                          fill="white"
+                          fillRule="nonzero"
+                          stroke="white"
+                          strokeWidth="1"
+                          d={landPath(illustrationCoverage)}
                         />
-                      ))}
-                  </g>
-                )}
-                {!illustrating && visibleEntities.map((e) => feature(e))}
-                {illustrating && art && (
-                  <IllustrationScene
-                    config={art}
-                    objects={artObjects}
-                    selected={artSelected}
-                    onSelect={setArtSelected}
-                    onOverride={overrideArt}
-                    position={position}
-                    state={state}
-                    pixel={art.bounds[2] / 1200}
-                    coastOverlay={
-                      state.continuous.analysisStale ? (
-                        <TileSurface
-                          enabled={!show3D}
-                          session={state.id}
-                          revision={state.project.revision}
-                          invalidations={invalidations}
-                          style="shore-ink"
-                          identity={`${state.worldId}:${state.id}`}
-                          camera={camera}
-                          width={width}
-                        />
-                      ) : null
-                    }
-                    relief={
+                      </mask>
+                    )}
+                    <mask
+                      id="terrain-river-mask"
+                      maskUnits="userSpaceOnUse"
+                      x="0"
+                      y="0"
+                      width={width}
+                      height={height}
+                    >
                       <g
-                        style={{ mixBlendMode: "multiply" }}
-                        opacity={hillshade}
+                        mask={
+                          illustrating && art?.regions?.length
+                            ? "url(#selected-illustration-land)"
+                            : undefined
+                        }
+                      >
+                        {viewportRenderer ? (
+                          <ViewportLayer style="river-mask" />
+                        ) : (
+                          <TileSurface
+                            wrapLongitude={wrapIllustration}
+                            enabled={!show3D}
+                            session={state.id}
+                            revision={state.project.revision}
+                            invalidations={invalidations}
+                            identity={`${state.worldId}:${state.id}`}
+                            style="river-mask"
+                            camera={camera}
+                            width={width}
+                            height={height}
+                          />
+                        )}
+                      </g>
+                    </mask>
+                  </defs>
+                  <g
+                    mask={
+                      illustrating && art?.regions?.length
+                        ? "url(#selected-illustration-land)"
+                        : undefined
+                    }
+                  >
+                    {viewportRenderer ? (
+                      <ViewportLayer style={displayStyle} primary />
+                    ) : (
+                      <TileSurface
+                        wrapLongitude={wrapIllustration}
+                        enabled={!show3D}
+                        session={state.id}
+                        revision={state.project.revision}
+                        invalidations={invalidations}
+                        style={displayStyle}
+                        identity={`${state.worldId}:${state.id}`}
+                        camera={camera}
+                        width={width}
+                        height={height}
+                        onLoading={setLoading}
+                      />
+                    )}
+                  </g>
+                  {hillshade > 0 &&
+                    !illustrating &&
+                    displayStyle !== "terrain" && (
+                      <g opacity={hillshade} pointerEvents="none">
+                        {viewportRenderer ? (
+                          <ViewportLayer style="hillshade" />
+                        ) : (
+                          <TileSurface
+                            wrapLongitude={wrapIllustration}
+                            enabled={!show3D}
+                            session={state.id}
+                            revision={state.project.revision}
+                            invalidations={invalidations}
+                            style="relief-shadow"
+                            identity={`${state.worldId}:${state.id}`}
+                            camera={camera}
+                            width={width}
+                            height={height}
+                          />
+                        )}
+                      </g>
+                    )}
+                  {!illustrating &&
+                    displayStyle === "physical-atlas" &&
+                    !state.continuous.analysisStale && (
+                      <g
+                        fill="none"
+                        stroke="#556c68"
+                        strokeOpacity=".65"
+                        strokeWidth={0.65}
                         pointerEvents="none"
                       >
-                        <TileSurface
-                          enabled={!show3D}
-                          session={state.id}
-                          revision={state.project.revision}
-                          invalidations={invalidations}
-                          style="hillshade"
-                          identity={`${state.worldId}:${state.id}`}
-                          camera={camera}
-                          width={width}
-                        />
+                        {geography.coasts.map((p, i) => (
+                          <path
+                            key={i}
+                            data-coast-index={i}
+                            d={pathText(p.map(drawPoint))}
+                          />
+                        ))}
                       </g>
-                    }
-                  />
-                )}
-                {settlement?.entities.map((e) => feature(e, true))}
-                {!illustrating &&
-                  selected?.points.map((p, i) => (
-                    <circle
-                      key={i}
-                      data-editor-handle="vertex"
-                      cx={toMap(p, state)[0]}
-                      cy={toMap(p, state)[1]}
-                      r={(camera.w / width) * 4}
-                      fill="#fff0a3"
-                      stroke="#473c28"
-                      strokeWidth={camera.w / width}
-                      onPointerDown={(e) => {
-                        e.stopPropagation();
-                        drag.current = {
-                          start: [e.clientX, e.clientY],
-                          vertex: i,
-                          moved: false,
-                        };
-                        svg.current.setPointerCapture(e.pointerId);
-                      }}
-                    />
-                  ))}
-                {draft.length > 0 && (
-                  <polyline
-                    points={pointsText(draft, state)}
-                    fill={tool === "country" ? "#ddc98c33" : "none"}
-                    stroke="#ffe3a2"
-                    strokeWidth={(camera.w / width) * 2}
-                  />
-                )}
-                {cursor &&
-                  ["raise", "lower", "smooth", "water", "plant"].includes(
-                    tool,
-                  ) && (
-                    <circle
-                      cx={cursor[0]}
-                      cy={cursor[1]}
-                      r={radius / (Math.PI * state.continuous.spec.radiusKm)}
-                      fill="#ffe5a522"
-                      stroke="#ffe5a5"
-                      strokeWidth={camera.w / width}
+                    )}
+                  {showRivers && !illustrating && (
+                    <g
+                      mask="url(#terrain-river-mask)"
+                      fill="none"
+                      stroke="#71b7d3"
+                      strokeOpacity=".7"
                       pointerEvents="none"
+                    >
+                      {displayedRivers.map(({ feature: f, path }) => {
+                        const r = f.river;
+                        return (
+                          <path
+                            key={f.id}
+                            data-river-id={f.id}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            stroke={
+                              style === "river-network"
+                                ? {
+                                    major: "#17488c",
+                                    regional: "#328bd3",
+                                    stream: "#6fcce4",
+                                    ephemeral: "#9b7345",
+                                    distributary: "#36aaaa",
+                                  }[r.class] || "#71b7d3"
+                                : undefined
+                            }
+                            strokeDasharray={
+                              r.class === "ephemeral" ? "3 2" : undefined
+                            }
+                            strokeWidth={
+                              riverWidth(
+                                r,
+                                1 / projection.scale,
+                                state.continuous.spec.radiusKm,
+                              ) * projection.scale
+                            }
+                            d={path}
+                          />
+                        );
+                      })}
+                    </g>
+                  )}
+                  {!illustrating && visibleEntities.map((e) => feature(e))}
+                  {mapSetup?.step === "land" && (
+                    <g aria-label="Selected landmasses" pointerEvents="none">
+                      {landComponents
+                        .filter((c) => landIDs.includes(c.id))
+                        .map((c) => (
+                          <path
+                            key={c.id}
+                            d={landPath(c.paths)}
+                            fill="#e7c56b66"
+                            fillRule="evenodd"
+                            stroke="#ffdd83"
+                            strokeWidth="1.5"
+                          />
+                        ))}
+                      {landBox && (
+                        <rect
+                          {...(() => {
+                            const b = projection.box(landBox);
+                            return { x: b.x, y: b.y, width: b.w, height: b.h };
+                          })()}
+                          fill="#f8db7044"
+                          stroke="#ffdd83"
+                        />
+                      )}
+                    </g>
+                  )}
+                  {illustrating && art && (
+                    <IllustrationScene
+                      config={art}
+                      objects={artObjects}
+                      selected={artSelected}
+                      onSelect={setArtSelected}
+                      onOverride={overrideArt}
+                      position={position}
+                      state={state}
+                      pixel={art.bounds[2] / 1200}
+                      coastOverlay={
+                        viewportRenderer ? (
+                          <ViewportLayer style="shore-ink" />
+                        ) : (
+                          <TileSurface
+                            wrapLongitude={wrapIllustration}
+                            enabled={!show3D}
+                            session={state.id}
+                            revision={state.project.revision}
+                            invalidations={invalidations}
+                            style="shore-ink"
+                            identity={`${state.worldId}:${state.id}`}
+                            camera={camera}
+                            width={width}
+                            height={height}
+                          />
+                        )
+                      }
+                      riverMask="url(#terrain-river-mask)"
+                      landMask={
+                        art.regions?.length
+                          ? "url(#selected-illustration-land)"
+                          : undefined
+                      }
+                      relief={
+                        <g opacity={hillshade} pointerEvents="none">
+                          {viewportRenderer ? (
+                            <ViewportLayer style="relief-shadow" />
+                          ) : (
+                            <TileSurface
+                              wrapLongitude={wrapIllustration}
+                              enabled={!show3D}
+                              session={state.id}
+                              revision={state.project.revision}
+                              invalidations={invalidations}
+                              style="relief-shadow"
+                              identity={`${state.worldId}:${state.id}`}
+                              camera={camera}
+                              width={width}
+                              height={height}
+                            />
+                          )}
+                        </g>
+                      }
                     />
                   )}
-              </>
-            )}
-          </svg>
+                  {settlement?.entities.map((e) => feature(e, true))}
+                  {resourcesOpen &&
+                    resourceCenter &&
+                    [-2, 0, 2].map((offset) => (
+                      <path
+                        key={offset}
+                        data-resource-circle="true"
+                        data-editor-handle="resource-circle"
+                        d={drawPath(
+                          resourceRing(
+                            resourceCenter,
+                            resourceRadius,
+                            state.continuous.spec.radiusKm,
+                          ).map((p) => [p[0] + offset, p[1]]),
+                        )}
+                        fill="none"
+                        stroke="#83eed8"
+                        strokeWidth={2}
+                        pointerEvents="none"
+                      />
+                    ))}
+                  {!illustrating &&
+                    selected?.points.map((p, i) => (
+                      <circle
+                        key={i}
+                        data-editor-handle="vertex"
+                        cx={drawProjectPoint(p)[0]}
+                        cy={drawProjectPoint(p)[1]}
+                        r={4}
+                        fill="#fff0a3"
+                        stroke="#473c28"
+                        strokeWidth={1}
+                        onPointerDown={(e) => {
+                          e.stopPropagation();
+                          drag.current = {
+                            start: [e.clientX, e.clientY],
+                            vertex: i,
+                            moved: false,
+                          };
+                          svg.current.setPointerCapture(e.pointerId);
+                        }}
+                      />
+                    ))}
+                  {draft.length > 0 && (
+                    <polyline
+                      points={drawProjectPoints(draft)}
+                      fill={tool === "country" ? "#ddc98c33" : "none"}
+                      stroke="#ffe3a2"
+                      strokeWidth={2}
+                    />
+                  )}
+                  {inspectionPoint?.identity === sourceIdentity &&
+                    inspectionPoint.revision === state.project.revision && (
+                      <circle
+                        data-editor-handle="selection"
+                        cx={drawPoint(inspectionPoint.point)[0]}
+                        cy={drawPoint(inspectionPoint.point)[1]}
+                        r={6}
+                        fill="none"
+                        stroke="#fff4b1"
+                        strokeWidth={1.5}
+                        pointerEvents="none"
+                      />
+                    )}
+                  {cursor &&
+                    ["raise", "lower", "smooth", "water", "plant"].includes(
+                      tool,
+                    ) && (
+                      <circle
+                        cx={drawPoint(cursor)[0]}
+                        cy={drawPoint(cursor)[1]}
+                        r={
+                          (projection.scale * radius) /
+                          (Math.PI * state.continuous.spec.radiusKm)
+                        }
+                        fill="#ffe5a522"
+                        stroke="#ffe5a5"
+                        strokeWidth={1}
+                        pointerEvents="none"
+                      />
+                    )}
+                </ViewportSurface>
+              )}
+            </svg>
+          </ProjectionContext.Provider>
+          {mapSetup?.step === "land" && (
+            <div
+              className="studio-illustration-selection"
+              role="status"
+              id="illustrator-land-instructions"
+            >
+              <strong>
+                Illustrator selection mode · {landIDs.length} landmasses
+                selected
+              </strong>
+              <span>
+                Click land to select or deselect it. Drag a rectangle to add
+                islands, then create the illustrated map.
+              </span>
+            </div>
+          )}
+          {state && loading > 0 && !show3D && (
+            <div
+              className="studio-detail-loading"
+              role="status"
+              aria-live="polite"
+            >
+              <strong>
+                {terrainProgress?.phase === "final"
+                  ? "Loading terrain details…"
+                  : "Preparing terrain preview…"}
+              </strong>
+              <progress
+                aria-label="Terrain detail loading"
+                max={terrainProgress?.total || 1}
+                value={
+                  terrainProgress?.total ? terrainProgress.completed : undefined
+                }
+              />
+            </div>
+          )}
           {!state && (
             <div className="studio-empty">
               <span>THE SHAPE OF A WORLD</span>
@@ -1295,11 +2220,130 @@ export default function Studio({ initialState, onExit }) {
             </div>
           )}
         </main>
-        {panel && (
+        {panel && resourcesOpen && (
+          <aside className="studio-panel" aria-label="Terrain Resources">
+            <section>
+              <h2>Terrain Resources</h2>
+              <p>
+                Click to place a circle. Drag to choose its radius. Scroll to
+                zoom; Shift-drag or choose Pan to move the map.
+              </p>
+              <div className="resource-panel-controls">
+                <button
+                  aria-pressed={!resourcePan}
+                  onClick={() => setResourcePan(false)}
+                >
+                  Draw circle
+                </button>
+                <button
+                  aria-pressed={resourcePan}
+                  onClick={() => setResourcePan(true)}
+                >
+                  Pan
+                </button>
+                <button onClick={() => setResourcesOpen(false)}>
+                  Close resources
+                </button>
+              </div>
+              <label className="resource-radius-label">
+                Observed radius <output>{resourceRadius.toFixed(2)} km</output>
+                <input
+                  aria-label="Terrain resource radius"
+                  type="range"
+                  min={0.05}
+                  max={resourceMaximum}
+                  step="any"
+                  value={resourceRadius}
+                  onChange={(e) => setResourceRadius(Number(e.target.value))}
+                />
+                <input
+                  aria-label="Terrain resource radius in kilometres"
+                  type="number"
+                  min={0.05}
+                  max={resourceMaximum}
+                  step={0.05}
+                  value={resourceRadius}
+                  onChange={(e) => {
+                    const r = Number(e.target.value);
+                    if (r >= 0.05 && r <= resourceMaximum) setResourceRadius(r);
+                  }}
+                />
+              </label>
+              <TerrainResourceReport
+                path={
+                  resourceCenter
+                    ? `${base}/terrain/resources?${resourceQuery(resourceCenter, resourceRadius)}&revision=${state.project.revision}`
+                    : null
+                }
+              />
+            </section>
+          </aside>
+        )}
+        {panel && !resourcesOpen && (
           <aside className="studio-panel">
+            {mapSetup?.step === "land" && (
+              <section aria-label="Choose land for the map">
+                <h2>{mapSetup.title}</h2>
+                <p>
+                  Click a connected piece of land to select it; click again to
+                  remove it. Drag a rectangle to add islands and archipelagos.
+                </p>
+                {mapSetup.loading ? (
+                  <p role="status">Finding connected land…</p>
+                ) : (
+                  <p>{landIDs.length} selected</p>
+                )}
+                <button
+                  className="primary"
+                  disabled={mapSetup.loading || !landIDs.length || busy}
+                  onClick={createSelectedMap}
+                >
+                  Create illustrated map
+                </button>
+                <button
+                  onClick={() => {
+                    setupSequence.current++;
+                    setCamera(mapSetup.camera);
+                    setMapSetup(null);
+                    setLandBox(null);
+                  }}
+                >
+                  Cancel map
+                </button>
+              </section>
+            )}
+            {!illustrating && ["state", "settlement"].includes(tool) && (
+              <section>
+                <h3>{tool === "state" ? "State" : "Settlement"}</h3>
+                <label>
+                  Type
+                  <select
+                    aria-label="Drawing place type"
+                    value={drawingType[tool]}
+                    onChange={(e) =>
+                      setDrawingType({ ...drawingType, [tool]: e.target.value })
+                    }
+                  >
+                    {(tool === "state"
+                      ? ["country", "state", "kingdom", "empire"]
+                      : ["capital", "city", "town", "village", "hamlet"]
+                    ).map((k) => (
+                      <option key={k}>{k}</option>
+                    ))}
+                  </select>
+                </label>
+                <p>
+                  Click to draw the boundary. Finish the shape, name it, and
+                  Apply changes to publish its record.
+                </p>
+              </section>
+            )}
             {illustrating && art && (
               <IllustrationPanel
                 busy={busy}
+                progress={illustrationProgress}
+                onSave={() => run(saveIllustration)}
+                saved={savedIllustration}
                 config={art}
                 objects={artObjects}
                 onChange={changeArt}
@@ -1395,7 +2439,7 @@ export default function Studio({ initialState, onExit }) {
                 )}
                 {[
                   ["landCoverage", "Land preference", 0.03, 0.65, 0.01, "%"],
-                  ["continents", "Major landmasses", 1, 10, 1, ""],
+                  ["continents", "Number of continents", 1, 12, 1, ""],
                   ["complexity", "Coast complexity", 0, 2, 0.1, ""],
                   ["islands", "Island intensity", 0, 3, 0.1, ""],
                   ["relief", "Relief strength", 0.1, 2, 0.1, ""],
@@ -1442,6 +2486,33 @@ export default function Studio({ initialState, onExit }) {
                 </label>
                 <details>
                   <summary>Climate & scale</summary>
+                  <label>
+                    Climate model
+                    <select
+                      value={spec.climateVersion || 1}
+                      onChange={(e) =>
+                        setSpec({ ...spec, climateVersion: +e.target.value })
+                      }
+                    >
+                      <option value={1}>Version 1</option>
+                      <option value={2}>
+                        Version 2 — corrected elevation and moisture
+                        (experimental)
+                      </option>
+                      <option value={3}>
+                        Version 3 — seasonal heat and rain uplift (experimental)
+                      </option>
+                    </select>
+                    {state?.continuous?.spec && (
+                      <small>
+                        Displayed terrain: {state.continuous.spec.version},
+                        climate version{" "}
+                        {state.continuous.spec.climateVersion || 0}. Selecting a
+                        model applies to the next generated preview; it does not
+                        migrate saved terrain.
+                      </small>
+                    )}
+                  </label>
                   <label>
                     Rainfall multiplier
                     <input
@@ -1636,6 +2707,7 @@ export default function Studio({ initialState, onExit }) {
                 <label>
                   Size
                   <select
+                    aria-label="Settlement size"
                     value={settlementSpec.kind}
                     onChange={(e) =>
                       setSettlementSpec({
@@ -1652,6 +2724,7 @@ export default function Studio({ initialState, onExit }) {
                 <label>
                   Layout
                   <select
+                    aria-label="Settlement layout"
                     value={settlementSpec.archetype}
                     onChange={(e) =>
                       setSettlementSpec({
@@ -1668,8 +2741,9 @@ export default function Studio({ initialState, onExit }) {
                   </select>
                 </label>
                 <p className="studio-muted">
-                  Choose Site, then click dry land to preview districts, streets
-                  and building footprints.
+                  Draw a Settlement boundary, then choose its type and name in
+                  the selection panel. Generate layout is an optional procedural
+                  preview of streets and buildings; it does not publish records.
                 </p>
                 {settlement && (
                   <>
@@ -1688,6 +2762,7 @@ export default function Studio({ initialState, onExit }) {
                       disabled={busy}
                       onClick={() =>
                         run(async () => {
+                          await ensureWorldMap();
                           const r = await request(`${base}/settlements`, {
                             id: settlement.id,
                             revision: settlement.revision,
@@ -1702,7 +2777,7 @@ export default function Studio({ initialState, onExit }) {
                         })
                       }
                     >
-                      Accept settlement
+                      Add layout to terrain
                     </button>
                     <button onClick={() => setSettlement(null)}>Discard</button>
                   </>
@@ -1711,7 +2786,56 @@ export default function Studio({ initialState, onExit }) {
             )}
             {selected && !illustrating && (
               <section className="studio-inspector">
-                <h3>Object inspector</h3>
+                <h3>
+                  {["country", "state", "kingdom", "empire"].includes(
+                    selected.kind,
+                  )
+                    ? "State"
+                    : ["capital", "city", "town", "village", "hamlet"].includes(
+                          selected.kind,
+                        )
+                      ? "Settlement"
+                      : "Object"}
+                </h3>
+                {[
+                  "country",
+                  "state",
+                  "kingdom",
+                  "empire",
+                  "capital",
+                  "city",
+                  "town",
+                  "village",
+                  "hamlet",
+                ].includes(selected.kind) && (
+                  <label>
+                    Type
+                    <select
+                      aria-label="Selected place type"
+                      value={selected.kind}
+                      onChange={(e) =>
+                        setSelected({ ...selected, kind: e.target.value })
+                      }
+                    >
+                      {(["country", "state", "kingdom", "empire"].includes(
+                        selected.kind,
+                      )
+                        ? ["country", "state", "kingdom", "empire"]
+                        : ["capital", "city", "town", "village", "hamlet"]
+                      ).map((k) => (
+                        <option key={k} value={k}>
+                          {k}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                {selected.recordStatus === "draft" && (
+                  <p>
+                    Terrain object only. Give it a name and Apply changes to
+                    create its record.
+                  </p>
+                )}
                 <label>
                   Name
                   <input
@@ -1805,11 +2929,34 @@ export default function Studio({ initialState, onExit }) {
                 </p>
                 <button
                   onClick={() =>
-                    run(() => command({ kind: "entity", entity: selected }))
+                    run(async () => {
+                      await command({
+                        kind: "entity",
+                        entity: selected,
+                        publish: true,
+                      });
+                      setSelected((v) => ({ ...v, recordStatus: "published" }));
+                    })
                   }
                 >
-                  Apply properties
+                  Apply changes
                 </button>
+                {selected.recordStatus !== "draft" && (
+                  <button
+                    onClick={() =>
+                      run(async () => {
+                        const s = await ensureWorldMap();
+                        onExit?.(
+                          s.historyWorldId,
+                          selected.logicalId || selected.id,
+                          s.historicalMap.ageId,
+                        );
+                      })
+                    }
+                  >
+                    Open {selected.name || "this place"} record
+                  </button>
+                )}
                 <button
                   onClick={() =>
                     run(async () => {
@@ -1827,6 +2974,127 @@ export default function Studio({ initialState, onExit }) {
             )}
             <section>
               <h3>Map appearance</h3>
+              {state?.continuous?.analysisStale && (
+                <p role="status">
+                  Landscape edits changed the terrain. Saved drainage and
+                  climate require revalidation; their original graph is
+                  retained. Undo restores the original analysis.
+                </p>
+              )}
+              {hydrologyDiagnostics && (
+                <details>
+                  <summary>River topology diagnostics</summary>
+                  <p>
+                    {hydrologyDiagnostics.nodes} nodes ·{" "}
+                    {hydrologyDiagnostics.reaches} connected reaches
+                  </p>
+                  <p>Graph {hydrologyDiagnostics.revision.slice(0, 12)}</p>
+                  {Object.entries(hydrologyDiagnostics.counts).map(
+                    ([key, n]) => (
+                      <p key={key}>
+                        {key.replaceAll("-", " ")}: {n}
+                      </p>
+                    ),
+                  )}
+                </details>
+              )}
+              {!illustrating && viewportRenderer && (
+                <div title={previewHelp}>
+                  <label>
+                    Preview Quality
+                    <select
+                      aria-label="Preview Quality"
+                      value={previewQuality.preset}
+                      onChange={(e) =>
+                        setPreviewQuality((q) => ({
+                          ...q,
+                          preset: e.target.value,
+                        }))
+                      }
+                    >
+                      {Object.entries(previewPresets).map(([key, p]) => (
+                        <option key={key} value={key}>
+                          {p.label} ({p.scale.toFixed(2)}×)
+                        </option>
+                      ))}
+                      <option value="custom">Custom</option>
+                    </select>
+                  </label>
+                  {previewQuality.preset === "custom" && (
+                    <label>
+                      Custom preview scale (
+                      {previewQuality.customScale.toFixed(2)}×)
+                      <input
+                        type="range"
+                        min="0.5"
+                        max="1.5"
+                        step="0.05"
+                        value={previewQuality.customScale}
+                        onChange={(e) =>
+                          setPreviewQuality((q) => ({
+                            ...q,
+                            customScale: +e.target.value,
+                          }))
+                        }
+                      />
+                    </label>
+                  )}
+                  <p
+                    className="studio-muted"
+                    aria-label="Effective preview resolution"
+                  >
+                    Preview: {previewInfo.pixels.width} ×{" "}
+                    {previewInfo.pixels.height} · {previewInfo.preview.label}
+                    {previewInfo.preview.clamped &&
+                      ` · limited to ${previewInfo.preview.effectiveScale.toFixed(2)}× by render budgets`}
+                  </p>
+                  <p className="studio-muted">
+                    2D preview only; saved terrain and exports are unchanged.
+                  </p>
+                  <p>
+                    Level {detailLevel} ·{" "}
+                    {cartographicLevels[detailLevel].label}
+                  </p>
+                  <details>
+                    <summary>Preview diagnostics</summary>
+                    <p>
+                      Source revision {state?.project?.revision} · geometry{" "}
+                      {geography.durationMs.toFixed(1)} ms · geometry cache{" "}
+                      {(geometryCache.current.bytes / 1048576).toFixed(1)} MiB
+                    </p>
+                    {renderDiagnostics && (
+                      <>
+                        <p>
+                          First usable frame{" "}
+                          {renderDiagnostics.firstMs.toFixed(0)} ms · final{" "}
+                          {renderDiagnostics.finalMs?.toFixed(0) ?? "pending"}{" "}
+                          ms
+                        </p>
+                        <p>
+                          Raster cache{" "}
+                          {(renderDiagnostics.cacheBytes / 1048576).toFixed(1)}{" "}
+                          MiB · {renderDiagnostics.hits} hits /{" "}
+                          {renderDiagnostics.misses} misses
+                        </p>
+                        <p>
+                          {renderDiagnostics.outstanding} outstanding ·{" "}
+                          {renderDiagnostics.cancelled} cancelled · working
+                          canvas{" "}
+                          {(
+                            renderDiagnostics.workingCanvasBytes / 1048576
+                          ).toFixed(1)}{" "}
+                          MiB
+                        </p>
+                      </>
+                    )}
+                  </details>
+                  {!previewSaved && (
+                    <p role="status">
+                      This browser could not save the preview preference.
+                    </p>
+                  )}
+                </div>
+              )}
               <div className="studio-actions">
                 <button
                   onClick={() => {
@@ -1866,10 +3134,10 @@ export default function Studio({ initialState, onExit }) {
                   onChange={(e) => setStyle(e.target.value)}
                 >
                   {[
+                    "terrain",
                     "natural",
                     "elevation",
                     "biome",
-                    "atlas",
                     "mask",
                     "bathymetry",
                     "temperature",
@@ -2000,49 +3268,63 @@ export default function Studio({ initialState, onExit }) {
                 </label>
               </details>
             )}
-            {sample && (
-              <section>
-                <h3>Geographic inspection</h3>
-                <dl>
-                  <dt>Surface</dt>
-                  <dd>
-                    {sample.biome} · {sample.water}
-                  </dd>
-                  {sample.landmass && (
-                    <>
-                      <dt>Landmass</dt>
-                      <dd>
-                        {sample.landmass.id} · {sample.landmass.family}
-                      </dd>
-                    </>
-                  )}
-                  <dt>Bed elevation</dt>
-                  <dd>{sample.bed.toFixed(0)} m</dd>
-                  <dt>Water depth</dt>
-                  <dd>{sample.waterDepth.toFixed(1)} m</dd>
-                  <dt>Temperature</dt>
-                  <dd>{sample.temperature.toFixed(1)} °C</dd>
-                  <dt>Rainfall</dt>
-                  <dd>{sample.precipitation.toFixed(0)} mm/year</dd>
-                  <dt>Moisture</dt>
-                  <dd>{(sample.moisture * 100).toFixed(0)}%</dd>
-                  <dt>Evaporative demand</dt>
-                  <dd>{sample.pet.toFixed(0)} mm/year</dd>
-                  {sample.climate?.soil != null && (
-                    <>
-                      <dt>Soil water</dt>
-                      <dd>{sample.climate.soil.toFixed(0)} mm</dd>
-                      <dt>Precipitation / PET</dt>
-                      <dd>{sample.climate.aridity.toFixed(2)}</dd>
-                      <dt>Dry months</dt>
-                      <dd>{sample.climate.dryMonths.toFixed(1)}</dd>
-                      <dt>Seasonality (CV)</dt>
-                      <dd>{sample.climate.seasonality.toFixed(2)}</dd>
-                    </>
-                  )}
-                </dl>
-              </section>
-            )}
+            {inspectionPoint?.identity === sourceIdentity &&
+              inspectionPoint.revision === state?.project?.revision &&
+              !sample && <p role="status">Inspecting geography…</p>}
+            {sample?.query?.identity === sourceIdentity &&
+              sample.query.revision === state?.project?.revision && (
+                <section>
+                  <h3>Geographic inspection</h3>
+                  <dl>
+                    <dt>Surface</dt>
+                    <dd>
+                      {sample.biome} · {sample.water}
+                    </dd>
+                    <dt>Coordinates</dt>
+                    <dd>
+                      {sample.query.longitude.toFixed(5)}°,{" "}
+                      {sample.query.latitude.toFixed(5)}°
+                    </dd>
+                    <dt>Query</dt>
+                    <dd>
+                      {sample.query.durationMs.toFixed(1)} ms · revision{" "}
+                      {sample.query.revision}
+                    </dd>
+                    {sample.landmass && (
+                      <>
+                        <dt>Landmass</dt>
+                        <dd>
+                          {sample.landmass.id} · {sample.landmass.family}
+                        </dd>
+                      </>
+                    )}
+                    <dt>Bed elevation</dt>
+                    <dd>{sample.bed.toFixed(0)} m</dd>
+                    <dt>Water depth</dt>
+                    <dd>{sample.waterDepth.toFixed(1)} m</dd>
+                    <dt>Temperature</dt>
+                    <dd>{sample.temperature.toFixed(1)} °C</dd>
+                    <dt>Rainfall</dt>
+                    <dd>{sample.precipitation.toFixed(0)} mm/year</dd>
+                    <dt>Moisture</dt>
+                    <dd>{(sample.moisture * 100).toFixed(0)}%</dd>
+                    <dt>Evaporative demand</dt>
+                    <dd>{sample.pet.toFixed(0)} mm/year</dd>
+                    {sample.climate?.soil != null && (
+                      <>
+                        <dt>Soil water</dt>
+                        <dd>{sample.climate.soil.toFixed(0)} mm</dd>
+                        <dt>Precipitation / PET</dt>
+                        <dd>{sample.climate.aridity.toFixed(2)}</dd>
+                        <dt>Dry months</dt>
+                        <dd>{sample.climate.dryMonths.toFixed(1)}</dd>
+                        <dt>Seasonality (CV)</dt>
+                        <dd>{sample.climate.seasonality.toFixed(2)}</dd>
+                      </>
+                    )}
+                  </dl>
+                </section>
+              )}
             {riverSelection && (
               <section>
                 <h3>{riverSelection.name || riverSelection.id}</h3>
@@ -2104,7 +3386,9 @@ export default function Studio({ initialState, onExit }) {
                             : {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ ui: { camera, style } }),
+                                body: JSON.stringify({
+                                  ui: { camera: savedCamera, style },
+                                }),
                               },
                         );
                         if (!r.ok) throw Error("Archive export failed");
@@ -2125,6 +3409,8 @@ export default function Studio({ initialState, onExit }) {
           <Terrain3D
             state={state}
             camera={camera}
+            entities={entities}
+            rivers={showRivers ? riverShapes : []}
             onPick={(p, tolerance) => {
               inspect(p);
               const index = new FeatureIndex([
@@ -2163,18 +3449,42 @@ export default function Studio({ initialState, onExit }) {
             ? `${(cursor[0] * 180 - 180).toFixed(3)}° E, ${(90 - cursor[1] * 180).toFixed(3)}° N`
             : "Move over the map"}
         </span>
-        <span>{Math.max(0, Math.log2(2 / camera.w)).toFixed(1)}× detail</span>
+        <span title="Camera magnification relative to the full world">
+          {(2 / camera.w).toFixed(1)}× zoom
+        </span>
+        {reliefResolution(
+          state?.continuous.spec,
+          camera,
+          width,
+          height,
+          Math.min(3, devicePixelRatio || 1),
+        )?.resolved && (
+          <span
+            title={`Base relief uses approximately ${reliefResolution(state.continuous.spec, camera, width, height).spacingKM.toFixed(1)} km north–south sample spacing. Closer zoom interpolates relief and reveals saved river and authored geometry; it does not generate new landforms. Preview Quality controls rendering cost, not geography. Finer relief requires a separate local-refinement system.`}
+          >
+            Base relief resolution limit
+          </span>
+        )}
         <span>
           {state
             ? `${((camera.w / 5) * Math.PI * state.continuous.spec.radiusKm).toFixed(1)} km ━━━━━`
             : ""}
         </span>
-        <span role="status">
+        <span role="status" title={loading < 0 ? renderError : undefined}>
           {loading > 0
-            ? `Sampling ${loading} tiles…`
+            ? viewportRenderer
+              ? "Rendering terrain…"
+              : `Sampling ${loading} tiles…`
             : loading < 0
-              ? "Tile loading failed"
+              ? viewportRenderer
+                ? "Terrain render failed"
+                : "Tile loading failed"
               : "Ready"}
+          {loading < 0 && viewportRenderer && (
+            <button onClick={() => setRenderRetry((v) => v + 1)}>
+              Retry terrain
+            </button>
+          )}
         </span>
       </footer>
     </div>

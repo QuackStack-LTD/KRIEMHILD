@@ -1,0 +1,82 @@
+{
+  "version": "sequence-corpus/2",
+  "id": "brief6-invalid-layer",
+  "bounds": {
+    "calls": 1,
+    "work": 100000,
+    "reportBytes": 262144
+  },
+  "cases": [
+    {
+      "id": "invalid-layer",
+      "description": "Invalid definition is rejected during validation without Execute",
+      "tags": ["brief6", "definition-validation"],
+      "review": {
+        "status": "reviewed",
+        "reviewer": "Codex (independent derivation; not human approval)",
+        "provenance": "TestSequenceValidationCompatibilityAndReadiness and compileSpelling documented adjacent layer / equal-priority prefix checks. Exact error, stage/rule/path and complete readiness map derived from engine.go initialization, compileProductive, compileSpelling and checkCorpus. Independent modules remain ready; Report status is partial, while corpus outcome is rejected. No Execute call or captured compiler report."
+      },
+      "pin": {
+        "languageId": "88888888888888888888888888888888",
+        "revision": "a2378e99771667d31e5132f30281a6105264be92b0637bf13f016c970189c3ca",
+        "schema": 4,
+        "canonicalizer": "kriemhild-typed-json/1",
+        "engine": "languages/4",
+        "adapter": "sequence-compose/1",
+        "compiler": "languages-compiler/4",
+        "segmentation": "uniseg/0.4.7-unicode/15.0.0",
+        "normalizer": "x-text/0.29.0-unicode/15.0.0",
+        "script": {
+          "id": "77777777777777777777777777777777",
+          "revision": "e50260f7197fd260b418f4578be091b415927c863a70a7ed057dbb198cc5a849"
+        },
+        "renderer": "vector-script/1",
+        "rendererAdapter": "sign-layout/1",
+        "rendererCompiler": "vector-script-compiler/1"
+      },
+      "inputLayer": "surface",
+      "request": {
+        "revision": "a2378e99771667d31e5132f30281a6105264be92b0637bf13f016c970189c3ca",
+        "engine": "languages/4",
+        "operation": "validate-definition",
+        "policy": "all",
+        "limit": 128,
+        "compiler": "languages-compiler/4",
+        "adapter": "sequence-compose/1"
+      },
+      "outcome": "rejected",
+      "comparison": "exact",
+      "expected": null,
+      "phase": "definition-validation",
+      "validation": {
+        "status": "partial",
+        "ready": {
+          "analyze": true,
+          "analyze-written": false,
+          "generate": true,
+          "graphemes": true,
+          "inflect": true,
+          "paradigm": true,
+          "parse": false,
+          "realize": false,
+          "regression": false,
+          "spell": false,
+          "unspell": false,
+          "validate": true,
+          "write": false
+        },
+        "diagnostics": [
+          {
+            "code": "incompatible_layer",
+            "severity": "error",
+            "module": "sequenceWriting",
+            "ruleId": "sign-selection",
+            "path": "sequenceWriting.stages.1",
+            "message": "Each stage must consume the preceding stage's output layer."
+          }
+        ],
+        "diagnosticsOmitted": 0
+      }
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { anchor } from "./geometry.js";
 import { riverWidth } from "./rivers.js";
+import { useMapProjection } from "./MapProjection.js";
 export default function IllustrationScene({
   config,
   objects,
@@ -9,12 +10,24 @@ export default function IllustrationScene({
   onOverride,
   position,
   state,
-  pixel,
+  pixel: sourcePixel,
   relief,
   coastOverlay,
+  riverMask,
+  landMask,
 }) {
   const drag = useRef(null),
-    [x, y, w, h] = config.bounds;
+    projection = useMapProjection(),
+    project = projection?.point || ((p) => p),
+    scale = projection?.scale || 1;
+  const worldBounds = {
+    x: config.bounds[0],
+    y: config.bounds[1],
+    w: config.bounds[2],
+    h: config.bounds[3],
+  };
+  const { x, y, w, h } = projection?.box(worldBounds) || worldBounds,
+    pixel = sourcePixel * scale;
   function handlers(o, vertex) {
     return {
       onPointerDown: (e) => {
@@ -54,32 +67,55 @@ export default function IllustrationScene({
           : { points: o.points.map((q) => [q[0] + dx, q[1] + dy]) };
     onOverride(o, override, commit);
   }
-  function draw(o) {
+  function draw(source) {
+    const o = {
+      ...source,
+      points: source.points?.map(project),
+      position: source.position ? project(source.position) : undefined,
+      leaderFrom: source.leaderFrom ? project(source.leaderFrom) : undefined,
+      size: source.size ? source.size * scale : undefined,
+    };
     const color = o.color || "#503d2a",
       p = o.position || anchor(o.points || [[x, y]], o.geometry),
       size = o.size || pixel * (o.symbol === "capital" ? 7 : 5),
       shared = {
-        ...handlers(o),
+        ...handlers(source),
         stroke: color,
         strokeWidth: pixel * 1.2,
         fill: "none",
       };
     if (o.kind === "text")
       return (
-        <text
-          {...shared}
-          x={p[0]}
-          y={p[1]}
-          fill={color}
-          stroke="none"
-          fontFamily="Georgia,serif"
-          fontSize={o.size || pixel * 13}
-          textAnchor="middle"
-          dominantBaseline="middle"
-          style={{ cursor: "move" }}
-        >
-          {o.text}
-        </text>
+        <g>
+          {o.leaderFrom && (
+            <line
+              x1={o.leaderFrom[0]}
+              y1={o.leaderFrom[1]}
+              x2={p[0]}
+              y2={p[1]}
+              stroke={color}
+              strokeWidth={pixel * 0.7}
+              pointerEvents="none"
+            />
+          )}
+          <text
+            {...shared}
+            x={p[0]}
+            y={p[1]}
+            fill={color}
+            fontFamily="Georgia,serif"
+            fontSize={o.size || pixel * 13}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            style={{ cursor: "move" }}
+            paintOrder="stroke"
+            stroke="#e9d9af"
+            strokeWidth={pixel * 2.5}
+            strokeLinejoin="round"
+          >
+            {o.text}
+          </text>
+        </g>
       );
     if (o.kind === "symbol")
       return (
@@ -135,7 +171,8 @@ export default function IllustrationScene({
         stroke={color}
         strokeWidth={
           o.river
-            ? riverWidth(o.river, pixel, state.continuous.spec.radiusKm)
+            ? riverWidth(o.river, sourcePixel, state.continuous.spec.radiusKm) *
+              scale
             : pixel * 1.2
         }
         strokeDasharray={
@@ -158,7 +195,7 @@ export default function IllustrationScene({
         <filter id="paper-grain">
           <feTurbulence
             type="fractalNoise"
-            baseFrequency=".7"
+            baseFrequency={0.7 / scale}
             numOctaves="3"
             seed="19"
           />
@@ -172,7 +209,20 @@ export default function IllustrationScene({
         .sort((a, b) => a.order - b.order)
         .filter((l) => l.visible)
         .map((l) => (
-          <g key={l.id} data-illustration-layer={l.id} opacity={l.opacity}>
+          <g
+            key={l.id}
+            data-illustration-layer={l.id}
+            opacity={l.opacity}
+            mask={
+              l.id === "waterways"
+                ? riverMask
+                : !["labels", "paper", "decoration", "annotations"].includes(
+                      l.id,
+                    )
+                  ? landMask
+                  : undefined
+            }
+          >
             {l.id === "relief" && relief}
             {l.id === "coasts" && coastOverlay}
             {l.id === "paper" && (
@@ -218,14 +268,6 @@ export default function IllustrationScene({
                 stroke="#503d2a"
                 fontFamily="Georgia,serif"
               >
-                <rect
-                  x={x + w * 0.012}
-                  y={y + h * 0.02}
-                  width={w * 0.976}
-                  height={h * 0.96}
-                  fill="none"
-                  strokeWidth={w / 1500}
-                />
                 <text
                   x={x + w / 2}
                   y={y + h * 0.075}
@@ -253,25 +295,6 @@ export default function IllustrationScene({
                     N
                   </text>
                 </g>
-                <path
-                  d={`M${x + w * 0.05},${y + h * 0.92}h${w * 0.1}`}
-                  strokeWidth={w / 900}
-                />
-                <text
-                  x={x + w * 0.05}
-                  y={y + h * 0.9}
-                  stroke="none"
-                  fontSize={w / 100}
-                >
-                  {Math.round(
-                    w *
-                      0.1 *
-                      Math.PI *
-                      state.continuous.spec.radiusKm *
-                      Math.cos((0.5 - y - h * 0.9) * Math.PI),
-                  )}{" "}
-                  km at this latitude
-                </text>
               </g>
             )}
           </g>
@@ -286,12 +309,15 @@ export default function IllustrationScene({
         >
           {selected.points?.length ? (
             <polyline
-              points={selected.points.map((p) => p.join(",")).join(" ")}
+              points={selected.points
+                .map(project)
+                .map((p) => p.join(","))
+                .join(" ")}
             />
           ) : (
             <circle
-              cx={selected.position?.[0]}
-              cy={selected.position?.[1]}
+              cx={selected.position && project(selected.position)[0]}
+              cy={selected.position && project(selected.position)[1]}
               r={pixel * 12}
             />
           )}
@@ -303,8 +329,8 @@ export default function IllustrationScene({
             key={i}
             data-editor-handle="illustration-vertex"
             {...handlers(selected, i)}
-            cx={p[0]}
-            cy={p[1]}
+            cx={project(p)[0]}
+            cy={project(p)[1]}
             r={pixel * 4}
             fill="#fff1a6"
             stroke="#3e3022"

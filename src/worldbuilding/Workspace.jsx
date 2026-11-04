@@ -3,13 +3,18 @@ import Networks from "./Networks.jsx";
 import { useState } from "react";
 import { activeEntities, registry, label, entityDetailMap } from "./model.js";
 import "./workspace.css";
+import IllustratedMapImage from "./IllustratedMapImage.jsx";
 
-export function EntityTile({ entity, onOpen, children, visual }) {
+export function EntityTile({ entity, onOpen, children, visual, worldId }) {
   const p = entity.properties || {};
   return (
     <article className="entity-tile">
       <button className="entity-tile-open" onClick={() => onOpen(entity)}>
-        {visual ||
+        {(p.illustratedMap && worldId ? (
+          <IllustratedMapImage worldId={worldId} entity={entity} />
+        ) : (
+          visual
+        )) ||
           (p.portrait ? (
             <img className="entity-portrait" src={p.portrait} alt="" />
           ) : (
@@ -70,7 +75,7 @@ export function MapPreview({ doc, map, onEntity }) {
       className="atlas-preview"
       viewBox={`${b.x} ${b.y} ${b.width} ${b.height}`}
       role="img"
-      aria-label={`Geographical entities on ${map.name}`}
+      aria-label={`Places and boundaries on ${map.name}`}
     >
       <rect x={b.x} y={b.y} width={b.width} height={b.height} fill="#182b32" />
       <image
@@ -172,13 +177,20 @@ export function Atlas({
         : collection === "empires"
           ? e.kind === "empire"
           : collection === "capitals"
-            ? doc.relations.some(
+            ? e.kind === "capital" ||
+              doc.relations.some(
                 (r) =>
                   r.ageId === e.ageId &&
                   r.kind === "capital-of" &&
                   r.source === e.id,
               )
-            : e.kind === (collection === "cities" ? "city" : "village");
+            : collection === "cities"
+              ? ["city", "capital"].includes(e.kind)
+              : collection === "places"
+                ? registry.types[e.kind]?.spatial && e.terrainId
+                : collection === "towns"
+                  ? e.kind === "town"
+                  : ["village", "hamlet"].includes(e.kind);
   const rows = entities
     .map((entity) => ({ entity }))
     .filter(
@@ -189,6 +201,8 @@ export function Atlas({
     countries: "country",
     empires: "empire",
     cities: "city",
+    towns: "town",
+    places: "landmark",
     villages: "village",
     capitals: "city",
     natural: naturalKind,
@@ -226,9 +240,11 @@ export function Atlas({
               ["countries", "Countries or States"],
               ["empires", "Empires"],
               ["cities", "Cities"],
+              ["towns", "Towns"],
               ["villages", "Villages"],
               ["capitals", "Capitals"],
               ["natural", "Natural Features"],
+              ["places", "All mapped places and infrastructure"],
             ].map(([v, n]) => (
               <option key={v} value={v}>
                 {n}
@@ -306,9 +322,17 @@ export function Atlas({
                   </div>
                 </button>
                 {root && (
-                  <button className="danger" onClick={() => onDeleteMap(root)}>
-                    Delete terrain
-                  </button>
+                  <div className="history-actions">
+                    <button onClick={() => onMap(root, "atlas")}>
+                      Explore Atlas
+                    </button>
+                    <button
+                      className="danger"
+                      onClick={() => onDeleteMap(root)}
+                    >
+                      Delete terrain
+                    </button>
+                  </div>
                 )}
               </article>
             );
@@ -332,6 +356,7 @@ export function Atlas({
                 <EntityTile
                   key={entity.ageId + entity.id}
                   entity={entity}
+                  worldId={doc.world.id}
                   onOpen={onProfile}
                   visual={(() => {
                     const m = entityDetailMap(doc, entity);
@@ -418,7 +443,7 @@ export function Atlas({
           }
         >
           <p>
-            Draw its geography in Map Builder, then name and save the entity.
+            Draw its geography in Map Builder, then name and save the record.
           </p>
           {collection === "natural" && (
             <label>
@@ -466,7 +491,7 @@ export function Atlas({
                 value={extend}
                 onChange={(e) => setExtend(e.target.value)}
               >
-                <option value="">Create a new political entity</option>
+                <option value="">Create a new political record</option>
                 {entities
                   .filter((e) => e.kind === type)
                   .map((e) => (
@@ -488,7 +513,7 @@ export function Atlas({
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
               >
-                <option value="">Choose a political entity</option>
+                <option value="">Choose a political record</option>
                 {entities
                   .filter((e) =>
                     ["country", "state", "kingdom", "empire"].includes(e.kind),

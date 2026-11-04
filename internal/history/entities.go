@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"kriemhild/internal/biosphere"
+	"kriemhild/internal/languages"
 	"reflect"
 	"slices"
 	"strings"
@@ -105,6 +106,18 @@ func (d *Document) pruneReferences(age string) {
 	}
 }
 func (d *Document) validateEntity(e Entity) error {
+	if e.Language != nil && e.Kind != "language" || e.Script != nil && e.Kind != "script" {
+		return fmt.Errorf("language and script states require their respective record types")
+	}
+	if err := languages.ValidateState(e.Language); err != nil {
+		return err
+	}
+	if err := languages.ValidateState(e.Script); err != nil {
+		return err
+	}
+	if err := d.validateLanguageLinks(e); err != nil {
+		return err
+	}
 	if err := biosphere.ValidateLifeform(e.Biology); err != nil {
 		return err
 	}
@@ -243,6 +256,19 @@ func (d *Document) applyEntities(c Command) (bool, error) {
 			e.ID = ID()
 		}
 		old := d.Entity(c.AgeID, e.ID)
+		// Definition references can only be changed by the transactional Languages
+		// service, which verifies the immutable body and dependency ownership.
+		if old == nil {
+			if e.Language != nil || e.Script != nil {
+				return true, fmt.Errorf("save language/script definitions through Languages")
+			}
+		} else {
+			if e.Language != nil && !reflect.DeepEqual(e.Language, old.Language) || e.Script != nil && !reflect.DeepEqual(e.Script, old.Script) {
+				return true, fmt.Errorf("definition state cannot be changed through a profile command")
+			}
+			e.Language = languages.Clone(old.Language)
+			e.Script = languages.Clone(old.Script)
+		}
 		if old != nil && e.Archive == nil {
 			e.Archive = cloneArchive(old.Archive)
 		}

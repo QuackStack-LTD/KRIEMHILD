@@ -120,6 +120,7 @@ type Plate struct {
 	Continental bool    `json:"continental"`
 }
 type Environment struct {
+	NaturalSource         string `json:"naturalSource,omitempty"` // Exact continuous physical snapshot; no independent terrain generation.
 	plateCache            []plateSample
 	Coastline             *CoastalModel        `json:"coastline,omitempty"`
 	Layout                *ContinentalLayout   `json:"continentalLayout,omitempty"`

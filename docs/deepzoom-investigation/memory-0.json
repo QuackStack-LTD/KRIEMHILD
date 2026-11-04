@@ -1,0 +1,152 @@
+[
+  {
+    "renderer": "viewport",
+    "dpr": 3,
+    "complete": true,
+    "process": [
+      {
+        "Id": 1548,
+        "ProcessName": "chrome",
+        "WorkingSet64": 19677184,
+        "PeakWorkingSet64": 19693568,
+        "PrivateMemorySize64": 10063872
+      },
+      {
+        "Id": 4936,
+        "ProcessName": "chrome",
+        "WorkingSet64": 125591552,
+        "PeakWorkingSet64": 126029824,
+        "PrivateMemorySize64": 49586176
+      },
+      {
+        "Id": 5836,
+        "ProcessName": "chrome",
+        "WorkingSet64": 77381632,
+        "PeakWorkingSet64": 86052864,
+        "PrivateMemorySize64": 35299328
+      },
+      {
+        "Id": 7756,
+        "ProcessName": "chrome",
+        "WorkingSet64": 40468480,
+        "PeakWorkingSet64": 41480192,
+        "PrivateMemorySize64": 18214912
+      },
+      {
+        "Id": 14976,
+        "ProcessName": "chrome",
+        "WorkingSet64": 1003552768,
+        "PeakWorkingSet64": 1003556864,
+        "PrivateMemorySize64": 900939776
+      },
+      {
+        "Id": 15232,
+        "ProcessName": "chrome",
+        "WorkingSet64": 422588416,
+        "PeakWorkingSet64": 423800832,
+        "PrivateMemorySize64": 122601472
+      },
+      {
+        "Id": 15932,
+        "ProcessName": "chrome",
+        "WorkingSet64": 34570240,
+        "PeakWorkingSet64": 34840576,
+        "PrivateMemorySize64": 22532096
+      }
+    ],
+    "processAfterGC": [
+      {
+        "Id": 1548,
+        "ProcessName": "chrome",
+        "WorkingSet64": 19677184,
+        "PeakWorkingSet64": 19693568,
+        "PrivateMemorySize64": 10063872
+      },
+      {
+        "Id": 4936,
+        "ProcessName": "chrome",
+        "WorkingSet64": 125591552,
+        "PeakWorkingSet64": 126029824,
+        "PrivateMemorySize64": 49586176
+      },
+      {
+        "Id": 5836,
+        "ProcessName": "chrome",
+        "WorkingSet64": 77381632,
+        "PeakWorkingSet64": 86052864,
+        "PrivateMemorySize64": 35299328
+      },
+      {
+        "Id": 7756,
+        "ProcessName": "chrome",
+        "WorkingSet64": 40468480,
+        "PeakWorkingSet64": 41480192,
+        "PrivateMemorySize64": 18214912
+      },
+      {
+        "Id": 14976,
+        "ProcessName": "chrome",
+        "WorkingSet64": 1006280704,
+        "PeakWorkingSet64": 1091866624,
+        "PrivateMemorySize64": 870752256
+      },
+      {
+        "Id": 15232,
+        "ProcessName": "chrome",
+        "WorkingSet64": 413949952,
+        "PeakWorkingSet64": 425410560,
+        "PrivateMemorySize64": 113876992
+      },
+      {
+        "Id": 15932,
+        "ProcessName": "chrome",
+        "WorkingSet64": 34570240,
+        "PeakWorkingSet64": 34840576,
+        "PrivateMemorySize64": 22532096
+      }
+    ],
+    "software": true,
+    "memory": {
+      "jsHeap": 34145304,
+      "frame": {
+        "time": 44186.90000000596,
+        "event": "frame",
+        "generation": 2,
+        "phase": "final",
+        "revision": 0,
+        "bounds": {
+          "x": 1.2999476365618068,
+          "y": 0.21998534154011865,
+          "w": 0.00008,
+          "h": 0.00005091383812010444
+        },
+        "z": 17,
+        "pixels": {
+          "width": 4596,
+          "height": 2925
+        },
+        "timings": {
+          "fetch": 111739.69999998808,
+          "decode": 656.8000000417233,
+          "assemble": 178.69999998807907,
+          "resample": 91.8999999910593,
+          "encode": 253,
+          "publish": 205.5
+        },
+        "nodes": 96,
+        "duration": 42974,
+        "bytes": 528690,
+        "cacheBytes": 986472,
+        "workingCanvasBytes": 154436496,
+        "decodedFrameBytes": 107546400,
+        "hits": 108,
+        "misses": 216,
+        "evictions": 0
+      },
+      "images": 2,
+      "status": "Equirectangular · 6371 km radius\nMove over the map\n25000.0× zoom\nBase relief fully resolved\n0.3 km ━━━━━\nReady",
+      "failures": []
+    },
+    "note": "Working set after completion; per-process lifetime peaks are upper bounds, not simultaneous aggregate peaks. Warm server caches."
+  }
+]

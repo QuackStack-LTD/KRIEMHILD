@@ -1,0 +1,6290 @@
+[
+  {
+    "repeat": 0,
+    "dpr": 1,
+    "preset": "reference",
+    "complete": true,
+    "frame": {
+      "time": 16477.10000000894,
+      "event": "frame",
+      "generation": 2,
+      "phase": "final",
+      "revision": 0,
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 8e-05,
+        "h": 5.091383812010444e-05
+      },
+      "z": 17,
+      "pixels": {
+        "width": 1532,
+        "height": 975
+      },
+      "timings": {
+        "fetch": 29089.800000026822,
+        "decode": 242.29999995231628,
+        "assemble": 33.90000003576279,
+        "resample": 23.30000001192093,
+        "encode": 32.099999994039536,
+        "publish": 27.799999997019768
+      },
+      "nodes": 88,
+      "duration": 11266.5,
+      "bytes": 65614,
+      "cacheBytes": 213004,
+      "workingCanvasBytes": 29043472,
+      "decodedFrameBytes": 11949600,
+      "hits": 94,
+      "misses": 188,
+      "evictions": 0
+    },
+    "request": {
+      "time": 5128.70000000298,
+      "event": "request",
+      "generation": 2,
+      "session": "c8c32ae78fd1a8eef47be4dcb1852e92",
+      "identity": "977d134ee5aadc480e1410ade3c84587:c8c32ae78fd1a8eef47be4dcb1852e92",
+      "revision": 0,
+      "styles": [
+        "natural",
+        "hillshade"
+      ],
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 8e-05,
+        "h": 5.091383812010444e-05
+      },
+      "pixels": {
+        "width": 1532,
+        "height": 975
+      },
+      "z": 17,
+      "size": 256
+    },
+    "sharedBackend": "http://127.0.0.1:8128",
+    "graphics": {
+      "devices": [
+        {
+          "vendorId": 32902,
+          "deviceId": 6427,
+          "subSysId": 131076136,
+          "revision": 6,
+          "vendorString": "",
+          "deviceString": "Intel(R) HD Graphics 530",
+          "driverVendor": "Intel",
+          "driverVersion": "31.0.101.2111"
+        },
+        {
+          "vendorId": 5140,
+          "deviceId": 140,
+          "subSysId": 0,
+          "revision": 0,
+          "vendorString": "",
+          "deviceString": "Microsoft Basic Render Driver",
+          "driverVendor": "",
+          "driverVersion": "10.0.19041.5794"
+        }
+      ],
+      "features": {
+        "2d_canvas": "enabled",
+        "direct_rendering_display_compositor": "disabled_off_ok",
+        "gpu_compositing": "enabled",
+        "multiple_raster_threads": "enabled_on",
+        "opengl": "enabled_on",
+        "rasterization": "enabled",
+        "raw_draw": "disabled_off_ok",
+        "skia_graphite": "disabled_off",
+        "trees_in_viz": "disabled_off",
+        "video_decode": "enabled",
+        "video_encode": "enabled",
+        "webgl": "enabled",
+        "webgpu": "enabled",
+        "webnn": "disabled_off"
+      },
+      "renderer": "ANGLE (Intel, Intel(R) HD Graphics 530 (0x0000191B) Direct3D11 vs_5_0 ps_5_0, D3D11-31.0.101.2111)"
+    },
+    "samples": [
+      {
+        "time": 1792686063943,
+        "workingSet": 777003008,
+        "privateBytes": 526331904,
+        "processes": [
+          {
+            "Id": 2248,
+            "WorkingSet64": 38899712,
+            "PrivateMemorySize64": 16637952
+          },
+          {
+            "Id": 4044,
+            "WorkingSet64": 153747456,
+            "PrivateMemorySize64": 78245888
+          },
+          {
+            "Id": 7136,
+            "WorkingSet64": 239312896,
+            "PrivateMemorySize64": 171311104
+          },
+          {
+            "Id": 8452,
+            "WorkingSet64": 20144128,
+            "PrivateMemorySize64": 10104832
+          },
+          {
+            "Id": 8876,
+            "WorkingSet64": 203239424,
+            "PrivateMemorySize64": 178364416
+          },
+          {
+            "Id": 12120,
+            "WorkingSet64": 33275904,
+            "PrivateMemorySize64": 19648512
+          },
+          {
+            "Id": 13724,
+            "WorkingSet64": 88383488,
+            "PrivateMemorySize64": 52019200
+          }
+        ],
+        "processTypes": {
+          "2248": "network.mojom.NetworkService",
+          "4044": "browser",
+          "7136": "renderer",
+          "8452": "storage.mojom.StorageService",
+          "8876": "GPU",
+          "12120": "renderer",
+          "13724": "renderer"
+        }
+      },
+      {
+        "time": 1792686064914,
+        "workingSet": 1309757440,
+        "privateBytes": 1042890752,
+        "processes": [
+          {
+            "Id": 2248,
+            "WorkingSet64": 38907904,
+            "PrivateMemorySize64": 16642048
+          },
+          {
+            "Id": 4044,
+            "WorkingSet64": 153980928,
+            "PrivateMemorySize64": 78430208
+          },
+          {
+            "Id": 7136,
+            "WorkingSet64": 282185728,
+            "PrivateMemorySize64": 211959808
+          },
+          {
+            "Id": 8452,
+            "WorkingSet64": 20144128,
+            "PrivateMemorySize64": 10104832
+          },
+          {
+            "Id": 8876,
+            "WorkingSet64": 692830208,
+            "PrivateMemorySize64": 654024704
+          },
+          {
+            "Id": 12120,
+            "WorkingSet64": 33325056,
+            "PrivateMemorySize64": 19709952
+          },
+          {
+            "Id": 13724,
+            "WorkingSet64": 88383488,
+            "PrivateMemorySize64": 52019200
+          }
+        ],
+        "processTypes": {
+          "2248": "network.mojom.NetworkService",
+          "4044": "browser",
+          "7136": "renderer",
+          "8452": "storage.mojom.StorageService",
+          "8876": "GPU",
+          "12120": "renderer",
+          "13724": "renderer"
+        }
+      },
+      {
+        "time": 1792686065894,
+        "workingSet": 1312960512,
+        "privateBytes": 1046458368,
+        "processes": [
+          {
+            "Id": 2248,
+            "WorkingSet64": 39034880,
+            "PrivateMemorySize64": 16752640
+          },
+          {
+            "Id": 4044,
+            "WorkingSet64": 154120192,
+            "PrivateMemorySize64": 78569472
+          },
+          {
+            "Id": 7136,
+            "WorkingSet64": 285122560,
+            "PrivateMemorySize64": 215277568
+          },
+          {
+            "Id": 8452,
+            "WorkingSet64": 20144128,
+            "PrivateMemorySize64": 10104832
+          },
+          {
+            "Id": 8876,
+            "WorkingSet64": 692826112,
+            "PrivateMemorySize64": 654020608
+          },
+          {
+            "Id": 12120,
+            "WorkingSet64": 33329152,
+            "PrivateMemorySize64": 19714048
+          },
+          {
+            "Id": 13724,
+            "WorkingSet64": 88383488,
+            "PrivateMemorySize64": 52019200
+          }
+        ],
+        "processTypes": {
+          "2248": "network.mojom.NetworkService",
+          "4044": "browser",
+          "7136": "renderer",
+          "8452": "storage.mojom.StorageService",
+          "8876": "GPU",
+          "12120": "renderer",
+          "13724": "renderer"
+        }
+      },
+      {
+        "time": 1792686066862,
+        "workingSet": 1281314816,
+        "privateBytes": 1048449024,
+        "processes": [
+          {
+            "Id": 2248,
+            "WorkingSet64": 39038976,
+            "PrivateMemorySize64": 16756736
+          },
+          {
+            "Id": 4044,
+            "WorkingSet64": 154365952,
+            "PrivateMemorySize64": 78786560
+          },
+          {
+            "Id": 7136,
+            "WorkingSet64": 271183872,
+            "PrivateMemorySize64": 218492928
+          },
+          {
+            "Id": 8452,
+            "WorkingSet64": 20144128,
+            "PrivateMemorySize64": 10104832
+          },
+          {
+            "Id": 8876,
+            "WorkingSet64": 674869248,
+            "PrivateMemorySize64": 652574720
+          },
+          {
+            "Id": 12120,
+            "WorkingSet64": 33329152,
+            "PrivateMemorySize64": 19714048
+          },
+          {
+            "Id": 13724,
+            "WorkingSet64": 88383488,
+            "PrivateMemorySize64": 52019200
+          }
+        ],
+        "processTypes": {
+          "2248": "network.mojom.NetworkService",
+          "4044": "browser",
+          "7136": "renderer",
+          "8452": "storage.mojom.StorageService",
+          "8876": "GPU",
+          "12120": "renderer",
+          "13724": "renderer"
+        }
+      },
+      {
+        "time": 1792686067833,
+        "workingSet": 1282293760,
+        "privateBytes": 1049649152,
+        "processes": [
+          {
+            "Id": 2248,
+            "WorkingSet64": 39079936,
+            "PrivateMemorySize64": 16777216
+          },
+          {
+            "Id": 4044,
+            "WorkingSet64": 154505216,
+            "PrivateMemorySize64": 78905344
+          },
+          {
+            "Id": 7136,
+            "WorkingSet64": 273756160,
+            "PrivateMemorySize64": 221667328
+          },
+          {
+            "Id": 8452,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8876,
+            "WorkingSet64": 674869248,
+            "PrivateMemorySize64": 652574720
+          },
+          {
+            "Id": 12120,
+            "WorkingSet64": 33062912,
+            "PrivateMemorySize64": 19337216
+          },
+          {
+            "Id": 13724,
+            "WorkingSet64": 86863872,
+            "PrivateMemorySize64": 50278400
+          }
+        ],
+        "processTypes": {
+          "2248": "network.mojom.NetworkService",
+          "4044": "browser",
+          "7136": "renderer",
+          "8452": "storage.mojom.StorageService",
+          "8876": "GPU",
+          "12120": "renderer",
+          "13724": "renderer"
+        }
+      },
+      {
+        "time": 1792686068819,
+        "workingSet": 1285144576,
+        "privateBytes": 1053061120,
+        "processes": [
+          {
+            "Id": 2248,
+            "WorkingSet64": 39079936,
+            "PrivateMemorySize64": 16777216
+          },
+          {
+            "Id": 4044,
+            "WorkingSet64": 154664960,
+            "PrivateMemorySize64": 79065088
+          },
+          {
+            "Id": 7136,
+            "WorkingSet64": 276447232,
+            "PrivateMemorySize64": 224919552
+          },
+          {
+            "Id": 8452,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8876,
+            "WorkingSet64": 674869248,
+            "PrivateMemorySize64": 652574720
+          },
+          {
+            "Id": 12120,
+            "WorkingSet64": 33062912,
+            "PrivateMemorySize64": 19337216
+          },
+          {
+            "Id": 13724,
+            "WorkingSet64": 86863872,
+            "PrivateMemorySize64": 50278400
+          }
+        ],
+        "processTypes": {
+          "2248": "network.mojom.NetworkService",
+          "4044": "browser",
+          "7136": "renderer",
+          "8452": "storage.mojom.StorageService",
+          "8876": "GPU",
+          "12120": "renderer",
+          "13724": "renderer"
+        }
+      },
+      {
+        "time": 1792686069810,
+        "workingSet": 1288306688,
+        "privateBytes": 1056956416,
+        "processes": [
+          {
+            "Id": 2248,
+            "WorkingSet64": 39116800,
+            "PrivateMemorySize64": 16777216
+          },
+          {
+            "Id": 4044,
+            "WorkingSet64": 154877952,
+            "PrivateMemorySize64": 79224832
+          },
+          {
+            "Id": 7136,
+            "WorkingSet64": 279396352,
+            "PrivateMemorySize64": 228737024
+          },
+          {
+            "Id": 8452,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8876,
+            "WorkingSet64": 674783232,
+            "PrivateMemorySize64": 652488704
+          },
+          {
+            "Id": 12120,
+            "WorkingSet64": 33112064,
+            "PrivateMemorySize64": 19341312
+          },
+          {
+            "Id": 13724,
+            "WorkingSet64": 86863872,
+            "PrivateMemorySize64": 50278400
+          }
+        ],
+        "processTypes": {
+          "2248": "network.mojom.NetworkService",
+          "4044": "browser",
+          "7136": "renderer",
+          "8452": "storage.mojom.StorageService",
+          "8876": "GPU",
+          "12120": "renderer",
+          "13724": "renderer"
+        }
+      },
+      {
+        "time": 1792686070780,
+        "workingSet": 1290584064,
+        "privateBytes": 1059676160,
+        "processes": [
+          {
+            "Id": 2248,
+            "WorkingSet64": 39116800,
+            "PrivateMemorySize64": 16777216
+          },
+          {
+            "Id": 4044,
+            "WorkingSet64": 155009024,
+            "PrivateMemorySize64": 79355904
+          },
+          {
+            "Id": 7136,
+            "WorkingSet64": 282349568,
+            "PrivateMemorySize64": 232132608
+          },
+          {
+            "Id": 8452,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8876,
+            "WorkingSet64": 673972224,
+            "PrivateMemorySize64": 651677696
+          },
+          {
+            "Id": 12120,
+            "WorkingSet64": 33116160,
+            "PrivateMemorySize64": 19345408
+          },
+          {
+            "Id": 13724,
+            "WorkingSet64": 86863872,
+            "PrivateMemorySize64": 50278400
+          }
+        ],
+        "processTypes": {
+          "2248": "network.mojom.NetworkService",
+          "4044": "browser",
+          "7136": "renderer",
+          "8452": "storage.mojom.StorageService",
+          "8876": "GPU",
+          "12120": "renderer",
+          "13724": "renderer"
+        }
+      },
+      {
+        "time": 1792686071762,
+        "workingSet": 1293762560,
+        "privateBytes": 1063555072,
+        "processes": [
+          {
+            "Id": 2248,
+            "WorkingSet64": 39120896,
+            "PrivateMemorySize64": 16781312
+          },
+          {
+            "Id": 4044,
+            "WorkingSet64": 155189248,
+            "PrivateMemorySize64": 79486976
+          },
+          {
+            "Id": 7136,
+            "WorkingSet64": 285294592,
+            "PrivateMemorySize64": 235831296
+          },
+          {
+            "Id": 8452,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8876,
+            "WorkingSet64": 674017280,
+            "PrivateMemorySize64": 651718656
+          },
+          {
+            "Id": 12120,
+            "WorkingSet64": 33120256,
+            "PrivateMemorySize64": 19349504
+          },
+          {
+            "Id": 13724,
+            "WorkingSet64": 86863872,
+            "PrivateMemorySize64": 50278400
+          }
+        ],
+        "processTypes": {
+          "2248": "network.mojom.NetworkService",
+          "4044": "browser",
+          "7136": "renderer",
+          "8452": "storage.mojom.StorageService",
+          "8876": "GPU",
+          "12120": "renderer",
+          "13724": "renderer"
+        }
+      },
+      {
+        "time": 1792686072750,
+        "workingSet": 1278390272,
+        "privateBytes": 1048502272,
+        "processes": [
+          {
+            "Id": 2248,
+            "WorkingSet64": 39133184,
+            "PrivateMemorySize64": 16781312
+          },
+          {
+            "Id": 4044,
+            "WorkingSet64": 155344896,
+            "PrivateMemorySize64": 79613952
+          },
+          {
+            "Id": 7136,
+            "WorkingSet64": 288276480,
+            "PrivateMemorySize64": 239194112
+          },
+          {
+            "Id": 8452,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8876,
+            "WorkingSet64": 655495168,
+            "PrivateMemorySize64": 633176064
+          },
+          {
+            "Id": 12120,
+            "WorkingSet64": 33120256,
+            "PrivateMemorySize64": 19349504
+          },
+          {
+            "Id": 13724,
+            "WorkingSet64": 86863872,
+            "PrivateMemorySize64": 50278400
+          }
+        ],
+        "processTypes": {
+          "2248": "network.mojom.NetworkService",
+          "4044": "browser",
+          "7136": "renderer",
+          "8452": "storage.mojom.StorageService",
+          "8876": "GPU",
+          "12120": "renderer",
+          "13724": "renderer"
+        }
+      },
+      {
+        "time": 1792686073844,
+        "workingSet": 1287938048,
+        "privateBytes": 1039843328,
+        "processes": [
+          {
+            "Id": 2248,
+            "WorkingSet64": 39133184,
+            "PrivateMemorySize64": 16781312
+          },
+          {
+            "Id": 4044,
+            "WorkingSet64": 155774976,
+            "PrivateMemorySize64": 80039936
+          },
+          {
+            "Id": 7136,
+            "WorkingSet64": 274788352,
+            "PrivateMemorySize64": 207638528
+          },
+          {
+            "Id": 8452,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8876,
+            "WorkingSet64": 678096896,
+            "PrivateMemorySize64": 655642624
+          },
+          {
+            "Id": 12120,
+            "WorkingSet64": 33124352,
+            "PrivateMemorySize64": 19353600
+          },
+          {
+            "Id": 13724,
+            "WorkingSet64": 86863872,
+            "PrivateMemorySize64": 50278400
+          }
+        ],
+        "processTypes": {
+          "2248": "network.mojom.NetworkService",
+          "4044": "browser",
+          "7136": "renderer",
+          "8452": "storage.mojom.StorageService",
+          "8876": "GPU",
+          "12120": "renderer",
+          "13724": "renderer"
+        }
+      }
+    ],
+    "afterGC": {
+      "time": 1792686075400,
+      "workingSet": 1343610880,
+      "privateBytes": 1058230272,
+      "processes": [
+        {
+          "Id": 2248,
+          "WorkingSet64": 39137280,
+          "PrivateMemorySize64": 16785408
+        },
+        {
+          "Id": 4044,
+          "WorkingSet64": 155779072,
+          "PrivateMemorySize64": 80044032
+        },
+        {
+          "Id": 7136,
+          "WorkingSet64": 206630912,
+          "PrivateMemorySize64": 111419392
+        },
+        {
+          "Id": 8452,
+          "WorkingSet64": 20156416,
+          "PrivateMemorySize64": 10108928
+        },
+        {
+          "Id": 8876,
+          "WorkingSet64": 801914880,
+          "PrivateMemorySize64": 770236416
+        },
+        {
+          "Id": 12120,
+          "WorkingSet64": 33128448,
+          "PrivateMemorySize64": 19357696
+        },
+        {
+          "Id": 13724,
+          "WorkingSet64": 86863872,
+          "PrivateMemorySize64": 50278400
+        }
+      ],
+      "processTypes": {
+        "2248": "network.mojom.NetworkService",
+        "4044": "browser",
+        "7136": "renderer",
+        "8452": "storage.mojom.StorageService",
+        "8876": "GPU",
+        "12120": "renderer",
+        "13724": "renderer"
+      }
+    },
+    "heap": {
+      "usedSize": 33031328,
+      "totalSize": 33558528,
+      "embedderHeapUsedSize": 4867936,
+      "backingStorageSize": 482269
+    },
+    "dom": {
+      "documents": 1,
+      "nodes": 3272,
+      "jsEventListeners": 238
+    },
+    "resources": [
+      {
+        "url": "http://127.0.0.1:8128/assets/index-k7UlWZcm.js",
+        "bytes": 188427
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/vendor-runtime-CqkleIqs.js",
+        "bytes": 116
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/vendor-react-F7BGGuOQ.js",
+        "bytes": 194375
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/index-C3nbivlp.css",
+        "bytes": 44957
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/me",
+        "bytes": 315
+      },
+      {
+        "url": "http://127.0.0.1:8128/favicon.ico",
+        "bytes": 0
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/TerrainRouter-FDyaDhN3.js",
+        "bytes": 2762
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/projects/977d134ee5aadc480e1410ade3c84587/open",
+        "bytes": 6812236
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/Studio-DbSrFE8u.js",
+        "bytes": 71983
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/Studio-BIDfP7A-.css",
+        "bytes": 5760
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/world/entities?detail=8&all=1",
+        "bytes": 47
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/terrain/features",
+        "bytes": 14893634
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/view",
+        "bytes": 62
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/view",
+        "bytes": 62
+      }
+    ],
+    "sampledPeakWorkingSet": 1343610880,
+    "note": "New browser per case; real DPR; 1920x1080 window; same camera/styles; periodic simultaneous OS working-set samples, not an exact instantaneous peak. Timings from this instrumented run are not used for latency comparisons."
+  },
+  {
+    "repeat": 0,
+    "dpr": 1,
+    "preset": "balanced",
+    "complete": true,
+    "frame": {
+      "time": 2822.5999999940395,
+      "event": "frame",
+      "generation": 2,
+      "phase": "final",
+      "revision": 0,
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 8e-05,
+        "h": 5.091383812010444e-05
+      },
+      "z": 16,
+      "pixels": {
+        "width": 1149,
+        "height": 731
+      },
+      "timings": {
+        "fetch": 864.5999999642372,
+        "decode": 76.40000008046627,
+        "assemble": 10.19999997317791,
+        "resample": 9.500000014901161,
+        "encode": 18.69999998807907,
+        "publish": 25.900000005960464
+      },
+      "nodes": 24,
+      "duration": 1355.2999999970198,
+      "bytes": 38716,
+      "cacheBytes": 58916,
+      "workingCanvasBytes": 9651132,
+      "decodedFrameBytes": 3359676,
+      "publishedBytes": 19359,
+      "hits": 26,
+      "misses": 52,
+      "evictions": 0
+    },
+    "request": {
+      "time": 1386.5999999940395,
+      "event": "request",
+      "generation": 2,
+      "session": "c8c32ae78fd1a8eef47be4dcb1852e92",
+      "identity": "977d134ee5aadc480e1410ade3c84587:c8c32ae78fd1a8eef47be4dcb1852e92",
+      "revision": 0,
+      "styles": [
+        "natural",
+        "hillshade"
+      ],
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 8e-05,
+        "h": 5.091383812010444e-05
+      },
+      "pixels": {
+        "width": 1149,
+        "height": 731
+      },
+      "z": 16,
+      "size": 256,
+      "preview": {
+        "preset": "balanced",
+        "label": "Balanced",
+        "requestedScale": 0.75,
+        "effectiveScale": 0.75,
+        "clamped": false,
+        "hillshade": 0.55
+      }
+    },
+    "sharedBackend": "http://127.0.0.1:8128",
+    "graphics": {
+      "devices": [
+        {
+          "vendorId": 32902,
+          "deviceId": 6427,
+          "subSysId": 131076136,
+          "revision": 6,
+          "vendorString": "",
+          "deviceString": "Intel(R) HD Graphics 530",
+          "driverVendor": "Intel",
+          "driverVersion": "31.0.101.2111"
+        },
+        {
+          "vendorId": 5140,
+          "deviceId": 140,
+          "subSysId": 0,
+          "revision": 0,
+          "vendorString": "",
+          "deviceString": "Microsoft Basic Render Driver",
+          "driverVendor": "",
+          "driverVersion": "10.0.19041.5794"
+        }
+      ],
+      "features": {
+        "2d_canvas": "enabled",
+        "direct_rendering_display_compositor": "disabled_off_ok",
+        "gpu_compositing": "enabled",
+        "multiple_raster_threads": "enabled_on",
+        "opengl": "enabled_on",
+        "rasterization": "enabled",
+        "raw_draw": "disabled_off_ok",
+        "skia_graphite": "disabled_off",
+        "trees_in_viz": "disabled_off",
+        "video_decode": "enabled",
+        "video_encode": "enabled",
+        "webgl": "enabled",
+        "webgpu": "enabled",
+        "webnn": "disabled_off"
+      },
+      "renderer": "ANGLE (Intel, Intel(R) HD Graphics 530 (0x0000191B) Direct3D11 vs_5_0 ps_5_0, D3D11-31.0.101.2111)"
+    },
+    "samples": [
+      {
+        "time": 1792686079659,
+        "workingSet": 706039808,
+        "privateBytes": 455643136,
+        "processes": [
+          {
+            "Id": 1360,
+            "WorkingSet64": 246640640,
+            "PrivateMemorySize64": 183386112
+          },
+          {
+            "Id": 1496,
+            "WorkingSet64": 34881536,
+            "PrivateMemorySize64": 22831104
+          },
+          {
+            "Id": 3328,
+            "WorkingSet64": 84824064,
+            "PrivateMemorySize64": 45715456
+          },
+          {
+            "Id": 11448,
+            "WorkingSet64": 153882624,
+            "PrivateMemorySize64": 77619200
+          },
+          {
+            "Id": 14832,
+            "WorkingSet64": 39456768,
+            "PrivateMemorySize64": 16822272
+          },
+          {
+            "Id": 15164,
+            "WorkingSet64": 20029440,
+            "PrivateMemorySize64": 10080256
+          },
+          {
+            "Id": 15752,
+            "WorkingSet64": 126324736,
+            "PrivateMemorySize64": 99188736
+          }
+        ],
+        "processTypes": {
+          "1360": "renderer",
+          "1496": "renderer",
+          "3328": "renderer",
+          "11448": "browser",
+          "14832": "network.mojom.NetworkService",
+          "15164": "storage.mojom.StorageService",
+          "15752": "GPU"
+        }
+      }
+    ],
+    "afterGC": {
+      "time": 1792686081203,
+      "workingSet": 629866496,
+      "privateBytes": 387624960,
+      "processes": [
+        {
+          "Id": 1360,
+          "WorkingSet64": 174751744,
+          "PrivateMemorySize64": 115200000
+        },
+        {
+          "Id": 1496,
+          "WorkingSet64": 34881536,
+          "PrivateMemorySize64": 22831104
+        },
+        {
+          "Id": 3328,
+          "WorkingSet64": 84824064,
+          "PrivateMemorySize64": 45715456
+        },
+        {
+          "Id": 11448,
+          "WorkingSet64": 153968640,
+          "PrivateMemorySize64": 77701120
+        },
+        {
+          "Id": 14832,
+          "WorkingSet64": 39460864,
+          "PrivateMemorySize64": 16826368
+        },
+        {
+          "Id": 15164,
+          "WorkingSet64": 20029440,
+          "PrivateMemorySize64": 10080256
+        },
+        {
+          "Id": 15752,
+          "WorkingSet64": 121950208,
+          "PrivateMemorySize64": 99270656
+        }
+      ],
+      "processTypes": {
+        "1360": "renderer",
+        "1496": "renderer",
+        "3328": "renderer",
+        "11448": "browser",
+        "14832": "network.mojom.NetworkService",
+        "15164": "storage.mojom.StorageService",
+        "15752": "GPU"
+      }
+    },
+    "heap": {
+      "usedSize": 39972468,
+      "totalSize": 42733568,
+      "embedderHeapUsedSize": 5027424,
+      "backingStorageSize": 464104
+    },
+    "dom": {
+      "documents": 1,
+      "nodes": 3271,
+      "jsEventListeners": 290
+    },
+    "resources": [
+      {
+        "url": "http://127.0.0.1:8127/assets/index-ZmMcUTRA.js",
+        "bytes": 188427
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/vendor-runtime-CqkleIqs.js",
+        "bytes": 116
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/vendor-react-F7BGGuOQ.js",
+        "bytes": 194375
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/index-C3nbivlp.css",
+        "bytes": 44957
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/me",
+        "bytes": 315
+      },
+      {
+        "url": "http://127.0.0.1:8127/favicon.ico",
+        "bytes": 0
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/TerrainRouter-WtP-wAgj.js",
+        "bytes": 2762
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/projects/977d134ee5aadc480e1410ade3c84587/open",
+        "bytes": 6812235
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/Studio-u5F65js9.js",
+        "bytes": 73665
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/Studio-BIDfP7A-.css",
+        "bytes": 5760
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/world/entities?detail=8&all=1",
+        "bytes": 47
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/terrain/features",
+        "bytes": 14893634
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/view",
+        "bytes": 62
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/view",
+        "bytes": 62
+      }
+    ],
+    "sampledPeakWorkingSet": 706039808,
+    "note": "New browser per case; real DPR; 1920x1080 window; same camera/styles; periodic simultaneous OS working-set samples, not an exact instantaneous peak. Timings from this instrumented run are not used for latency comparisons."
+  },
+  {
+    "repeat": 0,
+    "dpr": 2,
+    "preset": "reference",
+    "complete": true,
+    "frame": {
+      "time": 41452,
+      "event": "frame",
+      "generation": 2,
+      "phase": "final",
+      "revision": 0,
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 8e-05,
+        "h": 5.091383812010444e-05
+      },
+      "z": 17,
+      "pixels": {
+        "width": 3064,
+        "height": 1950
+      },
+      "timings": {
+        "fetch": 109073.4999999404,
+        "decode": 592.5999999940395,
+        "assemble": 170.70000004768372,
+        "resample": 48.79999999701977,
+        "encode": 116.79999999701977,
+        "publish": 98.19999998807907
+      },
+      "nodes": 88,
+      "duration": 39948.89999999106,
+      "bytes": 242156,
+      "cacheBytes": 858596,
+      "workingCanvasBytes": 116173888,
+      "decodedFrameBytes": 47798400,
+      "hits": 94,
+      "misses": 188,
+      "evictions": 0
+    },
+    "request": {
+      "time": 1408.3999999910593,
+      "event": "request",
+      "generation": 2,
+      "session": "c8c32ae78fd1a8eef47be4dcb1852e92",
+      "identity": "977d134ee5aadc480e1410ade3c84587:c8c32ae78fd1a8eef47be4dcb1852e92",
+      "revision": 0,
+      "styles": [
+        "natural",
+        "hillshade"
+      ],
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 8e-05,
+        "h": 5.091383812010444e-05
+      },
+      "pixels": {
+        "width": 3064,
+        "height": 1950
+      },
+      "z": 17,
+      "size": 512
+    },
+    "sharedBackend": "http://127.0.0.1:8128",
+    "graphics": {
+      "devices": [
+        {
+          "vendorId": 32902,
+          "deviceId": 6427,
+          "subSysId": 131076136,
+          "revision": 6,
+          "vendorString": "",
+          "deviceString": "Intel(R) HD Graphics 530",
+          "driverVendor": "Intel",
+          "driverVersion": "31.0.101.2111"
+        },
+        {
+          "vendorId": 5140,
+          "deviceId": 140,
+          "subSysId": 0,
+          "revision": 0,
+          "vendorString": "",
+          "deviceString": "Microsoft Basic Render Driver",
+          "driverVendor": "",
+          "driverVersion": "10.0.19041.5794"
+        }
+      ],
+      "features": {
+        "2d_canvas": "enabled",
+        "direct_rendering_display_compositor": "disabled_off_ok",
+        "gpu_compositing": "enabled",
+        "multiple_raster_threads": "enabled_on",
+        "opengl": "enabled_on",
+        "rasterization": "enabled",
+        "raw_draw": "disabled_off_ok",
+        "skia_graphite": "disabled_off",
+        "trees_in_viz": "disabled_off",
+        "video_decode": "enabled",
+        "video_encode": "enabled",
+        "webgl": "enabled",
+        "webgpu": "enabled",
+        "webnn": "disabled_off"
+      },
+      "renderer": "ANGLE (Intel, Intel(R) HD Graphics 530 (0x0000191B) Direct3D11 vs_5_0 ps_5_0, D3D11-31.0.101.2111)"
+    },
+    "samples": [
+      {
+        "time": 1792686085264,
+        "workingSet": 663715840,
+        "privateBytes": 428617728,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 221806592,
+            "PrivateMemorySize64": 172310528
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 85311488,
+            "PrivateMemorySize64": 45928448
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 19992576,
+            "PrivateMemorySize64": 10088448
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 32038912,
+            "PrivateMemorySize64": 17203200
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 113647616,
+            "PrivateMemorySize64": 89763840
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 152428544,
+            "PrivateMemorySize64": 76926976
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 38490112,
+            "PrivateMemorySize64": 16396288
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "6816": "chrome.mojom.ProcessorMetrics",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686086295,
+        "workingSet": 686555136,
+        "privateBytes": 449720320,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 243806208,
+            "PrivateMemorySize64": 193138688
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 85311488,
+            "PrivateMemorySize64": 45928448
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 19992576,
+            "PrivateMemorySize64": 10088448
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 32038912,
+            "PrivateMemorySize64": 17203200
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 113659904,
+            "PrivateMemorySize64": 89772032
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 152977408,
+            "PrivateMemorySize64": 77008896
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 38768640,
+            "PrivateMemorySize64": 16580608
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686087317,
+        "workingSet": 1291128832,
+        "privateBytes": 1013280768,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 262950912,
+            "PrivateMemorySize64": 189833216
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 85311488,
+            "PrivateMemorySize64": 45928448
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 19992576,
+            "PrivateMemorySize64": 10088448
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 32038912,
+            "PrivateMemorySize64": 17203200
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 698585088,
+            "PrivateMemorySize64": 656445440
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 153362432,
+            "PrivateMemorySize64": 77201408
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 38887424,
+            "PrivateMemorySize64": 16580608
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686088282,
+        "workingSet": 1387384832,
+        "privateBytes": 1109508096,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 358723584,
+            "PrivateMemorySize64": 285978624
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 85331968,
+            "PrivateMemorySize64": 45928448
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20144128,
+            "PrivateMemorySize64": 10104832
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 32051200,
+            "PrivateMemorySize64": 17203200
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 698650624,
+            "PrivateMemorySize64": 656449536
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 153448448,
+            "PrivateMemorySize64": 77262848
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39034880,
+            "PrivateMemorySize64": 16580608
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686089235,
+        "workingSet": 1348890624,
+        "privateBytes": 1110466560,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 340013056,
+            "PrivateMemorySize64": 287059968
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 85331968,
+            "PrivateMemorySize64": 45928448
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20144128,
+            "PrivateMemorySize64": 10104832
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 32051200,
+            "PrivateMemorySize64": 17203200
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 678825984,
+            "PrivateMemorySize64": 656289792
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 153489408,
+            "PrivateMemorySize64": 77299712
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39034880,
+            "PrivateMemorySize64": 16580608
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686090261,
+        "workingSet": 1351282688,
+        "privateBytes": 1113104384,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 342192128,
+            "PrivateMemorySize64": 289357824
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 85331968,
+            "PrivateMemorySize64": 45928448
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20144128,
+            "PrivateMemorySize64": 10104832
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 32051200,
+            "PrivateMemorySize64": 17203200
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 678825984,
+            "PrivateMemorySize64": 656289792
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 153542656,
+            "PrivateMemorySize64": 77352960
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39194624,
+            "PrivateMemorySize64": 16867328
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686091219,
+        "workingSet": 1354612736,
+        "privateBytes": 1116422144,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 345464832,
+            "PrivateMemorySize64": 292618240
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 85331968,
+            "PrivateMemorySize64": 45928448
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20144128,
+            "PrivateMemorySize64": 10104832
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 32051200,
+            "PrivateMemorySize64": 17203200
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 678817792,
+            "PrivateMemorySize64": 656281600
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 153608192,
+            "PrivateMemorySize64": 77418496
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39194624,
+            "PrivateMemorySize64": 16867328
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686092199,
+        "workingSet": 1358159872,
+        "privateBytes": 1119854592,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 348753920,
+            "PrivateMemorySize64": 295890944
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 85331968,
+            "PrivateMemorySize64": 45928448
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 32051200,
+            "PrivateMemorySize64": 17203200
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 678821888,
+            "PrivateMemorySize64": 656281600
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 153849856,
+            "PrivateMemorySize64": 77574144
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39194624,
+            "PrivateMemorySize64": 16867328
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686093161,
+        "workingSet": 1359118336,
+        "privateBytes": 1120477184,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 352043008,
+            "PrivateMemorySize64": 299282432
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 84090880,
+            "PrivateMemorySize64": 44441600
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 31784960,
+            "PrivateMemorySize64": 16826368
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 677851136,
+            "PrivateMemorySize64": 655310848
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 153968640,
+            "PrivateMemorySize64": 77631488
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39223296,
+            "PrivateMemorySize64": 16875520
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686094116,
+        "workingSet": 1359200256,
+        "privateBytes": 1120538624,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 352088064,
+            "PrivateMemorySize64": 299307008
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 84090880,
+            "PrivateMemorySize64": 44441600
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 31784960,
+            "PrivateMemorySize64": 16826368
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 677851136,
+            "PrivateMemorySize64": 655310848
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 154005504,
+            "PrivateMemorySize64": 77668352
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39223296,
+            "PrivateMemorySize64": 16875520
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686095090,
+        "workingSet": 1345261568,
+        "privateBytes": 1106542592,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 355381248,
+            "PrivateMemorySize64": 302571520
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 84090880,
+            "PrivateMemorySize64": 44441600
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 31784960,
+            "PrivateMemorySize64": 16826368
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 660484096,
+            "PrivateMemorySize64": 637902848
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 154140672,
+            "PrivateMemorySize64": 77815808
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39223296,
+            "PrivateMemorySize64": 16875520
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686096066,
+        "workingSet": 1348603904,
+        "privateBytes": 1110007808,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 358649856,
+            "PrivateMemorySize64": 305963008
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 84090880,
+            "PrivateMemorySize64": 44441600
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 31784960,
+            "PrivateMemorySize64": 16826368
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 660484096,
+            "PrivateMemorySize64": 637902848
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 154214400,
+            "PrivateMemorySize64": 77889536
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39223296,
+            "PrivateMemorySize64": 16875520
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686097028,
+        "workingSet": 1351983104,
+        "privateBytes": 1113464832,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 361943040,
+            "PrivateMemorySize64": 309358592
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 84090880,
+            "PrivateMemorySize64": 44441600
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 31784960,
+            "PrivateMemorySize64": 16826368
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 660488192,
+            "PrivateMemorySize64": 637906944
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 154296320,
+            "PrivateMemorySize64": 77946880
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39223296,
+            "PrivateMemorySize64": 16875520
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686098009,
+        "workingSet": 1353195520,
+        "privateBytes": 1114587136,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 363085824,
+            "PrivateMemorySize64": 310464512
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 84090880,
+            "PrivateMemorySize64": 44441600
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 31784960,
+            "PrivateMemorySize64": 16826368
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 660508672,
+            "PrivateMemorySize64": 637874176
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 154341376,
+            "PrivateMemorySize64": 77991936
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39227392,
+            "PrivateMemorySize64": 16879616
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686098963,
+        "workingSet": 1355448320,
+        "privateBytes": 1116942336,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 365297664,
+            "PrivateMemorySize64": 312778752
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 84090880,
+            "PrivateMemorySize64": 44441600
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 31784960,
+            "PrivateMemorySize64": 16826368
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 660512768,
+            "PrivateMemorySize64": 637878272
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 154378240,
+            "PrivateMemorySize64": 78028800
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39227392,
+            "PrivateMemorySize64": 16879616
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686099932,
+        "workingSet": 1358843904,
+        "privateBytes": 1121488896,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 368623616,
+            "PrivateMemorySize64": 316223488
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 84090880,
+            "PrivateMemorySize64": 44441600
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 31784960,
+            "PrivateMemorySize64": 16826368
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 660512768,
+            "PrivateMemorySize64": 637878272
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 154447872,
+            "PrivateMemorySize64": 79130624
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39227392,
+            "PrivateMemorySize64": 16879616
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686100893,
+        "workingSet": 1362210816,
+        "privateBytes": 1124835328,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 371904512,
+            "PrivateMemorySize64": 319475712
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 84090880,
+            "PrivateMemorySize64": 44441600
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 31784960,
+            "PrivateMemorySize64": 16826368
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 660516864,
+            "PrivateMemorySize64": 637882368
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 154525696,
+            "PrivateMemorySize64": 79216640
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39231488,
+            "PrivateMemorySize64": 16883712
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686101867,
+        "workingSet": 1330720768,
+        "privateBytes": 1092890624,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 340340736,
+            "PrivateMemorySize64": 287461376
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 84090880,
+            "PrivateMemorySize64": 44441600
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 31784960,
+            "PrivateMemorySize64": 16826368
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 660520960,
+            "PrivateMemorySize64": 637886464
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 154595328,
+            "PrivateMemorySize64": 79282176
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39231488,
+            "PrivateMemorySize64": 16883712
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686102830,
+        "workingSet": 1330794496,
+        "privateBytes": 1092939776,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 340389888,
+            "PrivateMemorySize64": 287485952
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 84090880,
+            "PrivateMemorySize64": 44441600
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 31784960,
+            "PrivateMemorySize64": 16826368
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 660520960,
+            "PrivateMemorySize64": 637886464
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 154619904,
+            "PrivateMemorySize64": 79306752
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39231488,
+            "PrivateMemorySize64": 16883712
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686103792,
+        "workingSet": 1334231040,
+        "privateBytes": 1096437760,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 343756800,
+            "PrivateMemorySize64": 290914304
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 84090880,
+            "PrivateMemorySize64": 44441600
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 31784960,
+            "PrivateMemorySize64": 16826368
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 660525056,
+            "PrivateMemorySize64": 637890560
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 154685440,
+            "PrivateMemorySize64": 79372288
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39231488,
+            "PrivateMemorySize64": 16883712
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686104772,
+        "workingSet": 1337593856,
+        "privateBytes": 1099771904,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 347054080,
+            "PrivateMemorySize64": 294182912
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 84090880,
+            "PrivateMemorySize64": 44441600
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 31784960,
+            "PrivateMemorySize64": 16826368
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 660529152,
+            "PrivateMemorySize64": 637894656
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 154746880,
+            "PrivateMemorySize64": 79433728
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39231488,
+            "PrivateMemorySize64": 16883712
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686105731,
+        "workingSet": 1341079552,
+        "privateBytes": 1103110144,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 350355456,
+            "PrivateMemorySize64": 297455616
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 84090880,
+            "PrivateMemorySize64": 44441600
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 31784960,
+            "PrivateMemorySize64": 16826368
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 660578304,
+            "PrivateMemorySize64": 637898752
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 154841088,
+            "PrivateMemorySize64": 79491072
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39272448,
+            "PrivateMemorySize64": 16887808
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686106735,
+        "workingSet": 1343541248,
+        "privateBytes": 1105625088,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 352563200,
+            "PrivateMemorySize64": 299905024
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 84090880,
+            "PrivateMemorySize64": 44441600
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 31784960,
+            "PrivateMemorySize64": 16826368
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 660578304,
+            "PrivateMemorySize64": 637898752
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 155029504,
+            "PrivateMemorySize64": 79556608
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39337984,
+            "PrivateMemorySize64": 16887808
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686107701,
+        "workingSet": 1344757760,
+        "privateBytes": 1106784256,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 353710080,
+            "PrivateMemorySize64": 301015040
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 84090880,
+            "PrivateMemorySize64": 44441600
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 31784960,
+            "PrivateMemorySize64": 16826368
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 660582400,
+            "PrivateMemorySize64": 637902848
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 155062272,
+            "PrivateMemorySize64": 79589376
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39370752,
+            "PrivateMemorySize64": 16900096
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686108661,
+        "workingSet": 1348120576,
+        "privateBytes": 1110114304,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 357015552,
+            "PrivateMemorySize64": 304287744
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 84090880,
+            "PrivateMemorySize64": 44441600
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 31784960,
+            "PrivateMemorySize64": 16826368
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 660586496,
+            "PrivateMemorySize64": 637906944
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 155115520,
+            "PrivateMemorySize64": 79642624
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39370752,
+            "PrivateMemorySize64": 16900096
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686109625,
+        "workingSet": 1351499776,
+        "privateBytes": 1113595904,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 360316928,
+            "PrivateMemorySize64": 307691520
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 84090880,
+            "PrivateMemorySize64": 44441600
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 31784960,
+            "PrivateMemorySize64": 16826368
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 660586496,
+            "PrivateMemorySize64": 637906944
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 155193344,
+            "PrivateMemorySize64": 79720448
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39370752,
+            "PrivateMemorySize64": 16900096
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686110598,
+        "workingSet": 1354878976,
+        "privateBytes": 1116962816,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 363610112,
+            "PrivateMemorySize64": 310972416
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 84090880,
+            "PrivateMemorySize64": 44441600
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 31784960,
+            "PrivateMemorySize64": 16826368
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 660590592,
+            "PrivateMemorySize64": 637911040
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 155271168,
+            "PrivateMemorySize64": 79798272
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39374848,
+            "PrivateMemorySize64": 16904192
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686111558,
+        "workingSet": 1355169792,
+        "privateBytes": 1117061120,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 363704320,
+            "PrivateMemorySize64": 311017472
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 84090880,
+            "PrivateMemorySize64": 44441600
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 31784960,
+            "PrivateMemorySize64": 16826368
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 660594688,
+            "PrivateMemorySize64": 637915136
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 155357184,
+            "PrivateMemorySize64": 79835136
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39481344,
+            "PrivateMemorySize64": 16916480
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686112550,
+        "workingSet": 1361563648,
+        "privateBytes": 1121955840,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 366972928,
+            "PrivateMemorySize64": 314363904
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 84078592,
+            "PrivateMemorySize64": 44412928
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 31784960,
+            "PrivateMemorySize64": 16826368
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 660774912,
+            "PrivateMemorySize64": 637992960
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 158212096,
+            "PrivateMemorySize64": 81334272
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39583744,
+            "PrivateMemorySize64": 16916480
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686113501,
+        "workingSet": 1296371712,
+        "privateBytes": 1051660288,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 307994624,
+            "PrivateMemorySize64": 252719104
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 77795328,
+            "PrivateMemorySize64": 35717120
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 31784960,
+            "PrivateMemorySize64": 16826368
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 660779008,
+            "PrivateMemorySize64": 637992960
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 158244864,
+            "PrivateMemorySize64": 81375232
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39616512,
+            "PrivateMemorySize64": 16920576
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686114481,
+        "workingSet": 1299591168,
+        "privateBytes": 1054904320,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 311181312,
+            "PrivateMemorySize64": 255930368
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 77795328,
+            "PrivateMemorySize64": 35717120
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 31784960,
+            "PrivateMemorySize64": 16826368
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 660779008,
+            "PrivateMemorySize64": 637992960
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 158277632,
+            "PrivateMemorySize64": 81408000
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39616512,
+            "PrivateMemorySize64": 16920576
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686115469,
+        "workingSet": 1267912704,
+        "privateBytes": 1022767104,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 279490560,
+            "PrivateMemorySize64": 223858688
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 77795328,
+            "PrivateMemorySize64": 35717120
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 31784960,
+            "PrivateMemorySize64": 16826368
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 660779008,
+            "PrivateMemorySize64": 637992960
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 158314496,
+            "PrivateMemorySize64": 81412096
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39591936,
+            "PrivateMemorySize64": 16850944
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686116431,
+        "workingSet": 1267949568,
+        "privateBytes": 1022742528,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 279494656,
+            "PrivateMemorySize64": 223858688
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 77819904,
+            "PrivateMemorySize64": 35684352
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 31784960,
+            "PrivateMemorySize64": 16826368
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 660779008,
+            "PrivateMemorySize64": 637992960
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 158322688,
+            "PrivateMemorySize64": 81420288
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39591936,
+            "PrivateMemorySize64": 16850944
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686117401,
+        "workingSet": 1271201792,
+        "privateBytes": 1026011136,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 282697728,
+            "PrivateMemorySize64": 227078144
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 77819904,
+            "PrivateMemorySize64": 35684352
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 31784960,
+            "PrivateMemorySize64": 16826368
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 660779008,
+            "PrivateMemorySize64": 637992960
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 158371840,
+            "PrivateMemorySize64": 81469440
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39591936,
+            "PrivateMemorySize64": 16850944
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686118374,
+        "workingSet": 1274437632,
+        "privateBytes": 1029255168,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 285896704,
+            "PrivateMemorySize64": 230285312
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 77819904,
+            "PrivateMemorySize64": 35684352
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 31784960,
+            "PrivateMemorySize64": 16826368
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 660779008,
+            "PrivateMemorySize64": 637992960
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 158408704,
+            "PrivateMemorySize64": 81506304
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39591936,
+            "PrivateMemorySize64": 16850944
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686119326,
+        "workingSet": 1277652992,
+        "privateBytes": 1032499200,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 289075200,
+            "PrivateMemorySize64": 233492480
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 77819904,
+            "PrivateMemorySize64": 35684352
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 31784960,
+            "PrivateMemorySize64": 16826368
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 660779008,
+            "PrivateMemorySize64": 637992960
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 158445568,
+            "PrivateMemorySize64": 81543168
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39591936,
+            "PrivateMemorySize64": 16850944
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686120369,
+        "workingSet": 1266843648,
+        "privateBytes": 1021644800,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 291209216,
+            "PrivateMemorySize64": 235642880
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 77819904,
+            "PrivateMemorySize64": 35684352
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 31784960,
+            "PrivateMemorySize64": 16826368
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 647794688,
+            "PrivateMemorySize64": 624947200
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 158486528,
+            "PrivateMemorySize64": 81584128
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39591936,
+            "PrivateMemorySize64": 16850944
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686121392,
+        "workingSet": 1254993920,
+        "privateBytes": 1010028544,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 279339008,
+            "PrivateMemorySize64": 224006144
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 77819904,
+            "PrivateMemorySize64": 35684352
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 31784960,
+            "PrivateMemorySize64": 16826368
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 647794688,
+            "PrivateMemorySize64": 624947200
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 158507008,
+            "PrivateMemorySize64": 81604608
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39591936,
+            "PrivateMemorySize64": 16850944
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686122350,
+        "workingSet": 1258254336,
+        "privateBytes": 1013542912,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 282554368,
+            "PrivateMemorySize64": 227475456
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 77819904,
+            "PrivateMemorySize64": 35684352
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 31784960,
+            "PrivateMemorySize64": 16826368
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 647794688,
+            "PrivateMemorySize64": 624947200
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 158552064,
+            "PrivateMemorySize64": 81649664
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39591936,
+            "PrivateMemorySize64": 16850944
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686123319,
+        "workingSet": 1261486080,
+        "privateBytes": 1016782848,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 285749248,
+            "PrivateMemorySize64": 230682624
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 77819904,
+            "PrivateMemorySize64": 35684352
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 31784960,
+            "PrivateMemorySize64": 16826368
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 647794688,
+            "PrivateMemorySize64": 624947200
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 158588928,
+            "PrivateMemorySize64": 81682432
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39591936,
+            "PrivateMemorySize64": 16850944
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      },
+      {
+        "time": 1792686124417,
+        "workingSet": 1478311936,
+        "privateBytes": 1091301376,
+        "processes": [
+          {
+            "Id": 224,
+            "WorkingSet64": 299032576,
+            "PrivateMemorySize64": 124698624
+          },
+          {
+            "Id": 3192,
+            "WorkingSet64": 77819904,
+            "PrivateMemorySize64": 35684352
+          },
+          {
+            "Id": 8420,
+            "WorkingSet64": 20156416,
+            "PrivateMemorySize64": 10108928
+          },
+          {
+            "Id": 8460,
+            "WorkingSet64": 31784960,
+            "PrivateMemorySize64": 16826368
+          },
+          {
+            "Id": 9968,
+            "WorkingSet64": 850563072,
+            "PrivateMemorySize64": 804593664
+          },
+          {
+            "Id": 11004,
+            "WorkingSet64": 159363072,
+            "PrivateMemorySize64": 82538496
+          },
+          {
+            "Id": 13904,
+            "WorkingSet64": 39591936,
+            "PrivateMemorySize64": 16850944
+          }
+        ],
+        "processTypes": {
+          "224": "renderer",
+          "3192": "renderer",
+          "8420": "storage.mojom.StorageService",
+          "8460": "renderer",
+          "9968": "GPU",
+          "11004": "browser",
+          "13904": "network.mojom.NetworkService"
+        }
+      }
+    ],
+    "afterGC": {
+      "time": 1792686125964,
+      "workingSet": 1396772864,
+      "privateBytes": 1111732224,
+      "processes": [
+        {
+          "Id": 224,
+          "WorkingSet64": 218624000,
+          "PrivateMemorySize64": 113704960
+        },
+        {
+          "Id": 3192,
+          "WorkingSet64": 77819904,
+          "PrivateMemorySize64": 35684352
+        },
+        {
+          "Id": 8420,
+          "WorkingSet64": 20156416,
+          "PrivateMemorySize64": 10108928
+        },
+        {
+          "Id": 8460,
+          "WorkingSet64": 31784960,
+          "PrivateMemorySize64": 16826368
+        },
+        {
+          "Id": 9968,
+          "WorkingSet64": 849432576,
+          "PrivateMemorySize64": 836018176
+        },
+        {
+          "Id": 11004,
+          "WorkingSet64": 159363072,
+          "PrivateMemorySize64": 82538496
+        },
+        {
+          "Id": 13904,
+          "WorkingSet64": 39591936,
+          "PrivateMemorySize64": 16850944
+        }
+      ],
+      "processTypes": {
+        "224": "renderer",
+        "3192": "renderer",
+        "8420": "storage.mojom.StorageService",
+        "8460": "renderer",
+        "9968": "GPU",
+        "11004": "browser",
+        "13904": "network.mojom.NetworkService"
+      }
+    },
+    "heap": {
+      "usedSize": 33031304,
+      "totalSize": 33820672,
+      "embedderHeapUsedSize": 4817816,
+      "backingStorageSize": 482761
+    },
+    "dom": {
+      "documents": 1,
+      "nodes": 3272,
+      "jsEventListeners": 238
+    },
+    "resources": [
+      {
+        "url": "http://127.0.0.1:8128/assets/index-k7UlWZcm.js",
+        "bytes": 188427
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/vendor-runtime-CqkleIqs.js",
+        "bytes": 116
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/index-C3nbivlp.css",
+        "bytes": 44957
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/vendor-react-F7BGGuOQ.js",
+        "bytes": 194375
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/me",
+        "bytes": 315
+      },
+      {
+        "url": "http://127.0.0.1:8128/favicon.ico",
+        "bytes": 0
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/TerrainRouter-FDyaDhN3.js",
+        "bytes": 2762
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/projects/977d134ee5aadc480e1410ade3c84587/open",
+        "bytes": 6812235
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/Studio-DbSrFE8u.js",
+        "bytes": 71983
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/Studio-BIDfP7A-.css",
+        "bytes": 5760
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/world/entities?detail=8&all=1",
+        "bytes": 47
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/terrain/features",
+        "bytes": 14893634
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/view",
+        "bytes": 62
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/view",
+        "bytes": 62
+      }
+    ],
+    "sampledPeakWorkingSet": 1478311936,
+    "note": "New browser per case; real DPR; 1920x1080 window; same camera/styles; periodic simultaneous OS working-set samples, not an exact instantaneous peak. Timings from this instrumented run are not used for latency comparisons."
+  },
+  {
+    "repeat": 0,
+    "dpr": 2,
+    "preset": "balanced",
+    "complete": true,
+    "frame": {
+      "time": 2681.0999999940395,
+      "event": "frame",
+      "generation": 2,
+      "phase": "final",
+      "revision": 0,
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 8e-05,
+        "h": 5.091383812010444e-05
+      },
+      "z": 16,
+      "pixels": {
+        "width": 1149,
+        "height": 731
+      },
+      "timings": {
+        "fetch": 550.6999999880791,
+        "decode": 70.2000000178814,
+        "assemble": 10.999999955296516,
+        "resample": 8.199999988079071,
+        "encode": 18.30000001192093,
+        "publish": 24.599999994039536
+      },
+      "nodes": 24,
+      "duration": 1172.2000000029802,
+      "bytes": 38716,
+      "cacheBytes": 58916,
+      "workingCanvasBytes": 9651132,
+      "decodedFrameBytes": 3359676,
+      "publishedBytes": 19359,
+      "hits": 26,
+      "misses": 52,
+      "evictions": 0
+    },
+    "request": {
+      "time": 1427.7000000029802,
+      "event": "request",
+      "generation": 2,
+      "session": "c8c32ae78fd1a8eef47be4dcb1852e92",
+      "identity": "977d134ee5aadc480e1410ade3c84587:c8c32ae78fd1a8eef47be4dcb1852e92",
+      "revision": 0,
+      "styles": [
+        "natural",
+        "hillshade"
+      ],
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 8e-05,
+        "h": 5.091383812010444e-05
+      },
+      "pixels": {
+        "width": 1149,
+        "height": 731
+      },
+      "z": 16,
+      "size": 256,
+      "preview": {
+        "preset": "balanced",
+        "label": "Balanced",
+        "requestedScale": 0.75,
+        "effectiveScale": 0.75,
+        "clamped": false,
+        "hillshade": 0.55
+      }
+    },
+    "sharedBackend": "http://127.0.0.1:8128",
+    "graphics": {
+      "devices": [
+        {
+          "vendorId": 32902,
+          "deviceId": 6427,
+          "subSysId": 131076136,
+          "revision": 6,
+          "vendorString": "",
+          "deviceString": "Intel(R) HD Graphics 530",
+          "driverVendor": "Intel",
+          "driverVersion": "31.0.101.2111"
+        },
+        {
+          "vendorId": 5140,
+          "deviceId": 140,
+          "subSysId": 0,
+          "revision": 0,
+          "vendorString": "",
+          "deviceString": "Microsoft Basic Render Driver",
+          "driverVendor": "",
+          "driverVersion": "10.0.19041.5794"
+        }
+      ],
+      "features": {
+        "2d_canvas": "enabled",
+        "direct_rendering_display_compositor": "disabled_off_ok",
+        "gpu_compositing": "enabled",
+        "multiple_raster_threads": "enabled_on",
+        "opengl": "enabled_on",
+        "rasterization": "enabled",
+        "raw_draw": "disabled_off_ok",
+        "skia_graphite": "disabled_off",
+        "trees_in_viz": "disabled_off",
+        "video_decode": "enabled",
+        "video_encode": "enabled",
+        "webgl": "enabled",
+        "webgpu": "enabled",
+        "webnn": "disabled_off"
+      },
+      "renderer": "ANGLE (Intel, Intel(R) HD Graphics 530 (0x0000191B) Direct3D11 vs_5_0 ps_5_0, D3D11-31.0.101.2111)"
+    },
+    "samples": [
+      {
+        "time": 1792686129135,
+        "workingSet": 637775872,
+        "privateBytes": 419827712,
+        "processes": [
+          {
+            "Id": 8556,
+            "WorkingSet64": 137592832,
+            "PrivateMemorySize64": 94941184
+          },
+          {
+            "Id": 9368,
+            "WorkingSet64": 35999744,
+            "PrivateMemorySize64": 25309184
+          },
+          {
+            "Id": 10184,
+            "WorkingSet64": 37892096,
+            "PrivateMemorySize64": 16171008
+          },
+          {
+            "Id": 11768,
+            "WorkingSet64": 223907840,
+            "PrivateMemorySize64": 152563712
+          },
+          {
+            "Id": 12440,
+            "WorkingSet64": 84627456,
+            "PrivateMemorySize64": 45170688
+          },
+          {
+            "Id": 12712,
+            "WorkingSet64": 97935360,
+            "PrivateMemorySize64": 75587584
+          },
+          {
+            "Id": 14648,
+            "WorkingSet64": 19820544,
+            "PrivateMemorySize64": 10084352
+          }
+        ],
+        "processTypes": {
+          "8556": "renderer",
+          "9368": "renderer",
+          "10184": "network.mojom.NetworkService",
+          "11768": "browser",
+          "12440": "renderer",
+          "12712": "GPU",
+          "14648": "storage.mojom.StorageService"
+        }
+      },
+      {
+        "time": 1792686130177,
+        "workingSet": 667430912,
+        "privateBytes": 426475520,
+        "processes": [
+          {
+            "Id": 8556,
+            "WorkingSet64": 220045312,
+            "PrivateMemorySize64": 159195136
+          },
+          {
+            "Id": 9368,
+            "WorkingSet64": 36003840,
+            "PrivateMemorySize64": 25313280
+          },
+          {
+            "Id": 10184,
+            "WorkingSet64": 37892096,
+            "PrivateMemorySize64": 16171008
+          },
+          {
+            "Id": 11768,
+            "WorkingSet64": 145162240,
+            "PrivateMemorySize64": 73469952
+          },
+          {
+            "Id": 12440,
+            "WorkingSet64": 84647936,
+            "PrivateMemorySize64": 45174784
+          },
+          {
+            "Id": 12712,
+            "WorkingSet64": 123858944,
+            "PrivateMemorySize64": 97067008
+          },
+          {
+            "Id": 14648,
+            "WorkingSet64": 19820544,
+            "PrivateMemorySize64": 10084352
+          }
+        ],
+        "processTypes": {
+          "8556": "renderer",
+          "9368": "renderer",
+          "10184": "network.mojom.NetworkService",
+          "11768": "browser",
+          "12440": "renderer",
+          "12712": "GPU",
+          "14648": "storage.mojom.StorageService"
+        }
+      }
+    ],
+    "afterGC": {
+      "time": 1792686131706,
+      "workingSet": 607145984,
+      "privateBytes": 373284864,
+      "processes": [
+        {
+          "Id": 8556,
+          "WorkingSet64": 164478976,
+          "PrivateMemorySize64": 106954752
+        },
+        {
+          "Id": 9368,
+          "WorkingSet64": 36016128,
+          "PrivateMemorySize64": 25325568
+        },
+        {
+          "Id": 10184,
+          "WorkingSet64": 37892096,
+          "PrivateMemorySize64": 16171008
+        },
+        {
+          "Id": 11768,
+          "WorkingSet64": 145195008,
+          "PrivateMemorySize64": 73478144
+        },
+        {
+          "Id": 12440,
+          "WorkingSet64": 84647936,
+          "PrivateMemorySize64": 45174784
+        },
+        {
+          "Id": 12712,
+          "WorkingSet64": 119095296,
+          "PrivateMemorySize64": 96096256
+        },
+        {
+          "Id": 14648,
+          "WorkingSet64": 19820544,
+          "PrivateMemorySize64": 10084352
+        }
+      ],
+      "processTypes": {
+        "8556": "renderer",
+        "9368": "renderer",
+        "10184": "network.mojom.NetworkService",
+        "11768": "browser",
+        "12440": "renderer",
+        "12712": "GPU",
+        "14648": "storage.mojom.StorageService"
+      }
+    },
+    "heap": {
+      "usedSize": 32877468,
+      "totalSize": 33820672,
+      "embedderHeapUsedSize": 4576560,
+      "backingStorageSize": 463752
+    },
+    "dom": {
+      "documents": 1,
+      "nodes": 3271,
+      "jsEventListeners": 236
+    },
+    "resources": [
+      {
+        "url": "http://127.0.0.1:8127/assets/index-ZmMcUTRA.js",
+        "bytes": 188427
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/vendor-runtime-CqkleIqs.js",
+        "bytes": 116
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/vendor-react-F7BGGuOQ.js",
+        "bytes": 194375
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/index-C3nbivlp.css",
+        "bytes": 44957
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/me",
+        "bytes": 315
+      },
+      {
+        "url": "http://127.0.0.1:8127/favicon.ico",
+        "bytes": 0
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/TerrainRouter-WtP-wAgj.js",
+        "bytes": 2762
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/projects/977d134ee5aadc480e1410ade3c84587/open",
+        "bytes": 6812235
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/Studio-u5F65js9.js",
+        "bytes": 73665
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/Studio-BIDfP7A-.css",
+        "bytes": 5760
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/world/entities?detail=8&all=1",
+        "bytes": 47
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/terrain/features",
+        "bytes": 14893634
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/view",
+        "bytes": 62
+      }
+    ],
+    "sampledPeakWorkingSet": 667430912,
+    "note": "New browser per case; real DPR; 1920x1080 window; same camera/styles; periodic simultaneous OS working-set samples, not an exact instantaneous peak. Timings from this instrumented run are not used for latency comparisons."
+  },
+  {
+    "repeat": 0,
+    "dpr": 3,
+    "preset": "reference",
+    "complete": true,
+    "frame": {
+      "time": 4439.5999999940395,
+      "event": "frame",
+      "generation": 2,
+      "phase": "final",
+      "revision": 0,
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 8e-05,
+        "h": 5.091383812010444e-05
+      },
+      "z": 17,
+      "pixels": {
+        "width": 4596,
+        "height": 2925
+      },
+      "timings": {
+        "fetch": 3042.099999934435,
+        "decode": 783.5000000596046,
+        "assemble": 205.29999995231628,
+        "resample": 96.59999999403954,
+        "encode": 247.20000000298023,
+        "publish": 237.20000000298023
+      },
+      "nodes": 88,
+      "duration": 2927,
+      "bytes": 528690,
+      "cacheBytes": 858596,
+      "workingCanvasBytes": 146047888,
+      "decodedFrameBytes": 107546400,
+      "hits": 94,
+      "misses": 188,
+      "evictions": 0
+    },
+    "request": {
+      "time": 1421.699999988079,
+      "event": "request",
+      "generation": 2,
+      "session": "c8c32ae78fd1a8eef47be4dcb1852e92",
+      "identity": "977d134ee5aadc480e1410ade3c84587:c8c32ae78fd1a8eef47be4dcb1852e92",
+      "revision": 0,
+      "styles": [
+        "natural",
+        "hillshade"
+      ],
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 8e-05,
+        "h": 5.091383812010444e-05
+      },
+      "pixels": {
+        "width": 4596,
+        "height": 2925
+      },
+      "z": 17,
+      "size": 512
+    },
+    "sharedBackend": "http://127.0.0.1:8128",
+    "graphics": {
+      "devices": [
+        {
+          "vendorId": 32902,
+          "deviceId": 6427,
+          "subSysId": 131076136,
+          "revision": 6,
+          "vendorString": "",
+          "deviceString": "Intel(R) HD Graphics 530",
+          "driverVendor": "Intel",
+          "driverVersion": "31.0.101.2111"
+        },
+        {
+          "vendorId": 5140,
+          "deviceId": 140,
+          "subSysId": 0,
+          "revision": 0,
+          "vendorString": "",
+          "deviceString": "Microsoft Basic Render Driver",
+          "driverVendor": "",
+          "driverVersion": "10.0.19041.5794"
+        }
+      ],
+      "features": {
+        "2d_canvas": "enabled",
+        "direct_rendering_display_compositor": "disabled_off_ok",
+        "gpu_compositing": "enabled",
+        "multiple_raster_threads": "enabled_on",
+        "opengl": "enabled_on",
+        "rasterization": "enabled",
+        "raw_draw": "disabled_off_ok",
+        "skia_graphite": "disabled_off",
+        "trees_in_viz": "disabled_off",
+        "video_decode": "enabled",
+        "video_encode": "enabled",
+        "webgl": "enabled",
+        "webgpu": "enabled",
+        "webnn": "disabled_off"
+      },
+      "renderer": "ANGLE (Intel, Intel(R) HD Graphics 530 (0x0000191B) Direct3D11 vs_5_0 ps_5_0, D3D11-31.0.101.2111)"
+    },
+    "samples": [
+      {
+        "time": 1792686136544,
+        "workingSet": 1426739200,
+        "privateBytes": 1154158592,
+        "processes": [
+          {
+            "Id": 296,
+            "WorkingSet64": 20041728,
+            "PrivateMemorySize64": 10104832
+          },
+          {
+            "Id": 432,
+            "WorkingSet64": 89120768,
+            "PrivateMemorySize64": 53481472
+          },
+          {
+            "Id": 3752,
+            "WorkingSet64": 716365824,
+            "PrivateMemorySize64": 677322752
+          },
+          {
+            "Id": 5916,
+            "WorkingSet64": 36102144,
+            "PrivateMemorySize64": 25264128
+          },
+          {
+            "Id": 8896,
+            "WorkingSet64": 39030784,
+            "PrivateMemorySize64": 16687104
+          },
+          {
+            "Id": 11992,
+            "WorkingSet64": 155291648,
+            "PrivateMemorySize64": 78618624
+          },
+          {
+            "Id": 15568,
+            "WorkingSet64": 370786304,
+            "PrivateMemorySize64": 292679680
+          }
+        ],
+        "processTypes": {
+          "296": "storage.mojom.StorageService",
+          "432": "renderer",
+          "3752": "GPU",
+          "5916": "renderer",
+          "8896": "network.mojom.NetworkService",
+          "11992": "browser",
+          "14200": "chrome.mojom.ProcessorMetrics",
+          "15568": "renderer"
+        }
+      },
+      {
+        "time": 1792686137667,
+        "workingSet": 1496301568,
+        "privateBytes": 1040711680,
+        "processes": [
+          {
+            "Id": 296,
+            "WorkingSet64": 20041728,
+            "PrivateMemorySize64": 10104832
+          },
+          {
+            "Id": 432,
+            "WorkingSet64": 89133056,
+            "PrivateMemorySize64": 53481472
+          },
+          {
+            "Id": 3752,
+            "WorkingSet64": 704241664,
+            "PrivateMemorySize64": 682160128
+          },
+          {
+            "Id": 5916,
+            "WorkingSet64": 36110336,
+            "PrivateMemorySize64": 25272320
+          },
+          {
+            "Id": 8896,
+            "WorkingSet64": 39030784,
+            "PrivateMemorySize64": 16687104
+          },
+          {
+            "Id": 11992,
+            "WorkingSet64": 156680192,
+            "PrivateMemorySize64": 80150528
+          },
+          {
+            "Id": 15568,
+            "WorkingSet64": 451063808,
+            "PrivateMemorySize64": 172855296
+          }
+        ],
+        "processTypes": {
+          "296": "storage.mojom.StorageService",
+          "432": "renderer",
+          "3752": "GPU",
+          "5916": "renderer",
+          "8896": "network.mojom.NetworkService",
+          "11992": "browser",
+          "15568": "renderer"
+        }
+      }
+    ],
+    "afterGC": {
+      "time": 1792686139239,
+      "workingSet": 1826246656,
+      "privateBytes": 1246232576,
+      "processes": [
+        {
+          "Id": 296,
+          "WorkingSet64": 20193280,
+          "PrivateMemorySize64": 10121216
+        },
+        {
+          "Id": 432,
+          "WorkingSet64": 89165824,
+          "PrivateMemorySize64": 53493760
+        },
+        {
+          "Id": 3752,
+          "WorkingSet64": 1075798016,
+          "PrivateMemorySize64": 949248000
+        },
+        {
+          "Id": 5916,
+          "WorkingSet64": 36130816,
+          "PrivateMemorySize64": 25276416
+        },
+        {
+          "Id": 8896,
+          "WorkingSet64": 39055360,
+          "PrivateMemorySize64": 16691200
+        },
+        {
+          "Id": 11992,
+          "WorkingSet64": 156827648,
+          "PrivateMemorySize64": 80207872
+        },
+        {
+          "Id": 15568,
+          "WorkingSet64": 409075712,
+          "PrivateMemorySize64": 111194112
+        }
+      ],
+      "processTypes": {
+        "296": "storage.mojom.StorageService",
+        "432": "renderer",
+        "3752": "GPU",
+        "5916": "renderer",
+        "8896": "network.mojom.NetworkService",
+        "11992": "browser",
+        "15568": "renderer"
+      }
+    },
+    "heap": {
+      "usedSize": 33011792,
+      "totalSize": 33820672,
+      "embedderHeapUsedSize": 4810064,
+      "backingStorageSize": 462170
+    },
+    "dom": {
+      "documents": 1,
+      "nodes": 3272,
+      "jsEventListeners": 238
+    },
+    "resources": [
+      {
+        "url": "http://127.0.0.1:8128/assets/index-k7UlWZcm.js",
+        "bytes": 188427
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/vendor-runtime-CqkleIqs.js",
+        "bytes": 116
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/vendor-react-F7BGGuOQ.js",
+        "bytes": 194375
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/index-C3nbivlp.css",
+        "bytes": 44957
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/me",
+        "bytes": 315
+      },
+      {
+        "url": "http://127.0.0.1:8128/favicon.ico",
+        "bytes": 0
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/TerrainRouter-FDyaDhN3.js",
+        "bytes": 2762
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/projects/977d134ee5aadc480e1410ade3c84587/open",
+        "bytes": 6812235
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/Studio-DbSrFE8u.js",
+        "bytes": 71983
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/Studio-BIDfP7A-.css",
+        "bytes": 5760
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/world/entities?detail=8&all=1",
+        "bytes": 47
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/terrain/features",
+        "bytes": 14893634
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/view",
+        "bytes": 62
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/view",
+        "bytes": 62
+      }
+    ],
+    "sampledPeakWorkingSet": 1826246656,
+    "note": "New browser per case; real DPR; 1920x1080 window; same camera/styles; periodic simultaneous OS working-set samples, not an exact instantaneous peak. Timings from this instrumented run are not used for latency comparisons."
+  },
+  {
+    "repeat": 0,
+    "dpr": 3,
+    "preset": "balanced",
+    "complete": true,
+    "frame": {
+      "time": 2825.5999999940395,
+      "event": "frame",
+      "generation": 2,
+      "phase": "final",
+      "revision": 0,
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 8e-05,
+        "h": 5.091383812010444e-05
+      },
+      "z": 16,
+      "pixels": {
+        "width": 1149,
+        "height": 731
+      },
+      "timings": {
+        "fetch": 889.099999949336,
+        "decode": 68.70000004768372,
+        "assemble": 9.099999994039536,
+        "resample": 9.099999994039536,
+        "encode": 18.700000002980232,
+        "publish": 28.700000002980232
+      },
+      "nodes": 24,
+      "duration": 1303.2000000029802,
+      "bytes": 38716,
+      "cacheBytes": 58916,
+      "workingCanvasBytes": 9651132,
+      "decodedFrameBytes": 3359676,
+      "publishedBytes": 19359,
+      "hits": 26,
+      "misses": 52,
+      "evictions": 0
+    },
+    "request": {
+      "time": 1430.2000000029802,
+      "event": "request",
+      "generation": 2,
+      "session": "c8c32ae78fd1a8eef47be4dcb1852e92",
+      "identity": "977d134ee5aadc480e1410ade3c84587:c8c32ae78fd1a8eef47be4dcb1852e92",
+      "revision": 0,
+      "styles": [
+        "natural",
+        "hillshade"
+      ],
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 8e-05,
+        "h": 5.091383812010444e-05
+      },
+      "pixels": {
+        "width": 1149,
+        "height": 731
+      },
+      "z": 16,
+      "size": 256,
+      "preview": {
+        "preset": "balanced",
+        "label": "Balanced",
+        "requestedScale": 0.75,
+        "effectiveScale": 0.75,
+        "clamped": false,
+        "hillshade": 0.55
+      }
+    },
+    "sharedBackend": "http://127.0.0.1:8128",
+    "graphics": {
+      "devices": [
+        {
+          "vendorId": 32902,
+          "deviceId": 6427,
+          "subSysId": 131076136,
+          "revision": 6,
+          "vendorString": "",
+          "deviceString": "Intel(R) HD Graphics 530",
+          "driverVendor": "Intel",
+          "driverVersion": "31.0.101.2111"
+        },
+        {
+          "vendorId": 5140,
+          "deviceId": 140,
+          "subSysId": 0,
+          "revision": 0,
+          "vendorString": "",
+          "deviceString": "Microsoft Basic Render Driver",
+          "driverVendor": "",
+          "driverVersion": "10.0.19041.5794"
+        }
+      ],
+      "features": {
+        "2d_canvas": "enabled",
+        "direct_rendering_display_compositor": "disabled_off_ok",
+        "gpu_compositing": "enabled",
+        "multiple_raster_threads": "enabled_on",
+        "opengl": "enabled_on",
+        "rasterization": "enabled",
+        "raw_draw": "disabled_off_ok",
+        "skia_graphite": "disabled_off",
+        "trees_in_viz": "disabled_off",
+        "video_decode": "enabled",
+        "video_encode": "enabled",
+        "webgl": "enabled",
+        "webgpu": "enabled",
+        "webnn": "disabled_off"
+      },
+      "renderer": "ANGLE (Intel, Intel(R) HD Graphics 530 (0x0000191B) Direct3D11 vs_5_0 ps_5_0, D3D11-31.0.101.2111)"
+    },
+    "samples": [
+      {
+        "time": 1792686144755,
+        "workingSet": 697978880,
+        "privateBytes": 447655936,
+        "processes": [
+          {
+            "Id": 1144,
+            "WorkingSet64": 38825984,
+            "PrivateMemorySize64": 16691200
+          },
+          {
+            "Id": 4232,
+            "WorkingSet64": 245256192,
+            "PrivateMemorySize64": 184242176
+          },
+          {
+            "Id": 7956,
+            "WorkingSet64": 85082112,
+            "PrivateMemorySize64": 46030848
+          },
+          {
+            "Id": 15480,
+            "WorkingSet64": 153026560,
+            "PrivateMemorySize64": 76615680
+          },
+          {
+            "Id": 15752,
+            "WorkingSet64": 19955712,
+            "PrivateMemorySize64": 10100736
+          },
+          {
+            "Id": 15992,
+            "WorkingSet64": 31969280,
+            "PrivateMemorySize64": 17235968
+          },
+          {
+            "Id": 16064,
+            "WorkingSet64": 123863040,
+            "PrivateMemorySize64": 96739328
+          }
+        ],
+        "processTypes": {
+          "1144": "network.mojom.NetworkService",
+          "4232": "renderer",
+          "7956": "renderer",
+          "15480": "browser",
+          "15752": "storage.mojom.StorageService",
+          "15992": "renderer",
+          "16064": "GPU"
+        }
+      }
+    ],
+    "afterGC": {
+      "time": 1792686146298,
+      "workingSet": 623267840,
+      "privateBytes": 379437056,
+      "processes": [
+        {
+          "Id": 1144,
+          "WorkingSet64": 38825984,
+          "PrivateMemorySize64": 16691200
+        },
+        {
+          "Id": 4232,
+          "WorkingSet64": 175144960,
+          "PrivateMemorySize64": 116850688
+        },
+        {
+          "Id": 7956,
+          "WorkingSet64": 85082112,
+          "PrivateMemorySize64": 46030848
+        },
+        {
+          "Id": 15480,
+          "WorkingSet64": 153161728,
+          "PrivateMemorySize64": 76742656
+        },
+        {
+          "Id": 15752,
+          "WorkingSet64": 19955712,
+          "PrivateMemorySize64": 10100736
+        },
+        {
+          "Id": 15992,
+          "WorkingSet64": 31969280,
+          "PrivateMemorySize64": 17235968
+        },
+        {
+          "Id": 16064,
+          "WorkingSet64": 119128064,
+          "PrivateMemorySize64": 95784960
+        }
+      ],
+      "processTypes": {
+        "1144": "network.mojom.NetworkService",
+        "4232": "renderer",
+        "7956": "renderer",
+        "15480": "browser",
+        "15752": "storage.mojom.StorageService",
+        "15992": "renderer",
+        "16064": "GPU"
+      }
+    },
+    "heap": {
+      "usedSize": 33066736,
+      "totalSize": 42995712,
+      "embedderHeapUsedSize": 4764680,
+      "backingStorageSize": 463663
+    },
+    "dom": {
+      "documents": 1,
+      "nodes": 3271,
+      "jsEventListeners": 236
+    },
+    "resources": [
+      {
+        "url": "http://127.0.0.1:8127/assets/index-ZmMcUTRA.js",
+        "bytes": 188427
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/vendor-runtime-CqkleIqs.js",
+        "bytes": 116
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/vendor-react-F7BGGuOQ.js",
+        "bytes": 194375
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/index-C3nbivlp.css",
+        "bytes": 44957
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/me",
+        "bytes": 315
+      },
+      {
+        "url": "http://127.0.0.1:8127/favicon.ico",
+        "bytes": 0
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/TerrainRouter-WtP-wAgj.js",
+        "bytes": 2762
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/projects/977d134ee5aadc480e1410ade3c84587/open",
+        "bytes": 6812235
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/Studio-u5F65js9.js",
+        "bytes": 73665
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/Studio-BIDfP7A-.css",
+        "bytes": 5760
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/world/entities?detail=8&all=1",
+        "bytes": 47
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/terrain/features",
+        "bytes": 14893634
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/view",
+        "bytes": 62
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/view",
+        "bytes": 62
+      }
+    ],
+    "sampledPeakWorkingSet": 697978880,
+    "note": "New browser per case; real DPR; 1920x1080 window; same camera/styles; periodic simultaneous OS working-set samples, not an exact instantaneous peak. Timings from this instrumented run are not used for latency comparisons."
+  },
+  {
+    "repeat": 1,
+    "dpr": 1,
+    "preset": "reference",
+    "complete": true,
+    "frame": {
+      "time": 3576.9000000059605,
+      "event": "frame",
+      "generation": 2,
+      "phase": "final",
+      "revision": 0,
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 8e-05,
+        "h": 5.091383812010444e-05
+      },
+      "z": 17,
+      "pixels": {
+        "width": 1532,
+        "height": 975
+      },
+      "timings": {
+        "fetch": 2827.000000014901,
+        "decode": 238.89999993145466,
+        "assemble": 36.000000059604645,
+        "resample": 24.799999997019768,
+        "encode": 32.599999994039536,
+        "publish": 26.400000005960464
+      },
+      "nodes": 88,
+      "duration": 2133,
+      "bytes": 65614,
+      "cacheBytes": 213004,
+      "workingCanvasBytes": 29043472,
+      "decodedFrameBytes": 11949600,
+      "hits": 94,
+      "misses": 188,
+      "evictions": 0
+    },
+    "request": {
+      "time": 1362,
+      "event": "request",
+      "generation": 2,
+      "session": "c8c32ae78fd1a8eef47be4dcb1852e92",
+      "identity": "977d134ee5aadc480e1410ade3c84587:c8c32ae78fd1a8eef47be4dcb1852e92",
+      "revision": 0,
+      "styles": [
+        "natural",
+        "hillshade"
+      ],
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 8e-05,
+        "h": 5.091383812010444e-05
+      },
+      "pixels": {
+        "width": 1532,
+        "height": 975
+      },
+      "z": 17,
+      "size": 256
+    },
+    "sharedBackend": "http://127.0.0.1:8128",
+    "graphics": {
+      "devices": [
+        {
+          "vendorId": 32902,
+          "deviceId": 6427,
+          "subSysId": 131076136,
+          "revision": 6,
+          "vendorString": "",
+          "deviceString": "Intel(R) HD Graphics 530",
+          "driverVendor": "Intel",
+          "driverVersion": "31.0.101.2111"
+        },
+        {
+          "vendorId": 5140,
+          "deviceId": 140,
+          "subSysId": 0,
+          "revision": 0,
+          "vendorString": "",
+          "deviceString": "Microsoft Basic Render Driver",
+          "driverVendor": "",
+          "driverVersion": "10.0.19041.5794"
+        }
+      ],
+      "features": {
+        "2d_canvas": "enabled",
+        "direct_rendering_display_compositor": "disabled_off_ok",
+        "gpu_compositing": "enabled",
+        "multiple_raster_threads": "enabled_on",
+        "opengl": "enabled_on",
+        "rasterization": "enabled",
+        "raw_draw": "disabled_off_ok",
+        "skia_graphite": "disabled_off",
+        "trees_in_viz": "disabled_off",
+        "video_decode": "enabled",
+        "video_encode": "enabled",
+        "webgl": "enabled",
+        "webgpu": "enabled",
+        "webnn": "disabled_off"
+      },
+      "renderer": "ANGLE (Intel, Intel(R) HD Graphics 530 (0x0000191B) Direct3D11 vs_5_0 ps_5_0, D3D11-31.0.101.2111)"
+    },
+    "samples": [
+      {
+        "time": 1792686151553,
+        "workingSet": 1327579136,
+        "privateBytes": 1070862336,
+        "processes": [
+          {
+            "Id": 4388,
+            "WorkingSet64": 89038848,
+            "PrivateMemorySize64": 52817920
+          },
+          {
+            "Id": 5640,
+            "WorkingSet64": 38821888,
+            "PrivateMemorySize64": 16691200
+          },
+          {
+            "Id": 7608,
+            "WorkingSet64": 34762752,
+            "PrivateMemorySize64": 22839296
+          },
+          {
+            "Id": 8948,
+            "WorkingSet64": 19894272,
+            "PrivateMemorySize64": 10080256
+          },
+          {
+            "Id": 10932,
+            "WorkingSet64": 154460160,
+            "PrivateMemorySize64": 78221312
+          },
+          {
+            "Id": 12180,
+            "WorkingSet64": 697589760,
+            "PrivateMemorySize64": 660873216
+          },
+          {
+            "Id": 13152,
+            "WorkingSet64": 293011456,
+            "PrivateMemorySize64": 229339136
+          }
+        ],
+        "processTypes": {
+          "4388": "renderer",
+          "5640": "network.mojom.NetworkService",
+          "7608": "renderer",
+          "8948": "storage.mojom.StorageService",
+          "10932": "browser",
+          "12180": "GPU",
+          "13152": "renderer"
+        }
+      },
+      {
+        "time": 1792686152552,
+        "workingSet": 1419874304,
+        "privateBytes": 1153073152,
+        "processes": [
+          {
+            "Id": 4388,
+            "WorkingSet64": 89038848,
+            "PrivateMemorySize64": 52817920
+          },
+          {
+            "Id": 5640,
+            "WorkingSet64": 38821888,
+            "PrivateMemorySize64": 16691200
+          },
+          {
+            "Id": 7608,
+            "WorkingSet64": 34762752,
+            "PrivateMemorySize64": 22839296
+          },
+          {
+            "Id": 8948,
+            "WorkingSet64": 19894272,
+            "PrivateMemorySize64": 10080256
+          },
+          {
+            "Id": 10932,
+            "WorkingSet64": 155181056,
+            "PrivateMemorySize64": 78958592
+          },
+          {
+            "Id": 12180,
+            "WorkingSet64": 806780928,
+            "PrivateMemorySize64": 779423744
+          },
+          {
+            "Id": 13152,
+            "WorkingSet64": 275394560,
+            "PrivateMemorySize64": 192262144
+          }
+        ],
+        "processTypes": {
+          "4388": "renderer",
+          "5640": "network.mojom.NetworkService",
+          "7608": "renderer",
+          "8948": "storage.mojom.StorageService",
+          "10932": "browser",
+          "12180": "GPU",
+          "13152": "renderer"
+        }
+      }
+    ],
+    "afterGC": {
+      "time": 1792686154106,
+      "workingSet": 1273315328,
+      "privateBytes": 1034354688,
+      "processes": [
+        {
+          "Id": 4388,
+          "WorkingSet64": 89059328,
+          "PrivateMemorySize64": 52817920
+        },
+        {
+          "Id": 5640,
+          "WorkingSet64": 38846464,
+          "PrivateMemorySize64": 16695296
+        },
+        {
+          "Id": 7608,
+          "WorkingSet64": 34775040,
+          "PrivateMemorySize64": 22839296
+        },
+        {
+          "Id": 8948,
+          "WorkingSet64": 20045824,
+          "PrivateMemorySize64": 10096640
+        },
+        {
+          "Id": 10932,
+          "WorkingSet64": 155340800,
+          "PrivateMemorySize64": 79015936
+        },
+        {
+          "Id": 12180,
+          "WorkingSet64": 754454528,
+          "PrivateMemorySize64": 739512320
+        },
+        {
+          "Id": 13152,
+          "WorkingSet64": 180793344,
+          "PrivateMemorySize64": 113377280
+        }
+      ],
+      "processTypes": {
+        "4388": "renderer",
+        "5640": "network.mojom.NetworkService",
+        "7608": "renderer",
+        "8948": "storage.mojom.StorageService",
+        "10932": "browser",
+        "12180": "GPU",
+        "13152": "renderer"
+      }
+    },
+    "heap": {
+      "usedSize": 33009708,
+      "totalSize": 34082816,
+      "embedderHeapUsedSize": 4810688,
+      "backingStorageSize": 462172
+    },
+    "dom": {
+      "documents": 1,
+      "nodes": 3272,
+      "jsEventListeners": 238
+    },
+    "resources": [
+      {
+        "url": "http://127.0.0.1:8128/assets/index-k7UlWZcm.js",
+        "bytes": 188427
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/vendor-runtime-CqkleIqs.js",
+        "bytes": 116
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/index-C3nbivlp.css",
+        "bytes": 44957
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/vendor-react-F7BGGuOQ.js",
+        "bytes": 194375
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/me",
+        "bytes": 315
+      },
+      {
+        "url": "http://127.0.0.1:8128/favicon.ico",
+        "bytes": 0
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/TerrainRouter-FDyaDhN3.js",
+        "bytes": 2762
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/projects/977d134ee5aadc480e1410ade3c84587/open",
+        "bytes": 6812236
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/Studio-DbSrFE8u.js",
+        "bytes": 71983
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/Studio-BIDfP7A-.css",
+        "bytes": 5760
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/world/entities?detail=8&all=1",
+        "bytes": 47
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/terrain/features",
+        "bytes": 14893634
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/view",
+        "bytes": 62
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/view",
+        "bytes": 62
+      }
+    ],
+    "sampledPeakWorkingSet": 1419874304,
+    "note": "New browser per case; real DPR; 1920x1080 window; same camera/styles; periodic simultaneous OS working-set samples, not an exact instantaneous peak. Timings from this instrumented run are not used for latency comparisons."
+  },
+  {
+    "repeat": 1,
+    "dpr": 1,
+    "preset": "balanced",
+    "complete": true,
+    "frame": {
+      "time": 2682.7000000029802,
+      "event": "frame",
+      "generation": 2,
+      "phase": "final",
+      "revision": 0,
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 8e-05,
+        "h": 5.091383812010444e-05
+      },
+      "z": 16,
+      "pixels": {
+        "width": 1149,
+        "height": 731
+      },
+      "timings": {
+        "fetch": 654.7999999374151,
+        "decode": 59.700000047683716,
+        "assemble": 9.700000017881393,
+        "resample": 9.100000008940697,
+        "encode": 18.799999997019768,
+        "publish": 26.599999994039536
+      },
+      "nodes": 24,
+      "duration": 1166.0999999940395,
+      "bytes": 38716,
+      "cacheBytes": 58916,
+      "workingCanvasBytes": 9651132,
+      "decodedFrameBytes": 3359676,
+      "publishedBytes": 19359,
+      "hits": 26,
+      "misses": 52,
+      "evictions": 0
+    },
+    "request": {
+      "time": 1432.7000000029802,
+      "event": "request",
+      "generation": 2,
+      "session": "c8c32ae78fd1a8eef47be4dcb1852e92",
+      "identity": "977d134ee5aadc480e1410ade3c84587:c8c32ae78fd1a8eef47be4dcb1852e92",
+      "revision": 0,
+      "styles": [
+        "natural",
+        "hillshade"
+      ],
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 8e-05,
+        "h": 5.091383812010444e-05
+      },
+      "pixels": {
+        "width": 1149,
+        "height": 731
+      },
+      "z": 16,
+      "size": 256,
+      "preview": {
+        "preset": "balanced",
+        "label": "Balanced",
+        "requestedScale": 0.75,
+        "effectiveScale": 0.75,
+        "clamped": false,
+        "hillshade": 0.55
+      }
+    },
+    "sharedBackend": "http://127.0.0.1:8128",
+    "graphics": {
+      "devices": [
+        {
+          "vendorId": 32902,
+          "deviceId": 6427,
+          "subSysId": 131076136,
+          "revision": 6,
+          "vendorString": "",
+          "deviceString": "Intel(R) HD Graphics 530",
+          "driverVendor": "Intel",
+          "driverVersion": "31.0.101.2111"
+        },
+        {
+          "vendorId": 5140,
+          "deviceId": 140,
+          "subSysId": 0,
+          "revision": 0,
+          "vendorString": "",
+          "deviceString": "Microsoft Basic Render Driver",
+          "driverVendor": "",
+          "driverVersion": "10.0.19041.5794"
+        }
+      ],
+      "features": {
+        "2d_canvas": "enabled",
+        "direct_rendering_display_compositor": "disabled_off_ok",
+        "gpu_compositing": "enabled",
+        "multiple_raster_threads": "enabled_on",
+        "opengl": "enabled_on",
+        "rasterization": "enabled",
+        "raw_draw": "disabled_off_ok",
+        "skia_graphite": "disabled_off",
+        "trees_in_viz": "disabled_off",
+        "video_decode": "enabled",
+        "video_encode": "enabled",
+        "webgl": "enabled",
+        "webgpu": "enabled",
+        "webnn": "disabled_off"
+      },
+      "renderer": "ANGLE (Intel, Intel(R) HD Graphics 530 (0x0000191B) Direct3D11 vs_5_0 ps_5_0, D3D11-31.0.101.2111)"
+    },
+    "samples": [
+      {
+        "time": 1792686158129,
+        "workingSet": 683003904,
+        "privateBytes": 444841984,
+        "processes": [
+          {
+            "Id": 5836,
+            "WorkingSet64": 125415424,
+            "PrivateMemorySize64": 98287616
+          },
+          {
+            "Id": 8452,
+            "WorkingSet64": 234377216,
+            "PrivateMemorySize64": 177553408
+          },
+          {
+            "Id": 8932,
+            "WorkingSet64": 85151744,
+            "PrivateMemorySize64": 46526464
+          },
+          {
+            "Id": 9368,
+            "WorkingSet64": 38457344,
+            "PrivateMemorySize64": 16273408
+          },
+          {
+            "Id": 9544,
+            "WorkingSet64": 19910656,
+            "PrivateMemorySize64": 10084352
+          },
+          {
+            "Id": 12596,
+            "WorkingSet64": 144846848,
+            "PrivateMemorySize64": 73179136
+          },
+          {
+            "Id": 15764,
+            "WorkingSet64": 34844672,
+            "PrivateMemorySize64": 22937600
+          }
+        ],
+        "processTypes": {
+          "5836": "GPU",
+          "8452": "renderer",
+          "8932": "renderer",
+          "9368": "network.mojom.NetworkService",
+          "9544": "storage.mojom.StorageService",
+          "12596": "browser",
+          "15764": "renderer"
+        }
+      }
+    ],
+    "afterGC": {
+      "time": 1792686159668,
+      "workingSet": 621264896,
+      "privateBytes": 389283840,
+      "processes": [
+        {
+          "Id": 5836,
+          "WorkingSet64": 120610816,
+          "PrivateMemorySize64": 97320960
+        },
+        {
+          "Id": 8452,
+          "WorkingSet64": 177418240,
+          "PrivateMemorySize64": 122945536
+        },
+        {
+          "Id": 8932,
+          "WorkingSet64": 85151744,
+          "PrivateMemorySize64": 46526464
+        },
+        {
+          "Id": 9368,
+          "WorkingSet64": 38461440,
+          "PrivateMemorySize64": 16277504
+        },
+        {
+          "Id": 9544,
+          "WorkingSet64": 19910656,
+          "PrivateMemorySize64": 10084352
+        },
+        {
+          "Id": 12596,
+          "WorkingSet64": 144867328,
+          "PrivateMemorySize64": 73191424
+        },
+        {
+          "Id": 15764,
+          "WorkingSet64": 34844672,
+          "PrivateMemorySize64": 22937600
+        }
+      ],
+      "processTypes": {
+        "5836": "GPU",
+        "8452": "renderer",
+        "8932": "renderer",
+        "9368": "network.mojom.NetworkService",
+        "9544": "storage.mojom.StorageService",
+        "12596": "browser",
+        "15764": "renderer"
+      }
+    },
+    "heap": {
+      "usedSize": 39890204,
+      "totalSize": 43257856,
+      "embedderHeapUsedSize": 4946400,
+      "backingStorageSize": 464105
+    },
+    "dom": {
+      "documents": 1,
+      "nodes": 3271,
+      "jsEventListeners": 290
+    },
+    "resources": [
+      {
+        "url": "http://127.0.0.1:8127/assets/index-ZmMcUTRA.js",
+        "bytes": 188427
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/vendor-runtime-CqkleIqs.js",
+        "bytes": 116
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/vendor-react-F7BGGuOQ.js",
+        "bytes": 194375
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/index-C3nbivlp.css",
+        "bytes": 44957
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/me",
+        "bytes": 315
+      },
+      {
+        "url": "http://127.0.0.1:8127/favicon.ico",
+        "bytes": 0
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/TerrainRouter-WtP-wAgj.js",
+        "bytes": 2762
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/projects/977d134ee5aadc480e1410ade3c84587/open",
+        "bytes": 6812236
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/Studio-u5F65js9.js",
+        "bytes": 73665
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/Studio-BIDfP7A-.css",
+        "bytes": 5760
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/world/entities?detail=8&all=1",
+        "bytes": 47
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/terrain/features",
+        "bytes": 14893634
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/view",
+        "bytes": 62
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/view",
+        "bytes": 62
+      }
+    ],
+    "sampledPeakWorkingSet": 683003904,
+    "note": "New browser per case; real DPR; 1920x1080 window; same camera/styles; periodic simultaneous OS working-set samples, not an exact instantaneous peak. Timings from this instrumented run are not used for latency comparisons."
+  },
+  {
+    "repeat": 1,
+    "dpr": 2,
+    "preset": "reference",
+    "complete": true,
+    "frame": {
+      "time": 4153,
+      "event": "frame",
+      "generation": 2,
+      "phase": "final",
+      "revision": 0,
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 8e-05,
+        "h": 5.091383812010444e-05
+      },
+      "z": 17,
+      "pixels": {
+        "width": 3064,
+        "height": 1950
+      },
+      "timings": {
+        "fetch": 2909.399999946356,
+        "decode": 813.3000000715256,
+        "assemble": 173.00000001490116,
+        "resample": 45.79999999701977,
+        "encode": 109.3999999910593,
+        "publish": 98.1000000089407
+      },
+      "nodes": 88,
+      "duration": 2636.5,
+      "bytes": 242156,
+      "cacheBytes": 858596,
+      "workingCanvasBytes": 116173888,
+      "decodedFrameBytes": 47798400,
+      "hits": 94,
+      "misses": 188,
+      "evictions": 0
+    },
+    "request": {
+      "time": 1435.5999999940395,
+      "event": "request",
+      "generation": 2,
+      "session": "c8c32ae78fd1a8eef47be4dcb1852e92",
+      "identity": "977d134ee5aadc480e1410ade3c84587:c8c32ae78fd1a8eef47be4dcb1852e92",
+      "revision": 0,
+      "styles": [
+        "natural",
+        "hillshade"
+      ],
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 8e-05,
+        "h": 5.091383812010444e-05
+      },
+      "pixels": {
+        "width": 3064,
+        "height": 1950
+      },
+      "z": 17,
+      "size": 512
+    },
+    "sharedBackend": "http://127.0.0.1:8128",
+    "graphics": {
+      "devices": [
+        {
+          "vendorId": 32902,
+          "deviceId": 6427,
+          "subSysId": 131076136,
+          "revision": 6,
+          "vendorString": "",
+          "deviceString": "Intel(R) HD Graphics 530",
+          "driverVendor": "Intel",
+          "driverVersion": "31.0.101.2111"
+        },
+        {
+          "vendorId": 5140,
+          "deviceId": 140,
+          "subSysId": 0,
+          "revision": 0,
+          "vendorString": "",
+          "deviceString": "Microsoft Basic Render Driver",
+          "driverVendor": "",
+          "driverVersion": "10.0.19041.5794"
+        }
+      ],
+      "features": {
+        "2d_canvas": "enabled",
+        "direct_rendering_display_compositor": "disabled_off_ok",
+        "gpu_compositing": "enabled",
+        "multiple_raster_threads": "enabled_on",
+        "opengl": "enabled_on",
+        "rasterization": "enabled",
+        "raw_draw": "disabled_off_ok",
+        "skia_graphite": "disabled_off",
+        "trees_in_viz": "disabled_off",
+        "video_decode": "enabled",
+        "video_encode": "enabled",
+        "webgl": "enabled",
+        "webgpu": "enabled",
+        "webnn": "disabled_off"
+      },
+      "renderer": "ANGLE (Intel, Intel(R) HD Graphics 530 (0x0000191B) Direct3D11 vs_5_0 ps_5_0, D3D11-31.0.101.2111)"
+    },
+    "samples": [
+      {
+        "time": 1792686164304,
+        "workingSet": 1424875520,
+        "privateBytes": 1158934528,
+        "processes": [
+          {
+            "Id": 4480,
+            "WorkingSet64": 34770944,
+            "PrivateMemorySize64": 22859776
+          },
+          {
+            "Id": 5768,
+            "WorkingSet64": 38293504,
+            "PrivateMemorySize64": 16203776
+          },
+          {
+            "Id": 6472,
+            "WorkingSet64": 382111744,
+            "PrivateMemorySize64": 311128064
+          },
+          {
+            "Id": 11156,
+            "WorkingSet64": 88440832,
+            "PrivateMemorySize64": 50798592
+          },
+          {
+            "Id": 11520,
+            "WorkingSet64": 704712704,
+            "PrivateMemorySize64": 667471872
+          },
+          {
+            "Id": 13404,
+            "WorkingSet64": 19898368,
+            "PrivateMemorySize64": 10067968
+          },
+          {
+            "Id": 14796,
+            "WorkingSet64": 156647424,
+            "PrivateMemorySize64": 80404480
+          }
+        ],
+        "processTypes": {
+          "4480": "renderer",
+          "5768": "network.mojom.NetworkService",
+          "6472": "renderer",
+          "11156": "renderer",
+          "11520": "GPU",
+          "13404": "storage.mojom.StorageService",
+          "14796": "browser"
+        }
+      },
+      {
+        "time": 1792686165381,
+        "workingSet": 1601568768,
+        "privateBytes": 1196597248,
+        "processes": [
+          {
+            "Id": 4480,
+            "WorkingSet64": 34770944,
+            "PrivateMemorySize64": 22859776
+          },
+          {
+            "Id": 5768,
+            "WorkingSet64": 38309888,
+            "PrivateMemorySize64": 16203776
+          },
+          {
+            "Id": 6472,
+            "WorkingSet64": 359796736,
+            "PrivateMemorySize64": 187211776
+          },
+          {
+            "Id": 11156,
+            "WorkingSet64": 88440832,
+            "PrivateMemorySize64": 50798592
+          },
+          {
+            "Id": 11520,
+            "WorkingSet64": 902152192,
+            "PrivateMemorySize64": 827465728
+          },
+          {
+            "Id": 13404,
+            "WorkingSet64": 19898368,
+            "PrivateMemorySize64": 10067968
+          },
+          {
+            "Id": 14796,
+            "WorkingSet64": 158199808,
+            "PrivateMemorySize64": 81989632
+          }
+        ],
+        "processTypes": {
+          "4480": "renderer",
+          "5768": "network.mojom.NetworkService",
+          "6472": "renderer",
+          "11156": "renderer",
+          "11520": "GPU",
+          "13404": "storage.mojom.StorageService",
+          "14796": "browser"
+        }
+      }
+    ],
+    "afterGC": {
+      "time": 1792686166939,
+      "workingSet": 1376178176,
+      "privateBytes": 1090904064,
+      "processes": [
+        {
+          "Id": 4480,
+          "WorkingSet64": 34783232,
+          "PrivateMemorySize64": 22859776
+        },
+        {
+          "Id": 5768,
+          "WorkingSet64": 38334464,
+          "PrivateMemorySize64": 16207872
+        },
+        {
+          "Id": 6472,
+          "WorkingSet64": 222216192,
+          "PrivateMemorySize64": 116244480
+        },
+        {
+          "Id": 11156,
+          "WorkingSet64": 88461312,
+          "PrivateMemorySize64": 50798592
+        },
+        {
+          "Id": 11520,
+          "WorkingSet64": 813985792,
+          "PrivateMemorySize64": 792649728
+        },
+        {
+          "Id": 13404,
+          "WorkingSet64": 20049920,
+          "PrivateMemorySize64": 10084352
+        },
+        {
+          "Id": 14796,
+          "WorkingSet64": 158347264,
+          "PrivateMemorySize64": 82059264
+        }
+      ],
+      "processTypes": {
+        "4480": "renderer",
+        "5768": "network.mojom.NetworkService",
+        "6472": "renderer",
+        "11156": "renderer",
+        "11520": "GPU",
+        "13404": "storage.mojom.StorageService",
+        "14796": "browser"
+      }
+    },
+    "heap": {
+      "usedSize": 33012260,
+      "totalSize": 34082816,
+      "embedderHeapUsedSize": 4810928,
+      "backingStorageSize": 462170
+    },
+    "dom": {
+      "documents": 1,
+      "nodes": 3272,
+      "jsEventListeners": 238
+    },
+    "resources": [
+      {
+        "url": "http://127.0.0.1:8128/assets/index-k7UlWZcm.js",
+        "bytes": 188427
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/vendor-runtime-CqkleIqs.js",
+        "bytes": 116
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/vendor-react-F7BGGuOQ.js",
+        "bytes": 194375
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/index-C3nbivlp.css",
+        "bytes": 44957
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/me",
+        "bytes": 315
+      },
+      {
+        "url": "http://127.0.0.1:8128/favicon.ico",
+        "bytes": 0
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/TerrainRouter-FDyaDhN3.js",
+        "bytes": 2762
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/projects/977d134ee5aadc480e1410ade3c84587/open",
+        "bytes": 6812236
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/Studio-DbSrFE8u.js",
+        "bytes": 71983
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/Studio-BIDfP7A-.css",
+        "bytes": 5760
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/world/entities?detail=8&all=1",
+        "bytes": 47
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/terrain/features",
+        "bytes": 14893634
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/view",
+        "bytes": 62
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/view",
+        "bytes": 62
+      }
+    ],
+    "sampledPeakWorkingSet": 1601568768,
+    "note": "New browser per case; real DPR; 1920x1080 window; same camera/styles; periodic simultaneous OS working-set samples, not an exact instantaneous peak. Timings from this instrumented run are not used for latency comparisons."
+  },
+  {
+    "repeat": 1,
+    "dpr": 2,
+    "preset": "balanced",
+    "complete": true,
+    "frame": {
+      "time": 2797,
+      "event": "frame",
+      "generation": 2,
+      "phase": "final",
+      "revision": 0,
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 8e-05,
+        "h": 5.091383812010444e-05
+      },
+      "z": 16,
+      "pixels": {
+        "width": 1149,
+        "height": 731
+      },
+      "timings": {
+        "fetch": 793.9999999701977,
+        "decode": 67.80000001192093,
+        "assemble": 9.200000002980232,
+        "resample": 9.5,
+        "encode": 24.299999997019768,
+        "publish": 26.700000002980232
+      },
+      "nodes": 24,
+      "duration": 1308,
+      "bytes": 38716,
+      "cacheBytes": 58916,
+      "workingCanvasBytes": 9651132,
+      "decodedFrameBytes": 3359676,
+      "publishedBytes": 19359,
+      "hits": 26,
+      "misses": 52,
+      "evictions": 0
+    },
+    "request": {
+      "time": 1398.5999999940395,
+      "event": "request",
+      "generation": 2,
+      "session": "c8c32ae78fd1a8eef47be4dcb1852e92",
+      "identity": "977d134ee5aadc480e1410ade3c84587:c8c32ae78fd1a8eef47be4dcb1852e92",
+      "revision": 0,
+      "styles": [
+        "natural",
+        "hillshade"
+      ],
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 8e-05,
+        "h": 5.091383812010444e-05
+      },
+      "pixels": {
+        "width": 1149,
+        "height": 731
+      },
+      "z": 16,
+      "size": 256,
+      "preview": {
+        "preset": "balanced",
+        "label": "Balanced",
+        "requestedScale": 0.75,
+        "effectiveScale": 0.75,
+        "clamped": false,
+        "hillshade": 0.55
+      }
+    },
+    "sharedBackend": "http://127.0.0.1:8128",
+    "graphics": {
+      "devices": [
+        {
+          "vendorId": 32902,
+          "deviceId": 6427,
+          "subSysId": 131076136,
+          "revision": 6,
+          "vendorString": "",
+          "deviceString": "Intel(R) HD Graphics 530",
+          "driverVendor": "Intel",
+          "driverVersion": "31.0.101.2111"
+        },
+        {
+          "vendorId": 5140,
+          "deviceId": 140,
+          "subSysId": 0,
+          "revision": 0,
+          "vendorString": "",
+          "deviceString": "Microsoft Basic Render Driver",
+          "driverVendor": "",
+          "driverVersion": "10.0.19041.5794"
+        }
+      ],
+      "features": {
+        "2d_canvas": "enabled",
+        "direct_rendering_display_compositor": "disabled_off_ok",
+        "gpu_compositing": "enabled",
+        "multiple_raster_threads": "enabled_on",
+        "opengl": "enabled_on",
+        "rasterization": "enabled",
+        "raw_draw": "disabled_off_ok",
+        "skia_graphite": "disabled_off",
+        "trees_in_viz": "disabled_off",
+        "video_decode": "enabled",
+        "video_encode": "enabled",
+        "webgl": "enabled",
+        "webgpu": "enabled",
+        "webnn": "disabled_off"
+      },
+      "renderer": "ANGLE (Intel, Intel(R) HD Graphics 530 (0x0000191B) Direct3D11 vs_5_0 ps_5_0, D3D11-31.0.101.2111)"
+    },
+    "samples": [
+      {
+        "time": 1792686171174,
+        "workingSet": 707715072,
+        "privateBytes": 464965632,
+        "processes": [
+          {
+            "Id": 132,
+            "WorkingSet64": 87851008,
+            "PrivateMemorySize64": 50544640
+          },
+          {
+            "Id": 1596,
+            "WorkingSet64": 20008960,
+            "PrivateMemorySize64": 10104832
+          },
+          {
+            "Id": 8688,
+            "WorkingSet64": 153800704,
+            "PrivateMemorySize64": 78852096
+          },
+          {
+            "Id": 12120,
+            "WorkingSet64": 250441728,
+            "PrivateMemorySize64": 191533056
+          },
+          {
+            "Id": 12504,
+            "WorkingSet64": 34881536,
+            "PrivateMemorySize64": 22884352
+          },
+          {
+            "Id": 14644,
+            "WorkingSet64": 121888768,
+            "PrivateMemorySize64": 94343168
+          },
+          {
+            "Id": 15268,
+            "WorkingSet64": 38842368,
+            "PrivateMemorySize64": 16703488
+          }
+        ],
+        "processTypes": {
+          "132": "renderer",
+          "1596": "storage.mojom.StorageService",
+          "8688": "browser",
+          "12120": "renderer",
+          "12504": "renderer",
+          "14644": "GPU",
+          "15268": "network.mojom.NetworkService"
+        }
+      }
+    ],
+    "afterGC": {
+      "time": 1792686172706,
+      "workingSet": 629714944,
+      "privateBytes": 392343552,
+      "processes": [
+        {
+          "Id": 132,
+          "WorkingSet64": 87851008,
+          "PrivateMemorySize64": 50544640
+        },
+        {
+          "Id": 1596,
+          "WorkingSet64": 20008960,
+          "PrivateMemorySize64": 10104832
+        },
+        {
+          "Id": 8688,
+          "WorkingSet64": 153878528,
+          "PrivateMemorySize64": 78925824
+        },
+        {
+          "Id": 12120,
+          "WorkingSet64": 177160192,
+          "PrivateMemorySize64": 119783424
+        },
+        {
+          "Id": 12504,
+          "WorkingSet64": 34881536,
+          "PrivateMemorySize64": 22884352
+        },
+        {
+          "Id": 14644,
+          "WorkingSet64": 117080064,
+          "PrivateMemorySize64": 93384704
+        },
+        {
+          "Id": 15268,
+          "WorkingSet64": 38854656,
+          "PrivateMemorySize64": 16715776
+        }
+      ],
+      "processTypes": {
+        "132": "renderer",
+        "1596": "storage.mojom.StorageService",
+        "8688": "browser",
+        "12120": "renderer",
+        "12504": "renderer",
+        "14644": "GPU",
+        "15268": "network.mojom.NetworkService"
+      }
+    },
+    "heap": {
+      "usedSize": 40025500,
+      "totalSize": 42733568,
+      "embedderHeapUsedSize": 5042280,
+      "backingStorageSize": 464106
+    },
+    "dom": {
+      "documents": 1,
+      "nodes": 3271,
+      "jsEventListeners": 290
+    },
+    "resources": [
+      {
+        "url": "http://127.0.0.1:8127/assets/index-ZmMcUTRA.js",
+        "bytes": 188427
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/vendor-runtime-CqkleIqs.js",
+        "bytes": 116
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/vendor-react-F7BGGuOQ.js",
+        "bytes": 194375
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/index-C3nbivlp.css",
+        "bytes": 44957
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/me",
+        "bytes": 315
+      },
+      {
+        "url": "http://127.0.0.1:8127/favicon.ico",
+        "bytes": 0
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/TerrainRouter-WtP-wAgj.js",
+        "bytes": 2762
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/projects/977d134ee5aadc480e1410ade3c84587/open",
+        "bytes": 6812236
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/Studio-u5F65js9.js",
+        "bytes": 73665
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/Studio-BIDfP7A-.css",
+        "bytes": 5760
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/world/entities?detail=8&all=1",
+        "bytes": 47
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/terrain/features",
+        "bytes": 14893634
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/view",
+        "bytes": 62
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/view",
+        "bytes": 62
+      }
+    ],
+    "sampledPeakWorkingSet": 707715072,
+    "note": "New browser per case; real DPR; 1920x1080 window; same camera/styles; periodic simultaneous OS working-set samples, not an exact instantaneous peak. Timings from this instrumented run are not used for latency comparisons."
+  },
+  {
+    "repeat": 1,
+    "dpr": 3,
+    "preset": "reference",
+    "complete": true,
+    "frame": {
+      "time": 4238.79999999702,
+      "event": "frame",
+      "generation": 2,
+      "phase": "final",
+      "revision": 0,
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 8e-05,
+        "h": 5.091383812010444e-05
+      },
+      "z": 17,
+      "pixels": {
+        "width": 4596,
+        "height": 2925
+      },
+      "timings": {
+        "fetch": 2451.500000014901,
+        "decode": 807.1999998837709,
+        "assemble": 187.80000008642673,
+        "resample": 88.09999999403954,
+        "encode": 278.29999999701977,
+        "publish": 228.90000000596046
+      },
+      "nodes": 88,
+      "duration": 2722.9000000059605,
+      "bytes": 528690,
+      "cacheBytes": 858596,
+      "workingCanvasBytes": 146047888,
+      "decodedFrameBytes": 107546400,
+      "hits": 94,
+      "misses": 188,
+      "evictions": 0
+    },
+    "request": {
+      "time": 1434.7999999970198,
+      "event": "request",
+      "generation": 2,
+      "session": "c8c32ae78fd1a8eef47be4dcb1852e92",
+      "identity": "977d134ee5aadc480e1410ade3c84587:c8c32ae78fd1a8eef47be4dcb1852e92",
+      "revision": 0,
+      "styles": [
+        "natural",
+        "hillshade"
+      ],
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 8e-05,
+        "h": 5.091383812010444e-05
+      },
+      "pixels": {
+        "width": 4596,
+        "height": 2925
+      },
+      "z": 17,
+      "size": 512
+    },
+    "sharedBackend": "http://127.0.0.1:8128",
+    "graphics": {
+      "devices": [
+        {
+          "vendorId": 32902,
+          "deviceId": 6427,
+          "subSysId": 131076136,
+          "revision": 6,
+          "vendorString": "",
+          "deviceString": "Intel(R) HD Graphics 530",
+          "driverVendor": "Intel",
+          "driverVersion": "31.0.101.2111"
+        },
+        {
+          "vendorId": 5140,
+          "deviceId": 140,
+          "subSysId": 0,
+          "revision": 0,
+          "vendorString": "",
+          "deviceString": "Microsoft Basic Render Driver",
+          "driverVendor": "",
+          "driverVersion": "10.0.19041.5794"
+        }
+      ],
+      "features": {
+        "2d_canvas": "enabled",
+        "direct_rendering_display_compositor": "disabled_off_ok",
+        "gpu_compositing": "enabled",
+        "multiple_raster_threads": "enabled_on",
+        "opengl": "enabled_on",
+        "rasterization": "enabled",
+        "raw_draw": "disabled_off_ok",
+        "skia_graphite": "disabled_off",
+        "trees_in_viz": "disabled_off",
+        "video_decode": "enabled",
+        "video_encode": "enabled",
+        "webgl": "enabled",
+        "webgpu": "enabled",
+        "webnn": "disabled_off"
+      },
+      "renderer": "ANGLE (Intel, Intel(R) HD Graphics 530 (0x0000191B) Direct3D11 vs_5_0 ps_5_0, D3D11-31.0.101.2111)"
+    },
+    "samples": [
+      {
+        "time": 1792686175776,
+        "workingSet": 606818304,
+        "privateBytes": 409153536,
+        "processes": [
+          {
+            "Id": 3260,
+            "WorkingSet64": 99274752,
+            "PrivateMemorySize64": 76328960
+          },
+          {
+            "Id": 4848,
+            "WorkingSet64": 20033536,
+            "PrivateMemorySize64": 10113024
+          },
+          {
+            "Id": 7988,
+            "WorkingSet64": 88973312,
+            "PrivateMemorySize64": 50749440
+          },
+          {
+            "Id": 9452,
+            "WorkingSet64": 135479296,
+            "PrivateMemorySize64": 91398144
+          },
+          {
+            "Id": 10936,
+            "WorkingSet64": 31940608,
+            "PrivateMemorySize64": 17199104
+          },
+          {
+            "Id": 12112,
+            "WorkingSet64": 38645760,
+            "PrivateMemorySize64": 16457728
+          },
+          {
+            "Id": 15724,
+            "WorkingSet64": 192471040,
+            "PrivateMemorySize64": 146907136
+          }
+        ],
+        "processTypes": {
+          "3260": "GPU",
+          "4848": "storage.mojom.StorageService",
+          "7988": "renderer",
+          "9452": "renderer",
+          "10936": "renderer",
+          "12112": "network.mojom.NetworkService",
+          "15724": "browser"
+        }
+      },
+      {
+        "time": 1792686177205,
+        "workingSet": 1395318784,
+        "privateBytes": 1110069248,
+        "processes": [
+          {
+            "Id": 3260,
+            "WorkingSet64": 722726912,
+            "PrivateMemorySize64": 676872192
+          },
+          {
+            "Id": 4848,
+            "WorkingSet64": 20033536,
+            "PrivateMemorySize64": 10113024
+          },
+          {
+            "Id": 7988,
+            "WorkingSet64": 88989696,
+            "PrivateMemorySize64": 50749440
+          },
+          {
+            "Id": 9452,
+            "WorkingSet64": 347590656,
+            "PrivateMemorySize64": 264486912
+          },
+          {
+            "Id": 10936,
+            "WorkingSet64": 31940608,
+            "PrivateMemorySize64": 17199104
+          },
+          {
+            "Id": 12112,
+            "WorkingSet64": 38690816,
+            "PrivateMemorySize64": 16461824
+          },
+          {
+            "Id": 15724,
+            "WorkingSet64": 145346560,
+            "PrivateMemorySize64": 74186752
+          }
+        ],
+        "processTypes": {
+          "3260": "GPU",
+          "4848": "storage.mojom.StorageService",
+          "7988": "renderer",
+          "9452": "renderer",
+          "10936": "renderer",
+          "12112": "network.mojom.NetworkService",
+          "15724": "browser"
+        }
+      },
+      {
+        "time": 1792686178288,
+        "workingSet": 1710981120,
+        "privateBytes": 1146150912,
+        "processes": [
+          {
+            "Id": 3260,
+            "WorkingSet64": 927272960,
+            "PrivateMemorySize64": 819810304
+          },
+          {
+            "Id": 4848,
+            "WorkingSet64": 20033536,
+            "PrivateMemorySize64": 10113024
+          },
+          {
+            "Id": 7988,
+            "WorkingSet64": 88989696,
+            "PrivateMemorySize64": 50749440
+          },
+          {
+            "Id": 9452,
+            "WorkingSet64": 457715712,
+            "PrivateMemorySize64": 156540928
+          },
+          {
+            "Id": 10936,
+            "WorkingSet64": 31940608,
+            "PrivateMemorySize64": 17199104
+          },
+          {
+            "Id": 12112,
+            "WorkingSet64": 38744064,
+            "PrivateMemorySize64": 16461824
+          },
+          {
+            "Id": 15724,
+            "WorkingSet64": 146284544,
+            "PrivateMemorySize64": 75276288
+          }
+        ],
+        "processTypes": {
+          "3260": "GPU",
+          "4848": "storage.mojom.StorageService",
+          "7988": "renderer",
+          "9452": "renderer",
+          "10936": "renderer",
+          "12112": "network.mojom.NetworkService",
+          "15724": "browser"
+        }
+      }
+    ],
+    "afterGC": {
+      "time": 1792686179833,
+      "workingSet": 1587089408,
+      "privateBytes": 1162698752,
+      "processes": [
+        {
+          "Id": 3260,
+          "WorkingSet64": 973729792,
+          "PrivateMemorySize64": 881065984
+        },
+        {
+          "Id": 4848,
+          "WorkingSet64": 20267008,
+          "PrivateMemorySize64": 10129408
+        },
+        {
+          "Id": 7988,
+          "WorkingSet64": 89059328,
+          "PrivateMemorySize64": 50753536
+        },
+        {
+          "Id": 9452,
+          "WorkingSet64": 281391104,
+          "PrivateMemorySize64": 110460928
+        },
+        {
+          "Id": 10936,
+          "WorkingSet64": 32067584,
+          "PrivateMemorySize64": 17199104
+        },
+        {
+          "Id": 12112,
+          "WorkingSet64": 38875136,
+          "PrivateMemorySize64": 16461824
+        },
+        {
+          "Id": 15724,
+          "WorkingSet64": 151699456,
+          "PrivateMemorySize64": 76627968
+        }
+      ],
+      "processTypes": {
+        "3260": "GPU",
+        "4848": "storage.mojom.StorageService",
+        "7988": "renderer",
+        "9452": "renderer",
+        "10936": "renderer",
+        "12112": "network.mojom.NetworkService",
+        "15724": "browser"
+      }
+    },
+    "heap": {
+      "usedSize": 32940324,
+      "totalSize": 33820672,
+      "embedderHeapUsedSize": 4650384,
+      "backingStorageSize": 462171
+    },
+    "dom": {
+      "documents": 1,
+      "nodes": 3272,
+      "jsEventListeners": 238
+    },
+    "resources": [
+      {
+        "url": "http://127.0.0.1:8128/assets/index-k7UlWZcm.js",
+        "bytes": 188427
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/vendor-runtime-CqkleIqs.js",
+        "bytes": 116
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/vendor-react-F7BGGuOQ.js",
+        "bytes": 194375
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/index-C3nbivlp.css",
+        "bytes": 44957
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/me",
+        "bytes": 315
+      },
+      {
+        "url": "http://127.0.0.1:8128/favicon.ico",
+        "bytes": 0
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/TerrainRouter-FDyaDhN3.js",
+        "bytes": 2762
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/projects/977d134ee5aadc480e1410ade3c84587/open",
+        "bytes": 6812236
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/Studio-DbSrFE8u.js",
+        "bytes": 71983
+      },
+      {
+        "url": "http://127.0.0.1:8128/assets/Studio-BIDfP7A-.css",
+        "bytes": 5760
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/world/entities?detail=8&all=1",
+        "bytes": 47
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/terrain/features",
+        "bytes": 14893634
+      },
+      {
+        "url": "http://127.0.0.1:8128/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/view",
+        "bytes": 62
+      }
+    ],
+    "sampledPeakWorkingSet": 1710981120,
+    "note": "New browser per case; real DPR; 1920x1080 window; same camera/styles; periodic simultaneous OS working-set samples, not an exact instantaneous peak. Timings from this instrumented run are not used for latency comparisons."
+  },
+  {
+    "repeat": 1,
+    "dpr": 3,
+    "preset": "balanced",
+    "complete": true,
+    "frame": {
+      "time": 2819.4000000059605,
+      "event": "frame",
+      "generation": 2,
+      "phase": "final",
+      "revision": 0,
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 8e-05,
+        "h": 5.091383812010444e-05
+      },
+      "z": 16,
+      "pixels": {
+        "width": 1149,
+        "height": 731
+      },
+      "timings": {
+        "fetch": 818.8000000119209,
+        "decode": 70.40000002086163,
+        "assemble": 9.399999976158142,
+        "resample": 9.400000005960464,
+        "encode": 24.799999982118607,
+        "publish": 25.80000001192093
+      },
+      "nodes": 24,
+      "duration": 1315.9000000059605,
+      "bytes": 38716,
+      "cacheBytes": 58916,
+      "workingCanvasBytes": 9651132,
+      "decodedFrameBytes": 3359676,
+      "publishedBytes": 19359,
+      "hits": 26,
+      "misses": 52,
+      "evictions": 0
+    },
+    "request": {
+      "time": 1422.5999999940395,
+      "event": "request",
+      "generation": 2,
+      "session": "c8c32ae78fd1a8eef47be4dcb1852e92",
+      "identity": "977d134ee5aadc480e1410ade3c84587:c8c32ae78fd1a8eef47be4dcb1852e92",
+      "revision": 0,
+      "styles": [
+        "natural",
+        "hillshade"
+      ],
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 8e-05,
+        "h": 5.091383812010444e-05
+      },
+      "pixels": {
+        "width": 1149,
+        "height": 731
+      },
+      "z": 16,
+      "size": 256,
+      "preview": {
+        "preset": "balanced",
+        "label": "Balanced",
+        "requestedScale": 0.75,
+        "effectiveScale": 0.75,
+        "clamped": false,
+        "hillshade": 0.55
+      }
+    },
+    "sharedBackend": "http://127.0.0.1:8128",
+    "graphics": {
+      "devices": [
+        {
+          "vendorId": 32902,
+          "deviceId": 6427,
+          "subSysId": 131076136,
+          "revision": 6,
+          "vendorString": "",
+          "deviceString": "Intel(R) HD Graphics 530",
+          "driverVendor": "Intel",
+          "driverVersion": "31.0.101.2111"
+        },
+        {
+          "vendorId": 5140,
+          "deviceId": 140,
+          "subSysId": 0,
+          "revision": 0,
+          "vendorString": "",
+          "deviceString": "Microsoft Basic Render Driver",
+          "driverVendor": "",
+          "driverVersion": "10.0.19041.5794"
+        }
+      ],
+      "features": {
+        "2d_canvas": "enabled",
+        "direct_rendering_display_compositor": "disabled_off_ok",
+        "gpu_compositing": "enabled",
+        "multiple_raster_threads": "enabled_on",
+        "opengl": "enabled_on",
+        "rasterization": "enabled",
+        "raw_draw": "disabled_off_ok",
+        "skia_graphite": "disabled_off",
+        "trees_in_viz": "disabled_off",
+        "video_decode": "enabled",
+        "video_encode": "enabled",
+        "webgl": "enabled",
+        "webgpu": "enabled",
+        "webnn": "disabled_off"
+      },
+      "renderer": "ANGLE (Intel, Intel(R) HD Graphics 530 (0x0000191B) Direct3D11 vs_5_0 ps_5_0, D3D11-31.0.101.2111)"
+    },
+    "samples": [
+      {
+        "time": 1792686183995,
+        "workingSet": 688103424,
+        "privateBytes": 438841344,
+        "processes": [
+          {
+            "Id": 2324,
+            "WorkingSet64": 87822336,
+            "PrivateMemorySize64": 51490816
+          },
+          {
+            "Id": 5092,
+            "WorkingSet64": 122163200,
+            "PrivateMemorySize64": 94838784
+          },
+          {
+            "Id": 7576,
+            "WorkingSet64": 153178112,
+            "PrivateMemorySize64": 77123584
+          },
+          {
+            "Id": 10896,
+            "WorkingSet64": 32038912,
+            "PrivateMemorySize64": 17215488
+          },
+          {
+            "Id": 11328,
+            "WorkingSet64": 38412288,
+            "PrivateMemorySize64": 16240640
+          },
+          {
+            "Id": 13804,
+            "WorkingSet64": 20000768,
+            "PrivateMemorySize64": 10084352
+          },
+          {
+            "Id": 14000,
+            "WorkingSet64": 234487808,
+            "PrivateMemorySize64": 171847680
+          }
+        ],
+        "processTypes": {
+          "2324": "renderer",
+          "5092": "GPU",
+          "7576": "browser",
+          "10896": "renderer",
+          "11328": "network.mojom.NetworkService",
+          "13804": "storage.mojom.StorageService",
+          "14000": "renderer"
+        }
+      }
+    ],
+    "afterGC": {
+      "time": 1792686185527,
+      "workingSet": 622833664,
+      "privateBytes": 380678144,
+      "processes": [
+        {
+          "Id": 2324,
+          "WorkingSet64": 87822336,
+          "PrivateMemorySize64": 51490816
+        },
+        {
+          "Id": 5092,
+          "WorkingSet64": 117342208,
+          "PrivateMemorySize64": 93868032
+        },
+        {
+          "Id": 7576,
+          "WorkingSet64": 153370624,
+          "PrivateMemorySize64": 77242368
+        },
+        {
+          "Id": 10896,
+          "WorkingSet64": 32038912,
+          "PrivateMemorySize64": 17215488
+        },
+        {
+          "Id": 11328,
+          "WorkingSet64": 38412288,
+          "PrivateMemorySize64": 16240640
+        },
+        {
+          "Id": 13804,
+          "WorkingSet64": 20000768,
+          "PrivateMemorySize64": 10084352
+        },
+        {
+          "Id": 14000,
+          "WorkingSet64": 173846528,
+          "PrivateMemorySize64": 114536448
+        }
+      ],
+      "processTypes": {
+        "2324": "renderer",
+        "5092": "GPU",
+        "7576": "browser",
+        "10896": "renderer",
+        "11328": "network.mojom.NetworkService",
+        "13804": "storage.mojom.StorageService",
+        "14000": "renderer"
+      }
+    },
+    "heap": {
+      "usedSize": 39978056,
+      "totalSize": 42733568,
+      "embedderHeapUsedSize": 5026328,
+      "backingStorageSize": 464106
+    },
+    "dom": {
+      "documents": 1,
+      "nodes": 3271,
+      "jsEventListeners": 290
+    },
+    "resources": [
+      {
+        "url": "http://127.0.0.1:8127/assets/index-ZmMcUTRA.js",
+        "bytes": 188427
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/vendor-runtime-CqkleIqs.js",
+        "bytes": 116
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/index-C3nbivlp.css",
+        "bytes": 44957
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/vendor-react-F7BGGuOQ.js",
+        "bytes": 194375
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/me",
+        "bytes": 315
+      },
+      {
+        "url": "http://127.0.0.1:8127/favicon.ico",
+        "bytes": 0
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/TerrainRouter-WtP-wAgj.js",
+        "bytes": 2762
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/projects/977d134ee5aadc480e1410ade3c84587/open",
+        "bytes": 6812236
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/Studio-u5F65js9.js",
+        "bytes": 73665
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/Studio-BIDfP7A-.css",
+        "bytes": 5760
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/world/entities?detail=8&all=1",
+        "bytes": 47
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/terrain/features",
+        "bytes": 14893634
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/view",
+        "bytes": 62
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/sessions/c8c32ae78fd1a8eef47be4dcb1852e92/view",
+        "bytes": 62
+      }
+    ],
+    "sampledPeakWorkingSet": 688103424,
+    "note": "New browser per case; real DPR; 1920x1080 window; same camera/styles; periodic simultaneous OS working-set samples, not an exact instantaneous peak. Timings from this instrumented run are not used for latency comparisons."
+  }
+]

@@ -1,10 +1,17 @@
 package generate
 
-import "kriemhild/internal/terrain/model"
+import (
+	"fmt"
+	"kriemhild/internal/terrain/model"
+	"math"
+)
 
 // BiomeAt keeps the original aridity thresholds (annual mm / annual mm), then
 // distinguishes seasonal and maritime vegetation. No target biome shares enter it.
 func BiomeAt(p *model.Planet, lon, lat, bed float64, wet bool) string {
+	if p.Spec.ClimateVersion >= 1 && p.Spec.Version == model.Version {
+		return seasonalBiome(p, lon, lat, bed, wet)
+	}
 	g := p.Grid
 	t := g.At("temperature", lon, lat) - (bed-g.At("bed", lon, lat))*.0065
 	rain, pet := g.At("precipitation", lon, lat), g.At("pet", lon, lat)
@@ -45,4 +52,74 @@ func BiomeAt(p *model.Planet, lon, lat, bed float64, wet bool) string {
 		return "woodland"
 	}
 	return "forest"
+}
+
+var temperatureMonths = [12]string{}
+var rainfallMonths = [12]string{}
+
+func init() {
+	for m := 0; m < 12; m++ {
+		temperatureMonths[m] = fmt.Sprintf("temperature-%02d", m)
+		rainfallMonths[m] = fmt.Sprintf("rainfall-%02d", m)
+	}
+}
+
+// These summaries are derived from persisted monthly fields, never biome quotas.
+// Precomputation keeps per-pixel rendering independent of a 12-month scan.
+var seasonalKeys = []string{"coldest", "warmest", "rainDriest", "summerDriest", "winterWettest", "summerRain", "winterRain"}
+
+func seasonAt(g model.Grid, lon, lat float64) [7]float64 {
+	if len(g.Fields["coldest"]) == g.Width*g.Height {
+		var out [7]float64
+		for i, k := range seasonalKeys {
+			out[i] = g.At(k, lon, lat)
+		}
+		return out
+	}
+	out := [7]float64{math.Inf(1), math.Inf(-1), math.Inf(1), math.Inf(1), 0, 0, 0}
+	for m := 0; m < 12; m++ {
+		temp, rain := g.At(temperatureMonths[m], lon, lat), g.At(rainfallMonths[m], lon, lat)
+		out[0] = math.Min(out[0], temp)
+		out[1] = math.Max(out[1], temp)
+		out[2] = math.Min(out[2], rain)
+		summer := m >= 3 && m <= 8
+		if lat < 0 {
+			summer = !summer
+		}
+		if summer {
+			out[3] = math.Min(out[3], rain)
+			out[5] += rain
+		} else {
+			out[4] = math.Max(out[4], rain)
+			out[6] += rain
+		}
+	}
+	return out
+}
+func summarizeSeasons(g *model.Grid) {
+	// Remove old summaries before rebuilding after elevation resampling.
+	for _, k := range seasonalKeys {
+		delete(g.Fields, k)
+	}
+	fields := make([][]float64, len(seasonalKeys))
+	for k := range fields {
+		fields[k] = make([]float64, g.Width*g.Height)
+	}
+	for i := 0; i < g.Width*g.Height; i++ {
+		pt := g.Point(i%g.Width, i/g.Width)
+		v := seasonAt(*g, pt[0], pt[1])
+		for k := range fields {
+			fields[k][i] = v[k]
+		}
+	}
+	for k, key := range seasonalKeys {
+		g.Fields[key] = fields[k]
+	}
+}
+
+func seasonalBiome(p *model.Planet, lon, lat, bed float64, wet bool) string {
+	if wet {
+		return "water"
+	}
+	return vegetationAt(p, climateRegimeAt(p, lon, lat, bed, true), lon, lat, bed)
 }

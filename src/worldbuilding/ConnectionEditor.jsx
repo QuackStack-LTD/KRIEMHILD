@@ -32,7 +32,7 @@ export default function ConnectionEditor({
   async function save(e) {
     e.preventDefault();
     if (!allowed.includes(r.kind)) {
-      setError("Choose a relationship supported by these entities.");
+      setError("Choose a relationship supported by these records.");
       return;
     }
     setBusy(true);
@@ -93,7 +93,7 @@ export default function ConnectionEditor({
             value={r.source || ""}
             onChange={(e) => field("source", e.target.value)}
           >
-            <option value="">Choose an entity</option>
+            <option value="">Choose a record</option>
             {entities
               .filter((e) =>
                 graph
@@ -156,7 +156,7 @@ export default function ConnectionEditor({
               }))
             }
           >
-            <option value="">Choose an entity</option>
+            <option value="">Choose a record</option>
             {entities
               .filter(
                 (e) =>

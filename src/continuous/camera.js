@@ -15,7 +15,31 @@ export function normalizeCamera(value) {
     h: value.h,
   };
 }
-export function visibleTiles(camera, width, dpr = 1) {
+// SVG xMidYMid meet paints beyond the viewBox into its letterboxed margins.
+// Request those pixels too, using exactly the scale used for entity placement.
+export function visibleViewport(
+  camera,
+  width,
+  height = (width * camera.h) / camera.w,
+) {
+  const scale = Math.min(width / camera.w, height / camera.h);
+  const w = width / scale,
+    h = height / scale;
+  return {
+    x: camera.x - (w - camera.w) / 2,
+    y: camera.y - (h - camera.h) / 2,
+    w,
+    h,
+  };
+}
+export function visibleTiles(
+  camera,
+  width,
+  dpr = 1,
+  height,
+  wrapLongitude = false,
+) {
+  camera = visibleViewport(camera, width, height);
   const size = width * dpr > 1536 ? 512 : 256;
   const z = Math.max(
     0,
@@ -28,14 +52,44 @@ export function visibleTiles(camera, width, dpr = 1) {
     tiles = [];
   for (
     let y = Math.max(0, Math.floor(camera.y / span));
-    y <= Math.min(2 ** z - 1, Math.floor((camera.y + camera.h) / span));
+    y <= Math.min(2 ** z - 1, Math.ceil((camera.y + camera.h) / span) - 1);
     y++
   )
     for (
-      let x = Math.max(0, Math.floor(camera.x / span));
-      x <= Math.min(2 ** (z + 1) - 1, Math.floor((camera.x + camera.w) / span));
+      let x = wrapLongitude
+        ? Math.floor(camera.x / span)
+        : Math.max(0, Math.floor(camera.x / span));
+      x <=
+      (wrapLongitude
+        ? Math.ceil((camera.x + camera.w) / span) - 1
+        : Math.min(
+            2 ** (z + 1) - 1,
+            Math.ceil((camera.x + camera.w) / span) - 1,
+          ));
       x++
     )
       tiles.push({ z, x, y, span, size });
   return tiles;
+}
+
+// Drawing coordinates may cross the illustration seam; API/cache coordinates
+// always address the canonical, immutable world tile.
+export function canonicalTileX(tile) {
+  const columns = 2 ** (tile.z + 1);
+  return ((tile.x % columns) + columns) % columns;
+}
+
+// Source resolution is independent of requested raster LOD. Rivers and authored
+// geometry can be finer than the fixed base relief; never cap their display LOD.
+export function reliefResolution(spec, camera, width, height, dpr = 1) {
+  if (spec?.version !== "continuous-3") return null;
+  const sourceWidth = spec.surfaceWidth || 4096;
+  const spacing = 2 / sourceWidth;
+  const scale = Math.min(width / camera.w, height / camera.h) * dpr;
+  return {
+    sourceWidth,
+    pixelsPerSample: spacing * scale,
+    spacingKM: (2 * Math.PI * spec.radiusKm) / sourceWidth,
+    resolved: spacing * scale >= 1,
+  };
 }

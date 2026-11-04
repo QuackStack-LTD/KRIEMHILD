@@ -1,0 +1,118 @@
+KRIEMHILD / Atlas
+Unnamed World
+Generation preview
+Terrain Generator
+Map Builder
+Settlement Builder
+Unsaved changes
+Save
+3D Terrain
+Medieval Illustrator
+☷
+Site
+Select
+Road
+House
+Landmark
+Fit World
+Undo
+Redo
+New feature
+SETTLEMENT BUILDER
+A place to belong
+Settlement name
+Size
+village
+town
+city
+capital
+Layout
+organic
+market
+fortified
+port
+planned
+
+Choose Site, then click dry land to preview districts, streets and building footprints.
+
+Map appearance
+Preview Quality
+Performance (0.50×)
+Balanced (0.75×)
+High quality (1.00×)
+Custom
+
+Preview: 669 × 521 · Balanced
+
+2D preview only; saved terrain and exports are unchanged.
+
+Flat
+Relief
+3D Terrain
+Hillshade strength
+Style
+natural
+elevation
+biome
+atlas
+mask
+bathymetry
+temperature
+precipitation
+moisture
+pet
+aridity
+soil
+seasonality
+rainShadow
+exposure
+slope
+contours
+watersheds
+flow-accumulation
+river-network
+wetlands
+Rivers
+
+Styles change presentation without regenerating terrain.
+
+Layers & objects
+Geographic inspection
+Surface
+water · ocean
+Bed elevation
+-4968 m
+Water depth
+4967.6 m
+Temperature
+23.4 °C
+Rainfall
+1005 mm/year
+Moisture
+35%
+Evaporative demand
+1714 mm/year
+Soil water
+80 mm
+Precipitation / PET
+0.59
+Dry months
+6.3
+Seasonality (CV)
+0.79
+Save & export
+Export width
+1024 pixels
+2048 pixels
+4096 pixels
+Autosave accepted terrain after 30 seconds
+PNG
+SVG
+PDF
+World ZIP
+Equirectangular · 6371 km radius
+-30.280° E, 29.212° N
+120.1× zoom
+Base relief resolution limit
+66.7 km ━━━━━
+Ready

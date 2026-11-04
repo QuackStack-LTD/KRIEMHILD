@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { JSDOM } from "jsdom";
 import { build } from "esbuild";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import { join, resolve } from "node:path";
 import React, { act } from "react";
@@ -27,6 +27,7 @@ dom.window.HTMLElement.prototype.getClientRects = function () {
   return this.hidden ? [] : [{ width: 100, height: 40 }];
 };
 const { createRoot } = await import("react-dom/client");
+await mkdir(resolve(".tools"), { recursive: true });
 const temp = await mkdtemp(resolve(".tools/ui-test-"));
 const output = join(temp, "components.mjs");
 await build({

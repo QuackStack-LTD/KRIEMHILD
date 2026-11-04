@@ -54,8 +54,13 @@ func Habitats(e *terrain.Environment, categories []string, terrainID string) ([]
 		marine := get("ocean", i, 0) > .5 || i < len(e.Mask) && e.Mask[i] == 0
 		inland := get("lake", i, 0) > 0 || depth > 0
 		if hasWaterBodies {
-			marine = get("waterBody", i, 0) == 1 && depth > 0
-			inland = get("waterBody", i, 0) > 1 && depth > 0
+			// Several disconnected oceans can have distinct water-body IDs.
+			// The physical ocean mask is authoritative; inland lakes are fresh.
+			marine = get("ocean", i, 0) > 0 && depth > 0
+			if len(e.Fields["ocean"]) != n {
+				marine = get("waterBody", i, 0) == 1
+			}
+			inland = !marine && get("waterBody", i, 0) > 0 && depth > 0
 		}
 		if marine {
 			medium = "marine"

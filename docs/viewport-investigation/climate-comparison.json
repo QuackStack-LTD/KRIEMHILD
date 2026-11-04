@@ -1,0 +1,509 @@
+[
+  {
+    "seed": "Kriemhild",
+    "beforeDirectory": "docs\\terrain-investigation\\climate-final",
+    "statisticsEqual": {
+      "spec": true,
+      "landFraction": true,
+      "dryLandFraction": true,
+      "lakeFraction": true,
+      "oceanFraction": true,
+      "biomeLandShares": true,
+      "latitudeBiomes": true,
+      "fields": true,
+      "connectivity": true
+    },
+    "hashes": {
+      "biome": {
+        "before": "1eb4c57d6db96bb01f777f84751b520f8b57d3144bf28e853fb7a37c2e8bd3fd",
+        "after": "1eb4c57d6db96bb01f777f84751b520f8b57d3144bf28e853fb7a37c2e8bd3fd",
+        "equal": true
+      },
+      "temperature": {
+        "before": "15a2a5be6ba167898f470279aa1b8f0f4f541e74a26363fae8a9998adc3fcb08",
+        "after": "15a2a5be6ba167898f470279aa1b8f0f4f541e74a26363fae8a9998adc3fcb08",
+        "equal": true
+      },
+      "precipitation": {
+        "before": "d6060f470492f0c80944e0e5218b0a242e669e2b632c369d54901e0f39722cc2",
+        "after": "d6060f470492f0c80944e0e5218b0a242e669e2b632c369d54901e0f39722cc2",
+        "equal": true
+      },
+      "aridity": {
+        "before": "52f8ecb63d0795b00ecaf51c2ad5ba4d9757e5b2ba8f9fba3084119824a8b72b",
+        "after": "52f8ecb63d0795b00ecaf51c2ad5ba4d9757e5b2ba8f9fba3084119824a8b72b",
+        "equal": true
+      },
+      "seasonality": {
+        "before": "a8fcf69b52c9b56054a0880eac6e61fc3c0dfdf5ba27ee4100b1427ce9a5e974",
+        "after": "a8fcf69b52c9b56054a0880eac6e61fc3c0dfdf5ba27ee4100b1427ce9a5e974",
+        "equal": true
+      },
+      "elevation": {
+        "before": "26a84591116644f675b924a34e9d691bdfbaedbe64062742b310072c48fc732a",
+        "after": "26a84591116644f675b924a34e9d691bdfbaedbe64062742b310072c48fc732a",
+        "equal": true
+      }
+    },
+    "v0": {
+      "desert": 0.023167855082973858,
+      "forest": 0.08402559990638339,
+      "grassland": 0.07252793140454473,
+      "ice": 0.05660892162984557,
+      "rainforest": 0.14573427683901724,
+      "savanna": 0.043953706179196556,
+      "shrubland": 0.0344115267941726,
+      "steppe": 0.1434262635240724,
+      "taiga": 0.08383030116015976,
+      "temperate-rainforest": 0.04395439093041942,
+      "tropical-woodland": 0.05326814176116664,
+      "tundra": 0.10950296652700496,
+      "wetland": 0.0673854765076024,
+      "woodland": 0.03820264175348951
+    },
+    "v1": {
+      "alpine": 0.007146203362571841,
+      "desert": 0.013495350078449729,
+      "forest": 0.11900686480471898,
+      "grassland": 0.08584755643784489,
+      "ice": 0.034739744396757366,
+      "rainforest": 0.13117536363250357,
+      "savanna": 0.05614127358123851,
+      "shrubland": 0.08559326450400573,
+      "steppe": 0.07833126144862439,
+      "taiga": 0.01175199254432442,
+      "temperate-rainforest": 0.050453539914865266,
+      "tropical-woodland": 0.09191802768767322,
+      "tundra": 0.11220601178255153,
+      "wetland": 0.07224889332498927,
+      "woodland": 0.0499446524989122
+    },
+    "dryLandV0": 0.2333842378407043,
+    "dryLandV1": 0.22967458479190578,
+    "lakeV0": 0.0366085042840466,
+    "lakeV1": 0.0403247541036039
+  },
+  {
+    "seed": "gallery-001",
+    "beforeDirectory": "docs\\terrain-investigation\\climate-final",
+    "statisticsEqual": {
+      "spec": true,
+      "landFraction": true,
+      "dryLandFraction": true,
+      "lakeFraction": true,
+      "oceanFraction": true,
+      "biomeLandShares": true,
+      "latitudeBiomes": true,
+      "fields": true,
+      "connectivity": true
+    },
+    "hashes": {
+      "biome": {
+        "before": "1dc3feb0bd00988b335eb39f89a3d8ddb8b9480e4a819c7338340cb3c2edab44",
+        "after": "1dc3feb0bd00988b335eb39f89a3d8ddb8b9480e4a819c7338340cb3c2edab44",
+        "equal": true
+      },
+      "temperature": {
+        "before": "3724044175b48dc6cfc2e1a2edcd8c73295785dde4db4e2588154d5cb9a1bc30",
+        "after": "3724044175b48dc6cfc2e1a2edcd8c73295785dde4db4e2588154d5cb9a1bc30",
+        "equal": true
+      },
+      "precipitation": {
+        "before": "13ed8c5331db180acd92d4892a4da5836111a356b3e529a61f00bce3c451f465",
+        "after": "13ed8c5331db180acd92d4892a4da5836111a356b3e529a61f00bce3c451f465",
+        "equal": true
+      },
+      "aridity": {
+        "before": "c57247be95f6603b9efb5c0ced412cad09583f77b417aea898326e90d9184e8c",
+        "after": "c57247be95f6603b9efb5c0ced412cad09583f77b417aea898326e90d9184e8c",
+        "equal": true
+      },
+      "seasonality": {
+        "before": "5b7e927cac2651a144bf109896dee042c0b7bbb44ddef7402e693cae67593ef3",
+        "after": "5b7e927cac2651a144bf109896dee042c0b7bbb44ddef7402e693cae67593ef3",
+        "equal": true
+      },
+      "elevation": {
+        "before": "ab16f0da0f2a5dd1ef06ce30c32394f0fa418cd17350e60febc590a600def1d4",
+        "after": "ab16f0da0f2a5dd1ef06ce30c32394f0fa418cd17350e60febc590a600def1d4",
+        "equal": true
+      }
+    },
+    "v0": {
+      "alpine": 0.00018583876496868363,
+      "desert": 0.03284920234267631,
+      "forest": 0.08746874451979308,
+      "grassland": 0.07193181846771039,
+      "ice": 0.055163283500242306,
+      "rainforest": 0.19944652215622127,
+      "savanna": 0.05965138508469851,
+      "shrubland": 0.030977456924375275,
+      "steppe": 0.09751792645222285,
+      "taiga": 0.05188994695804408,
+      "temperate-rainforest": 0.05801633868736217,
+      "tropical-woodland": 0.06377918366120747,
+      "tundra": 0.06144525604310977,
+      "wetland": 0.08774876048311538,
+      "woodland": 0.041928335954254305
+    },
+    "v1": {
+      "alpine": 0.0043825918338993,
+      "desert": 0.02650826684200209,
+      "forest": 0.11112282239572742,
+      "grassland": 0.05200380833069079,
+      "ice": 0.03909522439463959,
+      "rainforest": 0.17445978159221712,
+      "savanna": 0.07716686749292806,
+      "shrubland": 0.07380431892946128,
+      "steppe": 0.056671903145104174,
+      "taiga": 0.00483184821455006,
+      "temperate-rainforest": 0.06742560483144823,
+      "tropical-woodland": 0.12230095069695332,
+      "tundra": 0.06198848990737967,
+      "wetland": 0.09053072293126392,
+      "woodland": 0.0377067984617358
+    },
+    "dryLandV0": 0.1900778694673395,
+    "dryLandV1": 0.18854925290881253,
+    "lakeV0": 0.034240391712998905,
+    "lakeV1": 0.0357690082715261
+  },
+  {
+    "seed": "gallery-002",
+    "beforeDirectory": "docs\\terrain-investigation\\climate-final",
+    "statisticsEqual": {
+      "spec": true,
+      "landFraction": true,
+      "dryLandFraction": true,
+      "lakeFraction": true,
+      "oceanFraction": true,
+      "biomeLandShares": true,
+      "latitudeBiomes": true,
+      "fields": true,
+      "connectivity": true
+    },
+    "hashes": {
+      "biome": {
+        "before": "19ef600a0a8921fafff2ef323fee6369c8900d2aedcbddc00b7225df920686de",
+        "after": "19ef600a0a8921fafff2ef323fee6369c8900d2aedcbddc00b7225df920686de",
+        "equal": true
+      },
+      "temperature": {
+        "before": "77859062a6186f8da2c2e2981ed27c17ea88053b084a69567ce94a87ae2f8af3",
+        "after": "77859062a6186f8da2c2e2981ed27c17ea88053b084a69567ce94a87ae2f8af3",
+        "equal": true
+      },
+      "precipitation": {
+        "before": "226b55cca5dd8a9e307eb9a7ac583f75417afc34f170e691f5d639bbd505a27e",
+        "after": "226b55cca5dd8a9e307eb9a7ac583f75417afc34f170e691f5d639bbd505a27e",
+        "equal": true
+      },
+      "aridity": {
+        "before": "ca39b91ddbae7f11376b4d7757332cb1af9981049c80d1f3b7f0f50d0a3612fb",
+        "after": "ca39b91ddbae7f11376b4d7757332cb1af9981049c80d1f3b7f0f50d0a3612fb",
+        "equal": true
+      },
+      "seasonality": {
+        "before": "9999ebe875cff0c13dfa4aa73387e9d562c2c85265420a5414ccd65e04105532",
+        "after": "9999ebe875cff0c13dfa4aa73387e9d562c2c85265420a5414ccd65e04105532",
+        "equal": true
+      },
+      "elevation": {
+        "before": "7b320bf8b367b3a8b693811f58780c3d276f00de69b6b0fca43ef132209c25c6",
+        "after": "7b320bf8b367b3a8b693811f58780c3d276f00de69b6b0fca43ef132209c25c6",
+        "equal": true
+      }
+    },
+    "v0": {
+      "desert": 0.05718589892234732,
+      "forest": 0.042451012692599155,
+      "grassland": 0.03901616496256949,
+      "ice": 0.18393337523295947,
+      "rainforest": 0.12919725994242143,
+      "savanna": 0.021829055126475923,
+      "shrubland": 0.013720258457803884,
+      "steppe": 0.12658761961449472,
+      "taiga": 0.08045198530891418,
+      "temperate-rainforest": 0.03745958409556556,
+      "tropical-woodland": 0.037439102015773024,
+      "tundra": 0.15131337649754734,
+      "wetland": 0.0618207958547067,
+      "woodland": 0.017594511275847328
+    },
+    "v1": {
+      "alpine": 0.0141675874413138,
+      "desert": 0.039739245324073656,
+      "forest": 0.0656430466437768,
+      "grassland": 0.06034646473831393,
+      "ice": 0.13999785087826205,
+      "rainforest": 0.12011692549392604,
+      "savanna": 0.03134519622384704,
+      "shrubland": 0.05798911391482192,
+      "steppe": 0.09512348201253668,
+      "taiga": 0.011346151841006338,
+      "temperate-rainforest": 0.040084248390324206,
+      "tropical-woodland": 0.06858890390139022,
+      "tundra": 0.1634009225641598,
+      "wetland": 0.06608950388371602,
+      "woodland": 0.026021356748524776
+    },
+    "dryLandV0": 0.23107464471089842,
+    "dryLandV1": 0.227344227664287,
+    "lakeV0": 0.035652759390956454,
+    "lakeV1": 0.039389274334178014
+  },
+  {
+    "seed": "8fef5907901a",
+    "beforeDirectory": "docs\\viewport-investigation\\climate-v1-baseline",
+    "statisticsEqual": {
+      "spec": true,
+      "landFraction": true,
+      "dryLandFraction": true,
+      "lakeFraction": true,
+      "oceanFraction": true,
+      "biomeLandShares": true,
+      "latitudeBiomes": true,
+      "fields": true,
+      "connectivity": true
+    },
+    "hashes": {
+      "biome": {
+        "before": "3a1c96e2f58250d1a9c16d6d901cc87c8ce763ac367e8b2048d381807001905b",
+        "after": "3a1c96e2f58250d1a9c16d6d901cc87c8ce763ac367e8b2048d381807001905b",
+        "equal": true
+      },
+      "temperature": {
+        "before": "6824b5ae178383db411e3942c97f492423330f4cc09e4434b4a244ad05bc7bd4",
+        "after": "6824b5ae178383db411e3942c97f492423330f4cc09e4434b4a244ad05bc7bd4",
+        "equal": true
+      },
+      "precipitation": {
+        "before": "2cea4f886c9f787d22950888c73aee749dc0b03787b6796b9b2b182f977072b7",
+        "after": "2cea4f886c9f787d22950888c73aee749dc0b03787b6796b9b2b182f977072b7",
+        "equal": true
+      },
+      "aridity": {
+        "before": "d1edf39a0360a51d68c75d1f3b0a2f211e2f33bf491673cb5a051aec25de3e21",
+        "after": "d1edf39a0360a51d68c75d1f3b0a2f211e2f33bf491673cb5a051aec25de3e21",
+        "equal": true
+      },
+      "seasonality": {
+        "before": "c5998b7f789efe3517fc279e444db0695c3295b877e578ed5e8ece843bbdd057",
+        "after": "c5998b7f789efe3517fc279e444db0695c3295b877e578ed5e8ece843bbdd057",
+        "equal": true
+      },
+      "elevation": {
+        "before": "ba540216183927d15261a2721054d445f228c827aa6494d9576293d8189b84ad",
+        "after": "ba540216183927d15261a2721054d445f228c827aa6494d9576293d8189b84ad",
+        "equal": true
+      }
+    },
+    "v0": {
+      "alpine": 0.00029519487393364256,
+      "desert": 0.07451074311924753,
+      "forest": 0.06875426971467384,
+      "grassland": 0.0714655148407476,
+      "ice": 0.09220326528065176,
+      "rainforest": 0.1061150176195731,
+      "savanna": 0.040288786025944996,
+      "shrubland": 0.03116829315096819,
+      "steppe": 0.15833498709729688,
+      "taiga": 0.08392762381723705,
+      "temperate-rainforest": 0.02738508556612558,
+      "tropical-woodland": 0.02922055651847341,
+      "tundra": 0.12196751195808257,
+      "wetland": 0.05925959499579566,
+      "woodland": 0.035103555421263505
+    },
+    "v1": {
+      "alpine": 0.01355608681675969,
+      "desert": 0.0595317726129078,
+      "forest": 0.10829999449979268,
+      "grassland": 0.0725470108866552,
+      "ice": 0.04520859136947047,
+      "rainforest": 0.09959379523208503,
+      "savanna": 0.0587218822014189,
+      "shrubland": 0.08924463368119454,
+      "steppe": 0.1038529877813505,
+      "taiga": 0.013239341902717541,
+      "temperate-rainforest": 0.03464903196099201,
+      "tropical-woodland": 0.05977009182006499,
+      "tundra": 0.1371419729827663,
+      "wetland": 0.061574530743101735,
+      "woodland": 0.043068275508731074
+    },
+    "dryLandV0": 0.23807633306043083,
+    "dryLandV1": 0.2352961525734914,
+    "lakeV0": 0.032798855788399466,
+    "lakeV1": 0.03558691952922987
+  },
+  {
+    "seed": "gallery-003",
+    "beforeDirectory": "docs\\viewport-investigation\\climate-v1-baseline",
+    "statisticsEqual": {
+      "spec": true,
+      "landFraction": true,
+      "dryLandFraction": true,
+      "lakeFraction": true,
+      "oceanFraction": true,
+      "biomeLandShares": true,
+      "latitudeBiomes": true,
+      "fields": true,
+      "connectivity": true
+    },
+    "hashes": {
+      "biome": {
+        "before": "ac4dd68b19ec722a775a3231ded203775f654d02a987370a383cf02ce2319d64",
+        "after": "ac4dd68b19ec722a775a3231ded203775f654d02a987370a383cf02ce2319d64",
+        "equal": true
+      },
+      "temperature": {
+        "before": "bab438e5409b5af33118fe2c252e7ed165760479c2771745a999ed931268648a",
+        "after": "bab438e5409b5af33118fe2c252e7ed165760479c2771745a999ed931268648a",
+        "equal": true
+      },
+      "precipitation": {
+        "before": "996434022a1c443d7cd532fa1e3dcc723b44bc8a027a2c50d6e5d27bf5b2e512",
+        "after": "996434022a1c443d7cd532fa1e3dcc723b44bc8a027a2c50d6e5d27bf5b2e512",
+        "equal": true
+      },
+      "aridity": {
+        "before": "45f4a48afa80a2294fd3ba01649198020b93609adc28521041d42fb24fadf568",
+        "after": "45f4a48afa80a2294fd3ba01649198020b93609adc28521041d42fb24fadf568",
+        "equal": true
+      },
+      "seasonality": {
+        "before": "cbd683a9c3f17cf5d13b515c387daeb68caa1b7126d26c951e777611abacba08",
+        "after": "cbd683a9c3f17cf5d13b515c387daeb68caa1b7126d26c951e777611abacba08",
+        "equal": true
+      },
+      "elevation": {
+        "before": "0997578861e379617bc02764afbf68b0d0d97aa3807a50ab9084780b846ce65b",
+        "after": "0997578861e379617bc02764afbf68b0d0d97aa3807a50ab9084780b846ce65b",
+        "equal": true
+      }
+    },
+    "v0": {
+      "alpine": 0.00029400923195402855,
+      "desert": 0.044782703964609295,
+      "forest": 0.055950562316143544,
+      "grassland": 0.05184849068638447,
+      "ice": 0.09415603437307851,
+      "rainforest": 0.1398446314376786,
+      "savanna": 0.045436368820074964,
+      "shrubland": 0.022916945553800295,
+      "steppe": 0.1415953590605458,
+      "taiga": 0.08222254109386469,
+      "temperate-rainforest": 0.036345088017148336,
+      "tropical-woodland": 0.04091499789557954,
+      "tundra": 0.14116276842898798,
+      "wetland": 0.07617231595893864,
+      "woodland": 0.02635718316123492
+    },
+    "v1": {
+      "alpine": 0.007794916388972128,
+      "desert": 0.029896689846471727,
+      "forest": 0.09200936306639716,
+      "grassland": 0.06922213711633644,
+      "ice": 0.048948383728543245,
+      "rainforest": 0.1302943606190675,
+      "savanna": 0.05842305901525185,
+      "shrubland": 0.07386759230633407,
+      "steppe": 0.08453058599077658,
+      "taiga": 0.01192819884075427,
+      "temperate-rainforest": 0.042253452267961816,
+      "tropical-woodland": 0.07415323533533423,
+      "tundra": 0.15908091319612316,
+      "wetland": 0.08188657338507581,
+      "woodland": 0.035710538896624434
+    },
+    "dryLandV0": 0.23881842789149324,
+    "dryLandV1": 0.23554181999497617,
+    "lakeV0": 0.031693946131083534,
+    "lakeV1": 0.03497055402760024
+  },
+  {
+    "seed": "gallery-004",
+    "beforeDirectory": "docs\\viewport-investigation\\climate-v1-baseline",
+    "statisticsEqual": {
+      "spec": true,
+      "landFraction": true,
+      "dryLandFraction": true,
+      "lakeFraction": true,
+      "oceanFraction": true,
+      "biomeLandShares": true,
+      "latitudeBiomes": true,
+      "fields": true,
+      "connectivity": true
+    },
+    "hashes": {
+      "biome": {
+        "before": "136dc102516770ceb0bd55d40887584fbe393c32fc135a4607e974b03890f612",
+        "after": "136dc102516770ceb0bd55d40887584fbe393c32fc135a4607e974b03890f612",
+        "equal": true
+      },
+      "temperature": {
+        "before": "478a05355b0e407d157cb0e01f2ac556f9dfca79ec9dd054de04b23d881908db",
+        "after": "478a05355b0e407d157cb0e01f2ac556f9dfca79ec9dd054de04b23d881908db",
+        "equal": true
+      },
+      "precipitation": {
+        "before": "a3cfefeecb4f23eb65bfee20501bb84dd766a1485077d61d94592051d4d5716b",
+        "after": "a3cfefeecb4f23eb65bfee20501bb84dd766a1485077d61d94592051d4d5716b",
+        "equal": true
+      },
+      "aridity": {
+        "before": "c61048e2a9ae28faa4161f92610e5ffe4e5fbcbfb8eadf360fc4f1c6f4dcce35",
+        "after": "c61048e2a9ae28faa4161f92610e5ffe4e5fbcbfb8eadf360fc4f1c6f4dcce35",
+        "equal": true
+      },
+      "seasonality": {
+        "before": "ba7e17f4b7f5a2b96ea46e6d66ddd1cb0e88a4664af923af9302f14358bc139f",
+        "after": "ba7e17f4b7f5a2b96ea46e6d66ddd1cb0e88a4664af923af9302f14358bc139f",
+        "equal": true
+      },
+      "elevation": {
+        "before": "ad1eae8882254107a977ec922da87cfcdabe2625f385391aa5bc2a9f068d23ae",
+        "after": "ad1eae8882254107a977ec922da87cfcdabe2625f385391aa5bc2a9f068d23ae",
+        "equal": true
+      }
+    },
+    "v0": {
+      "desert": 0.023007743529321504,
+      "forest": 0.07417702009525766,
+      "grassland": 0.08155632123785976,
+      "ice": 0.16390320685046442,
+      "rainforest": 0.07830581938662963,
+      "savanna": 0.04207667512704473,
+      "shrubland": 0.02597624257741953,
+      "steppe": 0.15637615079351722,
+      "taiga": 0.10014349596687626,
+      "temperate-rainforest": 0.025428022918674617,
+      "tropical-woodland": 0.037613854396960994,
+      "tundra": 0.08812973229324063,
+      "wetland": 0.06285651893802822,
+      "woodland": 0.04044919588869226
+    },
+    "v1": {
+      "alpine": 0.009321491052249787,
+      "desert": 0.0132088795722898,
+      "forest": 0.11681083988523604,
+      "grassland": 0.08921981408133298,
+      "ice": 0.12779885826180779,
+      "rainforest": 0.06681178704616296,
+      "savanna": 0.05474589856450799,
+      "shrubland": 0.09194465240744643,
+      "steppe": 0.0842592910880232,
+      "taiga": 0.011838494702751447,
+      "temperate-rainforest": 0.03630468332660114,
+      "tropical-woodland": 0.07474318389153511,
+      "tundra": 0.10330488637103429,
+      "wetland": 0.06666893855384953,
+      "woodland": 0.053018301195173693
+    },
+    "dryLandV0": 0.2562063843952838,
+    "dryLandV1": 0.252366767389546,
+    "lakeV0": 0.03466806575872801,
+    "lakeV1": 0.038507682764462606
+  }
+]

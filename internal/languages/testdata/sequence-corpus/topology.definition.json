@@ -1,0 +1,509 @@
+{
+  "sequenceWriting": {
+    "version": "sequence-orthography/1",
+    "inputLayer": "surface-boundaries",
+    "script": {
+      "id": "77777777777777777777777777777777",
+      "revision": "e50260f7197fd260b418f4578be091b415927c863a70a7ed057dbb198cc5a849"
+    },
+    "renderer": "vector-script/1",
+    "rendererAdapter": "sign-layout/1",
+    "rendererCompiler": "vector-script-compiler/1",
+    "segmentation": "uniseg/0.4.7-unicode/15.0.0",
+    "normalizer": "x-text/0.29.0-unicode/15.0.0",
+    "inverse": "all",
+    "stages": [
+      {
+        "id": "topology",
+        "kind": "rewrite",
+        "inputLayer": "surface-boundaries",
+        "outputLayer": "grapheme",
+        "unmatched": "reject",
+        "normalization": "",
+        "rules": [
+          {
+            "id": "topology-good",
+            "priority": 10,
+            "input": [
+              {
+                "kind": "segment",
+                "value": "p"
+              },
+              {
+                "kind": "segment",
+                "value": "a"
+              },
+              {
+                "kind": "segment",
+                "value": "d"
+              },
+              {
+                "kind": "boundary",
+                "value": "morpheme"
+              },
+              {
+                "kind": "segment",
+                "value": "a"
+              }
+            ],
+            "left": [],
+            "right": [],
+            "output": [
+              {
+                "kind": "grapheme",
+                "value": "B"
+              }
+            ]
+          },
+          {
+            "id": "topology-shifted",
+            "priority": 20,
+            "input": [
+              {
+                "kind": "segment",
+                "value": "p"
+              },
+              {
+                "kind": "segment",
+                "value": "a"
+              },
+              {
+                "kind": "boundary",
+                "value": "morpheme"
+              },
+              {
+                "kind": "segment",
+                "value": "d"
+              },
+              {
+                "kind": "segment",
+                "value": "a"
+              }
+            ],
+            "left": [],
+            "right": [],
+            "output": [
+              {
+                "kind": "grapheme",
+                "value": "C"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "productive": {
+    "version": "productive/1",
+    "features": [
+      {
+        "id": "number",
+        "values": ["one", "many"]
+      },
+      {
+        "id": "shape",
+        "values": ["plain", "framed"]
+      }
+    ],
+    "paradigms": [
+      {
+        "id": "noun",
+        "cells": [
+          {
+            "id": "one",
+            "features": {
+              "number": "one",
+              "shape": "plain"
+            },
+            "operations": [
+              {
+                "id": "singular-zero",
+                "kind": "zero",
+                "policy": "first",
+                "allomorphs": [
+                  {
+                    "id": "zero",
+                    "when": {
+                      "features": null,
+                      "left": null,
+                      "right": null
+                    },
+                    "prefix": [],
+                    "suffix": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "many",
+            "features": {
+              "number": "many",
+              "shape": "plain"
+            },
+            "operations": [
+              {
+                "id": "plural-suffix",
+                "kind": "suffix",
+                "policy": "first",
+                "allomorphs": [
+                  {
+                    "id": "after-t",
+                    "when": {
+                      "features": {
+                        "number": "many"
+                      },
+                      "category": "noun",
+                      "left": null,
+                      "right": [
+                        {
+                          "segment": "t"
+                        }
+                      ]
+                    },
+                    "prefix": [],
+                    "suffix": ["a"]
+                  },
+                  {
+                    "id": "after-n",
+                    "when": {
+                      "features": null,
+                      "left": null,
+                      "right": [
+                        {
+                          "segment": "n"
+                        }
+                      ]
+                    },
+                    "prefix": [],
+                    "suffix": ["i"]
+                  },
+                  {
+                    "id": "else-a",
+                    "when": {
+                      "features": null,
+                      "left": null,
+                      "right": null
+                    },
+                    "prefix": [],
+                    "suffix": ["a"]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "framed",
+            "features": {
+              "number": "many",
+              "shape": "framed"
+            },
+            "operations": [
+              {
+                "id": "frame",
+                "kind": "circumfix",
+                "policy": "first",
+                "allomorphs": [
+                  {
+                    "id": "i-a-frame",
+                    "when": {
+                      "features": null,
+                      "left": null,
+                      "right": null
+                    },
+                    "prefix": ["i"],
+                    "suffix": ["a"]
+                  }
+                ]
+              },
+              {
+                "id": "after-frame",
+                "kind": "zero",
+                "policy": "first",
+                "allomorphs": [
+                  {
+                    "id": "frame-confirm",
+                    "when": {
+                      "features": null,
+                      "previous": "frame",
+                      "left": [
+                        {
+                          "boundary": "word"
+                        },
+                        {
+                          "segment": "i"
+                        }
+                      ],
+                      "right": null
+                    },
+                    "prefix": [],
+                    "suffix": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "stratum": {
+      "id": "stem-edge",
+      "boundaryPolicy": "retain-until-surface",
+      "rules": [
+        {
+          "id": "t-before-a-suffix",
+          "domain": "morpheme",
+          "input": [
+            {
+              "segment": "t"
+            }
+          ],
+          "output": ["d"],
+          "left": [],
+          "right": [
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "a"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "schema": 4,
+  "languageId": "88888888888888888888888888888888",
+  "name": "Authored sequence spelling",
+  "notes": "A1: noun suffix, conditioned allomorphs, circumfix, suppletion and homophones.",
+  "phonology": {
+    "features": [
+      {
+        "id": "type",
+        "values": ["vowel", "consonant"]
+      }
+    ],
+    "segments": [
+      {
+        "id": "a",
+        "label": "a",
+        "phonemic": true,
+        "features": {
+          "type": "vowel"
+        }
+      },
+      {
+        "id": "i",
+        "label": "i",
+        "phonemic": true,
+        "features": {
+          "type": "vowel"
+        }
+      },
+      {
+        "id": "p",
+        "label": "p",
+        "phonemic": true,
+        "features": {
+          "type": "consonant"
+        }
+      },
+      {
+        "id": "t",
+        "label": "t",
+        "phonemic": true,
+        "features": {
+          "type": "consonant"
+        }
+      },
+      {
+        "id": "d",
+        "label": "d",
+        "phonemic": false,
+        "features": {
+          "type": "consonant"
+        }
+      },
+      {
+        "id": "n",
+        "label": "n",
+        "phonemic": true,
+        "features": {
+          "type": "consonant"
+        }
+      }
+    ],
+    "classes": [
+      {
+        "id": "V",
+        "features": {
+          "type": "vowel"
+        }
+      },
+      {
+        "id": "C",
+        "features": {
+          "type": "consonant"
+        }
+      }
+    ],
+    "templates": [
+      {
+        "id": "template-CVC",
+        "slots": [
+          {
+            "class": "C"
+          },
+          {
+            "class": "V"
+          },
+          {
+            "class": "C"
+          }
+        ]
+      }
+    ],
+    "allowed": [
+      {
+        "id": "CVC",
+        "slots": [
+          {
+            "class": "C"
+          },
+          {
+            "class": "V"
+          },
+          {
+            "class": "C"
+          }
+        ]
+      },
+      {
+        "id": "VCV",
+        "slots": [
+          {
+            "class": "V"
+          },
+          {
+            "class": "C"
+          },
+          {
+            "class": "V"
+          }
+        ]
+      },
+      {
+        "id": "CVCV",
+        "slots": [
+          {
+            "class": "C"
+          },
+          {
+            "class": "V"
+          },
+          {
+            "class": "C"
+          },
+          {
+            "class": "V"
+          }
+        ]
+      },
+      {
+        "id": "VCVCV",
+        "slots": [
+          {
+            "class": "V"
+          },
+          {
+            "class": "C"
+          },
+          {
+            "class": "V"
+          },
+          {
+            "class": "C"
+          },
+          {
+            "class": "V"
+          }
+        ]
+      }
+    ],
+    "forbidden": [],
+    "rules": []
+  },
+  "lexicon": [
+    {
+      "id": "stone",
+      "category": "noun",
+      "senses": [
+        {
+          "id": "stone-material",
+          "meaning": "stone material"
+        },
+        {
+          "id": "stone-weight",
+          "meaning": "stone weight"
+        }
+      ],
+      "underlying": ["p", "a", "t"],
+      "features": {},
+      "paradigm": "noun",
+      "overrides": []
+    },
+    {
+      "id": "rock",
+      "category": "noun",
+      "senses": [
+        {
+          "id": "rock-sense",
+          "meaning": "rock"
+        }
+      ],
+      "underlying": ["p", "a", "t"],
+      "features": {},
+      "paradigm": "noun",
+      "overrides": []
+    },
+    {
+      "id": "person",
+      "category": "noun",
+      "senses": [
+        {
+          "id": "person-sense",
+          "meaning": "person"
+        }
+      ],
+      "underlying": ["n", "a", "n"],
+      "features": {},
+      "paradigm": "noun",
+      "overrides": [
+        {
+          "cell": "many",
+          "ruleId": "person-suppletion",
+          "segments": ["n", "i", "n"]
+        }
+      ]
+    },
+    {
+      "id": "tree",
+      "category": "noun",
+      "senses": [
+        {
+          "id": "tree-sense",
+          "meaning": "tree"
+        }
+      ],
+      "underlying": ["a", "t", "a"],
+      "features": {},
+      "paradigm": "noun",
+      "overrides": []
+    }
+  ],
+  "morphology": null,
+  "syntax": null,
+  "orthography": null,
+  "history": null,
+  "tests": []
+}

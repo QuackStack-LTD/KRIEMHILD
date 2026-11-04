@@ -1,0 +1,12 @@
+# Isolated technical spike only; does not replace the production Dockerfile.
+FROM golang:1.27-alpine
+WORKDIR /src
+ENV CGO_ENABLED=0
+COPY go.mod go.sum ./
+RUN go mod download golang.org/x/text
+COPY internal/languages/spike ./internal/languages/spike
+RUN go test -mod=readonly ./internal/languages/spike/... \
+    && go vet -mod=readonly ./internal/languages/spike/... \
+    && go build -mod=readonly -trimpath -o /out/linguistic-spike ./internal/languages/spike/cmd/linguistic-spike
+ENTRYPOINT ["/out/linguistic-spike"]
+CMD ["-definition", "/src/internal/languages/spike/testdata/reference.json", "-operation", "inflect", "-lexeme", "stone", "-feature", "number=many"]

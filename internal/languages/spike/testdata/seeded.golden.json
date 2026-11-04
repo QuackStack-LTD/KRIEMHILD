@@ -1,0 +1,71 @@
+{
+  "status": "success",
+  "languageId": "phase0-reference",
+  "revision": "6090994d05db7748d9feb1fd59f06582473554e0d0694e4edbd7597e40a14435",
+  "engine": "languages-spike/1",
+  "canonicalizer": "kriemhild-typed-json/1",
+  "selection": "sha256-canonical-candidates/1",
+  "request": {
+    "revision": "6090994d05db7748d9feb1fd59f06582473554e0d0694e4edbd7597e40a14435",
+    "engine": "languages-spike/1",
+    "operation": "generate",
+    "template": "vowel-consonant-vowel",
+    "policy": "seeded",
+    "seed": "fixed-author-seed",
+    "limit": 256
+  },
+  "candidates": [
+    {
+      "underlying": ["i", "t", "a"],
+      "segments": ["i", "d", "a"],
+      "written": "id̪a",
+      "trace": [
+        {
+          "stage": "template",
+          "ruleId": "vowel-consonant-vowel",
+          "before": [],
+          "after": ["i", "t", "a"]
+        },
+        {
+          "stage": "phonology",
+          "ruleId": "intervocalic-voicing",
+          "before": ["i", "t", "a"],
+          "after": ["i", "d", "a"]
+        },
+        {
+          "stage": "orthography",
+          "ruleId": "spell-i",
+          "before": ["i"],
+          "after": ["i"]
+        },
+        {
+          "stage": "orthography",
+          "ruleId": "spell-d",
+          "before": ["d"],
+          "after": ["d̪"]
+        },
+        {
+          "stage": "orthography",
+          "ruleId": "spell-a",
+          "before": ["a"],
+          "after": ["a"]
+        }
+      ]
+    }
+  ],
+  "diagnostics": [
+    {
+      "code": "forbidden_sequence",
+      "severity": "information",
+      "module": "phonotactics",
+      "ruleId": "no-ipi",
+      "path": "candidates.i.p.i",
+      "message": "The form matches forbidden sequence no-ipi."
+    }
+  ],
+  "truncated": false,
+  "examined": 12,
+  "knownValid": 11,
+  "rejected": 1,
+  "diagnosticsOmitted": 0
+}

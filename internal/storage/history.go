@@ -386,6 +386,12 @@ func (s *Store) HistoryBundle(ctx context.Context, id string) (Bundle, error) {
 	if err != nil {
 		return b, err
 	}
+	if hasLinguisticRecords(d) {
+		b.Schema = 2
+	}
+	if hasProductiveRevisions(d) {
+		b.Schema = 3
+	}
 	for _, m := range d.Maps {
 		if m.Snapshot == "" {
 			return b, fmt.Errorf("map has not been saved")
@@ -411,6 +417,16 @@ func (s *Store) HistoryBundle(ctx context.Context, id string) (Bundle, error) {
 	}
 	for _, f := range d.LibraryFiles {
 		for _, v := range f.Versions {
+			if v.Banner != nil {
+				h := v.Banner.Hash
+				if b.Blobs[h] == nil {
+					var data []byte
+					if err = tx.QueryRowContext(ctx, "SELECT data FROM history_blobs WHERE hash=$1", h).Scan(&data); err != nil {
+						return b, err
+					}
+					b.Blobs[h] = data
+				}
+			}
 			if _, ok := b.Blobs[v.Hash]; ok {
 				continue
 			}
@@ -419,6 +435,16 @@ func (s *Store) HistoryBundle(ctx context.Context, id string) (Bundle, error) {
 				return b, err
 			}
 			b.Blobs[v.Hash] = data
+		}
+	}
+	linguisticBlobs := map[string][]byte{}
+	if err = collectLinguisticBodies(ctx, tx, d, linguisticBlobs); err != nil {
+		return b, err
+	}
+	for h, raw := range linguisticBlobs {
+		b.Blobs[h] = raw
+		if required := linguisticArchiveSchema(raw); required > b.Schema {
+			b.Schema = required
 		}
 	}
 	rows, err := tx.QueryContext(ctx, `SELECT id FROM writer_projects WHERE world_id=$1`, id)
@@ -449,12 +475,21 @@ func (s *Store) HistoryBundle(ctx context.Context, id string) (Bundle, error) {
 	return b, tx.Commit()
 }
 func (b Bundle) Validate() error {
-	if b.Format != "KRIEMHILD-WORLD" || b.Schema != 1 || b.Document == nil {
+	if b.Format != "KRIEMHILD-WORLD" || (b.Schema != 1 && b.Schema != 2 && b.Schema != 3 && b.Schema != 4 && b.Schema != 5) || b.Document == nil {
 		return fmt.Errorf("unsupported World archive")
+	}
+	if b.Schema == 1 && hasLinguisticRecords(b.Document) {
+		return fmt.Errorf("Languages require World archive schema 2; a schema 1 reader would discard their definitions")
+	}
+	if b.Schema < 3 && hasProductiveRevisions(b.Document) {
+		return fmt.Errorf("Productive language definitions require World archive schema 3; an older reader cannot preserve their semantics")
 	}
 	b.Document.MigrateFamilyViews()
 	b.Document.SyncYears()
 	if err := b.Document.Validate(); err != nil {
+		return err
+	}
+	if err := validateLinguisticBundle(b.Document, b.Blobs, b.Schema); err != nil {
 		return err
 	}
 	for _, m := range b.Document.Maps {
@@ -464,6 +499,12 @@ func (b Bundle) Validate() error {
 	}
 	for _, f := range b.Document.LibraryFiles {
 		for _, v := range f.Versions {
+			if v.Banner != nil {
+				data, ok := b.Blobs[v.Banner.Hash]
+				if !ok || hash(data) != v.Banner.Hash || int64(len(data)) != v.Banner.Size {
+					return fmt.Errorf("missing or corrupt Library banner")
+				}
+			}
 			data, ok := b.Blobs[v.Hash]
 			if !ok || hash(data) != v.Hash || int64(len(data)) != v.Size {
 				return fmt.Errorf("missing or corrupt Library file: %s", v.Name)

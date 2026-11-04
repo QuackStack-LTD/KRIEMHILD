@@ -1,0 +1,352 @@
+{
+  "version": "sequence-corpus/2",
+  "id": "brief6-unicode-coordinates",
+  "bounds": {
+    "calls": 32,
+    "work": 20000000,
+    "reportBytes": 1048576
+  },
+  "cases": [
+    {
+      "id": "unicode-coordinates",
+      "description": "Retained Brief 4 sequence-unicode full-result expectation; no expected value regenerated.",
+      "tags": ["brief4", "retained-golden"],
+      "review": {
+        "status": "reviewed",
+        "reviewer": "Codex (independent derivation; not human approval)",
+        "provenance": "Complete expectation copied unchanged from approved sequence-unicode.golden.json. Independent typed coordinate table: UTF-8 ends 1,12,15,23,31,35,37,42; UTF-16 ends 1,6,8,12,16,18,19,22; code-point ends 1,4,6,8,10,11,12,15; cluster ends 1..8. Derived from exact code points in the reviewed golden; no engine or editor segmentation used."
+      },
+      "pin": {
+        "languageId": "88888888888888888888888888888888",
+        "revision": "57d62c51f97c83715b0fbf4b147a910b5d66fd8700191523f7a14459cd782cd5",
+        "schema": 4,
+        "canonicalizer": "kriemhild-typed-json/1",
+        "engine": "languages/4",
+        "adapter": "sequence-compose/1",
+        "compiler": "languages-compiler/4",
+        "segmentation": "uniseg/0.4.7-unicode/15.0.0",
+        "normalizer": "x-text/0.29.0-unicode/15.0.0",
+        "script": {
+          "id": "77777777777777777777777777777777",
+          "revision": "e50260f7197fd260b418f4578be091b415927c863a70a7ed057dbb198cc5a849"
+        },
+        "renderer": "vector-script/1",
+        "rendererAdapter": "sign-layout/1",
+        "rendererCompiler": "vector-script-compiler/1"
+      },
+      "inputLayer": "unicode",
+      "request": {
+        "spelling": {
+          "selection": {
+            "start": 1,
+            "end": 2
+          }
+        },
+        "revision": "57d62c51f97c83715b0fbf4b147a910b5d66fd8700191523f7a14459cd782cd5",
+        "engine": "languages/4",
+        "operation": "graphemes",
+        "text": "A👩‍💻é🇺🇦👍🏽😀éẹ́",
+        "policy": "all",
+        "limit": 128,
+        "compiler": "languages-compiler/4",
+        "adapter": "sequence-compose/1"
+      },
+      "outcome": "success",
+      "comparison": "exact",
+      "expected": {
+        "spelling": {
+          "version": "sequence-orthography/1",
+          "segmentation": "uniseg/0.4.7-unicode/15.0.0",
+          "normalizer": "x-text/0.29.0-unicode/15.0.0",
+          "inputLayer": "",
+          "outputLayer": "",
+          "script": {
+            "id": "",
+            "revision": ""
+          },
+          "renderer": "",
+          "rendererAdapter": "",
+          "rendererCompiler": "",
+          "steps": 1,
+          "clusters": [
+            {
+              "index": 0,
+              "text": "A",
+              "byteStart": 0,
+              "byteEnd": 1,
+              "utf16Start": 0,
+              "utf16End": 1,
+              "codePoints": ["U+0041"]
+            },
+            {
+              "index": 1,
+              "text": "👩‍💻",
+              "byteStart": 1,
+              "byteEnd": 12,
+              "utf16Start": 1,
+              "utf16End": 6,
+              "codePoints": ["U+1F469", "U+200D", "U+1F4BB"]
+            },
+            {
+              "index": 2,
+              "text": "é",
+              "byteStart": 12,
+              "byteEnd": 15,
+              "utf16Start": 6,
+              "utf16End": 8,
+              "codePoints": ["U+0065", "U+0301"]
+            },
+            {
+              "index": 3,
+              "text": "🇺🇦",
+              "byteStart": 15,
+              "byteEnd": 23,
+              "utf16Start": 8,
+              "utf16End": 12,
+              "codePoints": ["U+1F1FA", "U+1F1E6"]
+            },
+            {
+              "index": 4,
+              "text": "👍🏽",
+              "byteStart": 23,
+              "byteEnd": 31,
+              "utf16Start": 12,
+              "utf16End": 16,
+              "codePoints": ["U+1F44D", "U+1F3FD"]
+            },
+            {
+              "index": 5,
+              "text": "😀",
+              "byteStart": 31,
+              "byteEnd": 35,
+              "utf16Start": 16,
+              "utf16End": 18,
+              "codePoints": ["U+1F600"]
+            },
+            {
+              "index": 6,
+              "text": "é",
+              "byteStart": 35,
+              "byteEnd": 37,
+              "utf16Start": 18,
+              "utf16End": 19,
+              "codePoints": ["U+00E9"]
+            },
+            {
+              "index": 7,
+              "text": "ẹ́",
+              "byteStart": 37,
+              "byteEnd": 42,
+              "utf16Start": 19,
+              "utf16End": 22,
+              "codePoints": ["U+0065", "U+0301", "U+0323"]
+            }
+          ],
+          "selection": {
+            "start": 1,
+            "end": 2
+          },
+          "spellings": [],
+          "preimages": []
+        },
+        "schema": 4,
+        "compiler": "languages-compiler/4",
+        "status": "success",
+        "languageId": "88888888888888888888888888888888",
+        "revision": "57d62c51f97c83715b0fbf4b147a910b5d66fd8700191523f7a14459cd782cd5",
+        "engine": "languages/4",
+        "canonicalizer": "kriemhild-typed-json/1",
+        "selection": "sha256-canonical-candidates/1",
+        "request": {
+          "revision": "57d62c51f97c83715b0fbf4b147a910b5d66fd8700191523f7a14459cd782cd5",
+          "engine": "languages/4",
+          "operation": "graphemes",
+          "text": "A👩‍💻é🇺🇦👍🏽😀éẹ́",
+          "policy": "all",
+          "limit": 128
+        },
+        "candidates": [],
+        "diagnostics": [],
+        "truncated": false,
+        "examined": 0,
+        "knownValid": 0,
+        "rejected": 0,
+        "diagnosticsOmitted": 0,
+        "adapter": "sequence-compose/1",
+        "kernel": "languages-spike/1",
+        "input": {
+          "spelling": {
+            "selection": {
+              "start": 1,
+              "end": 2
+            }
+          },
+          "revision": "57d62c51f97c83715b0fbf4b147a910b5d66fd8700191523f7a14459cd782cd5",
+          "engine": "languages/4",
+          "operation": "graphemes",
+          "text": "A👩‍💻é🇺🇦👍🏽😀éẹ́",
+          "policy": "all",
+          "limit": 128,
+          "compiler": "languages-compiler/4",
+          "adapter": "sequence-compose/1"
+        },
+        "dependencies": [
+          {
+            "id": "77777777777777777777777777777777",
+            "revision": "e50260f7197fd260b418f4578be091b415927c863a70a7ed057dbb198cc5a849"
+          }
+        ]
+      },
+      "coordinates": [
+        {
+          "unit": "utf8-byte",
+          "spans": [
+            {
+              "start": 0,
+              "end": 1
+            },
+            {
+              "start": 1,
+              "end": 12
+            },
+            {
+              "start": 12,
+              "end": 15
+            },
+            {
+              "start": 15,
+              "end": 23
+            },
+            {
+              "start": 23,
+              "end": 31
+            },
+            {
+              "start": 31,
+              "end": 35
+            },
+            {
+              "start": 35,
+              "end": 37
+            },
+            {
+              "start": 37,
+              "end": 42
+            }
+          ]
+        },
+        {
+          "unit": "unicode-code-point",
+          "spans": [
+            {
+              "start": 0,
+              "end": 1
+            },
+            {
+              "start": 1,
+              "end": 4
+            },
+            {
+              "start": 4,
+              "end": 6
+            },
+            {
+              "start": 6,
+              "end": 8
+            },
+            {
+              "start": 8,
+              "end": 10
+            },
+            {
+              "start": 10,
+              "end": 11
+            },
+            {
+              "start": 11,
+              "end": 12
+            },
+            {
+              "start": 12,
+              "end": 15
+            }
+          ]
+        },
+        {
+          "unit": "utf16-code-unit",
+          "spans": [
+            {
+              "start": 0,
+              "end": 1
+            },
+            {
+              "start": 1,
+              "end": 6
+            },
+            {
+              "start": 6,
+              "end": 8
+            },
+            {
+              "start": 8,
+              "end": 12
+            },
+            {
+              "start": 12,
+              "end": 16
+            },
+            {
+              "start": 16,
+              "end": 18
+            },
+            {
+              "start": 18,
+              "end": 19
+            },
+            {
+              "start": 19,
+              "end": 22
+            }
+          ]
+        },
+        {
+          "unit": "grapheme-cluster",
+          "spans": [
+            {
+              "start": 0,
+              "end": 1
+            },
+            {
+              "start": 1,
+              "end": 2
+            },
+            {
+              "start": 2,
+              "end": 3
+            },
+            {
+              "start": 3,
+              "end": 4
+            },
+            {
+              "start": 4,
+              "end": 5
+            },
+            {
+              "start": 5,
+              "end": 6
+            },
+            {
+              "start": 6,
+              "end": 7
+            },
+            {
+              "start": 7,
+              "end": 8
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

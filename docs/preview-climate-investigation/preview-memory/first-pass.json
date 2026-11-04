@@ -1,0 +1,682 @@
+[
+  {
+    "repeat": 0,
+    "dpr": 1,
+    "preset": "reference",
+    "complete": true,
+    "frame": {
+      "time": 19549.09999999404,
+      "event": "frame",
+      "generation": 3,
+      "phase": "final",
+      "revision": 0,
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 0.00008,
+        "h": 0.00005091383812010444
+      },
+      "z": 17,
+      "pixels": {
+        "width": 1532,
+        "height": 975
+      },
+      "timings": {
+        "fetch": 35352.30000004172,
+        "decode": 249.19999998807907,
+        "assemble": 37.20000001788139,
+        "resample": 25.099999994039536,
+        "encode": 35.80000001192093,
+        "publish": 31.299999997019768
+      },
+      "nodes": 88,
+      "duration": 13213.90000000596,
+      "bytes": 65614,
+      "cacheBytes": 213004,
+      "workingCanvasBytes": 29043472,
+      "decodedFrameBytes": 11949600,
+      "hits": 94,
+      "misses": 190,
+      "evictions": 0
+    },
+    "samples": [
+      {
+        "time": 1792682229172,
+        "workingSet": 628469760,
+        "privateBytes": 390606848
+      },
+      {
+        "time": 1792682230478,
+        "workingSet": 1259413504,
+        "privateBytes": 991531008
+      },
+      {
+        "time": 1792682232165,
+        "workingSet": 1229705216,
+        "privateBytes": 993890304
+      },
+      {
+        "time": 1792682233317,
+        "workingSet": 1230860288,
+        "privateBytes": 995504128
+      },
+      {
+        "time": 1792682234583,
+        "workingSet": 1234862080,
+        "privateBytes": 1000136704
+      },
+      {
+        "time": 1792682235759,
+        "workingSet": 1237082112,
+        "privateBytes": 1003945984
+      },
+      {
+        "time": 1792682236904,
+        "workingSet": 1240580096,
+        "privateBytes": 1008238592
+      },
+      {
+        "time": 1792682238062,
+        "workingSet": 1224888320,
+        "privateBytes": 993185792
+      },
+      {
+        "time": 1792682239221,
+        "workingSet": 1228029952,
+        "privateBytes": 996933632
+      },
+      {
+        "time": 1792682240374,
+        "workingSet": 1231204352,
+        "privateBytes": 1000554496
+      },
+      {
+        "time": 1792682241656,
+        "workingSet": 1229668352,
+        "privateBytes": 981192704
+      }
+    ],
+    "afterGC": {
+      "time": 1792682243419,
+      "workingSet": 1321590784,
+      "privateBytes": 1036886016
+    },
+    "sampledPeakWorkingSet": 1259413504,
+    "note": "New browser per case; real DPR; 1920x1080 window; same camera/styles; periodic simultaneous OS working-set samples, not an exact instantaneous peak. Timings from this instrumented run are not used for latency comparisons."
+  },
+  {
+    "repeat": 0,
+    "dpr": 1,
+    "preset": "balanced",
+    "complete": true,
+    "frame": {
+      "time": 7855.29999999702,
+      "event": "frame",
+      "generation": 3,
+      "phase": "final",
+      "revision": 0,
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 0.00008,
+        "h": 0.00005091383812010444
+      },
+      "z": 16,
+      "pixels": {
+        "width": 1149,
+        "height": 731
+      },
+      "timings": {
+        "fetch": 2008.6000000089407,
+        "decode": 145.50000002980232,
+        "assemble": 11.599999994039536,
+        "resample": 13.699999988079071,
+        "encode": 37.79999999701977,
+        "publish": 22.5
+      },
+      "nodes": 24,
+      "duration": 1241.5,
+      "bytes": 38716,
+      "cacheBytes": 58916,
+      "workingCanvasBytes": 9651132,
+      "decodedFrameBytes": 6719352,
+      "hits": 26,
+      "misses": 54,
+      "evictions": 0
+    },
+    "samples": [
+      {
+        "time": 1792682252700,
+        "workingSet": 1225764864,
+        "privateBytes": 970846208
+      }
+    ],
+    "afterGC": {
+      "time": 1792682254485,
+      "workingSet": 1269374976,
+      "privateBytes": 1007435776
+    },
+    "sampledPeakWorkingSet": 1225764864,
+    "note": "New browser per case; real DPR; 1920x1080 window; same camera/styles; periodic simultaneous OS working-set samples, not an exact instantaneous peak. Timings from this instrumented run are not used for latency comparisons."
+  },
+  {
+    "repeat": 0,
+    "dpr": 2,
+    "preset": "reference",
+    "complete": true,
+    "frame": {
+      "time": 41264.60000000894,
+      "event": "frame",
+      "generation": 2,
+      "phase": "final",
+      "revision": 0,
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 0.00008,
+        "h": 0.00005091383812010444
+      },
+      "z": 17,
+      "pixels": {
+        "width": 3064,
+        "height": 1950
+      },
+      "timings": {
+        "fetch": 109469.90000005066,
+        "decode": 596.1999999135733,
+        "assemble": 170.80000004172325,
+        "resample": 50.79999999701977,
+        "encode": 123.40000000596046,
+        "publish": 106.20000000298023
+      },
+      "nodes": 88,
+      "duration": 40011.39999999106,
+      "bytes": 242156,
+      "cacheBytes": 858596,
+      "workingCanvasBytes": 116173888,
+      "decodedFrameBytes": 47798400,
+      "hits": 94,
+      "misses": 188,
+      "evictions": 0
+    },
+    "samples": [
+      {
+        "time": 1792682258939,
+        "workingSet": 615387136,
+        "privateBytes": 385769472
+      },
+      {
+        "time": 1792682260003,
+        "workingSet": 635559936,
+        "privateBytes": 405008384
+      },
+      {
+        "time": 1792682261379,
+        "workingSet": 1249734656,
+        "privateBytes": 972046336
+      },
+      {
+        "time": 1792682262560,
+        "workingSet": 1348263936,
+        "privateBytes": 1068503040
+      },
+      {
+        "time": 1792682263634,
+        "workingSet": 1311895552,
+        "privateBytes": 1071681536
+      },
+      {
+        "time": 1792682264711,
+        "workingSet": 1315356672,
+        "privateBytes": 1075118080
+      },
+      {
+        "time": 1792682265779,
+        "workingSet": 1315463168,
+        "privateBytes": 1075228672
+      },
+      {
+        "time": 1792682266837,
+        "workingSet": 1316392960,
+        "privateBytes": 1076121600
+      },
+      {
+        "time": 1792682267898,
+        "workingSet": 1317900288,
+        "privateBytes": 1077305344
+      },
+      {
+        "time": 1792682269059,
+        "workingSet": 1303547904,
+        "privateBytes": 1062969344
+      },
+      {
+        "time": 1792682270121,
+        "workingSet": 1306935296,
+        "privateBytes": 1066332160
+      },
+      {
+        "time": 1792682271181,
+        "workingSet": 1310392320,
+        "privateBytes": 1069703168
+      },
+      {
+        "time": 1792682272253,
+        "workingSet": 1313755136,
+        "privateBytes": 1073168384
+      },
+      {
+        "time": 1792682273427,
+        "workingSet": 1316044800,
+        "privateBytes": 1075429376
+      },
+      {
+        "time": 1792682274500,
+        "workingSet": 1317289984,
+        "privateBytes": 1076568064
+      },
+      {
+        "time": 1792682275558,
+        "workingSet": 1320656896,
+        "privateBytes": 1080033280
+      },
+      {
+        "time": 1792682276684,
+        "workingSet": 1289211904,
+        "privateBytes": 1048117248
+      },
+      {
+        "time": 1792682277753,
+        "workingSet": 1292587008,
+        "privateBytes": 1051455488
+      },
+      {
+        "time": 1792682278812,
+        "workingSet": 1295917056,
+        "privateBytes": 1054900224
+      },
+      {
+        "time": 1792682279884,
+        "workingSet": 1299300352,
+        "privateBytes": 1058250752
+      },
+      {
+        "time": 1792682280974,
+        "workingSet": 1302671360,
+        "privateBytes": 1061601280
+      },
+      {
+        "time": 1792682282057,
+        "workingSet": 1303900160,
+        "privateBytes": 1062944768
+      },
+      {
+        "time": 1792682283188,
+        "workingSet": 1306226688,
+        "privateBytes": 1065209856
+      },
+      {
+        "time": 1792682284234,
+        "workingSet": 1309609984,
+        "privateBytes": 1068703744
+      },
+      {
+        "time": 1792682285305,
+        "workingSet": 1312911360,
+        "privateBytes": 1072091136
+      },
+      {
+        "time": 1792682286431,
+        "workingSet": 1319628800,
+        "privateBytes": 1076957184
+      },
+      {
+        "time": 1792682287501,
+        "workingSet": 1255636992,
+        "privateBytes": 1009565696
+      },
+      {
+        "time": 1792682288591,
+        "workingSet": 1256607744,
+        "privateBytes": 1010520064
+      },
+      {
+        "time": 1792682289662,
+        "workingSet": 1224978432,
+        "privateBytes": 978456576
+      },
+      {
+        "time": 1792682290776,
+        "workingSet": 1226129408,
+        "privateBytes": 979525632
+      },
+      {
+        "time": 1792682291842,
+        "workingSet": 1228312576,
+        "privateBytes": 981585920
+      },
+      {
+        "time": 1792682292897,
+        "workingSet": 1231581184,
+        "privateBytes": 984850432
+      },
+      {
+        "time": 1792682293956,
+        "workingSet": 1221861376,
+        "privateBytes": 975114240
+      },
+      {
+        "time": 1792682295007,
+        "workingSet": 1225134080,
+        "privateBytes": 978378752
+      },
+      {
+        "time": 1792682296042,
+        "workingSet": 1228394496,
+        "privateBytes": 981901312
+      },
+      {
+        "time": 1792682297136,
+        "workingSet": 1231654912,
+        "privateBytes": 985165824
+      },
+      {
+        "time": 1792682298313,
+        "workingSet": 1428373504,
+        "privateBytes": 1014243328
+      }
+    ],
+    "afterGC": {
+      "time": 1792682299937,
+      "workingSet": 1493409792,
+      "privateBytes": 1081733120
+    },
+    "sampledPeakWorkingSet": 1428373504,
+    "note": "New browser per case; real DPR; 1920x1080 window; same camera/styles; periodic simultaneous OS working-set samples, not an exact instantaneous peak. Timings from this instrumented run are not used for latency comparisons."
+  },
+  {
+    "repeat": 0,
+    "dpr": 2,
+    "preset": "balanced",
+    "complete": true,
+    "frame": {
+      "time": 2056.6000000089407,
+      "event": "frame",
+      "generation": 2,
+      "phase": "final",
+      "revision": 0,
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 0.00008,
+        "h": 0.00005091383812010444
+      },
+      "z": 16,
+      "pixels": {
+        "width": 1149,
+        "height": 731
+      },
+      "timings": {
+        "fetch": 789.5999999642372,
+        "decode": 86.69999998807907,
+        "assemble": 10.000000029802322,
+        "resample": 10.100000023841858,
+        "encode": 99.5,
+        "publish": 20.19999998807907
+      },
+      "nodes": 24,
+      "duration": 867.7999999970198,
+      "bytes": 38716,
+      "cacheBytes": 58916,
+      "workingCanvasBytes": 9651132,
+      "decodedFrameBytes": 6719352,
+      "hits": 26,
+      "misses": 52,
+      "evictions": 0
+    },
+    "samples": [
+      {
+        "time": 1792682303262,
+        "workingSet": 1221267456,
+        "privateBytes": 959053824
+      }
+    ],
+    "afterGC": {
+      "time": 1792682304905,
+      "workingSet": 1276190720,
+      "privateBytes": 1017692160
+    },
+    "sampledPeakWorkingSet": 1221267456,
+    "note": "New browser per case; real DPR; 1920x1080 window; same camera/styles; periodic simultaneous OS working-set samples, not an exact instantaneous peak. Timings from this instrumented run are not used for latency comparisons."
+  },
+  {
+    "repeat": 0,
+    "dpr": 3,
+    "preset": "reference",
+    "complete": true,
+    "frame": {
+      "time": 3365.2999999970198,
+      "event": "frame",
+      "generation": 2,
+      "phase": "final",
+      "revision": 0,
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 0.00008,
+        "h": 0.00005091383812010444
+      },
+      "z": 17,
+      "pixels": {
+        "width": 4596,
+        "height": 2925
+      },
+      "timings": {
+        "fetch": 1903.2000000625849,
+        "decode": 973.3999999761581,
+        "assemble": 195.90000000596046,
+        "resample": 88.6000000089407,
+        "encode": 264.59999999403954,
+        "publish": 209.29999999701977
+      },
+      "nodes": 88,
+      "duration": 2161.2000000029802,
+      "bytes": 528690,
+      "cacheBytes": 858596,
+      "workingCanvasBytes": 146047888,
+      "decodedFrameBytes": 107546400,
+      "hits": 94,
+      "misses": 188,
+      "evictions": 0
+    },
+    "samples": [
+      {
+        "time": 1792682308788,
+        "workingSet": 1432125440,
+        "privateBytes": 1147654144
+      },
+      {
+        "time": 1792682310017,
+        "workingSet": 1815339008,
+        "privateBytes": 1208344576
+      }
+    ],
+    "afterGC": {
+      "time": 1792682311679,
+      "workingSet": 1777111040,
+      "privateBytes": 1169260544
+    },
+    "sampledPeakWorkingSet": 1815339008,
+    "note": "New browser per case; real DPR; 1920x1080 window; same camera/styles; periodic simultaneous OS working-set samples, not an exact instantaneous peak. Timings from this instrumented run are not used for latency comparisons."
+  },
+  {
+    "repeat": 0,
+    "dpr": 3,
+    "preset": "balanced",
+    "complete": true,
+    "frame": {
+      "time": 2068,
+      "event": "frame",
+      "generation": 2,
+      "phase": "final",
+      "revision": 0,
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 0.00008,
+        "h": 0.00005091383812010444
+      },
+      "z": 16,
+      "pixels": {
+        "width": 1149,
+        "height": 731
+      },
+      "timings": {
+        "fetch": 816.9999999850988,
+        "decode": 80.90000002086163,
+        "assemble": 10.899999991059303,
+        "resample": 11.5,
+        "encode": 71.29999999701977,
+        "publish": 23
+      },
+      "nodes": 24,
+      "duration": 879.5999999940395,
+      "bytes": 38716,
+      "cacheBytes": 58916,
+      "workingCanvasBytes": 9651132,
+      "decodedFrameBytes": 6719352,
+      "hits": 26,
+      "misses": 52,
+      "evictions": 0
+    },
+    "samples": [
+      {
+        "time": 1792682314898,
+        "workingSet": 1100615680,
+        "privateBytes": 848400384
+      }
+    ],
+    "afterGC": {
+      "time": 1792682316604,
+      "workingSet": 1273171968,
+      "privateBytes": 1019629568
+    },
+    "sampledPeakWorkingSet": 1100615680,
+    "note": "New browser per case; real DPR; 1920x1080 window; same camera/styles; periodic simultaneous OS working-set samples, not an exact instantaneous peak. Timings from this instrumented run are not used for latency comparisons."
+  },
+  {
+    "repeat": 1,
+    "dpr": 1,
+    "preset": "reference",
+    "complete": true,
+    "frame": {
+      "time": 2354.7000000029802,
+      "event": "frame",
+      "generation": 2,
+      "phase": "final",
+      "revision": 0,
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 0.00008,
+        "h": 0.00005091383812010444
+      },
+      "z": 17,
+      "pixels": {
+        "width": 1532,
+        "height": 975
+      },
+      "timings": {
+        "fetch": 1630.4000000953674,
+        "decode": 288.39999997615814,
+        "assemble": 34.49999998509884,
+        "resample": 26.5,
+        "encode": 32,
+        "publish": 27.900000005960464
+      },
+      "nodes": 88,
+      "duration": 1208.4000000059605,
+      "bytes": 65614,
+      "cacheBytes": 213004,
+      "workingCanvasBytes": 29043472,
+      "decodedFrameBytes": 11949600,
+      "hits": 94,
+      "misses": 188,
+      "evictions": 0
+    },
+    "samples": [
+      {
+        "time": 1792682320020,
+        "workingSet": 1255354368,
+        "privateBytes": 1005146112
+      },
+      {
+        "time": 1792682321122,
+        "workingSet": 1357287424,
+        "privateBytes": 1089277952
+      }
+    ],
+    "afterGC": {
+      "time": 1792682322737,
+      "workingSet": 1230143488,
+      "privateBytes": 992260096
+    },
+    "sampledPeakWorkingSet": 1357287424,
+    "note": "New browser per case; real DPR; 1920x1080 window; same camera/styles; periodic simultaneous OS working-set samples, not an exact instantaneous peak. Timings from this instrumented run are not used for latency comparisons."
+  },
+  {
+    "repeat": 1,
+    "dpr": 1,
+    "preset": "balanced",
+    "complete": true,
+    "frame": {
+      "time": 2158.699999988079,
+      "event": "frame",
+      "generation": 2,
+      "phase": "final",
+      "revision": 0,
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 0.00008,
+        "h": 0.00005091383812010444
+      },
+      "z": 16,
+      "pixels": {
+        "width": 1149,
+        "height": 731
+      },
+      "timings": {
+        "fetch": 1319.3999999761581,
+        "decode": 93.79999999701977,
+        "assemble": 9.700000002980232,
+        "resample": 9.599999994039536,
+        "encode": 21.799999997019768,
+        "publish": 15
+      },
+      "nodes": 24,
+      "duration": 964.1999999880791,
+      "bytes": 38716,
+      "cacheBytes": 58916,
+      "workingCanvasBytes": 9651132,
+      "decodedFrameBytes": 6719352,
+      "hits": 26,
+      "misses": 52,
+      "evictions": 0
+    },
+    "samples": [
+      {
+        "time": 1792682326371,
+        "workingSet": 1334947840,
+        "privateBytes": 1070604288
+      }
+    ],
+    "afterGC": {
+      "time": 1792682328012,
+      "workingSet": 1226878976,
+      "privateBytes": 953999360
+    },
+    "sampledPeakWorkingSet": 1334947840,
+    "note": "New browser per case; real DPR; 1920x1080 window; same camera/styles; periodic simultaneous OS working-set samples, not an exact instantaneous peak. Timings from this instrumented run are not used for latency comparisons."
+  }
+]

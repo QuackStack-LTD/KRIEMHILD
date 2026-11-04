@@ -1,0 +1,187 @@
+?   	kriemhild/cmd/biosphere-audit	[no test files]
+?   	kriemhild/cmd/climate-audit	[no test files]
+?   	kriemhild/cmd/continuous-gallery	[no test files]
+?   	kriemhild/cmd/continuous-zoom-gallery	[no test files]
+?   	kriemhild/cmd/deepzoom-audit	[no test files]
+?   	kriemhild/cmd/kriemhild	[no test files]
+?   	kriemhild/cmd/refinement-audit	[no test files]
+?   	kriemhild/cmd/terrain-audit	[no test files]
+ok  	kriemhild/internal/auth	4.205s
+ok  	kriemhild/internal/biosphere	10.753s
+ok  	kriemhild/internal/history	2.202s
+2026/10/23 20:56:14 WARN request_rejected class=api method=GET status=401
+2026/10/23 20:56:14 WARN request_rejected class=api method=GET status=401
+2026/10/23 20:56:14 WARN request_rejected class=api method=GET status=401
+2026/10/23 20:56:14 WARN request_rejected class=api method=GET status=404
+2026/10/23 20:56:14 WARN request_rejected class=api method=POST status=401
+2026/10/23 20:56:14 WARN request_rejected class=api method=POST status=404
+2026/10/23 20:56:14 WARN request_rejected class=api method=DELETE status=401
+2026/10/23 20:56:14 WARN request_rejected class=api method=DELETE status=404
+2026/10/23 20:56:14 WARN request_rejected class=api method=GET status=401
+2026/10/23 20:56:14 WARN request_rejected class=api method=GET status=404
+2026/10/23 20:56:14 WARN request_rejected class=api method=GET status=401
+2026/10/23 20:56:14 WARN request_rejected class=api method=GET status=404
+2026/10/23 20:56:14 WARN request_rejected class=api method=GET status=401
+2026/10/23 20:56:14 WARN request_rejected class=api method=GET status=404
+2026/10/23 20:56:14 WARN request_rejected class=api method=GET status=401
+2026/10/23 20:56:14 WARN request_rejected class=api method=GET status=404
+2026/10/23 20:56:14 WARN request_rejected class=api method=POST status=401
+2026/10/23 20:56:14 WARN request_rejected class=api method=POST status=404
+2026/10/23 20:56:14 WARN request_rejected class=api method=GET status=401
+2026/10/23 20:56:14 WARN request_rejected class=api method=GET status=404
+2026/10/23 20:56:14 WARN request_rejected class=api method=DELETE status=401
+2026/10/23 20:56:14 WARN request_rejected class=api method=DELETE status=404
+2026/10/23 20:56:14 WARN request_rejected class=api method=GET status=401
+2026/10/23 20:56:14 WARN request_rejected class=api method=GET status=404
+2026/10/23 20:56:14 WARN request_rejected class=api method=POST status=403
+2026/10/23 20:56:14 WARN request_rejected class=api method=POST status=404
+2026/10/23 20:56:14 WARN request_rejected class=api method=POST status=403
+2026/10/23 20:56:14 WARN request_rejected class=api method=POST status=403
+2026/10/23 20:56:14 WARN request_rejected class=generation method=POST status=403
+2026/10/23 20:56:14 WARN request_rejected class=invitations method=POST status=403
+2026/10/23 20:56:14 WARN request_rejected class=api method=POST status=409
+2026/10/23 20:56:14 WARN request_rejected class=api method=DELETE status=403
+2026/10/23 20:56:14 WARN request_rejected class=api method=GET status=404
+2026/10/23 20:56:17 WARN request_rejected class=api method=POST status=409
+2026/10/23 20:56:17 WARN request_rejected class=api method=GET status=401
+2026/10/23 20:56:17 WARN request_rejected class=api method=GET status=401
+2026/10/23 20:56:17 WARN request_rejected class=invitations method=GET status=401
+2026/10/23 20:56:17 WARN request_rejected class=api method=GET status=403
+2026/10/23 20:56:17 WARN request_rejected class=invitations method=GET status=403
+2026/10/23 20:56:17 WARN request_rejected class=api method=DELETE status=409
+2026/10/23 20:56:17 WARN request_rejected class=api method=GET status=401
+2026/10/23 20:56:17 WARN request_rejected class=invitations method=POST status=400
+2026/10/23 20:56:17 WARN request_rejected class=api method=POST status=401
+panic: test timed out after 3m0s
+	running tests:
+		TestContinuousArchiveRoundTrip (4s)
+
+goroutine 949 [running]:
+testing.(*M).startAlarm.func1()
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2959 +0x34a
+created by time.goFunc
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/time/sleep.go:182 +0x2d
+
+goroutine 1 [chan receive]:
+testing.(*T).Run(0x1901d0996000, {0x7ff7d5345e4a?, 0x1901d092daa8?}, 0x7ff7d5c8c868)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2266 +0x4d2
+testing.runTests.func1(0x1901d0996000)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2742 +0x37
+testing.tRunner(0x1901d0996000, 0x1901d092dbc8)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2193 +0xc3
+testing.runTests({0x7ff7d532c1bd, 0x9}, {0x7ff7d5340a8c, 0x1a}, 0x1901d098c000, {0x7ff7d5d34130, 0x3c, 0x3c}, {0xc2af05fc96a236c0, 0x29e9c2d005, ...})
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2740 +0x505
+testing.(*M).Run(0x1901d0806be0)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2600 +0x6af
+main.main()
+	_testmain.go:164 +0x9b
+
+goroutine 932 [runnable]:
+math.Max(...)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/math/dim.go:42
+kriemhild/internal/terrain/generate.climate({0x7ff7d5c8a288, 0x7ff7d5d85b00}, 0x1901d09ca800)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/internal/terrain/generate/climate.go:137 +0x222a
+kriemhild/internal/terrain/generate.Generate.func4()
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/internal/terrain/generate/generate.go:28 +0x1f
+kriemhild/internal/terrain/generate.Generate({0x7ff7d5c8a288, 0x7ff7d5d85b00}, {0x1, {0x7ff7d532f599, 0xc}, {0x7ff7d532c29e, 0x9}, {0x7ff7d532c2a7, 0x9}, 0x40b8e30000000000, ...}, ...)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/internal/terrain/generate/generate.go:42 +0x838
+kriemhild/internal/httpapi.TestContinuousArchiveRoundTrip(0x1901d09ca200)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/internal/httpapi/continuous_test.go:27 +0x17a
+testing.tRunner(0x1901d09ca200, 0x7ff7d5c8c868)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2193 +0xc3
+created by testing.(*T).Run in goroutine 1
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2258 +0x4b4
+FAIL	kriemhild/internal/httpapi	185.648s
+panic: test timed out after 3m0s
+	running tests:
+		TestEarthLikeBiomeEnsembleBounds (1m42s)
+
+goroutine 35 [running]:
+testing.(*M).startAlarm.func1()
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2959 +0x34a
+created by time.goFunc
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/time/sleep.go:182 +0x2d
+
+goroutine 1 [chan receive, 1 minutes]:
+testing.(*T).Run(0x49e32ae2400, {0x7ff71aee1574?, 0x49e32b09aa8?}, 0x7ff71b1313b0)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2266 +0x4d2
+testing.runTests.func1(0x49e32ae2400)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2742 +0x37
+testing.tRunner(0x49e32ae2400, 0x49e32b09bc8)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2193 +0xc3
+testing.runTests({0x7ff71aed579e, 0x9}, {0x7ff71aee15d4, 0x20}, 0x49e32aea240, {0x7ff71b15a150, 0x63, 0x63}, {0xc2af05fc08c2b214, 0x29e8f493ed, ...})
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2740 +0x505
+testing.(*M).Run(0x49e32b40320)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2600 +0x6af
+main.main()
+	_testmain.go:242 +0x9b
+
+goroutine 34 [runnable]:
+kriemhild/internal/legacyterrain.circulationAtDeclination(0xc0059999a0000000?, {{0x0, 0x0, 0x0}, {0x7ff71aed58eb, 0x9}, 0x0, 0x1, 0x6, 0x4033c3300f140000, ...}, ...)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/internal/legacyterrain/atmosphere.go:12 +0x2af
+kriemhild/internal/legacyterrain.(*Environment).climateMonthsWithOrbit(_, _, {{0x0, 0x0, 0x0}, {0x7ff71aed58eb, 0x9}, 0x0, 0x1, 0x6, ...}, ...)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/internal/legacyterrain/climate_simulation.go:100 +0x1118
+kriemhild/internal/legacyterrain.(*Environment).simulateClimate(0x49e3430c848, {{0x0, 0x0, 0x0}, {0x7ff71aed58eb, 0x9}, 0x0, 0x1, 0x6, 0x4033c3300f140000, ...}, ...)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/internal/legacyterrain/climate_simulation.go:260 +0xb1e
+kriemhild/internal/legacyterrain.(*Environment).updateClimateBudget(0x49e3430c848)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/internal/legacyterrain/climate_simulation.go:236 +0x511
+kriemhild/internal/legacyterrain.(*Environment).evolveRiverLandscape(0x49e3430c848)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/internal/legacyterrain/fluvial_evolution.go:220 +0x28ae
+kriemhild/internal/legacyterrain.BuildEnvironmentObserved({0x0, 0x0, {0x7ff71aed52fe, 0x8}, 0x0, 0x49e357c3e60, 0x0, 0x0, 0x0, 0x3ff0000000000000, ...}, ...)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/internal/legacyterrain/environment.go:389 +0x24e7
+kriemhild/internal/legacyterrain.BuildEnvironment(...)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/internal/legacyterrain/environment.go:203
+kriemhild/internal/legacyterrain.TestEarthLikeBiomeEnsembleBounds(0x49e332ea600)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/internal/legacyterrain/climate_ensemble_test.go:14 +0x34e
+testing.tRunner(0x49e332ea600, 0x7ff71b1313b0)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2193 +0xc3
+created by testing.(*T).Run in goroutine 1
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2258 +0x4b4
+FAIL	kriemhild/internal/legacyterrain	181.375s
+ok  	kriemhild/internal/settlements	63.676s
+ok  	kriemhild/internal/storage	12.250s
+ok  	kriemhild/internal/terrain/detail	2.040s
+panic: test timed out after 3m0s
+	running tests:
+		TestDeterminismPersistenceAndSampling (10s)
+
+goroutine 115 [running]:
+testing.(*M).startAlarm.func1()
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2959 +0x34a
+created by time.goFunc
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/time/sleep.go:182 +0x2d
+
+goroutine 1 [chan receive]:
+testing.(*T).Run(0xcb8a4816000, {0x7ff7fc95fa6d?, 0xcb8a46e7aa8?}, 0x7ff7fcb56000)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2266 +0x4d2
+testing.runTests.func1(0xcb8a4816000)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2742 +0x37
+testing.tRunner(0xcb8a4816000, 0xcb8a46e7bc8)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2193 +0xc3
+testing.runTests({0x7ff7fc954353, 0x9}, {0x7ff7fc95ef08, 0x23}, 0xcb8a480c000, {0x7ff7fcb79170, 0x1a, 0x1a}, {0xc2af060309bf43e4, 0x29f4e0a0ed, ...})
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2740 +0x505
+testing.(*M).Run(0xcb8a46fe140)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2600 +0x6af
+main.main()
+	_testmain.go:100 +0x9b
+
+goroutine 13 [runnable]:
+kriemhild/internal/terrain/generate.climate({0x7ff7fcb55888, 0x7ff7fcbc5760}, 0xcb8a4816e00)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/internal/terrain/generate/climate.go:127 +0x2076
+kriemhild/internal/terrain/generate.Generate.func4()
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/internal/terrain/generate/generate.go:28 +0x1f
+kriemhild/internal/terrain/generate.Generate({0x7ff7fcb55888, 0x7ff7fcbc5760}, {0x1, {0x7ff7fc955499, 0xc}, {0x7ff7fc95446a, 0x9}, {0x7ff7fc954473, 0x9}, 0x40b8e30000000000, ...}, ...)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/internal/terrain/generate/generate.go:42 +0x838
+kriemhild/internal/terrain/generate_test.TestDeterminismPersistenceAndSampling(0xcb8a4816c00)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/internal/terrain/generate/generate_test.go:16 +0x17a
+testing.tRunner(0xcb8a4816c00, 0x7ff7fcb56000)
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2193 +0xc3
+created by testing.(*T).Run in goroutine 1
+	C:/Users/tomyi/worldbuilding/KRIEMHILD/.tools/go/src/testing/testing.go:2258 +0x4b4
+FAIL	kriemhild/internal/terrain/generate	182.012s
+ok  	kriemhild/internal/terrain/landmass	14.958s
+ok  	kriemhild/internal/terrain/model	0.855s
+?   	kriemhild/internal/terrain/tectonics	[no test files]
+ok  	kriemhild/internal/terrain/tiles	77.931s
+ok  	kriemhild/internal/world	5.958s
+FAIL

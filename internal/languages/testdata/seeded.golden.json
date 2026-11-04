@@ -1,0 +1,121 @@
+{
+  "status": "success",
+  "languageId": "11111111111111111111111111111111",
+  "revision": "9d5c2c6d141549aac64bc61da9ca7c9ef37cea3cfd876a8f1a728be23994d778",
+  "engine": "languages/1",
+  "canonicalizer": "kriemhild-typed-json/1",
+  "selection": "sha256-canonical-candidates/1",
+  "request": {
+    "revision": "9d5c2c6d141549aac64bc61da9ca7c9ef37cea3cfd876a8f1a728be23994d778",
+    "engine": "languages/1",
+    "operation": "generate",
+    "template": "vowel-consonant-vowel",
+    "policy": "seeded",
+    "seed": "product-author-seed",
+    "limit": 32
+  },
+  "candidates": [
+    {
+      "underlying": [
+        "a",
+        "t",
+        "a"
+      ],
+      "segments": [
+        "a",
+        "d",
+        "a"
+      ],
+      "written": "ad̪a",
+      "trace": [
+        {
+          "stage": "template",
+          "ruleId": "vowel-consonant-vowel",
+          "before": [],
+          "after": [
+            "a",
+            "t",
+            "a"
+          ]
+        },
+        {
+          "stage": "phonology",
+          "ruleId": "intervocalic-voicing",
+          "before": [
+            "a",
+            "t",
+            "a"
+          ],
+          "after": [
+            "a",
+            "d",
+            "a"
+          ]
+        },
+        {
+          "stage": "orthography",
+          "ruleId": "spell-a",
+          "before": [
+            "a"
+          ],
+          "after": [
+            "a"
+          ]
+        },
+        {
+          "stage": "orthography",
+          "ruleId": "spell-d",
+          "before": [
+            "d"
+          ],
+          "after": [
+            "d̪"
+          ]
+        },
+        {
+          "stage": "orthography",
+          "ruleId": "spell-a",
+          "before": [
+            "a"
+          ],
+          "after": [
+            "a"
+          ]
+        }
+      ]
+    }
+  ],
+  "diagnostics": [
+    {
+      "code": "forbidden_sequence",
+      "severity": "information",
+      "module": "phonotactics",
+      "ruleId": "no-ipi",
+      "path": "candidates.i.p.i",
+      "message": "The form matches forbidden sequence no-ipi."
+    }
+  ],
+  "truncated": false,
+  "examined": 12,
+  "knownValid": 11,
+  "rejected": 1,
+  "diagnosticsOmitted": 0,
+  "adapter": "token-relation/1",
+  "kernel": "languages-spike/1",
+  "input": {
+    "revision": "9d5c2c6d141549aac64bc61da9ca7c9ef37cea3cfd876a8f1a728be23994d778",
+    "engine": "languages/1",
+    "operation": "generate",
+    "template": "vowel-consonant-vowel",
+    "policy": "seeded",
+    "seed": "product-author-seed",
+    "limit": 32,
+    "adapter": "token-relation/1"
+  },
+  "dependencies": [
+    {
+      "id": "22222222222222222222222222222222",
+      "revision": "71c608c5aba1c9848539bbe4138c8f0e8c3a937e42d1e23c49589da3ba5bce4e"
+    }
+  ]
+}

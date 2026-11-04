@@ -1,0 +1,252 @@
+{
+  "result": {
+    "status": "complete",
+    "stages": [
+      {
+        "name": "performance",
+        "camera": "1.29985 0.219925 0.0003 0.00015",
+        "generation": "4",
+        "revision": "1",
+        "pixels": [
+          "446",
+          "348"
+        ],
+        "resolution": "Preview: 446 × 348 · Performance",
+        "request": {
+          "time": 3527.2999999970198,
+          "event": "request",
+          "generation": 4,
+          "session": "20cf1cf798566ff7b839a34a878e8017",
+          "identity": "977d134ee5aadc480e1410ade3c84587:20cf1cf798566ff7b839a34a878e8017",
+          "revision": 1,
+          "styles": [
+            "natural",
+            "hillshade"
+          ],
+          "bounds": {
+            "x": 1.29985,
+            "y": 0.2198831278026906,
+            "w": 0.0003,
+            "h": 0.00023374439461883406
+          },
+          "pixels": {
+            "width": 446,
+            "height": 348
+          },
+          "z": 13,
+          "size": 256,
+          "preview": {
+            "preset": "performance",
+            "label": "Performance",
+            "requestedScale": 0.5,
+            "effectiveScale": 0.5,
+            "clamped": false
+          }
+        }
+      },
+      {
+        "name": "balanced",
+        "camera": "1.29985 0.219925 0.0003 0.00015",
+        "generation": "5",
+        "revision": "1",
+        "pixels": [
+          "669",
+          "521"
+        ],
+        "resolution": "Preview: 669 × 521 · Balanced",
+        "request": {
+          "time": 3833,
+          "event": "request",
+          "generation": 5,
+          "session": "20cf1cf798566ff7b839a34a878e8017",
+          "identity": "977d134ee5aadc480e1410ade3c84587:20cf1cf798566ff7b839a34a878e8017",
+          "revision": 1,
+          "styles": [
+            "natural",
+            "hillshade"
+          ],
+          "bounds": {
+            "x": 1.29985,
+            "y": 0.2198831278026906,
+            "w": 0.0003,
+            "h": 0.00023374439461883406
+          },
+          "pixels": {
+            "width": 669,
+            "height": 521
+          },
+          "z": 14,
+          "size": 256,
+          "preview": {
+            "preset": "balanced",
+            "label": "Balanced",
+            "requestedScale": 0.75,
+            "effectiveScale": 0.75,
+            "clamped": false
+          }
+        }
+      },
+      {
+        "name": "high",
+        "camera": "1.29985 0.219925 0.0003 0.00015",
+        "generation": "6",
+        "revision": "1",
+        "pixels": [
+          "892",
+          "695"
+        ],
+        "resolution": "Preview: 892 × 695 · High quality",
+        "request": {
+          "time": 4111.5999999940395,
+          "event": "request",
+          "generation": 6,
+          "session": "20cf1cf798566ff7b839a34a878e8017",
+          "identity": "977d134ee5aadc480e1410ade3c84587:20cf1cf798566ff7b839a34a878e8017",
+          "revision": 1,
+          "styles": [
+            "natural",
+            "hillshade"
+          ],
+          "bounds": {
+            "x": 1.29985,
+            "y": 0.2198831278026906,
+            "w": 0.0003,
+            "h": 0.00023374439461883406
+          },
+          "pixels": {
+            "width": 892,
+            "height": 695
+          },
+          "z": 14,
+          "size": 256,
+          "preview": {
+            "preset": "high",
+            "label": "High quality",
+            "requestedScale": 1,
+            "effectiveScale": 1,
+            "clamped": false
+          }
+        }
+      },
+      {
+        "name": "custom",
+        "camera": "1.29985 0.219925 0.0003 0.00015",
+        "generation": "6",
+        "revision": "1",
+        "pixels": [
+          "892",
+          "695"
+        ],
+        "resolution": "Preview: 892 × 695 · Custom",
+        "request": {
+          "time": 4111.5999999940395,
+          "event": "request",
+          "generation": 6,
+          "session": "20cf1cf798566ff7b839a34a878e8017",
+          "identity": "977d134ee5aadc480e1410ade3c84587:20cf1cf798566ff7b839a34a878e8017",
+          "revision": 1,
+          "styles": [
+            "natural",
+            "hillshade"
+          ],
+          "bounds": {
+            "x": 1.29985,
+            "y": 0.2198831278026906,
+            "w": 0.0003,
+            "h": 0.00023374439461883406
+          },
+          "pixels": {
+            "width": 892,
+            "height": 695
+          },
+          "z": 14,
+          "size": 256,
+          "preview": {
+            "preset": "high",
+            "label": "High quality",
+            "requestedScale": 1,
+            "effectiveScale": 1,
+            "clamped": false
+          }
+        }
+      },
+      {
+        "name": "rapid-quality-final",
+        "camera": "1.29985 0.219925 0.0003 0.00015",
+        "generation": "9",
+        "revision": "1",
+        "pixels": [
+          "669",
+          "521"
+        ],
+        "resolution": "Preview: 669 × 521 · Balanced",
+        "request": {
+          "time": 4637.0999999940395,
+          "event": "request",
+          "generation": 9,
+          "session": "20cf1cf798566ff7b839a34a878e8017",
+          "identity": "977d134ee5aadc480e1410ade3c84587:20cf1cf798566ff7b839a34a878e8017",
+          "revision": 1,
+          "styles": [
+            "natural",
+            "hillshade"
+          ],
+          "bounds": {
+            "x": 1.29985,
+            "y": 0.2198831278026906,
+            "w": 0.0003,
+            "h": 0.00023374439461883406
+          },
+          "pixels": {
+            "width": 669,
+            "height": 521
+          },
+          "z": 14,
+          "size": 256,
+          "preview": {
+            "preset": "balanced",
+            "label": "Balanced",
+            "requestedScale": 0.75,
+            "effectiveScale": 0.75,
+            "clamped": false
+          }
+        }
+      },
+      {
+        "name": "illustrator",
+        "camera": "0 0 2 1",
+        "generation": "10",
+        "revision": "1",
+        "pixels": [
+          "2676",
+          "2085"
+        ],
+        "request": {
+          "time": 5333.899999991059,
+          "event": "request",
+          "generation": 10,
+          "session": "20cf1cf798566ff7b839a34a878e8017",
+          "identity": "977d134ee5aadc480e1410ade3c84587:20cf1cf798566ff7b839a34a878e8017",
+          "revision": 1,
+          "styles": [
+            "atlas",
+            "hillshade"
+          ],
+          "bounds": {
+            "x": 0,
+            "y": -0.27914798206278024,
+            "w": 2,
+            "h": 1.5582959641255605
+          },
+          "pixels": {
+            "width": 2676,
+            "height": 2085
+          },
+          "z": 2,
+          "size": 512
+        }
+      }
+    ]
+  },
+  "errors": []
+}

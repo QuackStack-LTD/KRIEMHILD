@@ -1,0 +1,50 @@
+[
+  {
+    "opacity": 0.05,
+    "maxError": 1,
+    "meanChannelError": 0.182861328125,
+    "bounds": {
+      "x": 1.2,
+      "y": 0.2,
+      "w": 0.1,
+      "h": 0.05
+    },
+    "revision": 17,
+    "images": 1,
+    "compositedStyles": [
+      "hillshade"
+    ]
+  },
+  {
+    "opacity": 0.55,
+    "maxError": 1,
+    "meanChannelError": 0.1993408203125,
+    "bounds": {
+      "x": 1.2,
+      "y": 0.2,
+      "w": 0.1,
+      "h": 0.05
+    },
+    "revision": 17,
+    "images": 1,
+    "compositedStyles": [
+      "hillshade"
+    ]
+  },
+  {
+    "opacity": 1,
+    "maxError": 1,
+    "meanChannelError": 0.1602783203125,
+    "bounds": {
+      "x": 1.2,
+      "y": 0.2,
+      "w": 0.1,
+      "h": 0.05
+    },
+    "revision": 17,
+    "images": 1,
+    "compositedStyles": [
+      "hillshade"
+    ]
+  }
+]

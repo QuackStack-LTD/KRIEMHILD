@@ -1,0 +1,119 @@
+.terrain-resource-report {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.terrain-resource-report section {
+  margin: 1rem 0;
+  border-bottom: 1px solid #72829350;
+  padding-bottom: 1rem;
+}
+.terrain-resource-report h3 {
+  margin: 0.6rem 0;
+  font-size: 1rem;
+}
+.terrain-resource-report details {
+  margin: 0.6rem 0;
+}
+.terrain-resource-report summary {
+  cursor: pointer;
+  text-transform: capitalize;
+  padding: 0.2rem 0;
+}
+.terrain-resource-report dl {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.35rem 0.7rem;
+  margin: 0.6rem 0;
+}
+.terrain-resource-report dd {
+  margin: 0;
+  text-align: right;
+}
+.resource-field-summary {
+  display: contents;
+}
+.terrain-resource-report dt,
+.resource-note,
+.resource-coordinates {
+  opacity: 0.8;
+}
+.resource-item {
+  padding: 0.55rem 0;
+  border-top: 1px solid #72829330;
+}
+.resource-item p {
+  margin: 0.4rem 0;
+}
+.resource-water {
+  padding: 0.8rem;
+  background: #389fc715;
+  border: 1px solid #389fc755;
+  border-radius: 0.5rem;
+}
+.resource-warning {
+  background: #dca43c20;
+  border: 1px solid #dca43c70;
+  padding: 0.65rem;
+  border-radius: 0.4rem;
+}
+.terrain-resource-report table {
+  width: 100%;
+  font-size: 0.72rem;
+  border-collapse: collapse;
+}
+.terrain-resource-report th {
+  text-align: left;
+  font-weight: 500;
+}
+.terrain-resource-report td {
+  text-align: right;
+  padding: 0.25rem;
+}
+.resource-radius-label {
+  display: grid;
+  gap: 0.6rem;
+  margin: 1rem 0;
+}
+.resource-radius-label input {
+  width: 100%;
+}
+.resource-radius-label span {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+.resource-circle-preview {
+  width: min(100%, 384px);
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 2px solid #bfab7966;
+  background: #182a36;
+}
+.settlement-resources {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(260px, 1.3fr);
+  gap: 1.5rem;
+  padding: 1.2rem;
+  margin: 1rem 0;
+  border: 1px solid #72829350;
+  border-radius: 0.75rem;
+}
+.settlement-resource-data {
+  max-height: 650px;
+  overflow: auto;
+  padding-right: 0.5rem;
+}
+.resource-panel-controls {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+@media (max-width: 720px) {
+  .settlement-resources {
+    grid-template-columns: 1fr;
+  }
+  .settlement-resource-data {
+    max-height: none;
+  }
+}

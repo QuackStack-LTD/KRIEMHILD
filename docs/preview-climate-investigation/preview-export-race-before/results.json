@@ -1,0 +1,271 @@
+{
+  "stages": [
+    {
+      "name": "baseline",
+      "camera": "1.285 0.2125 0.03 0.015",
+      "request": {
+        "time": 8045.5,
+        "event": "request",
+        "generation": 3,
+        "session": "bb46da122ae1917787b90568aa26864c",
+        "identity": "977d134ee5aadc480e1410ade3c84587:bb46da122ae1917787b90568aa26864c",
+        "revision": 0,
+        "styles": [
+          "natural",
+          "hillshade"
+        ],
+        "bounds": {
+          "x": 1.285,
+          "y": 0.20831278026905828,
+          "w": 0.03,
+          "h": 0.023374439461883407
+        },
+        "pixels": {
+          "width": 669,
+          "height": 521
+        },
+        "z": 7,
+        "size": 256,
+        "preview": {
+          "preset": "balanced",
+          "label": "Balanced",
+          "requestedScale": 0.75,
+          "effectiveScale": 0.75,
+          "clamped": false
+        }
+      },
+      "images": [
+        {
+          "generation": "3",
+          "revision": "0",
+          "lod": "7",
+          "x": "1.285",
+          "y": "0.20831278026905828",
+          "w": "0.03",
+          "h": "0.023374439461883407"
+        },
+        {
+          "generation": "3",
+          "revision": "0",
+          "lod": "7",
+          "x": "1.285",
+          "y": "0.20831278026905828",
+          "w": "0.03",
+          "h": "0.023374439461883407"
+        }
+      ]
+    },
+    {
+      "name": "performance",
+      "camera": "1.285 0.2125 0.03 0.015",
+      "request": {
+        "time": 9194.09999999404,
+        "event": "request",
+        "generation": 4,
+        "session": "bb46da122ae1917787b90568aa26864c",
+        "identity": "977d134ee5aadc480e1410ade3c84587:bb46da122ae1917787b90568aa26864c",
+        "revision": 0,
+        "styles": [
+          "natural",
+          "hillshade"
+        ],
+        "bounds": {
+          "x": 1.285,
+          "y": 0.20831278026905828,
+          "w": 0.03,
+          "h": 0.023374439461883407
+        },
+        "pixels": {
+          "width": 446,
+          "height": 348
+        },
+        "z": 6,
+        "size": 256,
+        "preview": {
+          "preset": "performance",
+          "label": "Performance",
+          "requestedScale": 0.5,
+          "effectiveScale": 0.5,
+          "clamped": false
+        }
+      },
+      "images": [
+        {
+          "generation": "4",
+          "revision": "0",
+          "lod": "6",
+          "x": "1.285",
+          "y": "0.20831278026905828",
+          "w": "0.03",
+          "h": "0.023374439461883407"
+        },
+        {
+          "generation": "4",
+          "revision": "0",
+          "lod": "6",
+          "x": "1.285",
+          "y": "0.20831278026905828",
+          "w": "0.03",
+          "h": "0.023374439461883407"
+        }
+      ]
+    },
+    {
+      "name": "high",
+      "camera": "1.285 0.2125 0.03 0.015",
+      "request": {
+        "time": 14913,
+        "event": "request",
+        "generation": 5,
+        "session": "bb46da122ae1917787b90568aa26864c",
+        "identity": "977d134ee5aadc480e1410ade3c84587:bb46da122ae1917787b90568aa26864c",
+        "revision": 0,
+        "styles": [
+          "natural",
+          "hillshade"
+        ],
+        "bounds": {
+          "x": 1.285,
+          "y": 0.20831278026905828,
+          "w": 0.03,
+          "h": 0.023374439461883407
+        },
+        "pixels": {
+          "width": 892,
+          "height": 695
+        },
+        "z": 7,
+        "size": 256,
+        "preview": {
+          "preset": "high",
+          "label": "High quality",
+          "requestedScale": 1,
+          "effectiveScale": 1,
+          "clamped": false
+        }
+      },
+      "images": [
+        {
+          "generation": "5",
+          "revision": "0",
+          "lod": "7",
+          "x": "1.285",
+          "y": "0.20831278026905828",
+          "w": "0.03",
+          "h": "0.023374439461883407"
+        },
+        {
+          "generation": "5",
+          "revision": "0",
+          "lod": "7",
+          "x": "1.285",
+          "y": "0.20831278026905828",
+          "w": "0.03",
+          "h": "0.023374439461883407"
+        }
+      ]
+    },
+    {
+      "name": "balanced",
+      "camera": "1.285 0.2125 0.03 0.015",
+      "request": {
+        "time": 19460,
+        "event": "request",
+        "generation": 6,
+        "session": "bb46da122ae1917787b90568aa26864c",
+        "identity": "977d134ee5aadc480e1410ade3c84587:bb46da122ae1917787b90568aa26864c",
+        "revision": 0,
+        "styles": [
+          "natural",
+          "hillshade"
+        ],
+        "bounds": {
+          "x": 1.285,
+          "y": 0.20831278026905828,
+          "w": 0.03,
+          "h": 0.023374439461883407
+        },
+        "pixels": {
+          "width": 669,
+          "height": 521
+        },
+        "z": 7,
+        "size": 256,
+        "preview": {
+          "preset": "balanced",
+          "label": "Balanced",
+          "requestedScale": 0.75,
+          "effectiveScale": 0.75,
+          "clamped": false
+        }
+      },
+      "images": [
+        {
+          "generation": "6",
+          "revision": "0",
+          "lod": "7",
+          "x": "1.285",
+          "y": "0.20831278026905828",
+          "w": "0.03",
+          "h": "0.023374439461883407"
+        },
+        {
+          "generation": "6",
+          "revision": "0",
+          "lod": "7",
+          "x": "1.285",
+          "y": "0.20831278026905828",
+          "w": "0.03",
+          "h": "0.023374439461883407"
+        }
+      ]
+    }
+  ],
+  "exports": [
+    {
+      "preset": "performance",
+      "format": "SVG",
+      "path": "docs/preview-climate-investigation/preview-integration/performance.svg",
+      "bytes": 2679233,
+      "sha256": "05c2bcd8dbb628837480baf1eefb82dde9a6d8e6d6779286427fb12a76fbdc18"
+    },
+    {
+      "preset": "performance",
+      "format": "PNG",
+      "path": "docs/preview-climate-investigation/preview-integration/performance.png",
+      "bytes": 237723,
+      "sha256": "40e49b94587c801312ff468edd1641cc281c18489e4464991324fe887ded76d1"
+    },
+    {
+      "preset": "high",
+      "format": "SVG",
+      "path": "docs/preview-climate-investigation/preview-integration/high.svg",
+      "bytes": 2679233,
+      "sha256": "a060ec978521362080a1b2aa1b6e4bab056c68af56869370eb3137b9da7161a0"
+    },
+    {
+      "preset": "high",
+      "format": "PNG",
+      "path": "docs/preview-climate-investigation/preview-integration/high.png",
+      "bytes": 237961,
+      "sha256": "a4b8c98dd5d8fe1d50f7524fed0162e0932c6f36e386db0009b8d7314d448c4c"
+    },
+    {
+      "preset": "balanced",
+      "format": "SVG",
+      "path": "docs/preview-climate-investigation/preview-integration/balanced.svg",
+      "bytes": 2679233,
+      "sha256": "a07502ba1f6d9521af4a561848cf0e23fb354b3788101db3105460c454fb4b02"
+    },
+    {
+      "preset": "balanced",
+      "format": "PNG",
+      "path": "docs/preview-climate-investigation/preview-integration/balanced.png",
+      "bytes": 237745,
+      "sha256": "14e5b3775e88d98c003c1f8196da22c28cf12c93fda03e43ca298e04aa543642"
+    }
+  ],
+  "status": "failed",
+  "error": "AssertionError [ERR_ASSERTION]: PNG export changed with preview quality\n\n3 !== 1\n\n    at file:///C:/Users/tomyi/worldbuilding/KRIEMHILD/tests/preview-quality-integration.mjs:107:10",
+  "errors": []
+}

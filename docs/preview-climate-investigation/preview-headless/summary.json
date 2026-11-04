@@ -1,0 +1,662 @@
+[
+  {
+    "dpr": 1,
+    "width": 2,
+    "preset": "reference",
+    "coldBrowserMedianMs": 294.2,
+    "warmBrowserMedianMs": 143.9,
+    "pixels": {
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "dpr": 1,
+    "width": 2,
+    "preset": "performance",
+    "coldBrowserMedianMs": 75.1,
+    "warmBrowserMedianMs": 45.4,
+    "pixels": {
+      "width": 600,
+      "height": 400
+    }
+  },
+  {
+    "dpr": 1,
+    "width": 2,
+    "preset": "balanced",
+    "coldBrowserMedianMs": 93.9,
+    "warmBrowserMedianMs": 66.6,
+    "pixels": {
+      "width": 900,
+      "height": 600
+    }
+  },
+  {
+    "dpr": 1,
+    "width": 2,
+    "preset": "high",
+    "coldBrowserMedianMs": 293.8,
+    "warmBrowserMedianMs": 139.2,
+    "pixels": {
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "dpr": 1,
+    "width": 0.25,
+    "preset": "reference",
+    "coldBrowserMedianMs": 606.4,
+    "warmBrowserMedianMs": 214.5,
+    "pixels": {
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "dpr": 1,
+    "width": 0.25,
+    "preset": "performance",
+    "coldBrowserMedianMs": 217.9,
+    "warmBrowserMedianMs": 62.4,
+    "pixels": {
+      "width": 600,
+      "height": 400
+    }
+  },
+  {
+    "dpr": 1,
+    "width": 0.25,
+    "preset": "balanced",
+    "coldBrowserMedianMs": 211.4,
+    "warmBrowserMedianMs": 86.9,
+    "pixels": {
+      "width": 900,
+      "height": 600
+    }
+  },
+  {
+    "dpr": 1,
+    "width": 0.25,
+    "preset": "high",
+    "coldBrowserMedianMs": 507.6,
+    "warmBrowserMedianMs": 201.7,
+    "pixels": {
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "dpr": 1,
+    "width": 0.03,
+    "preset": "reference",
+    "coldBrowserMedianMs": 522.4,
+    "warmBrowserMedianMs": 148.3,
+    "pixels": {
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "dpr": 1,
+    "width": 0.03,
+    "preset": "performance",
+    "coldBrowserMedianMs": 153.6,
+    "warmBrowserMedianMs": 50.0,
+    "pixels": {
+      "width": 600,
+      "height": 400
+    }
+  },
+  {
+    "dpr": 1,
+    "width": 0.03,
+    "preset": "balanced",
+    "coldBrowserMedianMs": 174.0,
+    "warmBrowserMedianMs": 73.1,
+    "pixels": {
+      "width": 900,
+      "height": 600
+    }
+  },
+  {
+    "dpr": 1,
+    "width": 0.03,
+    "preset": "high",
+    "coldBrowserMedianMs": 414.6,
+    "warmBrowserMedianMs": 134.4,
+    "pixels": {
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "dpr": 1,
+    "width": 0.003,
+    "preset": "reference",
+    "coldBrowserMedianMs": 239.8,
+    "warmBrowserMedianMs": 88.2,
+    "pixels": {
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "dpr": 1,
+    "width": 0.003,
+    "preset": "performance",
+    "coldBrowserMedianMs": 96.3,
+    "warmBrowserMedianMs": 31.2,
+    "pixels": {
+      "width": 600,
+      "height": 400
+    }
+  },
+  {
+    "dpr": 1,
+    "width": 0.003,
+    "preset": "balanced",
+    "coldBrowserMedianMs": 250.9,
+    "warmBrowserMedianMs": 74.4,
+    "pixels": {
+      "width": 900,
+      "height": 600
+    }
+  },
+  {
+    "dpr": 1,
+    "width": 0.003,
+    "preset": "high",
+    "coldBrowserMedianMs": 263.0,
+    "warmBrowserMedianMs": 90.8,
+    "pixels": {
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "dpr": 1,
+    "width": 8e-05,
+    "preset": "reference",
+    "coldBrowserMedianMs": 166.6,
+    "warmBrowserMedianMs": 68.6,
+    "pixels": {
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "dpr": 1,
+    "width": 8e-05,
+    "preset": "performance",
+    "coldBrowserMedianMs": 51.9,
+    "warmBrowserMedianMs": 18.5,
+    "pixels": {
+      "width": 600,
+      "height": 400
+    }
+  },
+  {
+    "dpr": 1,
+    "width": 8e-05,
+    "preset": "balanced",
+    "coldBrowserMedianMs": 175.1,
+    "warmBrowserMedianMs": 63.0,
+    "pixels": {
+      "width": 900,
+      "height": 600
+    }
+  },
+  {
+    "dpr": 1,
+    "width": 8e-05,
+    "preset": "high",
+    "coldBrowserMedianMs": 179.7,
+    "warmBrowserMedianMs": 71.5,
+    "pixels": {
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "dpr": 2,
+    "width": 2,
+    "preset": "reference",
+    "coldBrowserMedianMs": 571.1,
+    "warmBrowserMedianMs": 448.9,
+    "pixels": {
+      "width": 2400,
+      "height": 1600
+    }
+  },
+  {
+    "dpr": 2,
+    "width": 2,
+    "preset": "performance",
+    "coldBrowserMedianMs": 75.0,
+    "warmBrowserMedianMs": 36.3,
+    "pixels": {
+      "width": 600,
+      "height": 400
+    }
+  },
+  {
+    "dpr": 2,
+    "width": 2,
+    "preset": "balanced",
+    "coldBrowserMedianMs": 96.5,
+    "warmBrowserMedianMs": 60.7,
+    "pixels": {
+      "width": 900,
+      "height": 600
+    }
+  },
+  {
+    "dpr": 2,
+    "width": 2,
+    "preset": "high",
+    "coldBrowserMedianMs": 286.7,
+    "warmBrowserMedianMs": 120.1,
+    "pixels": {
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "dpr": 2,
+    "width": 0.25,
+    "preset": "reference",
+    "coldBrowserMedianMs": 982.9,
+    "warmBrowserMedianMs": 572.0,
+    "pixels": {
+      "width": 2400,
+      "height": 1600
+    }
+  },
+  {
+    "dpr": 2,
+    "width": 0.25,
+    "preset": "performance",
+    "coldBrowserMedianMs": 158.0,
+    "warmBrowserMedianMs": 58.4,
+    "pixels": {
+      "width": 600,
+      "height": 400
+    }
+  },
+  {
+    "dpr": 2,
+    "width": 0.25,
+    "preset": "balanced",
+    "coldBrowserMedianMs": 173.9,
+    "warmBrowserMedianMs": 79.1,
+    "pixels": {
+      "width": 900,
+      "height": 600
+    }
+  },
+  {
+    "dpr": 2,
+    "width": 0.25,
+    "preset": "high",
+    "coldBrowserMedianMs": 384.4,
+    "warmBrowserMedianMs": 183.2,
+    "pixels": {
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "dpr": 2,
+    "width": 0.03,
+    "preset": "reference",
+    "coldBrowserMedianMs": 652.2,
+    "warmBrowserMedianMs": 398.0,
+    "pixels": {
+      "width": 2400,
+      "height": 1600
+    }
+  },
+  {
+    "dpr": 2,
+    "width": 0.03,
+    "preset": "performance",
+    "coldBrowserMedianMs": 148.5,
+    "warmBrowserMedianMs": 51.0,
+    "pixels": {
+      "width": 600,
+      "height": 400
+    }
+  },
+  {
+    "dpr": 2,
+    "width": 0.03,
+    "preset": "balanced",
+    "coldBrowserMedianMs": 158.1,
+    "warmBrowserMedianMs": 61.6,
+    "pixels": {
+      "width": 900,
+      "height": 600
+    }
+  },
+  {
+    "dpr": 2,
+    "width": 0.03,
+    "preset": "high",
+    "coldBrowserMedianMs": 322.8,
+    "warmBrowserMedianMs": 119.0,
+    "pixels": {
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "dpr": 2,
+    "width": 0.003,
+    "preset": "reference",
+    "coldBrowserMedianMs": 449.4,
+    "warmBrowserMedianMs": 266.6,
+    "pixels": {
+      "width": 2400,
+      "height": 1600
+    }
+  },
+  {
+    "dpr": 2,
+    "width": 0.003,
+    "preset": "performance",
+    "coldBrowserMedianMs": 86.3,
+    "warmBrowserMedianMs": 35.0,
+    "pixels": {
+      "width": 600,
+      "height": 400
+    }
+  },
+  {
+    "dpr": 2,
+    "width": 0.003,
+    "preset": "balanced",
+    "coldBrowserMedianMs": 235.7,
+    "warmBrowserMedianMs": 70.4,
+    "pixels": {
+      "width": 900,
+      "height": 600
+    }
+  },
+  {
+    "dpr": 2,
+    "width": 0.003,
+    "preset": "high",
+    "coldBrowserMedianMs": 228.4,
+    "warmBrowserMedianMs": 84.1,
+    "pixels": {
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "dpr": 2,
+    "width": 8e-05,
+    "preset": "reference",
+    "coldBrowserMedianMs": 343.1,
+    "warmBrowserMedianMs": 229.0,
+    "pixels": {
+      "width": 2400,
+      "height": 1600
+    }
+  },
+  {
+    "dpr": 2,
+    "width": 8e-05,
+    "preset": "performance",
+    "coldBrowserMedianMs": 50.3,
+    "warmBrowserMedianMs": 18.9,
+    "pixels": {
+      "width": 600,
+      "height": 400
+    }
+  },
+  {
+    "dpr": 2,
+    "width": 8e-05,
+    "preset": "balanced",
+    "coldBrowserMedianMs": 161.8,
+    "warmBrowserMedianMs": 53.4,
+    "pixels": {
+      "width": 900,
+      "height": 600
+    }
+  },
+  {
+    "dpr": 2,
+    "width": 8e-05,
+    "preset": "high",
+    "coldBrowserMedianMs": 150.3,
+    "warmBrowserMedianMs": 65.2,
+    "pixels": {
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "dpr": 3,
+    "width": 2,
+    "preset": "reference",
+    "coldBrowserMedianMs": 864.9,
+    "warmBrowserMedianMs": 696.9,
+    "pixels": {
+      "width": 3600,
+      "height": 2400
+    }
+  },
+  {
+    "dpr": 3,
+    "width": 2,
+    "preset": "performance",
+    "coldBrowserMedianMs": 71.2,
+    "warmBrowserMedianMs": 42.7,
+    "pixels": {
+      "width": 600,
+      "height": 400
+    }
+  },
+  {
+    "dpr": 3,
+    "width": 2,
+    "preset": "balanced",
+    "coldBrowserMedianMs": 83.8,
+    "warmBrowserMedianMs": 78.0,
+    "pixels": {
+      "width": 900,
+      "height": 600
+    }
+  },
+  {
+    "dpr": 3,
+    "width": 2,
+    "preset": "high",
+    "coldBrowserMedianMs": 249.8,
+    "warmBrowserMedianMs": 122.4,
+    "pixels": {
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "dpr": 3,
+    "width": 0.25,
+    "preset": "reference",
+    "coldBrowserMedianMs": 1150.3,
+    "warmBrowserMedianMs": 834.3,
+    "pixels": {
+      "width": 3600,
+      "height": 2400
+    }
+  },
+  {
+    "dpr": 3,
+    "width": 0.25,
+    "preset": "performance",
+    "coldBrowserMedianMs": 133.9,
+    "warmBrowserMedianMs": 56.0,
+    "pixels": {
+      "width": 600,
+      "height": 400
+    }
+  },
+  {
+    "dpr": 3,
+    "width": 0.25,
+    "preset": "balanced",
+    "coldBrowserMedianMs": 160.9,
+    "warmBrowserMedianMs": 95.5,
+    "pixels": {
+      "width": 900,
+      "height": 600
+    }
+  },
+  {
+    "dpr": 3,
+    "width": 0.25,
+    "preset": "high",
+    "coldBrowserMedianMs": 377.1,
+    "warmBrowserMedianMs": 168.3,
+    "pixels": {
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "dpr": 3,
+    "width": 0.03,
+    "preset": "reference",
+    "coldBrowserMedianMs": 829.5,
+    "warmBrowserMedianMs": 592.8,
+    "pixels": {
+      "width": 3600,
+      "height": 2400
+    }
+  },
+  {
+    "dpr": 3,
+    "width": 0.03,
+    "preset": "performance",
+    "coldBrowserMedianMs": 156.4,
+    "warmBrowserMedianMs": 56.4,
+    "pixels": {
+      "width": 600,
+      "height": 400
+    }
+  },
+  {
+    "dpr": 3,
+    "width": 0.03,
+    "preset": "balanced",
+    "coldBrowserMedianMs": 183.4,
+    "warmBrowserMedianMs": 66.3,
+    "pixels": {
+      "width": 900,
+      "height": 600
+    }
+  },
+  {
+    "dpr": 3,
+    "width": 0.03,
+    "preset": "high",
+    "coldBrowserMedianMs": 382.4,
+    "warmBrowserMedianMs": 145.7,
+    "pixels": {
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "dpr": 3,
+    "width": 0.003,
+    "preset": "reference",
+    "coldBrowserMedianMs": 1413.4,
+    "warmBrowserMedianMs": 783.4,
+    "pixels": {
+      "width": 3600,
+      "height": 2400
+    }
+  },
+  {
+    "dpr": 3,
+    "width": 0.003,
+    "preset": "performance",
+    "coldBrowserMedianMs": 90.2,
+    "warmBrowserMedianMs": 30.5,
+    "pixels": {
+      "width": 600,
+      "height": 400
+    }
+  },
+  {
+    "dpr": 3,
+    "width": 0.003,
+    "preset": "balanced",
+    "coldBrowserMedianMs": 248.0,
+    "warmBrowserMedianMs": 74.3,
+    "pixels": {
+      "width": 900,
+      "height": 600
+    }
+  },
+  {
+    "dpr": 3,
+    "width": 0.003,
+    "preset": "high",
+    "coldBrowserMedianMs": 274.3,
+    "warmBrowserMedianMs": 91.5,
+    "pixels": {
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "dpr": 3,
+    "width": 8e-05,
+    "preset": "reference",
+    "coldBrowserMedianMs": 1016.0,
+    "warmBrowserMedianMs": 663.1,
+    "pixels": {
+      "width": 3600,
+      "height": 2400
+    }
+  },
+  {
+    "dpr": 3,
+    "width": 8e-05,
+    "preset": "performance",
+    "coldBrowserMedianMs": 55.8,
+    "warmBrowserMedianMs": 20.6,
+    "pixels": {
+      "width": 600,
+      "height": 400
+    }
+  },
+  {
+    "dpr": 3,
+    "width": 8e-05,
+    "preset": "balanced",
+    "coldBrowserMedianMs": 163.0,
+    "warmBrowserMedianMs": 58.7,
+    "pixels": {
+      "width": 900,
+      "height": 600
+    }
+  },
+  {
+    "dpr": 3,
+    "width": 8e-05,
+    "preset": "high",
+    "coldBrowserMedianMs": 160.7,
+    "warmBrowserMedianMs": 65.0,
+    "pixels": {
+      "width": 1200,
+      "height": 800
+    }
+  }
+]

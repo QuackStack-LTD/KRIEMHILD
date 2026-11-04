@@ -12,12 +12,19 @@ const MaxLibraryFileSize = 64 << 20
 
 // File versions point to immutable, content-addressed blobs, shared across Ages.
 type LibraryVersion struct {
+	Banner     *LibraryImage  `json:"banner,omitempty"`
 	Provenance *ArchiveRecord `json:"provenance,omitempty"`
 	Hash       string         `json:"hash"`
 	Name       string         `json:"name"`
 	MIME       string         `json:"mime"`
 	Size       int64          `json:"size"`
 	CreatedAt  int64          `json:"createdAt"`
+}
+type LibraryImage struct {
+	Hash   string `json:"hash"`
+	Size   int64  `json:"size"`
+	Width  int    `json:"width"`
+	Height int    `json:"height"`
 }
 type LibraryFile struct {
 	Record    *ArchiveRecord   `json:"record,omitempty"`
@@ -60,6 +67,13 @@ func (d *Document) validateLibrary() error {
 		}
 		seen[key] = true
 		for _, v := range f.Versions {
+			if v.Banner != nil {
+				b := v.Banner
+				raw, err := hex.DecodeString(b.Hash)
+				if err != nil || len(raw) != 32 || b.Size < 0 || b.Size > MaxLibraryFileSize || b.Width < 1 || b.Height < 1 || b.Width > 8192 || b.Height > 8192 || b.Width*b.Height > 16777216 {
+					return fmt.Errorf("invalid Library banner image")
+				}
+			}
 			h, err := hex.DecodeString(v.Hash)
 			if err != nil || len(h) != 32 || strings.TrimSpace(v.Name) == "" || len(v.Name) > 255 || strings.ContainsAny(v.Name, "/\\\x00\r\n") || v.Size < 0 || v.Size > MaxLibraryFileSize || len(v.MIME) > 160 {
 				return fmt.Errorf("invalid Library file version")

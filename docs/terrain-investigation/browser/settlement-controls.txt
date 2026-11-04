@@ -1,0 +1,170 @@
+KRIEMHILD / Atlas
+Unnamed World
+Generation preview
+Terrain Generator
+Map Builder
+Settlement Builder
+Unsaved changes
+Save
+3D Terrain
+Medieval Illustrator
+☷
+Site
+Select
+Road
+House
+Landmark
+Fit World
+Undo
+Redo
+8/210/84 r4
+[-32.344,30.234]–[-31.641,30.938]
+8/211/84 r4
+[-31.641,30.234]–[-30.938,30.938]
+8/212/84 r4
+[-30.938,30.234]–[-30.234,30.938]
+8/213/84 r4
+[-30.234,30.234]–[-29.531,30.938]
+8/214/84 r4
+[-29.531,30.234]–[-28.828,30.938]
+8/215/84 r4
+[-28.828,30.234]–[-28.125,30.938]
+8/210/85 r4
+[-32.344,29.531]–[-31.641,30.234]
+8/211/85 r4
+[-31.641,29.531]–[-30.938,30.234]
+8/212/85 r4
+[-30.938,29.531]–[-30.234,30.234]
+8/213/85 r4
+[-30.234,29.531]–[-29.531,30.234]
+8/214/85 r4
+[-29.531,29.531]–[-28.828,30.234]
+8/215/85 r4
+[-28.828,29.531]–[-28.125,30.234]
+8/210/86 r4
+[-32.344,28.828]–[-31.641,29.531]
+8/211/86 r4
+[-31.641,28.828]–[-30.938,29.531]
+8/212/86 r4
+[-30.938,28.828]–[-30.234,29.531]
+8/213/86 r4
+[-30.234,28.828]–[-29.531,29.531]
+8/214/86 r4
+[-29.531,28.828]–[-28.828,29.531]
+8/215/86 r4
+[-28.828,28.828]–[-28.125,29.531]
+8/210/87 r4
+[-32.344,28.125]–[-31.641,28.828]
+8/211/87 r4
+[-31.641,28.125]–[-30.938,28.828]
+8/212/87 r4
+[-30.938,28.125]–[-30.234,28.828]
+8/213/87 r4
+[-30.234,28.125]–[-29.531,28.828]
+8/214/87 r4
+[-29.531,28.125]–[-28.828,28.828]
+8/215/87 r4
+[-28.828,28.125]–[-28.125,28.828]
+8/210/88 r4
+[-32.344,27.422]–[-31.641,28.125]
+8/211/88 r4
+[-31.641,27.422]–[-30.938,28.125]
+8/212/88 r4
+[-30.938,27.422]–[-30.234,28.125]
+8/213/88 r4
+[-30.234,27.422]–[-29.531,28.125]
+8/214/88 r4
+[-29.531,27.422]–[-28.828,28.125]
+8/215/88 r4
+[-28.828,27.422]–[-28.125,28.125]
+New feature
+New feature
+SETTLEMENT BUILDER
+A place to belong
+Settlement name
+Size
+village
+town
+city
+capital
+Layout
+organic
+market
+fortified
+port
+planned
+
+Choose Site, then click dry land to preview districts, streets and building footprints.
+
+Map appearance
+Flat
+Relief
+3D Terrain
+Hillshade strength
+Style
+natural
+elevation
+biome
+atlas
+mask
+bathymetry
+temperature
+precipitation
+moisture
+pet
+aridity
+soil
+seasonality
+rainShadow
+exposure
+slope
+contours
+watersheds
+flow-accumulation
+river-network
+wetlands
+Rivers
+
+Styles change presentation without regenerating terrain.
+
+Layers & objects
+Geographic inspection
+Surface
+steppe · dry
+Landmass
+continent-3 · split
+Bed elevation
+-149 m
+Water depth
+0.0 m
+Temperature
+15.0 °C
+Rainfall
+344 mm/year
+Moisture
+15%
+Evaporative demand
+1416 mm/year
+Soil water
+20 mm
+Precipitation / PET
+0.25
+Dry months
+8.9
+Seasonality (CV)
+0.82
+Save & export
+Export width
+1024 pixels
+2048 pixels
+4096 pixels
+Autosave accepted terrain after 30 seconds
+PNG
+SVG
+PDF
+World ZIP
+Equirectangular · 6371 km radius
+-30.280° E, 29.212° N
+6.9× detail
+66.7 km ━━━━━
+Ready

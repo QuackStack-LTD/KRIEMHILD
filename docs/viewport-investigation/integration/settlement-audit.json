@@ -1,0 +1,55 @@
+{
+  "settlement": {
+    "point": [
+      0.8405689522624016,
+      0.346104736905545
+    ],
+    "spec": {
+      "name": "New town",
+      "kind": "town",
+      "archetype": "organic",
+      "longitude": -28.697591379974966,
+      "latitude": 27.70114723483696,
+      "seed": 12345
+    },
+    "camera": "0.840474008386181 0.34605727338837117 0.000189856783471732 0.000094928391735866",
+    "featureCount": 111,
+    "score": 0.8267988747356564,
+    "coverage": {
+      "view": "0.840484488927717 0.34605516916311807 0.00012739213629840677 0.00006369606814920338",
+      "rect": {
+        "x": 88,
+        "y": 70,
+        "width": 892,
+        "height": 695,
+        "top": 70,
+        "right": 980,
+        "bottom": 765,
+        "left": 88
+      },
+      "maxZ": 15,
+      "missing": 0,
+      "tiles": [
+        {
+          "revision": "10",
+          "x": 0.840484488927717,
+          "y": 0.3460373885342289,
+          "span": 0.00012739213629840677,
+          "height": 0.0000992573259275703,
+          "z": 15
+        }
+      ],
+      "footer": "Equirectangular · 6371 km radius\n-28.708° E, 27.710° N\n13.9× detail\n0.5 km ━━━━━\nReady"
+    },
+    "geographicCoordinatesUnchanged": true
+  },
+  "SVG": {
+    "path": "docs/viewport-investigation/integration/settlement-export.svg",
+    "bytes": 1846619
+  },
+  "PNG": {
+    "path": "docs/viewport-investigation/integration/settlement-export.png",
+    "bytes": 110375
+  },
+  "errors": []
+}

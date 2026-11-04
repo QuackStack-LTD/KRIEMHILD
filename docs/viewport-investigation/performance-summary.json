@@ -1,0 +1,492 @@
+[
+  {
+    "source": "continuous-3",
+    "renderer": "tiles",
+    "latency": {
+      "global": {
+        "min": 165.8096999999998,
+        "median": 485.85399999999936,
+        "max": 588.7385000000013
+      },
+      "regional": {
+        "min": 1769.6089999999967,
+        "median": 1845.4432000000015,
+        "max": 1972.6315999999997
+      },
+      "close": {
+        "min": 1983.0635999999977,
+        "median": 2047.2471000000005,
+        "max": 2827.1148000000003
+      },
+      "out": {
+        "min": 1015.1876999999986,
+        "median": 1092.4726999999984,
+        "max": 1223.5866000000005
+      },
+      "return": {
+        "min": 1314.7214999999997,
+        "median": 1684.7904999999992,
+        "max": 1686.2662000000018
+      }
+    },
+    "frames": []
+  },
+  {
+    "source": "continuous-3",
+    "renderer": "viewport",
+    "latency": {
+      "global": {
+        "min": 284.76929999999993,
+        "median": 296.36189999999624,
+        "max": 335.09210000000166
+      },
+      "regional": {
+        "min": 1121.9864000000016,
+        "median": 1132.0832999999984,
+        "max": 1143.5740000000005
+      },
+      "close": {
+        "min": 1160.2361999999994,
+        "median": 1187.645199999999,
+        "max": 1210.7494000000006
+      },
+      "out": {
+        "min": 927.5165999999954,
+        "median": 934.7761000000028,
+        "max": 975.2960000000021
+      },
+      "return": {
+        "min": 1022.2406999999948,
+        "median": 1068.6531999999934,
+        "max": 1140.9530000000013
+      }
+    },
+    "frames": [
+      {
+        "duration": 105.8999999910593,
+        "bytes": 498921,
+        "cacheBytes": 688591,
+        "hits": 0,
+        "misses": 108,
+        "phase": "final",
+        "pixels": {
+          "width": 892,
+          "height": 695
+        }
+      },
+      {
+        "duration": 341.79999999701977,
+        "bytes": 894571,
+        "cacheBytes": 2646262,
+        "hits": 8,
+        "misses": 199,
+        "phase": "final",
+        "pixels": {
+          "width": 892,
+          "height": 695
+        }
+      },
+      {
+        "duration": 158.29999999701977,
+        "bytes": 166433,
+        "cacheBytes": 2703112,
+        "hits": 108,
+        "misses": 207,
+        "phase": "final",
+        "pixels": {
+          "width": 892,
+          "height": 695
+        }
+      },
+      {
+        "duration": 173.40000000596046,
+        "bytes": 894571,
+        "cacheBytes": 2826518,
+        "hits": 195,
+        "misses": 212,
+        "phase": "final",
+        "pixels": {
+          "width": 892,
+          "height": 695
+        }
+      },
+      {
+        "duration": 158.3999999910593,
+        "bytes": 166433,
+        "cacheBytes": 2826518,
+        "hits": 303,
+        "misses": 215,
+        "phase": "final",
+        "pixels": {
+          "width": 892,
+          "height": 695
+        }
+      },
+      {
+        "duration": 129.6000000089407,
+        "bytes": 498921,
+        "cacheBytes": 688591,
+        "hits": 0,
+        "misses": 108,
+        "phase": "final",
+        "pixels": {
+          "width": 892,
+          "height": 695
+        }
+      },
+      {
+        "duration": 324.70000000298023,
+        "bytes": 894571,
+        "cacheBytes": 2711907,
+        "hits": 8,
+        "misses": 204,
+        "phase": "final",
+        "pixels": {
+          "width": 892,
+          "height": 695
+        }
+      },
+      {
+        "duration": 143.3999999910593,
+        "bytes": 166433,
+        "cacheBytes": 2739191,
+        "hits": 108,
+        "misses": 208,
+        "phase": "final",
+        "pixels": {
+          "width": 892,
+          "height": 695
+        }
+      },
+      {
+        "duration": 163,
+        "bytes": 894571,
+        "cacheBytes": 2739191,
+        "hits": 192,
+        "misses": 211,
+        "phase": "final",
+        "pixels": {
+          "width": 892,
+          "height": 695
+        }
+      },
+      {
+        "duration": 156.40000000596046,
+        "bytes": 166433,
+        "cacheBytes": 2739191,
+        "hits": 298,
+        "misses": 213,
+        "phase": "final",
+        "pixels": {
+          "width": 892,
+          "height": 695
+        }
+      },
+      {
+        "duration": 135.6000000089407,
+        "bytes": 498921,
+        "cacheBytes": 682995,
+        "hits": 0,
+        "misses": 108,
+        "phase": "final",
+        "pixels": {
+          "width": 892,
+          "height": 695
+        }
+      },
+      {
+        "duration": 338.6000000089407,
+        "bytes": 894571,
+        "cacheBytes": 2706311,
+        "hits": 4,
+        "misses": 199,
+        "phase": "final",
+        "pixels": {
+          "width": 892,
+          "height": 695
+        }
+      },
+      {
+        "duration": 141.80000001192093,
+        "bytes": 166433,
+        "cacheBytes": 2739191,
+        "hits": 106,
+        "misses": 206,
+        "phase": "final",
+        "pixels": {
+          "width": 892,
+          "height": 695
+        }
+      },
+      {
+        "duration": 156.70000000298023,
+        "bytes": 894571,
+        "cacheBytes": 2739191,
+        "hits": 190,
+        "misses": 209,
+        "phase": "final",
+        "pixels": {
+          "width": 892,
+          "height": 695
+        }
+      },
+      {
+        "duration": 140.79999999701977,
+        "bytes": 166433,
+        "cacheBytes": 2739191,
+        "hits": 291,
+        "misses": 209,
+        "phase": "final",
+        "pixels": {
+          "width": 892,
+          "height": 695
+        }
+      }
+    ]
+  },
+  {
+    "source": "continuous-1",
+    "renderer": "tiles",
+    "latency": {
+      "global": {
+        "min": 313.81559999998717,
+        "median": 365.68039999999746,
+        "max": 380.9965000000011
+      },
+      "regional": {
+        "min": 1577.821600000003,
+        "median": 1615.9734000000026,
+        "max": 1682.8475000000035
+      },
+      "close": {
+        "min": 1733.059699999998,
+        "median": 2048.4805999999953,
+        "max": 2108.8666999999987
+      },
+      "out": {
+        "min": 1139.9527999999991,
+        "median": 1141.6625000000058,
+        "max": 1196.1882000000041
+      },
+      "return": {
+        "min": 1376.1347999999998,
+        "median": 1580.0273000000016,
+        "max": 1884.4285999999993
+      }
+    },
+    "frames": []
+  },
+  {
+    "source": "continuous-1",
+    "renderer": "viewport",
+    "latency": {
+      "global": {
+        "min": 281.8892000000051,
+        "median": 292.63980000000447,
+        "max": 305.45430000001215
+      },
+      "regional": {
+        "min": 1137.8815999999933,
+        "median": 1160.6247999999905,
+        "max": 1179.9495999999926
+      },
+      "close": {
+        "min": 930.4447999999975,
+        "median": 937.9167999999918,
+        "max": 980.8303000000014
+      },
+      "out": {
+        "min": 916.7008999999962,
+        "median": 985.3824000000022,
+        "max": 998.1347999999998
+      },
+      "return": {
+        "min": 948.2016000000003,
+        "median": 952.1039999999921,
+        "max": 978.8294000000024
+      }
+    },
+    "frames": [
+      {
+        "duration": 109.79999999701977,
+        "bytes": 450407,
+        "cacheBytes": 1614957,
+        "hits": 0,
+        "misses": 102,
+        "phase": "final",
+        "pixels": {
+          "width": 892,
+          "height": 695
+        }
+      },
+      {
+        "duration": 389.5,
+        "bytes": 802684,
+        "cacheBytes": 3658338,
+        "hits": 12,
+        "misses": 199,
+        "phase": "final",
+        "pixels": {
+          "width": 892,
+          "height": 695
+        }
+      },
+      {
+        "duration": 315.1000000089407,
+        "bytes": 659693,
+        "cacheBytes": 4113843,
+        "hits": 112,
+        "misses": 218,
+        "phase": "final",
+        "pixels": {
+          "width": 892,
+          "height": 695
+        }
+      },
+      {
+        "duration": 282.19999998807907,
+        "bytes": 802684,
+        "cacheBytes": 4113843,
+        "hits": 218,
+        "misses": 227,
+        "phase": "final",
+        "pixels": {
+          "width": 892,
+          "height": 695
+        }
+      },
+      {
+        "duration": 306.69999998807907,
+        "bytes": 659693,
+        "cacheBytes": 4113843,
+        "hits": 338,
+        "misses": 236,
+        "phase": "final",
+        "pixels": {
+          "width": 892,
+          "height": 695
+        }
+      },
+      {
+        "duration": 100.59999999403954,
+        "bytes": 450407,
+        "cacheBytes": 1876071,
+        "hits": 0,
+        "misses": 108,
+        "phase": "final",
+        "pixels": {
+          "width": 892,
+          "height": 695
+        }
+      },
+      {
+        "duration": 434.20000000298023,
+        "bytes": 802684,
+        "cacheBytes": 3854593,
+        "hits": 14,
+        "misses": 201,
+        "phase": "final",
+        "pixels": {
+          "width": 892,
+          "height": 695
+        }
+      },
+      {
+        "duration": 319.29999999701977,
+        "bytes": 659693,
+        "cacheBytes": 4048984,
+        "hits": 123,
+        "misses": 214,
+        "phase": "final",
+        "pixels": {
+          "width": 892,
+          "height": 695
+        }
+      },
+      {
+        "duration": 300.90000000596046,
+        "bytes": 802684,
+        "cacheBytes": 4048984,
+        "hits": 228,
+        "misses": 220,
+        "phase": "final",
+        "pixels": {
+          "width": 892,
+          "height": 695
+        }
+      },
+      {
+        "duration": 316,
+        "bytes": 659693,
+        "cacheBytes": 4110587,
+        "hits": 345,
+        "misses": 231,
+        "phase": "final",
+        "pixels": {
+          "width": 892,
+          "height": 695
+        }
+      },
+      {
+        "duration": 119.59999999403954,
+        "bytes": 450407,
+        "cacheBytes": 1876071,
+        "hits": 0,
+        "misses": 108,
+        "phase": "final",
+        "pixels": {
+          "width": 892,
+          "height": 695
+        }
+      },
+      {
+        "duration": 429.29999999701977,
+        "bytes": 802684,
+        "cacheBytes": 3881819,
+        "hits": 10,
+        "misses": 207,
+        "phase": "final",
+        "pixels": {
+          "width": 892,
+          "height": 695
+        }
+      },
+      {
+        "duration": 296.20000000298023,
+        "bytes": 659693,
+        "cacheBytes": 4076210,
+        "hits": 119,
+        "misses": 217,
+        "phase": "final",
+        "pixels": {
+          "width": 892,
+          "height": 695
+        }
+      },
+      {
+        "duration": 305.29999999701977,
+        "bytes": 802684,
+        "cacheBytes": 4076210,
+        "hits": 222,
+        "misses": 222,
+        "phase": "final",
+        "pixels": {
+          "width": 892,
+          "height": 695
+        }
+      },
+      {
+        "duration": 332.09999999403954,
+        "bytes": 659693,
+        "cacheBytes": 4087108,
+        "hits": 338,
+        "misses": 228,
+        "phase": "final",
+        "pixels": {
+          "width": 892,
+          "height": 695
+        }
+      }
+    ]
+  }
+]

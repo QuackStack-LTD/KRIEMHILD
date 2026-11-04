@@ -8,11 +8,16 @@ import (
 	"image"
 	"image/color"
 	"image/png"
+	"kriemhild/internal/terrain/detail"
 	"kriemhild/internal/terrain/model"
 	"math"
+	"time"
 )
 
 type Transform func(s model.Sample, lon, lat float64) model.Sample
+
+// Raster fixes invalidate derived disk images without changing saved terrain.
+const RenderingVersion = "raster-6"
 
 func Valid(z, x, y, size int) bool {
 	return z >= 0 && z <= 18 && x >= 0 && x < (2<<z) && y >= 0 && y < (1<<z) && (size == 256 || size == 512)
@@ -20,7 +25,24 @@ func Valid(z, x, y, size int) bool {
 func Coordinate(z, x, y, size, i, j int) (float64, float64) {
 	return -math.Pi + model.Tau*(float64(x*size+i)+.5)/float64((2<<z)*size), math.Pi/2 - math.Pi*(float64(y*size+j)+.5)/float64((1<<z)*size)
 }
+
+// Canonicalize the integer sample address before floating-point conversion.
+// Wrapping radians after conversion can produce different values for the same
+// halo pixel at +/-pi, enough to cross a discrete biome threshold. Coordinate
+// stays unwrapped for geographic bounding boxes and authored-operation queries.
+func sampleCoordinate(z, x, y, size, i, j int) (float64, float64) {
+	width := (2 << z) * size
+	pixel := ((x*size+i)%width + width) % width
+	return Coordinate(z, 0, y, size, pixel, j)
+}
 func Render(ctx context.Context, p *model.Planet, z, x, y, size int, style string, transform Transform) ([]byte, error) {
+	return RenderMeasured(ctx, p, z, x, y, size, style, transform, nil)
+}
+
+// Optional timings include cache wait in sampling, and keep raster/PNG costs separate.
+type RenderTiming struct{ SamplingMS, TransformMS, RasterMS, EncodeMS float64 }
+
+func RenderMeasured(ctx context.Context, p *model.Planet, z, x, y, size int, style string, transform Transform, timing *RenderTiming) ([]byte, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -28,16 +50,21 @@ func Render(ctx context.Context, p *model.Planet, z, x, y, size int, style strin
 		return nil, fmt.Errorf("invalid tile address")
 	}
 	switch style {
-	case "natural", "elevation", "biome", "mask", "coastline", "bathymetry", "temperature", "precipitation", "moisture", "atlas", "hillshade", "pet", "aridity", "soil", "seasonality", "rainShadow", "exposure", "slope", "contours", "watersheds", "flow-accumulation", "river-network", "wetlands", "shore-ink":
+	case "terrain", "physical-atlas", "natural", "elevation", "biome", "mask", "river-mask", "coastline", "bathymetry", "temperature", "precipitation", "moisture", "atlas", "hillshade", "relief-shadow", "pet", "aridity", "soil", "seasonality", "rainShadow", "exposure", "slope", "contours", "watersheds", "flow-accumulation", "river-network", "wetlands", "shore-ink":
 	default:
 		return nil, fmt.Errorf("unknown terrain style")
 	}
 	stride := size + 2
+	started := time.Now()
 	base, err := physicalSamples(ctx, p, z, x, y, size)
+	if timing != nil {
+		timing.SamplingMS = float64(time.Since(started).Microseconds()) / 1000
+	}
 	if err != nil {
 		return nil, err
 	}
 	samples := base
+	started = time.Now()
 	if transform != nil {
 		samples = append([]model.Sample(nil), base...)
 	}
@@ -46,7 +73,7 @@ func Render(ctx context.Context, p *model.Planet, z, x, y, size int, style strin
 			return nil, err
 		}
 		for i := -1; i <= size; i++ {
-			lon, lat := Coordinate(z, x, y, size, i, j)
+			lon, lat := sampleCoordinate(z, x, y, size, i, j)
 			s := base[(j+1)*stride+i+1]
 			if transform != nil {
 				s = transform(s, lon, lat)
@@ -55,7 +82,15 @@ func Render(ctx context.Context, p *model.Planet, z, x, y, size int, style strin
 		}
 	}
 	img := image.NewNRGBA(image.Rect(0, 0, size, size))
+	if timing != nil {
+		timing.TransformMS = float64(time.Since(started).Microseconds()) / 1000
+	}
+	started = time.Now()
+	sampler := detail.New(p)
 	for j := 0; j < size; j++ {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		for i := 0; i < size; i++ {
 			at := (j+1)*stride + i + 1
 			s := samples[at]
@@ -68,6 +103,15 @@ func Render(ctx context.Context, p *model.Planet, z, x, y, size int, style strin
 			dy *= 5
 			shade := model.Clamp((.72 + (-dx*.45-dy*.55)/math.Sqrt(1+dx*dx+dy*dy)), .32, 1.18)
 			c := palette(s, style, shade)
+			if style == "relief-shadow" {
+				// Black alpha is exactly grayscale multiply, without an SVG blend
+				// surface that can cover later vector layers at close zoom.
+				c = color.NRGBA{0, 0, 0, 255 - c.R}
+			}
+			if style == "terrain" {
+				east, north := gradients(sampler, p, lon, lat, transform)
+				c = terrainColor(s, east, north)
+			}
 			if s.Water != "ocean" {
 				switch style {
 				case "watersheds":
@@ -100,7 +144,7 @@ func Render(ctx context.Context, p *model.Planet, z, x, y, size int, style strin
 					c = color.NRGBA{70, 55, 40, 255}
 				}
 			}
-			if p.Surface == nil && style != "coastline" && style != "mask" && style != "hillshade" && math.Abs(s.CoastDistance*1000) < metres*.8 && (s.Water == "dry" || s.Water == "ocean") {
+			if p.Surface == nil && style != "coastline" && style != "mask" && style != "hillshade" && style != "relief-shadow" && math.Abs(s.CoastDistance*1000) < metres*.8 && (s.Water == "dry" || s.Water == "ocean") {
 				wet, dry := s, s
 				wet.Water = "ocean"
 				wet.WaterDepth = 30
@@ -126,11 +170,24 @@ func Render(ctx context.Context, p *model.Planet, z, x, y, size int, style strin
 					}
 				}
 			}
+			if style == "river-mask" {
+				c = color.NRGBA{255, 255, 255, 255}
+				if s.Water == "ocean" || s.Water == "lake" {
+					c = color.NRGBA{}
+				}
+			}
 			img.SetNRGBA(i, j, c)
 		}
 	}
 	var b bytes.Buffer
+	if timing != nil {
+		timing.RasterMS = float64(time.Since(started).Microseconds()) / 1000
+	}
+	started = time.Now()
 	err = png.Encode(&b, img)
+	if timing != nil {
+		timing.EncodeMS = float64(time.Since(started).Microseconds()) / 1000
+	}
 	return b.Bytes(), err
 }
 func palette(s model.Sample, style string, shade float64) color.NRGBA {
@@ -150,6 +207,23 @@ func palette(s model.Sample, style string, shade float64) color.NRGBA {
 		c = mix(c, [3]float64{228, 235, 230}, model.Clamp((-s.Temperature+3)/14, 0, 1))
 	}
 	switch style {
+	case "physical-atlas":
+		if s.Water == "dry" {
+			// Restrained hypsometric inks retain elevation structure at overview
+			// scale. Moisture warms/darkens the same relief, never invents texture.
+			c = mix([3]float64{207, 211, 166}, [3]float64{177, 190, 144}, s.Moisture)
+			c = mix(c, [3]float64{205, 182, 140}, (s.Bed-400)/1800)
+			c = mix(c, [3]float64{167, 146, 124}, (s.Bed-2200)/1800)
+			c = mix(c, [3]float64{241, 236, 218}, (s.Bed-3600)/2200)
+			if s.Biome == "ice" {
+				c = [3]float64{235, 238, 224}
+			}
+		} else if s.Water == "ocean" {
+			c = mix([3]float64{168, 202, 202}, [3]float64{110, 157, 176}, s.WaterDepth/4200)
+		} else {
+			c = [3]float64{139, 187, 194}
+		}
+		shade = 1 // Relief is a separately composited, user-controlled layer.
 	case "mask":
 		if s.Water == "dry" {
 			c = [3]float64{230, 235, 224}
@@ -182,7 +256,7 @@ func palette(s model.Sample, style string, shade float64) color.NRGBA {
 			c = [3]float64{255, 0, 255}
 		}
 		shade = 1
-	case "hillshade":
+	case "hillshade", "relief-shadow":
 		c = [3]float64{255, 255, 255}
 	case "natural":
 		if s.Water == "dry" {

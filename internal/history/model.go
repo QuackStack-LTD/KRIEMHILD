@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"kriemhild/internal/biosphere"
+	"kriemhild/internal/languages"
 	"kriemhild/internal/world"
 	"math"
 	"slices"
@@ -74,6 +75,8 @@ type Map struct {
 	Kind      string       `json:"kind"`
 }
 type Entity struct {
+	Language     *languages.State    `json:"language,omitempty"`
+	Script       *languages.State    `json:"script,omitempty"`
 	Archive      *ArchiveConfig      `json:"archive,omitempty"`
 	System       *SystemRecord       `json:"system,omitempty"`
 	Biology      *biosphere.Lifeform `json:"biology,omitempty"`
@@ -326,6 +329,8 @@ func (d *Document) inherit(from, to string, overwrite bool) {
 		}
 	}
 	for _, v := range append([]Entity(nil), d.Entities...) {
+		v.Language = languages.Clone(v.Language)
+		v.Script = languages.Clone(v.Script)
 		v.Properties = append(json.RawMessage(nil), v.Properties...)
 		v.Content = cloneContent(v.Content)
 		v.System = cloneSystem(v.System)

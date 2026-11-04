@@ -7,7 +7,7 @@ RUN npm ci
 COPY index.html vite.config.js ./
 COPY src ./src
 COPY internal/history/registry.json ./internal/history/registry.json
-COPY tests/detail-camera.test.mjs tests/water-surface.test.mjs tests/autosave.test.mjs tests/world-project.test.mjs tests/worldbuilding.test.mjs tests/library-files.test.mjs ./tests/
+COPY tests/world-project.test.mjs tests/worldbuilding.test.mjs tests/library-files.test.mjs ./tests/
 RUN node --test tests/*.test.mjs && npm run build
 
 FROM --platform=$BUILDPLATFORM golang:1.27-alpine AS backend

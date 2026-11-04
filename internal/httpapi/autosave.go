@@ -10,6 +10,7 @@ import (
 	"kriemhild/internal/legacyterrain"
 	"kriemhild/internal/storage"
 	terrainmodel "kriemhild/internal/terrain/model"
+	"kriemhild/internal/terrain/resources"
 	"kriemhild/internal/world"
 	"net/http"
 	"os"
@@ -209,6 +210,9 @@ func restoreCheckpoint(id string, parts map[string][]byte, cacheRoot string) (v 
 	} else if parts["continuous/fields"] != nil {
 		return nil, fmt.Errorf("missing continuous terrain metadata")
 	}
+	if solver.Environment != nil && solver.Environment.NaturalSource != "" && (v.planet == nil || solver.Environment.NaturalSource != resources.Source(v.planet)) {
+		return nil, fmt.Errorf("resource source does not match continuous terrain")
+	}
 	if v.undo == nil {
 		v.undo = map[string]terrain.Snapshot{}
 	}
@@ -383,14 +387,53 @@ func sameJSON(a, b json.RawMessage) bool {
 	return bytes.Equal(ax, by)
 }
 func (s *Server) commitWorld(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Revision *int            `json:"revision"`
+		View     json.RawMessage `json:"view"`
+		Client   string          `json:"client"`
+		Sequence uint64          `json:"sequence"`
+	}
+	if r.Body != nil && r.ContentLength != 0 {
+		if err := decode(w, r, &req); err != nil {
+			fail(w, 400, err.Error())
+			return
+		}
+	}
+	var viewFields map[string]json.RawMessage
+	if len(req.View) > 0 && (len(req.View) > 64<<10 || json.Unmarshal(req.View, &viewFields) != nil || viewFields == nil) {
+		fail(w, 400, "Invalid Builder view state")
+		return
+	}
 	v := s.worldSession(w, r)
 	if v == nil {
 		return
 	}
 	defer v.mu.Unlock()
+	if req.Revision != nil && *req.Revision != v.authored().Header.Revision {
+		fail(w, 409, "World changed; refresh before saving.")
+		return
+	}
+	if len(req.View) > 0 {
+		// Commit the displayed camera and its persisted UI copy together. A
+		// delayed debounced view request cannot overwrite this newer Save.
+		if req.Client != "" && req.Client == v.viewClient && req.Sequence <= v.viewSequence {
+			fail(w, 409, "View changed; click Save again.")
+			return
+		}
+		ui := map[string]json.RawMessage{}
+		json.Unmarshal(v.projectUI, &ui)
+		if ui == nil {
+			ui = map[string]json.RawMessage{}
+		}
+		ui["continuousView"] = req.View
+		v.projectUI, _ = json.Marshal(ui)
+		v.authored().Header.View = req.View
+		v.viewClient, v.viewSequence = req.Client, req.Sequence
+		v.unsaved = true
+	}
 	if err := s.saveWorld(v, false); err != nil {
 		fail(w, 503, "Could not save world. Changes remain in this session; click Save to retry.")
 		return
 	}
-	respond(w, 200, map[string]any{"worldId": v.worldID, "unsaved": false, "saved": true})
+	respond(w, 200, map[string]any{"worldId": v.worldID, "unsaved": false, "saved": true, "project": v.authored().Header, "projectUI": json.RawMessage(v.projectUI)})
 }

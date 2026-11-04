@@ -1,5 +1,7 @@
 export default function NavigationIcon({ name }) {
   const paths = {
+    languages:
+      "M3 4h11M8 2v4M5 7c1 5 5 8 9 9M12 6c-1 5-5 9-10 11M13 23l5-13 5 13M15 19h6",
     biosphere:
       "M12 23V10M12 16C1 17 2 5 3 3c9 0 11 7 9 13M12 19C23 20 23 8 22 7c-6 0-9 5-10 12",
     magic: "M4 22L18 8M15 5l6 6M5 2v6M2 5h6M19 17v6M16 20h6",

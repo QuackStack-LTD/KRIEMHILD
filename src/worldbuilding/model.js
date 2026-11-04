@@ -3,13 +3,13 @@ export {registry};
 export const identity=e=>e.continuityId||e.id;
 export const activeEntities=(doc,age)=>doc.entities.filter(e=>e.ageId===age&&!e.deleted);
 export const entityIn=(doc,age,id)=>doc.entities.find(e=>e.ageId===age&&e.id===id);
-export const label=s=>(s||'').replaceAll('-',' ');
+export const label=s=>s==='entity'?'record':s==='entities'?'records':(s||'').replaceAll('-',' ');
 export const ageYears=(doc,age)=>(doc.years||[]).filter(y=>y.ageId===age).slice().sort((a,b)=>a.number-b.number);
 function canonical(v){if(Array.isArray(v))return v.map(canonical);if(v&&typeof v==='object')return Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])]));return v;}
 function signature(doc,e){
  const relations=doc.relations.filter(r=>r.ageId===e.ageId&&(r.source===e.id||r.destination===e.id)).map(({ageId,id,...r})=>r).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)));
  const shapes=doc.representations.filter(r=>r.ageId===e.ageId&&r.entityId===e.id).map(r=>({mapId:r.mapId,shape:r.shape})).sort((a,b)=>a.mapId.localeCompare(b.mapId));
- return JSON.stringify(canonical({name:e.name,kind:e.kind,names:e.names||[],properties:e.properties,relations,shapes}));
+ return JSON.stringify(canonical({name:e.name,kind:e.kind,names:e.names||[],properties:e.properties,language:e.language,script:e.script,relations,shapes}));
 }
 export function compareAge(doc,age){
  const source=doc.ages.find(a=>a.id===age)?.inheritedFrom,previous=new Map(activeEntities(doc,source).map(e=>[identity(e),e]));

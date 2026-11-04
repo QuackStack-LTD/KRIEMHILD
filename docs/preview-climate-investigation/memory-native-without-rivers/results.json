@@ -1,0 +1,224 @@
+[
+  {
+    "repeat": 0,
+    "dpr": 3,
+    "preset": "balanced",
+    "complete": true,
+    "frame": {
+      "time": 3367.2000000029802,
+      "event": "frame",
+      "generation": 2,
+      "phase": "final",
+      "revision": 0,
+      "bounds": {
+        "x": 1.29996,
+        "y": 0.21997454308093994,
+        "w": 0.00008,
+        "h": 0.00005091383812010444
+      },
+      "z": 16,
+      "pixels": {
+        "width": 1149,
+        "height": 731
+      },
+      "timings": {
+        "fetch": 1270.5,
+        "decode": 83.30000004172325,
+        "assemble": 10.499999985098839,
+        "resample": 9.700000002980232,
+        "encode": 21.399999991059303,
+        "publish": 17.100000008940697
+      },
+      "nodes": 24,
+      "duration": 1731.4000000059605,
+      "bytes": 38716,
+      "cacheBytes": 58916,
+      "workingCanvasBytes": 9651132,
+      "decodedFrameBytes": 6719352,
+      "hits": 26,
+      "misses": 52,
+      "evictions": 0
+    },
+    "samples": [
+      {
+        "time": 1792683401962,
+        "workingSet": 1238777856,
+        "privateBytes": 976486400,
+        "processes": [
+          {
+            "Id": 4936,
+            "WorkingSet64": 87949312,
+            "PrivateMemorySize64": 50814976
+          },
+          {
+            "Id": 7804,
+            "WorkingSet64": 34877440,
+            "PrivateMemorySize64": 22818816
+          },
+          {
+            "Id": 10708,
+            "WorkingSet64": 152965120,
+            "PrivateMemorySize64": 78184448
+          },
+          {
+            "Id": 12100,
+            "WorkingSet64": 38309888,
+            "PrivateMemorySize64": 16289792
+          },
+          {
+            "Id": 12436,
+            "WorkingSet64": 20062208,
+            "PrivateMemorySize64": 10149888
+          },
+          {
+            "Id": 15148,
+            "WorkingSet64": 20058112,
+            "PrivateMemorySize64": 10096640
+          },
+          {
+            "Id": 15592,
+            "WorkingSet64": 699568128,
+            "PrivateMemorySize64": 670232576
+          },
+          {
+            "Id": 16108,
+            "WorkingSet64": 184987648,
+            "PrivateMemorySize64": 117899264
+          }
+        ],
+        "processTypes": {
+          "4936": "renderer",
+          "7804": "renderer",
+          "10708": "browser",
+          "12100": "network.mojom.NetworkService",
+          "12436": "chrome.mojom.ProcessorMetrics",
+          "15148": "storage.mojom.StorageService",
+          "15592": "GPU",
+          "16108": "renderer"
+        }
+      }
+    ],
+    "afterGC": {
+      "time": 1792683403559,
+      "workingSet": 1182429184,
+      "privateBytes": 941875200,
+      "processes": [
+        {
+          "Id": 4936,
+          "WorkingSet64": 87957504,
+          "PrivateMemorySize64": 50814976
+        },
+        {
+          "Id": 7804,
+          "WorkingSet64": 34889728,
+          "PrivateMemorySize64": 22818816
+        },
+        {
+          "Id": 10708,
+          "WorkingSet64": 154456064,
+          "PrivateMemorySize64": 78614528
+        },
+        {
+          "Id": 12100,
+          "WorkingSet64": 38813696,
+          "PrivateMemorySize64": 16420864
+        },
+        {
+          "Id": 15148,
+          "WorkingSet64": 20205568,
+          "PrivateMemorySize64": 10113024
+        },
+        {
+          "Id": 15592,
+          "WorkingSet64": 691449856,
+          "PrivateMemorySize64": 669118464
+        },
+        {
+          "Id": 16108,
+          "WorkingSet64": 154656768,
+          "PrivateMemorySize64": 93974528
+        }
+      ],
+      "processTypes": {
+        "4936": "renderer",
+        "7804": "renderer",
+        "10708": "browser",
+        "12100": "network.mojom.NetworkService",
+        "15148": "storage.mojom.StorageService",
+        "15592": "GPU",
+        "16108": "renderer"
+      }
+    },
+    "heap": {
+      "usedSize": 27486216,
+      "totalSize": 28053504,
+      "embedderHeapUsedSize": 1071776,
+      "backingStorageSize": 462103
+    },
+    "dom": {
+      "documents": 1,
+      "nodes": 504,
+      "jsEventListeners": 238
+    },
+    "resources": [
+      {
+        "url": "http://127.0.0.1:8127/assets/index-ByM0BpsJ.js",
+        "bytes": 188427
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/vendor-runtime-CqkleIqs.js",
+        "bytes": 116
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/vendor-react-F7BGGuOQ.js",
+        "bytes": 194375
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/index-C3nbivlp.css",
+        "bytes": 44957
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/me",
+        "bytes": 315
+      },
+      {
+        "url": "http://127.0.0.1:8127/favicon.ico",
+        "bytes": 0
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/TerrainRouter-xg4uyXBY.js",
+        "bytes": 2762
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/projects/977d134ee5aadc480e1410ade3c84587/open",
+        "bytes": 6812237
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/Studio-DcE7KUqS.js",
+        "bytes": 72126
+      },
+      {
+        "url": "http://127.0.0.1:8127/assets/Studio-BIDfP7A-.css",
+        "bytes": 5760
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/sessions/32669b252d9f3a592abef39ae865a3ac/world/entities?detail=8&all=1",
+        "bytes": 47
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/sessions/32669b252d9f3a592abef39ae865a3ac/terrain/features",
+        "bytes": 14893634
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/sessions/32669b252d9f3a592abef39ae865a3ac/view",
+        "bytes": 62
+      },
+      {
+        "url": "http://127.0.0.1:8127/api/sessions/32669b252d9f3a592abef39ae865a3ac/view",
+        "bytes": 62
+      }
+    ],
+    "sampledPeakWorkingSet": 1238777856,
+    "note": "New browser per case; real DPR; 1920x1080 window; same camera/styles; periodic simultaneous OS working-set samples, not an exact instantaneous peak. Timings from this instrumented run are not used for latency comparisons."
+  }
+]

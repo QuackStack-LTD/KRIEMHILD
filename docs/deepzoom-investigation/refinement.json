@@ -1,0 +1,21 @@
+{
+  "boundsRadians": [
+    0.942377796076938,
+    0.8795459430051421,
+    0.0002,
+    0.0002
+  ],
+  "cachedBytes": 133128,
+  "cachedIntermediateMaxErrorMetres": 0.00972841609901609,
+  "cachedRepeatMS": 0.3333333333333333,
+  "checksum": 129792.82214354532,
+  "continuousBuildMS": 386.633,
+  "decision": "retain as isolated experiment; bounded roughness is not validated geomorphology, ecology or authored refinement",
+  "direct1024TwiceMS": 41.087,
+  "experimentalOnly": true,
+  "maxResidualMetres": 4.0244551307779854,
+  "points": 16641,
+  "repeatedAbsoluteSampleError": 0,
+  "residualRMSMetres": 2.7521094555804626,
+  "seed": "d1feae98-6510-4a72-951b-44e93a01ae86"
+}

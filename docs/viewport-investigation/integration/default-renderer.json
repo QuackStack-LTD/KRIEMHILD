@@ -1,0 +1,48 @@
+{
+  "url": "http://127.0.0.1:8125/world/2b6feef15ffd2c2ef34efad964022a4a/build",
+  "images": 2,
+  "frame": {
+    "time": 1502.9000000059605,
+    "event": "frame",
+    "generation": 2,
+    "phase": "final",
+    "revision": 11,
+    "bounds": {
+      "x": 0,
+      "y": -0.27914798206278024,
+      "w": 2,
+      "h": 1.5582959641255605
+    },
+    "z": 1,
+    "pixels": {
+      "width": 892,
+      "height": 695
+    },
+    "duration": 287.90000000596046,
+    "bytes": 400308,
+    "cacheBytes": 275871,
+    "workingCanvasBytes": 4576912,
+    "decodedFrameBytes": 4959520,
+    "hits": 0,
+    "misses": 19,
+    "evictions": 0
+  },
+  "session": "57b2ec69e9c40cf04d46c1f925f1165e",
+  "spec": {
+    "climateVersion": 1,
+    "version": "continuous-3",
+    "seed": "Kriemhild",
+    "preset": "earthlike",
+    "radiusKm": 6371,
+    "landCoverage": 0.32,
+    "continents": 5,
+    "complexity": 1,
+    "islands": 1,
+    "relief": 0.8,
+    "rainfall": 1.65,
+    "tilt": 23.4,
+    "layoutVariant": 0,
+    "tileSize": 256,
+    "surfaceWidth": 4096
+  }
+}

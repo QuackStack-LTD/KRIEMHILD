@@ -1,0 +1,16 @@
+{
+  "revision": "57d62c51f97c83715b0fbf4b147a910b5d66fd8700191523f7a14459cd782cd5",
+  "engine": "languages/4",
+  "adapter": "sequence-compose/1",
+  "compiler": "languages-compiler/4",
+  "operation": "graphemes",
+  "policy": "all",
+  "limit": 128,
+  "text": "A👩‍💻é🇺🇦👍🏽😀éẹ́",
+  "spelling": {
+    "selection": {
+      "start": 1,
+      "end": 2
+    }
+  }
+}

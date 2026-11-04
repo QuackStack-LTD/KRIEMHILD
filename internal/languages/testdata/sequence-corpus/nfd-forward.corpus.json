@@ -1,0 +1,220 @@
+{
+  "version": "sequence-corpus/1",
+  "id": "brief6-nfd-forward",
+  "bounds": {
+    "calls": 1,
+    "work": 13000000,
+    "reportBytes": 262144
+  },
+  "cases": [
+    {
+      "id": "nfd-forward",
+      "description": "Explicit NFD retains exact original and decomposed output",
+      "tags": ["brief6", "nfd-forward"],
+      "review": {
+        "status": "reviewed",
+        "reviewer": "Codex (independent derivation; not human approval)",
+        "provenance": "SEQUENCE_ORTHOGRAPHY.md explicit normalization semantics and TestSequenceBoundariesNormalizationAndSnapshotOrder (NFC analogue). Authored U+00E9 is 2 UTF-8 bytes/1 UTF-16 unit; NFD U+0065 U+0301 is 3 bytes/2 units/1 cluster. Exact comparison includes original/normalized text and normalization provenance; no canonical-equivalence comparison. Work 9 = initial 1 + rewrite 5 + normalize 2 + run 1."
+      },
+      "pin": {
+        "languageId": "88888888888888888888888888888888",
+        "revision": "99b3f259e0260d9d50c7b3bd4767f41c1216f3f120cdeb8a52d3eba98b62742c",
+        "schema": 4,
+        "canonicalizer": "kriemhild-typed-json/1",
+        "engine": "languages/4",
+        "adapter": "sequence-compose/1",
+        "compiler": "languages-compiler/4",
+        "segmentation": "uniseg/0.4.7-unicode/15.0.0",
+        "normalizer": "x-text/0.29.0-unicode/15.0.0",
+        "script": {
+          "id": "77777777777777777777777777777777",
+          "revision": "e50260f7197fd260b418f4578be091b415927c863a70a7ed057dbb198cc5a849"
+        },
+        "renderer": "vector-script/1",
+        "rendererAdapter": "sign-layout/1",
+        "rendererCompiler": "vector-script-compiler/1"
+      },
+      "inputLayer": "surface",
+      "request": {
+        "revision": "99b3f259e0260d9d50c7b3bd4767f41c1216f3f120cdeb8a52d3eba98b62742c",
+        "engine": "languages/4",
+        "operation": "spell",
+        "segments": ["a"],
+        "policy": "all",
+        "limit": 128,
+        "compiler": "languages-compiler/4",
+        "adapter": "sequence-compose/1"
+      },
+      "outcome": "success",
+      "comparison": "exact",
+      "expected": {
+        "spelling": {
+          "version": "sequence-orthography/1",
+          "segmentation": "uniseg/0.4.7-unicode/15.0.0",
+          "normalizer": "x-text/0.29.0-unicode/15.0.0",
+          "inputLayer": "surface",
+          "outputLayer": "grapheme",
+          "script": {
+            "id": "77777777777777777777777777777777",
+            "revision": "e50260f7197fd260b418f4578be091b415927c863a70a7ed057dbb198cc5a849"
+          },
+          "renderer": "vector-script/1",
+          "rendererAdapter": "sign-layout/1",
+          "rendererCompiler": "vector-script-compiler/1",
+          "steps": 9,
+          "clusters": [],
+          "spellings": [
+            {
+              "id": "bdcb1af6b3546c30eec0b914476cc2274084db8f5b8a2fd3a08d056e1ec44f3a",
+              "input": [
+                {
+                  "kind": "segment",
+                  "value": "a"
+                }
+              ],
+              "output": [
+                {
+                  "unit": {
+                    "kind": "grapheme",
+                    "value": "é"
+                  },
+                  "sources": [0],
+                  "rules": ["map-precomposed", "explicit-nfd"]
+                }
+              ],
+              "stages": [
+                {
+                  "stage": "precomposed",
+                  "kind": "rewrite",
+                  "inputLayer": "surface",
+                  "outputLayer": "grapheme",
+                  "offsetUnit": "source-token",
+                  "before": [
+                    {
+                      "unit": {
+                        "kind": "segment",
+                        "value": "a"
+                      },
+                      "sources": [0],
+                      "rules": []
+                    }
+                  ],
+                  "after": [
+                    {
+                      "unit": {
+                        "kind": "grapheme",
+                        "value": "é"
+                      },
+                      "sources": [0],
+                      "rules": ["map-precomposed"]
+                    }
+                  ],
+                  "matches": [
+                    {
+                      "rule": "map-precomposed",
+                      "start": 0,
+                      "end": 1,
+                      "action": "replaced"
+                    }
+                  ]
+                },
+                {
+                  "normalization": "NFD",
+                  "stage": "explicit-nfd",
+                  "kind": "normalize",
+                  "inputLayer": "grapheme",
+                  "outputLayer": "grapheme",
+                  "offsetUnit": "grapheme-cluster",
+                  "before": [
+                    {
+                      "unit": {
+                        "kind": "grapheme",
+                        "value": "é"
+                      },
+                      "sources": [0],
+                      "rules": ["map-precomposed"]
+                    }
+                  ],
+                  "after": [
+                    {
+                      "unit": {
+                        "kind": "grapheme",
+                        "value": "é"
+                      },
+                      "sources": [0],
+                      "rules": ["map-precomposed", "explicit-nfd"]
+                    }
+                  ],
+                  "matches": [
+                    {
+                      "rule": "explicit-nfd",
+                      "start": 0,
+                      "end": 1,
+                      "action": "replaced"
+                    }
+                  ],
+                  "original": "é",
+                  "normalized": "é"
+                }
+              ],
+              "text": "é",
+              "clusters": [
+                {
+                  "index": 0,
+                  "text": "é",
+                  "byteStart": 0,
+                  "byteEnd": 3,
+                  "utf16Start": 0,
+                  "utf16End": 2,
+                  "codePoints": ["U+0065", "U+0301"]
+                }
+              ]
+            }
+          ],
+          "preimages": []
+        },
+        "schema": 4,
+        "compiler": "languages-compiler/4",
+        "status": "success",
+        "languageId": "88888888888888888888888888888888",
+        "revision": "99b3f259e0260d9d50c7b3bd4767f41c1216f3f120cdeb8a52d3eba98b62742c",
+        "engine": "languages/4",
+        "canonicalizer": "kriemhild-typed-json/1",
+        "selection": "sha256-canonical-candidates/1",
+        "request": {
+          "revision": "99b3f259e0260d9d50c7b3bd4767f41c1216f3f120cdeb8a52d3eba98b62742c",
+          "engine": "languages/4",
+          "operation": "spell",
+          "segments": ["a"],
+          "policy": "all",
+          "limit": 128
+        },
+        "candidates": [],
+        "diagnostics": [],
+        "truncated": false,
+        "examined": 0,
+        "knownValid": 1,
+        "rejected": 0,
+        "diagnosticsOmitted": 0,
+        "adapter": "sequence-compose/1",
+        "kernel": "languages-spike/1",
+        "input": {
+          "revision": "99b3f259e0260d9d50c7b3bd4767f41c1216f3f120cdeb8a52d3eba98b62742c",
+          "engine": "languages/4",
+          "operation": "spell",
+          "segments": ["a"],
+          "policy": "all",
+          "limit": 128,
+          "compiler": "languages-compiler/4",
+          "adapter": "sequence-compose/1"
+        },
+        "dependencies": [
+          {
+            "id": "77777777777777777777777777777777",
+            "revision": "e50260f7197fd260b418f4578be091b415927c863a70a7ed057dbb198cc5a849"
+          }
+        ]
+      }
+    }
+  ]
+}

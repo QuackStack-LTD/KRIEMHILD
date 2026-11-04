@@ -9,6 +9,8 @@ import { useAuth } from "./auth/AuthProvider.jsx";
 import { accountRequest } from "./auth/api.js";
 import { lazy, Suspense } from "react";
 const LibraryPage = lazy(() => import("./worldbuilding/Library.jsx"));
+const LanguagesPage = lazy(() => import("./worldbuilding/Languages.jsx"));
+import { retainLanguageAge } from "./worldbuilding/languages.js";
 function Library(props) {
   return (
     <Suspense fallback={<main className="world-page">Loading Library...</main>}>
@@ -238,8 +240,7 @@ function AgeDialog({ doc, sourceAge, sourceYear, onClose, onSubmit, busy }) {
       {sourceYear && (
         <p>
           The new Age records this year as its origin and inherits the current
-          saved state. Earlier events are not used to rewind terrain or
-          entities.
+          saved state. Earlier events are not used to rewind terrain or records.
         </p>
       )}
       <label>
@@ -295,7 +296,7 @@ function AgeDialog({ doc, sourceAge, sourceYear, onClose, onSubmit, busy }) {
       )}
       {mode === "merge" && (
         <details>
-          <summary>{conflicts.length} conflicting map or entity states</summary>
+          <summary>{conflicts.length} conflicting map or record states</summary>
           <ul>
             {conflicts.map((c) => (
               <li key={c.kind + c.id}>
@@ -315,10 +316,10 @@ function AgeDialog({ doc, sourceAge, sourceYear, onClose, onSubmit, busy }) {
           >
             <option value="">Choose how to resolve conflicts</option>
             <option value="primary">
-              Keep current Age's conflicting maps and entities
+              Keep current Age's conflicting maps and records
             </option>
             <option value="secondary">
-              Keep the other Age's conflicting maps and entities
+              Keep the other Age's conflicting maps and records
             </option>
           </select>
           <small>
@@ -333,17 +334,17 @@ function AgeDialog({ doc, sourceAge, sourceYear, onClose, onSubmit, busy }) {
           ? "Copies the current Age into an independent timeline without a chronological connection."
           : mode === "connect"
             ? "Adds a chronological merge link without changing either Age’s saved content. Histories may loop back to earlier Ages."
-            : "New Ages inherit the saved terrains, maps and entities of their source Age."}
+            : "New Ages inherit the saved terrains, maps and records of their source Age."}
       </p>
       {mode !== "connect" && (
         <details>
           <summary>
-            Review inherited entities (
+            Review inherited records (
             {inherited.filter((e) => !excluded.includes(e.id)).length} of{" "}
             {inherited.length} included)
           </summary>
           <p>
-            Maps and terrain are inherited. Uncheck entities to remove them from
+            Maps and terrain are inherited. Uncheck records to remove them from
             the new Age; the source is preserved. Open their new profiles after
             creation to make changes.
           </p>
@@ -425,7 +426,7 @@ export default function App() {
   const route = path
       .split("?")[0]
       .match(
-        /^\/worlds\/([a-f0-9]{32})(?:\/(graph|terrains|atlas|characters|profile|networks|years|organizations|culture|flora|biosphere|magic|library|writing))?\/?$/,
+        /^\/worlds\/([a-f0-9]{32})(?:\/(graph|terrains|atlas|characters|profile|networks|years|organizations|culture|flora|biosphere|magic|library|writing|languages))?\/?$/,
       ),
     id = route?.[1],
     page = route?.[2] || "world",
@@ -551,12 +552,15 @@ export default function App() {
   }
   const editorURL = (project, age, view = "build") =>
     `/world/${project}/${view}?world=${id}&age=${age}`;
-  const openMap = async (m) => {
+  const openMap = async (m, workspace) => {
     if (m.ageId !== doc.world.currentAge) {
       const d = await command({ kind: "select", ageId: m.ageId });
       if (!d) return;
     }
-    navigate(editorURL(m.projectId, m.ageId));
+    navigate(
+      editorURL(m.projectId, m.ageId) +
+        (workspace === "atlas" ? "&workspace=atlas" : ""),
+    );
   };
   const openSettlement = (entity) =>
     run(async () => {
@@ -601,6 +605,15 @@ export default function App() {
   };
   const openProfile = async (e) => {
     if (!e) return;
+    if (["language", "script"].includes(e.kind)) {
+      if (
+        e.ageId !== current.id &&
+        !(await command({ kind: "select", ageId: e.ageId }))
+      )
+        return;
+      navigate(`/worlds/${id}/languages?language=${e.id}`);
+      return;
+    }
     if (
       e.kind === "archive" ||
       doc.libraryFiles?.some((f) => f.id === e.id && f.ageId === e.ageId)
@@ -730,6 +743,7 @@ export default function App() {
             ["biosphere", "Biosphere"],
             ["magic", "Magic & Technology"],
             ["culture", "Culture & Religion"],
+            ["languages", "Languages"],
             ["characters", "Characters"],
             ["organizations", "Organizations"],
             ["library", "Library"],
@@ -1249,7 +1263,7 @@ export default function App() {
                   )
                 ) : (
                   <main className="world-page">
-                    <h1>Entity not found in this Age</h1>
+                    <h1>Record not found in this Age</h1>
                   </main>
                 );
               })()
@@ -1344,6 +1358,34 @@ export default function App() {
                 }
                 query={query}
               />
+            ) : page === "languages" ? (
+              <Suspense
+                fallback={
+                  <main className="world-page">Loading Languages…</main>
+                }
+              >
+                <LanguagesPage
+                  key={current.id}
+                  doc={doc}
+                  age={current}
+                  onDocument={(next) =>
+                    setDoc((previous) =>
+                      retainLanguageAge(
+                        next,
+                        previous?.world.id === next.world.id
+                          ? previous.world.currentAge
+                          : next.world.currentAge,
+                      ),
+                    )
+                  }
+                  query={query}
+                  onNavigate={(language) =>
+                    navigate(
+                      `/worlds/${id}/languages${language ? `?language=${language}` : ""}`,
+                    )
+                  }
+                />
+              </Suspense>
             ) : page === "library" ? (
               <Library
                 key={current.id + query.get("record")}

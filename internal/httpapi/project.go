@@ -12,6 +12,7 @@ import (
 	"kriemhild/internal/legacyterrain"
 	"kriemhild/internal/storage"
 	terrainmodel "kriemhild/internal/terrain/model"
+	"kriemhild/internal/terrain/resources"
 	"kriemhild/internal/world"
 	"math"
 	"net/http"
@@ -25,6 +26,7 @@ import (
 
 const projectSchema = 4
 const continuousProjectSchema = 6
+const resourceProjectSchema = 7
 const projectFieldEncoding = "float64 little-endian, field-major then row-major; edge chunks clipped to dimensions"
 const maxProjectBytes = 256 << 20
 const maxExpandedBytes = 1 << 30
@@ -44,6 +46,7 @@ type projectRegion struct {
 	File   string `json:"file"`
 }
 type projectManifest struct {
+	ResourceParts   []string        `json:"resourceParts,omitempty"`
 	ContinuousParts []string        `json:"continuousParts,omitempty"`
 	Continuous      string          `json:"continuousTerrain,omitempty"`
 	Climate         *climateArchive `json:"climate,omitempty"`
@@ -219,7 +222,7 @@ func encodeProject(v *session) ([]byte, error) {
 	add := func(name string, data []byte) error {
 		expanded += len(data)
 		if len(data) > 16<<20 || expanded > maxExpandedBytes || len(m.Files) >= 65535 {
-			return fmt.Errorf("world project exceeds the supported archive size; no incomplete project was saved")
+			return fmt.Errorf("world project file %s exceeds the supported archive size; no incomplete project was saved", name)
 		}
 		sum := sha256.Sum256(data)
 		m.Files = append(m.Files, projectFile{name, hex.EncodeToString(sum[:]), len(data)})
@@ -307,7 +310,21 @@ func encodeProject(v *session) ([]byte, error) {
 			if err := addJSON(m.GeologyFile, e.Geology); err != nil {
 				return nil, err
 			}
-			if err := addJSON(m.ResourcesFile, e.Resources); err != nil {
+			resourceJSON, err := json.Marshal(e.Resources)
+			if err != nil {
+				return nil, err
+			}
+			if len(resourceJSON) > 16<<20 {
+				m.Schema = resourceProjectSchema
+				m.ResourcesFile = ""
+				for offset := 0; offset < len(resourceJSON); offset += 8 << 20 {
+					name := fmt.Sprintf("natural/resources-%04d.jsonpart", len(m.ResourceParts))
+					m.ResourceParts = append(m.ResourceParts, name)
+					if err := add(name, resourceJSON[offset:min(offset+(8<<20), len(resourceJSON))]); err != nil {
+						return nil, err
+					}
+				}
+			} else if err := add(m.ResourcesFile, resourceJSON); err != nil {
 				return nil, err
 			}
 			e.Geology, e.Resources = nil, nil
@@ -483,7 +500,7 @@ func decodeProject(files map[string][]byte, cacheRoot ...string) (*session, erro
 	if err := json.Unmarshal(files[manifest], &m); err != nil {
 		return nil, err
 	}
-	if m.Format != "KRIEMHILD World Project" || (m.Schema < 1 || m.Schema > continuousProjectSchema) || m.Engine != terrain.DetailEngineVersion || m.ChunkSize != 32 || m.FieldEncoding != projectFieldEncoding || m.ID == "" {
+	if m.Format != "KRIEMHILD World Project" || (m.Schema < 1 || m.Schema > resourceProjectSchema) || m.Engine != terrain.DetailEngineVersion || m.ChunkSize != 32 || m.FieldEncoding != projectFieldEncoding || m.ID == "" {
 		return nil, fmt.Errorf("unsupported project schema or detail engine version")
 	}
 	prefix := strings.TrimSuffix(manifest, "manifest.json")
@@ -504,6 +521,18 @@ func decodeProject(files map[string][]byte, cacheRoot ...string) (*session, erro
 	}
 	if len(files) != len(m.Files)+1 {
 		return nil, fmt.Errorf("unreferenced files in project")
+	}
+	resourceParts := map[string]bool{}
+	for _, name := range m.ResourceParts {
+		resourceParts[name] = true
+	}
+	for name := range data {
+		if strings.HasPrefix(name, "natural/resources-") && !resourceParts[name] {
+			return nil, fmt.Errorf("unreferenced resource archive chunk")
+		}
+	}
+	if len(m.ResourceParts) > 0 && data["natural/resources.json"] != nil {
+		return nil, fmt.Errorf("duplicate resource archive representations")
 	}
 	decode := func(name string, v any) error {
 		b, ok := data[name]
@@ -532,7 +561,7 @@ func decodeProject(files map[string][]byte, cacheRoot ...string) (*session, erro
 	}
 	base := solver.Snapshot()
 	var env *terrain.Environment
-	if data["base/environment.json"] == nil && (m.GeologyFile != "" || m.ResourcesFile != "" || data["natural/geology.json"] != nil || data["natural/resources.json"] != nil) {
+	if data["base/environment.json"] == nil && (m.GeologyFile != "" || m.ResourcesFile != "" || len(m.ResourceParts) > 0 || data["natural/geology.json"] != nil || data["natural/resources.json"] != nil) {
 		return nil, fmt.Errorf("natural layers have no base terrain")
 	}
 	if data["base/environment.json"] != nil {
@@ -543,8 +572,9 @@ func decodeProject(files map[string][]byte, cacheRoot ...string) (*session, erro
 		if env.Climate != nil {
 			return nil, fmt.Errorf("climate must use manifest-referenced chunks")
 		}
-		if m.GeologyFile != "" || m.ResourcesFile != "" {
-			if m.Schema < 3 || m.GeologyFile != "natural/geology.json" || m.ResourcesFile != "natural/resources.json" || env.Geology != nil || env.Resources != nil {
+		if m.GeologyFile != "" || m.ResourcesFile != "" || len(m.ResourceParts) > 0 {
+			chunked := len(m.ResourceParts) > 0
+			if m.Schema < 3 || m.GeologyFile != "natural/geology.json" || (!chunked && m.ResourcesFile != "natural/resources.json") || (chunked && (m.Schema != resourceProjectSchema || m.ResourcesFile != "" || len(m.ResourceParts) > 128)) || env.Geology != nil || env.Resources != nil {
 				return nil, fmt.Errorf("invalid natural layer manifest references")
 			}
 			env.Geology = &terrain.GeologicalState{}
@@ -552,7 +582,18 @@ func decodeProject(files map[string][]byte, cacheRoot ...string) (*session, erro
 			if err := decode(m.GeologyFile, env.Geology); err != nil {
 				return nil, err
 			}
-			if err := decode(m.ResourcesFile, env.Resources); err != nil {
+			if chunked {
+				var raw []byte
+				for i, name := range m.ResourceParts {
+					if name != fmt.Sprintf("natural/resources-%04d.jsonpart", i) || len(data[name]) == 0 || len(data[name]) > 8<<20 {
+						return nil, fmt.Errorf("invalid resource archive chunk")
+					}
+					raw = append(raw, data[name]...)
+				}
+				if err := json.Unmarshal(raw, env.Resources); err != nil {
+					return nil, err
+				}
+			} else if err := decode(m.ResourcesFile, env.Resources); err != nil {
 				return nil, err
 			}
 		} else if data["natural/geology.json"] != nil || data["natural/resources.json"] != nil {
@@ -627,6 +668,9 @@ func decodeProject(files map[string][]byte, cacheRoot ...string) (*session, erro
 		}
 	} else if data["terrain/continuous.json"] != nil || data["terrain/fields.bin"] != nil {
 		return nil, fmt.Errorf("unreferenced continuous terrain data")
+	}
+	if env != nil && env.NaturalSource != "" && (v.planet == nil || env.NaturalSource != resources.Source(v.planet)) {
+		return nil, fmt.Errorf("resource source does not match continuous terrain")
 	}
 	if b := data["world/project.json"]; b != nil {
 		v.world = &world.State{}

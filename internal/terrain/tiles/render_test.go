@@ -3,6 +3,7 @@ package tiles_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"image/png"
 	"kriemhild/internal/terrain/detail"
 	"kriemhild/internal/terrain/generate"
@@ -86,6 +87,46 @@ func TestTilesOrderHalosAndParentCoordinates(t *testing.T) {
 				t.Fatalf("edited shoreline disagrees with water boundary at %d,%d", x, y)
 			}
 		}
+	}
+	// Water coverage and visible terrain share the exact sampler and authored
+	// transformations. Channels remain visible; ocean and lake reaches do not.
+	mask, err := tiles.Render(context.Background(), p, 0, 0, 0, 256, "river-mask", func(s model.Sample, lon, lat float64) model.Sample {
+		s.Water = "dry"
+		if lon < -math.Pi/2 {
+			s.Water = "lake"
+		} else if lat < 0 {
+			s.Water = "channel"
+		}
+		return s
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	coverage, err := png.Decode(bytes.NewReader(mask))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for y := 1; y < 255; y++ {
+		for x := 1; x < 255; x++ {
+			_, _, _, alpha := coverage.At(x, y).RGBA()
+			if (alpha == 0) != (x < 128) {
+				t.Fatalf("river mask disagrees with authored lake at %d,%d", x, y)
+			}
+		}
+	}
+	mesh, err := tiles.SampleMesh(context.Background(), p, [4]float64{-math.Pi, -math.Pi / 2, 0, math.Pi / 2}, 8, 8, func(s model.Sample, lon, lat float64) model.Sample { s.Water = "lake"; return s })
+	if err != nil {
+		t.Fatal(err)
+	}
+	encoded, err := json.Marshal(mesh)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var decoded struct {
+		WaterKinds []int `json:"waterKinds"`
+	}
+	if err = json.Unmarshal(encoded, &decoded); err != nil || len(decoded.WaterKinds) != 64 || decoded.WaterKinds[0] != 2 {
+		t.Fatal("mesh water classifications are not a numeric array", err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()

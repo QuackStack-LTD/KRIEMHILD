@@ -38,7 +38,7 @@ export default function YearTimeline({
           </span>
           <h1>Year Timeline</h1>
           <p>
-            Events recorded within this Age, drawn from entity start and end
+            Events recorded within this Age, drawn from record start and end
             years.
           </p>
         </div>
@@ -48,7 +48,7 @@ export default function YearTimeline({
         <section className="workspace-empty">
           <h2>This Age has no recorded years yet</h2>
           <p>
-            Enter a start or end year on an entity profile and save it. Events
+            Enter a start or end year on a record profile and save it. Events
             with the same year will appear together here.
           </p>
         </section>

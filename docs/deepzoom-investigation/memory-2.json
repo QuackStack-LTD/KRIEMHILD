@@ -1,0 +1,152 @@
+[
+  {
+    "renderer": "viewport",
+    "dpr": 3,
+    "complete": true,
+    "process": [
+      {
+        "Id": 1564,
+        "ProcessName": "chrome",
+        "WorkingSet64": 20725760,
+        "PeakWorkingSet64": 20729856,
+        "PrivateMemorySize64": 10551296
+      },
+      {
+        "Id": 2208,
+        "ProcessName": "chrome",
+        "WorkingSet64": 1036677120,
+        "PeakWorkingSet64": 1040961536,
+        "PrivateMemorySize64": 888225792
+      },
+      {
+        "Id": 3184,
+        "ProcessName": "chrome",
+        "WorkingSet64": 34779136,
+        "PeakWorkingSet64": 34783232,
+        "PrivateMemorySize64": 22839296
+      },
+      {
+        "Id": 5964,
+        "ProcessName": "chrome",
+        "WorkingSet64": 39624704,
+        "PeakWorkingSet64": 41369600,
+        "PrivateMemorySize64": 17457152
+      },
+      {
+        "Id": 7732,
+        "ProcessName": "chrome",
+        "WorkingSet64": 456781824,
+        "PeakWorkingSet64": 458022912,
+        "PrivateMemorySize64": 156950528
+      },
+      {
+        "Id": 13540,
+        "ProcessName": "chrome",
+        "WorkingSet64": 112369664,
+        "PeakWorkingSet64": 112865280,
+        "PrivateMemorySize64": 41299968
+      },
+      {
+        "Id": 14888,
+        "ProcessName": "chrome",
+        "WorkingSet64": 88489984,
+        "PeakWorkingSet64": 88494080,
+        "PrivateMemorySize64": 51232768
+      }
+    ],
+    "processAfterGC": [
+      {
+        "Id": 1564,
+        "ProcessName": "chrome",
+        "WorkingSet64": 20807680,
+        "PeakWorkingSet64": 20811776,
+        "PrivateMemorySize64": 10555392
+      },
+      {
+        "Id": 2208,
+        "ProcessName": "chrome",
+        "WorkingSet64": 925487104,
+        "PeakWorkingSet64": 1119256576,
+        "PrivateMemorySize64": 910352384
+      },
+      {
+        "Id": 3184,
+        "ProcessName": "chrome",
+        "WorkingSet64": 34906112,
+        "PeakWorkingSet64": 34910208,
+        "PrivateMemorySize64": 22839296
+      },
+      {
+        "Id": 5964,
+        "ProcessName": "chrome",
+        "WorkingSet64": 39788544,
+        "PeakWorkingSet64": 41369600,
+        "PrivateMemorySize64": 17469440
+      },
+      {
+        "Id": 7732,
+        "ProcessName": "chrome",
+        "WorkingSet64": 292265984,
+        "PeakWorkingSet64": 458022912,
+        "PrivateMemorySize64": 122716160
+      },
+      {
+        "Id": 13540,
+        "ProcessName": "chrome",
+        "WorkingSet64": 125919232,
+        "PeakWorkingSet64": 125923328,
+        "PrivateMemorySize64": 49786880
+      },
+      {
+        "Id": 14888,
+        "ProcessName": "chrome",
+        "WorkingSet64": 88543232,
+        "PeakWorkingSet64": 88547328,
+        "PrivateMemorySize64": 51232768
+      }
+    ],
+    "software": true,
+    "memory": {
+      "jsHeap": 45352684,
+      "frame": {
+        "time": 3143.6000000089407,
+        "event": "frame",
+        "generation": 2,
+        "phase": "final",
+        "revision": 0,
+        "bounds": {
+          "x": 1.2999476365618068,
+          "y": 0.21998534154011865,
+          "w": 0.00008,
+          "h": 0.00005091383812010444
+        },
+        "z": 17,
+        "pixels": {
+          "width": 4596,
+          "height": 2925
+        },
+        "timings": {
+          "fetch": 1529.4000001102686,
+          "decode": 880.9999998807907,
+          "assemble": 192.1000000089407,
+          "resample": 98.59999999403954,
+          "encode": 251.1000000089407,
+          "publish": 198.70000000298023
+        },
+        "nodes": 96,
+        "duration": 1938.5,
+        "bytes": 528690,
+        "cacheBytes": 986472,
+        "workingCanvasBytes": 154436496,
+        "decodedFrameBytes": 107546400,
+        "hits": 108,
+        "misses": 216,
+        "evictions": 0
+      },
+      "images": 2,
+      "status": "Equirectangular · 6371 km radius\nMove over the map\n25000.0× zoom\nBase relief fully resolved\n0.3 km ━━━━━\nReady",
+      "failures": []
+    },
+    "note": "Working set after completion; per-process lifetime peaks are upper bounds, not simultaneous aggregate peaks. Warm server caches."
+  }
+]

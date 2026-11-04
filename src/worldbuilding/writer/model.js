@@ -115,7 +115,7 @@ export function continuity(node, doc, worldId) {
     let reason = "";
     if (ref.worldId !== worldId)
       reason = "Reference belongs to a different world.";
-    else if (!e) reason = "Entity is missing from this scene’s story Age.";
+    else if (!e) reason = "Record is missing from this scene’s story Age.";
     else if (
       e.kind === "character" &&
       ["dead", "deceased"].includes(

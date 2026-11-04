@@ -1,0 +1,54 @@
+{
+  "world": "b8b2cfdc048623ddc28247b1ec4afb4c",
+  "spec": {
+    "climateVersion": 3,
+    "version": "continuous-3",
+    "seed": "d1feae98-6510-4a72-951b-44e93a01ae86",
+    "preset": "earthlike",
+    "radiusKm": 6371,
+    "landCoverage": 0.32,
+    "continents": 5,
+    "complexity": 1,
+    "islands": 1,
+    "relief": 0.8,
+    "rainfall": 1.65,
+    "tilt": 23.4,
+    "layoutVariant": 0,
+    "tileSize": 256,
+    "surfaceWidth": 4096
+  },
+  "jobs": 0,
+  "sample": {
+    "bed": 1094.3610009765612,
+    "waterSurface": 0,
+    "waterDepth": 0,
+    "water": "dry",
+    "coastDistanceKm": 313.9890362548826,
+    "temperature": -1.335410611603201,
+    "precipitation": 177.43129043671104,
+    "pet": 516.7645741440589,
+    "moisture": 0.20601020191517427,
+    "roughness": 0.2193419197201716,
+    "biome": "steppe",
+    "landmass": {
+      "center": [
+        0.7595033584534487,
+        0.954654980278463
+      ],
+      "extent": 0.8687811432437578,
+      "family": "broad-shield",
+      "id": "continent-0"
+    },
+    "climate": {
+      "aridity": 0.3437736792595534,
+      "dryMonths": 11,
+      "exposure": 0.03463688217371276,
+      "rainShadow": 0.03445002547562706,
+      "seasonality": 1.0121500451371046,
+      "slope": 0.0005226430688315676,
+      "soil": 52.55486039433614,
+      "windX": 0.9544255390525938,
+      "windY": -0.18384943931215464
+    }
+  }
+}

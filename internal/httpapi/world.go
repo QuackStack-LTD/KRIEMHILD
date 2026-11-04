@@ -7,9 +7,11 @@ import (
 	"kriemhild/internal/history"
 	"kriemhild/internal/legacyterrain"
 	"kriemhild/internal/storage"
+	"kriemhild/internal/terrain/detail"
 	"kriemhild/internal/world"
 	"math"
 	"net/http"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -64,6 +66,9 @@ func sessionState(v *session) map[string]any {
 	out["historyWorldId"] = v.historyWorld
 	out["unsaved"] = v.unsaved
 	out["project"] = v.authored().Header
+	if count := v.authored().RecoveredParts(); count > 0 {
+		out["recoveredEntityParts"] = count
+	}
 	return out
 }
 func (s *Server) worldSession(w http.ResponseWriter, r *http.Request) *session {
@@ -132,6 +137,7 @@ func (s *Server) worldEntities(w http.ResponseWriter, r *http.Request) {
 func (s *Server) worldCommand(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Kind         string             `json:"kind"`
+		Publish      bool               `json:"publish"`
 		Revision     int                `json:"revision"`
 		Entity       world.Entity       `json:"entity"`
 		Operation    world.Operation    `json:"operation"`
@@ -162,12 +168,14 @@ func (s *Server) worldCommand(w http.ResponseWriter, r *http.Request) {
 		fail(w, 409, "Finish generation before building.")
 		return
 	}
-	changedEntity := req.Entity.ID
-	if req.Kind == "undo" && model.Header.Cursor > 0 {
-		changedEntity = strings.TrimPrefix(model.Header.History[model.Header.Cursor-1].Key, "entity/")
-	}
-	if req.Kind == "redo" && model.Header.Cursor < len(model.Header.History) {
-		changedEntity = strings.TrimPrefix(model.Header.History[model.Header.Cursor].Key, "entity/")
+	publishEntities := req.Kind == "entity" || req.Kind == "move-family" || req.Kind == "undo" || req.Kind == "redo"
+	var previous *world.State
+	if publishEntities && v.historical != nil {
+		previous, err = model.Clone()
+		if err != nil {
+			fail(w, 500, "Could not prepare entity transaction")
+			return
+		}
 	}
 	previousView := append(json.RawMessage(nil), model.Header.View...)
 	switch req.Kind {
@@ -180,6 +188,50 @@ func (s *Server) worldCommand(w http.ResponseWriter, r *http.Request) {
 			err = model.MoveFamily(req.Entity.ID, req.Delta[0], req.Delta[1])
 		}
 	case "entity":
+		if req.Entity.ID == "" {
+			req.Entity.ID = token()
+		}
+		old, exists := model.Entities[req.Entity.ID]
+		if !exists {
+			req.Entity.PlaceholderName = ""
+			req.Entity.RecordStatus = "draft"
+			if req.Entity.LogicalID != "" {
+				req.Entity.RecordStatus = "published"
+			}
+		} else {
+			req.Entity.RecordStatus = old.RecordStatus
+			req.Entity.PlaceholderName = old.PlaceholderName
+		}
+		if !exists && !world.MeaningfulName(req.Entity) {
+			req.Entity.PlaceholderName = req.Entity.Name
+		}
+		if req.Publish {
+			if !world.MeaningfulName(req.Entity) {
+				fail(w, 400, "Give this place or object its own name before applying changes")
+				return
+			}
+			req.Entity.RecordStatus = "published"
+		}
+		if v.planet != nil && v.planet.Surface != nil && samePlaceFamily(req.Entity.Kind, "city") && (!exists || !reflect.DeepEqual(old.Points, req.Entity.Points)) {
+			sampler := detail.New(v.planet)
+			transform := continuousTransform(model.Ops(world.Box(req.Entity.Points)), v.solver.W, v.solver.H, v.planet)
+			dry := false
+			for _, point := range req.Entity.Points {
+				lon, lat := (point[0]/float64(v.solver.W-1)-.5)*2*math.Pi, (.5-point[1]/float64(v.solver.H-1))*math.Pi
+				sample := sampler.Sample(lon, lat)
+				if transform != nil {
+					sample = transform(sample, lon, lat)
+				}
+				if sample.Water == "dry" {
+					dry = true
+					break
+				}
+			}
+			if !dry {
+				fail(w, 400, "Place the settlement boundary on dry land; use inspection to check the site.")
+				return
+			}
+		}
 		if v.historical != nil && v.historical.Kind == "settlement" && req.Entity.Layer == "natural-features" {
 			err = fmt.Errorf("geographical features are edited in the Map Builder")
 			break
@@ -187,9 +239,8 @@ func (s *Server) worldCommand(w http.ResponseWriter, r *http.Request) {
 		if req.Entity.ID == "" {
 			req.Entity.ID = token()
 		}
-		changedEntity = req.Entity.ID
 		if strings.TrimSpace(req.Entity.Name) == "" {
-			req.Entity.Name = "example-" + req.Entity.ID
+			req.Entity.Name = world.RecordName(req.Entity)
 		}
 		req.Entity.River = nil // Capture authoritative terrain-following geometry.
 		if req.Entity.Color == "" {
@@ -253,35 +304,20 @@ func (s *Server) worldCommand(w http.ResponseWriter, r *http.Request) {
 	}
 	// Publish entity identity and representation immediately. Terrain, explored
 	// tiles and artwork still use the explicit Save action.
-	if v.historical != nil && (req.Kind == "entity" || req.Kind == "undo" || req.Kind == "redo") {
-		if shape, ok := model.Entities[changedEntity]; ok {
-			revision := -1
-			if s.auth != nil {
-				revision = v.historyRevision
+	if publishEntities && v.historical != nil {
+		changes := world.New(v.solver.W, v.solver.H)
+		for id, shape := range model.Entities {
+			if old, exists := previous.Entities[id]; !exists || !reflect.DeepEqual(old, shape) {
+				changes.Entities[id] = shape
 			}
-			var updated *history.Document
-			updated, err = s.projects.UpdateHistory(storage.WithActor(context.Background(), v.actorID), v.historyWorld, revision, func(d *history.Document) error {
-				m := d.Map(v.historical.AgeID, v.historical.ID)
-				if m == nil {
-					return fmt.Errorf("map no longer exists in this Age")
-				}
-				if shape.LogicalID != "" {
-					e := d.Entity(m.AgeID, shape.LogicalID)
-					if e == nil || e.Deleted || e.Kind != shape.Kind {
-						return fmt.Errorf("invalid logical entity reference")
-					}
-				}
-				changes := world.New(v.solver.W, v.solver.H)
-				changes.Entities[shape.ID] = shape
-				d.Sync(*m, changes)
-				return nil
-			})
-			if err != nil {
-				v.unsaved = true
-				fail(w, 503, "Could not persist entity: "+err.Error())
-				return
-			}
-			v.historyRevision = updated.World.Revision
+		}
+		if len(changes.Entities) > 0 {
+			err = s.publishBuilderEntities(v, changes)
+		}
+		if err != nil {
+			*model = *previous
+			fail(w, 503, "Could not persist entities: "+err.Error())
+			return
 		}
 	}
 
@@ -306,6 +342,51 @@ func (s *Server) worldCommand(w http.ResponseWriter, r *http.Request) {
 		v.unsaved = true
 	}
 	respond(w, 200, map[string]any{"unsaved": v.unsaved, "project": model.Header, "dirty": dirty, "entityId": req.Entity.ID, "operationId": req.Operation.ID, "analysisStale": v.terrainAnalysisStale()})
+}
+
+// One publication path for individual drawings, generated settlements, grouped
+// moves and undo/redo. All members of a batch reach the World/Age atomically.
+func (s *Server) publishBuilderEntities(v *session, state *world.State) error {
+	if v.historical == nil {
+		return nil
+	}
+	revision := -1
+	if s.auth != nil {
+		revision = v.historyRevision
+	}
+	updated, err := s.projects.UpdateHistory(storage.WithActor(context.Background(), v.actorID), v.historyWorld, revision, func(d *history.Document) error {
+		m := d.Map(v.historical.AgeID, v.historical.ID)
+		if m == nil {
+			return fmt.Errorf("map no longer exists in this Age")
+		}
+		for _, shape := range state.Entities {
+			if shape.LogicalID != "" && !shape.Deleted {
+				e := d.Entity(m.AgeID, shape.LogicalID)
+				if e == nil || e.Deleted || (e.Kind != shape.Kind && !samePlaceFamily(e.Kind, shape.Kind)) {
+					return fmt.Errorf("invalid logical entity reference")
+				}
+			}
+		}
+		d.Sync(*m, state)
+		return nil
+	})
+	if err == nil {
+		v.historyRevision = updated.World.Revision
+	}
+	return err
+}
+
+func samePlaceFamily(a, b string) bool {
+	family := func(k string) int {
+		switch k {
+		case "country", "state", "kingdom", "empire":
+			return 1
+		case "capital", "city", "town", "village", "hamlet", "custom-settlement":
+			return 2
+		}
+		return 0
+	}
+	return family(a) > 0 && family(a) == family(b)
 }
 
 // The generated tile store stays immutable; only intersecting composed tiles

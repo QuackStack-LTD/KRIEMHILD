@@ -23,6 +23,8 @@ export async function request(
 }
 export const defaults = {
   version: "continuous-3",
+  reliefVersion: 2,
+  climateVersion: 1,
   seed: "",
   preset: "earthlike",
   radiusKm: 6371,
@@ -61,7 +63,7 @@ export const presets = {
   },
   supercontinent: {
     landCoverage: 0.4,
-    continents: 3,
+    continents: 1,
     islands: 0.7,
     relief: 1.2,
     rainfall: 1,

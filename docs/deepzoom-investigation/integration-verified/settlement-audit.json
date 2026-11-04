@@ -1,0 +1,55 @@
+{
+  "settlement": {
+    "point": [
+      1.299999972805381,
+      0.22000000905245543
+    ],
+    "spec": {
+      "name": "New town",
+      "kind": "town",
+      "archetype": "organic",
+      "longitude": 54,
+      "latitude": 50.4,
+      "seed": 12345
+    },
+    "camera": "1.299905071608264 0.21995253580413207 0.000189856783471732 0.000094928391735866",
+    "featureCount": 111,
+    "score": 0.7240466103180409,
+    "coverage": {
+      "view": "1.2999155521498 0.21995043157887897 0.00012739213629840677 0.00006369606814920338",
+      "rect": {
+        "x": 88,
+        "y": 70,
+        "width": 892,
+        "height": 695,
+        "top": 70,
+        "right": 980,
+        "bottom": 765,
+        "left": 88
+      },
+      "maxZ": 15,
+      "missing": 0,
+      "tiles": [
+        {
+          "revision": "7",
+          "x": 1.2999155521498,
+          "y": 0.2199326509499898,
+          "span": 0.00012739213629840677,
+          "height": 0.0000992573259275703,
+          "z": 15
+        }
+      ],
+      "footer": "Equirectangular · 6371 km radius\n53.989° E, 50.408° N\n15699.6× zoom\nBase relief fully resolved\n0.5 km ━━━━━\nReady"
+    },
+    "geographicCoordinatesUnchanged": true
+  },
+  "SVG": {
+    "path": "docs/deepzoom-investigation/integration-verified/settlement-export.svg",
+    "bytes": 2237733
+  },
+  "PNG": {
+    "path": "docs/deepzoom-investigation/integration-verified/settlement-export.png",
+    "bytes": 111546
+  },
+  "errors": []
+}

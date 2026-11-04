@@ -272,6 +272,30 @@ export default function Library({
                   ← {archive?.name || "Archive"}
                 </button>
                 <h2>{current.name}</h2>
+                {current.properties?.illustration?.focusId &&
+                  all.find(
+                    (e) => e.id === current.properties.illustration.focusId,
+                  ) && (
+                    <button
+                      onClick={() =>
+                        onProfile(
+                          all.find(
+                            (e) =>
+                              e.id === current.properties.illustration.focusId,
+                          ),
+                        )
+                      }
+                    >
+                      Open{" "}
+                      {
+                        all.find(
+                          (e) =>
+                            e.id === current.properties.illustration.focusId,
+                        ).name
+                      }{" "}
+                      record
+                    </button>
+                  )}
                 {dirty && <span>Unsaved edits</span>}
               </div>
               <div className="library-toolbar">
@@ -381,6 +405,12 @@ export default function Library({
             <>
               <div className="library-toolbar">
                 <h2>{archive?.name || "Archives"}</h2>
+                {archive?.properties?.illustratedMapInbox && (
+                  <p>
+                    Maps saved from the Illustrator wait here until you move
+                    them to another folder.
+                  </p>
+                )}
                 {archive && (
                   <>
                     <button
@@ -502,14 +532,14 @@ export default function Library({
                       </select>
                     </label>
                     <label>
-                      Related entity
+                      Related record
                       <select
                         value={filters.entity}
                         onChange={(e) =>
                           setFilters({ ...filters, entity: e.target.value })
                         }
                       >
-                        <option value="">All entities</option>
+                        <option value="">All named records</option>
                         {all.map((e) => (
                           <option key={e.id} value={e.id}>
                             {e.name}

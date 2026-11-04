@@ -1,0 +1,63 @@
+{
+  "source": "C:\\Users\\tomyi\\worldbuilding\\KRIEMHILD\\data\\kriemhild.sqlite",
+  "mode": "read-only",
+  "tables": {
+    "history_worlds": [
+      {
+        "id": "55815c1c9264170f1e4dc6076b0300a5",
+        "name": "The Ordered World",
+        "revision": 29,
+        "updated_at": 1791998454791,
+        "data": "{\"id\":\"55815c1c9264170f1e4dc6076b0300a5\",\"name\":\"The Ordered World\",\"description\":\"\",\"currentAge\":\"29707595f0daafd73a8246dafc832771\",\"revision\":29,\"updatedAt\":1791998454791}"
+      },
+      {
+        "id": "838db58284cf2c357dcf1ca3b2e4e259",
+        "name": "jjb",
+        "revision": 1,
+        "updated_at": 1792670184342,
+        "data": "{\"id\":\"838db58284cf2c357dcf1ca3b2e4e259\",\"name\":\"jjb\",\"description\":\"\",\"currentAge\":\"1da8d7925dd4c6ec8c55bac22d05313a\",\"revision\":1,\"updatedAt\":1792670184342}"
+      },
+      {
+        "id": "94a31e07d9ad9164070afccb1a3d2565",
+        "name": "dc",
+        "revision": 1,
+        "updated_at": 1792670409630,
+        "data": "{\"id\":\"94a31e07d9ad9164070afccb1a3d2565\",\"name\":\"dc\",\"description\":\"\",\"currentAge\":\"8766ae5f1b47dbb4e1dbadf0a4f47f9b\",\"revision\":1,\"updatedAt\":1792670409630}"
+      }
+    ],
+    "history_ages": [
+      {
+        "world_id": "55815c1c9264170f1e4dc6076b0300a5",
+        "id": "29707595f0daafd73a8246dafc832771",
+        "age_id": "",
+        "project_id": "",
+        "source_id": "",
+        "destination_id": "",
+        "kind": "",
+        "data": "{\"id\":\"29707595f0daafd73a8246dafc832771\",\"name\":\"First Age\",\"timelineId\":\"9d238e58aec4ab2d0c1198693fe69d0a\"}"
+      },
+      {
+        "world_id": "838db58284cf2c357dcf1ca3b2e4e259",
+        "id": "1da8d7925dd4c6ec8c55bac22d05313a",
+        "age_id": "",
+        "project_id": "",
+        "source_id": "",
+        "destination_id": "",
+        "kind": "",
+        "data": "{\"id\":\"1da8d7925dd4c6ec8c55bac22d05313a\",\"name\":\"First Age\",\"timelineId\":\"7babfee79b645b472c2a312c4f9bd5e0\"}"
+      },
+      {
+        "world_id": "94a31e07d9ad9164070afccb1a3d2565",
+        "id": "8766ae5f1b47dbb4e1dbadf0a4f47f9b",
+        "age_id": "",
+        "project_id": "",
+        "source_id": "",
+        "destination_id": "",
+        "kind": "",
+        "data": "{\"id\":\"8766ae5f1b47dbb4e1dbadf0a4f47f9b\",\"name\":\"First Age\",\"timelineId\":\"99a23a7df5596da2eecb08094b19dc5b\"}"
+      }
+    ],
+    "history_terrains": [],
+    "history_maps": []
+  }
+}

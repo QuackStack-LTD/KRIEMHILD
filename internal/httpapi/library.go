@@ -97,16 +97,23 @@ func (s *Server) libraryRoutes() {
 		if !s.historyStore(w) {
 			return
 		}
-		data, v, err := s.projects.LibraryContent(r.Context(), r.PathValue("world"), r.URL.Query().Get("age"), r.PathValue("document"), r.URL.Query().Get("version"))
+		data, v, err := s.projects.LibraryContent(r.Context(), r.PathValue("world"), r.URL.Query().Get("age"), r.PathValue("document"), r.URL.Query().Get("version"), r.URL.Query().Get("variant"))
 		if err != nil {
 			fail(w, 404, "Document version not found")
 			return
 		}
 		w.Header().Set("Content-Type", v.MIME)
-		w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": v.Name}))
+		disposition := "attachment"
+		if r.URL.Query().Get("inline") == "1" && (v.MIME == "image/png" || v.MIME == "image/jpeg" || v.MIME == "image/webp") {
+			disposition = "inline"
+		}
+		w.Header().Set("Content-Disposition", mime.FormatMediaType(disposition, map[string]string{"filename": v.Name}))
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Content-Security-Policy", "sandbox; default-src 'none'")
 		w.Header().Set("Cache-Control", "private, no-store")
+		if r.URL.Query().Get("version") != "" {
+			w.Header().Set("Cache-Control", "private, max-age=3600")
+		}
 		w.Write(data)
 	})
 }

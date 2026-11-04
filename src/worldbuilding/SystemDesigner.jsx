@@ -295,7 +295,7 @@ function Connections({ doc, age, entity, relations, onChange, onProfile }) {
                 This record acts on / requires another
               </option>
               <option value="in">
-                Another entity knows / uses / enables this record
+                Another record knows / uses / enables this record
               </option>
             </select>
           </label>

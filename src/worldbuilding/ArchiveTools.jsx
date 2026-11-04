@@ -199,7 +199,7 @@ export function ArchiveSettings({ archive, doc, age, all, command, close }) {
               </select>
             </label>
             <label>
-              Subject entity
+              Subject record
               <select
                 required
                 value={s.entityId}

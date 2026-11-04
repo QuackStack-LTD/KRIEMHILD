@@ -1,5 +1,7 @@
 import { anchor, contains, bounds, projectToMap } from "./geometry.js";
 import { riverFeatures, riverVisible } from "./rivers.js";
+import { placeLabel } from "./label-placement.js";
+import { landContains, illustrationPoints } from "./land-selection.js";
 export const layerNames = [
   "Paper",
   "Relief",
@@ -39,7 +41,7 @@ export function newIllustration(scope, extent, focus = "") {
   };
 }
 const countryKinds = new Set(["country", "state", "kingdom", "empire"]);
-const cityKinds = new Set(["capital", "city", "town", "village"]);
+const cityKinds = new Set(["capital", "city", "town", "village", "hamlet"]);
 const hash = (s) => {
   let n = 2166136261;
   for (const c of s) n = Math.imul(n ^ c.charCodeAt(0), 16777619);
@@ -50,7 +52,10 @@ export function scopeEntities(entities, state, config) {
       .filter((e) => !e.deleted)
       .map((e) => ({
         ...e,
-        points: e.points.map((p) => projectToMap(p, state)),
+        points: illustrationPoints(
+          e.points.map((p) => projectToMap(p, state)),
+          config,
+        ),
       })),
     focus = all.find((e) => e.id === config.focus),
     whole = ["world", "continent"].includes(config.scope),
@@ -61,6 +66,12 @@ export function scopeEntities(entities, state, config) {
       h: config.bounds[3],
     };
   return all.filter((e) => {
+    if (
+      config.regions?.length &&
+      !e.points.some((p) => landContains({ paths: config.regions }, p)) &&
+      !landContains({ paths: config.regions }, anchor(e.points, e.geometry))
+    )
+      return false;
     const b = bounds(e.points);
     if (
       b.x > extent.x + extent.w ||
@@ -69,7 +80,13 @@ export function scopeEntities(entities, state, config) {
       b.y + b.h < extent.y
     )
       return false;
-    if (whole) return countryKinds.has(e.kind) || e.kind === "capital";
+    if (whole)
+      return (
+        countryKinds.has(e.kind) ||
+        e.kind === "capital" ||
+        e.kind === "city" ||
+        (config.scope === "continent" && e.kind === "town")
+      );
     if (
       config.scope === "country" &&
       ["house", "building", "district", "lot", "street"].includes(e.kind)
@@ -91,7 +108,7 @@ export function buildIllustration(
   config,
   entities,
   rivers,
-  mesh,
+  meshes,
   state,
   coasts = null,
 ) {
@@ -158,19 +175,26 @@ export function buildIllustration(
         position: anchor(e.points, e.geometry),
         country: countryKinds.has(e.kind),
         polygon: e.geometry === "polygon" ? e.points : null,
-        priority: countryKinds.has(e.kind) ? 0 : e.kind === "capital" ? 1 : 3,
+        priority: countryKinds.has(e.kind)
+          ? 0
+          : e.kind === "capital"
+            ? 1
+            : e.kind === "city"
+              ? 2
+              : 3,
         color: ink,
       });
   }
   for (const f of riverFeatures(rivers)) {
     if (!riverVisible(f.river, config.scope)) continue;
+    const points = illustrationPoints(f.points, config);
     push({
       id: f.id.replace(":", "-"),
       source: f.sourceId,
       kind: "line",
       geometry: "line",
       layer: "waterways",
-      points: f.points,
+      points,
       color: "#426e7c",
       river: f.river,
     });
@@ -181,7 +205,7 @@ export function buildIllustration(
         kind: "text",
         layer: "labels",
         text: f.river.name,
-        position: anchor(f.points, "line"),
+        position: anchor(points, "line"),
         priority: 2,
         color: "#426e7c",
       });
@@ -191,6 +215,7 @@ export function buildIllustration(
     for (const coast of coasts) {
       let part = [];
       const emit = () => {
+        part = illustrationPoints(part, config);
         if (part.length > 1) {
           const b = bounds(part);
           if (b.x <= x + w && b.x + b.w >= x && b.y <= y + h && b.y + b.h >= y)
@@ -214,17 +239,25 @@ export function buildIllustration(
       emit();
     }
   }
-  if (mesh) {
+  const reliefIDs = new Set();
+  for (const mesh of Array.isArray(meshes) ? meshes : meshes ? [meshes] : []) {
     const [west, south, east, north] = mesh.bounds;
-    const pt = (i) => [
-      (west + ((east - west) * (i % mesh.columns)) / (mesh.columns - 1)) /
-        Math.PI +
-        1,
-      0.5 -
-        (north -
-          ((north - south) * Math.floor(i / mesh.columns)) / (mesh.rows - 1)) /
-          Math.PI,
-    ];
+    const pt = (i) =>
+      illustrationPoints(
+        [
+          [
+            (west + ((east - west) * (i % mesh.columns)) / (mesh.columns - 1)) /
+              Math.PI +
+              1,
+            0.5 -
+              (north -
+                ((north - south) * Math.floor(i / mesh.columns)) /
+                  (mesh.rows - 1)) /
+                Math.PI,
+          ],
+        ],
+        config,
+      )[0];
     if (!coasts)
       for (let j = 0; j + 1 < mesh.rows; j++)
         for (let i = 0; i + 1 < mesh.columns; i++) {
@@ -248,7 +281,7 @@ export function buildIllustration(
           }
           for (let k = 0; k + 1 < edges.length; k += 2)
             push({
-              id: `coast-${a}-${k}`,
+              id: `${Array.isArray(meshes) && meshes.length > 1 ? `mesh-${west}-${south}-` : ""}coast-${a}-${k}`,
               kind: "line",
               geometry: "line",
               layer: "coasts",
@@ -278,7 +311,8 @@ export function buildIllustration(
                 : biome === "wetland"
                   ? "marsh"
                   : null;
-        if (symbol)
+        if (symbol && !reliefIDs.has(id)) {
+          reliefIDs.add(id);
           push({
             id,
             kind: "symbol",
@@ -288,6 +322,7 @@ export function buildIllustration(
             color: ink,
             size: pixel * (symbol === "mountain" ? 8 : 5),
           });
+        }
       }
   }
   // Deterministic priority-first placement, with full text-box containment.
@@ -295,79 +330,15 @@ export function buildIllustration(
   for (const label of labels.sort(
     (a, b) => a.priority - b.priority || a.id.localeCompare(b.id),
   )) {
-    const override = config.objects[label.id],
-      size = label.country ? 15 : 11,
-      ww = Math.max(12, label.text.length * size * 0.57) * pixel,
-      hh = size * 1.25 * pixel;
-    const origin = label.position;
-    const offsets = label.country
-      ? [
-          [0, 0],
-          [-ww * 0.2, 0],
-          [ww * 0.2, 0],
-          [0, -hh],
-          [0, hh],
-        ]
-      : [
-          [ww / 2 + 6 * pixel, -hh / 2],
-          [ww / 2 + 6 * pixel, hh / 2],
-          [-ww / 2 - 6 * pixel, -hh / 2],
-          [0, -hh],
-        ];
-    let chosen = null;
-    for (const [dx, dy] of offsets) {
-      const p = [origin[0] + dx, origin[1] + dy],
-        box = { x: p[0] - ww / 2, y: p[1] - hh / 2, w: ww, h: hh };
-      if (box.x < x || box.y < y || box.x + ww > x + w || box.y + hh > y + h)
-        continue;
-      if (
-        label.country &&
-        label.polygon &&
-        ![
-          [box.x, box.y],
-          [box.x + ww, box.y],
-          [box.x, box.y + hh],
-          [box.x + ww, box.y + hh],
-          p,
-        ].every((q) => contains(q, label.polygon))
-      )
-        continue;
-      if (
-        occupied.some(
-          (b) =>
-            box.x < b.x + b.w &&
-            box.x + ww > b.x &&
-            box.y < b.y + b.h &&
-            box.y + hh > b.y,
-        )
-      )
-        continue;
-      chosen = { p, box };
-      break;
-    }
-    if (override?.position)
-      chosen = {
-        p: override.position,
-        box: {
-          x: override.position[0] - ww / 2,
-          y: override.position[1] - hh / 2,
-          w: ww,
-          h: hh,
-        },
-      };
-    if (chosen) {
-      occupied.push(chosen.box);
-      push({ ...label, position: chosen.p, size: pixel * size });
-    } else {
-      push({
-        ...label,
-        position: origin,
-        size: pixel * size,
-        hidden: true,
-        placementWarning:
-          "No collision-free label position fits; place it manually.",
-      });
-    }
+    const { box, ...placement } = placeLabel(
+      label,
+      config.bounds,
+      pixel,
+      occupied,
+      config.objects[label.id],
+    );
+    occupied.push(box);
+    push({ ...label, ...placement });
   }
   for (const [id, o] of Object.entries(config.objects))
     if (!objects.some((e) => e.id === id) && !o.source) objects.push(o);

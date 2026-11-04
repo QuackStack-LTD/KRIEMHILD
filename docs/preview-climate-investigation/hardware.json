@@ -1,0 +1,14 @@
+﻿{
+    "Cpu":  {
+                "Name":  "Intel(R) Core(TM) i5-6300HQ CPU @ 2.30GHz",
+                "NumberOfCores":  4,
+                "NumberOfLogicalProcessors":  4
+            },
+    "MemoryBytes":  17055170560,
+    "OS":  {
+               "Caption":  "Microsoft Windows 10 Home",
+               "Version":  "10.0.19045"
+           },
+    "Node":  "v24.21.0",
+    "DateUTC":  "2026-10-22T16:19:58.1493341Z"
+}

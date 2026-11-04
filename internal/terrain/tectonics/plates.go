@@ -18,6 +18,23 @@ func At(p *model.Planet, lon, lat float64) Influence {
 	}
 	cl := math.Cos(lat)
 	v := [3]float64{cl * math.Cos(lon), cl * math.Sin(lon), math.Sin(lat)}
+	width := .035
+	if p.Spec.Version == model.Version && p.Spec.ReliefVersion >= 1 {
+		// Deform spherical plate boundaries continuously before measuring their
+		// distance. This bends entire orogens, rather than adding pixel roughness
+		// to perfectly straight Voronoi boundaries. No latitude/longitude seam.
+		u := v
+		for k := range v {
+			phase := float64((p.Seed>>(k*13))&8191) / 8191 * model.Tau
+			v[k] += .075*math.Sin(4*u[(k+1)%3]+phase)*math.Sin(3*u[(k+2)%3]-phase) +
+				.022*math.Sin(11*u[(k+1)%3]+7*u[(k+2)%3]+phase)
+		}
+		length := math.Sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2])
+		for k := range v {
+			v[k] /= length
+		}
+		width = .065 + .02*math.Sin(5*v[0]+4*v[1]-3*v[2])
+	}
 	first, second := 0, 0
 	d1, d2 := 10., 10.
 	for i, plate := range p.Plates {
@@ -41,6 +58,6 @@ func At(p *model.Planet, lon, lat float64) Influence {
 		norm += direction * direction
 	}
 	relative /= math.Sqrt(math.Max(norm, 1e-9))
-	boundary := math.Exp(-(d2 - d1) / .035)
+	boundary := math.Exp(-(d2 - d1) / width)
 	return Influence{Plate: first, Boundary: boundary, Convergence: model.Clamp(-relative, 0, 1) * boundary, Divergence: model.Clamp(relative, 0, 1) * boundary, Continental: a.Continental}
 }

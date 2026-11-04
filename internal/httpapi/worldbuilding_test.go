@@ -138,7 +138,7 @@ func TestWritingStorageIsIndependentAndDetectsConflicts(t *testing.T) {
 	}
 }
 
-func TestBuilderEntitiesPersistImmediatelyWithoutSavingTerrain(t *testing.T) {
+func TestAppliedBuilderRecordsPersistWithoutSavingTerrain(t *testing.T) {
 	ctx := context.Background()
 	db, err := storage.Open(ctx, t.TempDir(), "")
 	if err != nil {
@@ -160,7 +160,7 @@ func TestBuilderEntitiesPersistImmediatelyWithoutSavingTerrain(t *testing.T) {
 	city := world.Entity{ID: "city", Name: "Rivergate", Kind: "city", Layer: "settlements", ParentID: "country", Geometry: "polygon", Color: "#000000", Points: [][2]float64{{2, 2}, {3, 2}, {3, 3}, {2, 3}}}
 	send := func(kind string, e world.Entity) {
 		t.Helper()
-		b, _ := json.Marshal(map[string]any{"kind": kind, "entity": e, "revision": v.world.Header.Revision})
+		b, _ := json.Marshal(map[string]any{"kind": kind, "entity": e, "publish": kind == "entity", "revision": v.world.Header.Revision})
 		autoRequest(t, s, "POST", "/api/sessions/terrain/world", string(b))
 	}
 	send("entity", country)
@@ -197,8 +197,8 @@ func TestBuilderEntitiesPersistImmediatelyWithoutSavingTerrain(t *testing.T) {
 	house := world.Entity{ID: "house", Name: "example-house-unique", Kind: "house", Layer: "buildings", Geometry: "point", Color: "#000000", Points: [][2]float64{{2.5, 2.5}}}
 	send("entity", house)
 	d, _ = db.History(ctx, d.World.ID)
-	if d.Entity(d.World.CurrentAge, "house") != nil {
-		t.Fatal("placeholder house must remain a map drawable, not a logical entity")
+	if d.Entity(d.World.CurrentAge, "house") == nil {
+		t.Fatal("house has no editable logical record")
 	}
 	if v.world.Entities["house"].Name != "example-house-unique" {
 		t.Fatal("unnamed drawable was lost")
@@ -233,8 +233,8 @@ func TestBuilderEntitiesPersistImmediatelyWithoutSavingTerrain(t *testing.T) {
 	if got := loaded.authored().Entities["house"]; got.Name != "example-house-unique" || len(got.Points) != 1 {
 		t.Fatal("unnamed geometry lost on save and portable restore", got)
 	}
-	if copy.Entity(copy.World.CurrentAge, "house") != nil {
-		t.Fatal("saved unnamed map object leaked into logical table")
+	if copy.Entity(copy.World.CurrentAge, "house") == nil {
+		t.Fatal("saved map object lost its logical record")
 	}
 	named := loaded.authored().Entities["house"]
 	named.Name = "The Old Hall"

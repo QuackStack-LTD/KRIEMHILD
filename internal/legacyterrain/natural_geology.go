@@ -89,6 +89,12 @@ func (e *Environment) BuildGeologicalHistory() {
 		if (setting == "rift" || setting == "oceanic-crust") && r > .68 {
 			rock = "peridotite"
 		}
+		if e.NaturalSource != "" && setting != "oceanic-crust" {
+			age = math.Max(age, f("crustAge", i))
+			if setting == "stable-interior" && age > 1900 {
+				rock = "gneiss"
+			}
+		}
 		// Conservative inferred history: regional evidence, not a per-cell
 		// lottery. Uncertainty is explicit because no plate time-series exists.
 		shelf, lowland, wet, arid, heat, sediment, compression := 0., 0., 0., 0., 0., 0., 0.
@@ -133,7 +139,80 @@ func (e *Environment) BuildGeologicalHistory() {
 		} else if sediment > .25 && lowland > .6 {
 			history.Trap = "stratigraphic pinch-out"
 		}
+		if e.NaturalSource != "" {
+			// Procedural episodes describe PAST depositional/climate conditions.
+			// Present desert/forest cover is not evidence for oil or coal.
+			episode := detailHash(Seed(e.Options.Seed), int(f("plate", i)), len(g.Provinces), 241)
+			basin := sediment > .32 || setting == "rift" || shelf > .2
+			marine = setting == "oceanic-crust" || basin && episode > .28
+			wetland = setting != "oceanic-crust" && basin && episode > .45 && episode < .78
+			evap = basin && (setting == "rift" || shelf > .15) && episode < .2
+			burial = 300 + sediment*4200
+			if basin {
+				burial += 1400
+			}
+			history.FormerMarine, history.AncientWetland, history.Evaporative = marine, wetland, evap
+			history.MaxBurial = rounded(burial)
+			history.BurialDurationMa = rounded(math.Min(age*.3, 300))
+			history.HeatFlowMWM2 = rounded(f("geothermal", i))
+			history.MaxTemperature = rounded(15 + burial*(.018+f("geothermal", i)/6000))
+			history.TropicalWeathering = age > 350 && episode > .72 && setting != "oceanic-crust"
+			history.OrganicPreservation = 0
+			history.SourceEnvironment = "continental-oxidized"
+			if marine || wetland {
+				history.OrganicPreservation = rounded(.4 + episode*.4)
+				history.SourceEnvironment = "restricted-anoxic-marine"
+				if wetland {
+					history.SourceEnvironment = "peat-forming-delta"
+				}
+			}
+			history.Trap = ""
+			if basin && episode > .18 {
+				history.Trap = "stratigraphic pinch-out"
+				if compression > .15 {
+					history.Trap = "fold closure"
+				}
+			} else if evap {
+				history.Trap = "salt-related closure"
+			}
+			history.Migration = basin && history.OrganicPreservation > .35 && history.Trap != ""
+			history.Preservation = rounded(clamp(.9-compression*.25, 0, 1))
+			history.Paleoclimate = "temperate"
+			if history.TropicalWeathering {
+				history.Paleoclimate = "warm-humid"
+			}
+			if evap {
+				history.Paleoclimate = "arid-restricted-basin"
+			}
+			history.Maturity = "immature"
+			if history.MaxTemperature >= 60 {
+				history.Maturity = "oil-window"
+			}
+			if history.MaxTemperature > 150 {
+				history.Maturity = "gas-window"
+			}
+			if history.MaxTemperature >= 220 {
+				history.Maturity = "overmature"
+			}
+			history.Inference = "Procedural geological episodes constrained by the saved continuous crust, tectonic structures and basins; paleoclimate and burial are generated/inferred, not measured or a plate time-series"
+		}
 		p := GeologicalProvince{ID: e.naturalID("province", i), Setting: setting, AgeMa: rounded(age), Rock: rock, Process: process, Geometry: NaturalGeometry{Kind: "region", Cells: cells}, History: history}
+		if e.NaturalSource != "" {
+			p.Crust = "continental"
+			p.Type = map[string]string{"stable-interior": "stable-platform", "ancient-orogen": "ancient-shield", "rift": "rift-basin", "orogenic-belt": "collision-belt", "volcanic-arc": "continental-volcanic-arc", "oceanic-crust": "oceanic-crust"}[setting]
+			if setting == "oceanic-crust" {
+				p.Crust = "oceanic"
+			}
+			if age > 1900 && setting == "stable-interior" {
+				p.Type = "ancient-craton"
+			}
+			if history.FormerMarine && setting == "stable-interior" && age < 1900 {
+				p.Type = "sedimentary-platform"
+			}
+			p.FaultDensity = rounded(compression)
+			p.Metamorphism = rounded(compression * .8)
+			p.UpliftMetres = rounded(math.Max(0, compression*3500))
+		}
 		depositionAge := age * .6
 		if wetland {
 			depositionAge = math.Min(depositionAge, 320)
@@ -219,6 +298,14 @@ func (e *Environment) BuildGeologicalHistory() {
 					rock = "gabbro"
 					if detailHash(Seed(e.Options.Seed), i%w, i/w, 149) > .65 {
 						rock = "peridotite"
+					}
+				}
+				if e.NaturalSource != "" && p.Type == "ancient-craton" {
+					rare := detailHash(Seed(e.Options.Seed), g.Cells[i].Province, 0, 587)
+					if rare > .94 {
+						rock = "kimberlite"
+					} else if rare < .06 {
+						rock = "carbonatite"
 					}
 				}
 			} else {

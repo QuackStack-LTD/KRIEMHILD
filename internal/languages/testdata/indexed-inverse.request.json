@@ -1,0 +1,15 @@
+{
+  "revision": "fd802a20cb1bcd6ce254a441edc0ae1733c31dbcad3207b50a4bdf1dc330f2b0",
+  "engine": "languages/3",
+  "adapter": "finite-compose/2",
+  "compiler": "languages-compiler/3",
+  "operation": "analyze",
+  "policy": "all",
+  "limit": 64,
+  "segments": [
+    "p",
+    "a",
+    "d",
+    "a"
+  ]
+}

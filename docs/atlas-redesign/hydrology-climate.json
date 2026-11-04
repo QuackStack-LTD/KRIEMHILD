@@ -1,0 +1,411 @@
+[
+  {
+    "biomes": {
+      "alpine": 0.005764858299229624,
+      "desert": 0.01149018838997752,
+      "forest": 0.10138816089470659,
+      "grassland": 0.07227873997101406,
+      "ice": 0.029391450281294744,
+      "rainforest": 0.11324284777800528,
+      "savanna": 0.04833867121608712,
+      "shrubland": 0.0733999641798282,
+      "steppe": 0.06667171330192831,
+      "taiga": 0.009944628252657189,
+      "temperate-rainforest": 0.04231028073798096,
+      "tropical-woodland": 0.07885666938205607,
+      "tundra": 0.09602466018466727,
+      "water": 0.14613689972114988,
+      "wetland": 0.06220928744376733,
+      "woodland": 0.042550979965647454
+    },
+    "climateVersion": 1,
+    "counts": {
+      "confluences": 716,
+      "deep-terrain-cut": 1157,
+      "divergences": 20,
+      "lake-nodes": 1118,
+      "sources": 2062,
+      "terminals": 1226
+    },
+    "issues": [
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-26552",
+        "vertex": 12
+      },
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-26552",
+        "vertex": 13
+      },
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-33591",
+        "vertex": 19
+      },
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-33591",
+        "vertex": 20
+      },
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-33591",
+        "vertex": 21
+      },
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-32550",
+        "vertex": 19
+      },
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-32550",
+        "vertex": 20
+      },
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-32550",
+        "vertex": 21
+      },
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-32550",
+        "vertex": 22
+      },
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-32489",
+        "vertex": 26
+      },
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-32489",
+        "vertex": 27
+      },
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-32489",
+        "vertex": 28
+      }
+    ],
+    "latitudeBiomes": {
+      "polar": {
+        "ice": 0.653800720834484,
+        "tundra": 0.20561551395891237,
+        "water": 0.14058376520659285
+      },
+      "temperate": {
+        "alpine": 0.014390895084052516,
+        "desert": 0.030290294271464478,
+        "forest": 0.10426245688929335,
+        "grassland": 0.07659529893120541,
+        "ice": 0.02885067321031654,
+        "rainforest": 0.00031362288847721324,
+        "savanna": 0.002508087805215376,
+        "shrubland": 0.1520300783646802,
+        "steppe": 0.0915711034076472,
+        "taiga": 0.027316734847585605,
+        "temperate-rainforest": 0.039280686168542925,
+        "tropical-woodland": 0.0005213278931452528,
+        "tundra": 0.24745134685357734,
+        "water": 0.11824869622121931,
+        "wetland": 0.02751706160986969,
+        "woodland": 0.03885163555367247
+      },
+      "tropical": {
+        "alpine": 0.0008662528512661978,
+        "desert": 0.0007627553904282193,
+        "forest": 0.10448955242988732,
+        "grassland": 0.0731298969029306,
+        "rainforest": 0.18635472805008002,
+        "savanna": 0.07812330281842045,
+        "shrubland": 0.029739314737637388,
+        "steppe": 0.0549126935116002,
+        "temperate-rainforest": 0.04614065501031858,
+        "tropical-woodland": 0.12958646686103056,
+        "water": 0.16312547730542146,
+        "wetland": 0.08597445206223785,
+        "woodland": 0.04679445206875136
+      }
+    },
+    "moistureBudgetError": 4.756182924257984e-13,
+    "nodes": 5180,
+    "reaches": 3974,
+    "rivers": 2127,
+    "seed": "Kriemhild",
+    "version": "continuous-3"
+  },
+  {
+    "biomes": {
+      "alpine": 0.0033892583112474944,
+      "desert": 0.022270890899652375,
+      "forest": 0.09331627265549057,
+      "grassland": 0.043604751374431476,
+      "ice": 0.03259806961470566,
+      "rainforest": 0.14672963235450978,
+      "savanna": 0.06533564277008636,
+      "shrubland": 0.06191198660334425,
+      "steppe": 0.047750062403693415,
+      "taiga": 0.0039857289119930705,
+      "temperate-rainforest": 0.0560458181404705,
+      "tropical-woodland": 0.10294258212409416,
+      "tundra": 0.05352267164571138,
+      "water": 0.15632440318082386,
+      "wetland": 0.07851186159823373,
+      "woodland": 0.03176036741154047
+    },
+    "climateVersion": 1,
+    "counts": {
+      "confluences": 578,
+      "deep-terrain-cut": 882,
+      "divergences": 29,
+      "lake-nodes": 940,
+      "sources": 1789,
+      "terminals": 1100
+    },
+    "issues": [
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-28675",
+        "vertex": 6
+      },
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-39736",
+        "vertex": 25
+      },
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-39736",
+        "vertex": 26
+      },
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-39736",
+        "vertex": 27
+      },
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-39736",
+        "vertex": 28
+      },
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-39736",
+        "vertex": 29
+      },
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-39736",
+        "vertex": 30
+      },
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-42296",
+        "vertex": 2
+      },
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-45365",
+        "vertex": 3
+      },
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-45365",
+        "vertex": 4
+      },
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-45365",
+        "vertex": 5
+      },
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-45365",
+        "vertex": 8
+      }
+    ],
+    "latitudeBiomes": {
+      "polar": {
+        "ice": 0.6807491265130162,
+        "tundra": 0.16450750315523463,
+        "water": 0.1547433703317475
+      },
+      "temperate": {
+        "alpine": 0.003094717834805537,
+        "desert": 0.08286642757901505,
+        "forest": 0.11859096882430582,
+        "grassland": 0.02967749219007061,
+        "ice": 0.03254010067501517,
+        "savanna": 0.002902450870287696,
+        "shrubland": 0.18126469742484405,
+        "steppe": 0.09942159554368554,
+        "taiga": 0.014861156168283363,
+        "temperate-rainforest": 0.06578688855141109,
+        "tropical-woodland": 0.0023933418143908818,
+        "tundra": 0.17805560108031823,
+        "water": 0.11593110599864548,
+        "wetland": 0.04990146539357397,
+        "woodland": 0.022711990051357347
+      },
+      "tropical": {
+        "alpine": 0.003673212854536875,
+        "desert": 0.00006645264827898427,
+        "forest": 0.08828363268996132,
+        "grassland": 0.05116038596405796,
+        "rainforest": 0.21059555201614705,
+        "savanna": 0.09265655112664195,
+        "shrubland": 0.019084972785804406,
+        "steppe": 0.03026310359546604,
+        "temperate-rainforest": 0.055116841241986035,
+        "tropical-woodland": 0.14682835776691627,
+        "water": 0.1719527364322415,
+        "wetland": 0.09347635595444738,
+        "woodland": 0.03684184492348336
+      }
+    },
+    "moistureBudgetError": 3.3174555075960346e-13,
+    "nodes": 4456,
+    "reaches": 3385,
+    "rivers": 1875,
+    "seed": "gallery-001",
+    "version": "continuous-3"
+  },
+  {
+    "biomes": {
+      "alpine": 0.011575318649422241,
+      "desert": 0.033910082511619304,
+      "forest": 0.0554901005056256,
+      "grassland": 0.051207522558328084,
+      "ice": 0.11998923303580941,
+      "rainforest": 0.10194435289500442,
+      "savanna": 0.027011768552736053,
+      "shrubland": 0.04997900880062451,
+      "steppe": 0.08139494670115548,
+      "taiga": 0.009686997769021667,
+      "temperate-rainforest": 0.03403727116625975,
+      "tropical-woodland": 0.057922889968772644,
+      "tundra": 0.14085572966406143,
+      "water": 0.14444231600076657,
+      "wetland": 0.0584730406664753,
+      "woodland": 0.022079420554403692
+    },
+    "climateVersion": 1,
+    "counts": {
+      "confluences": 1200,
+      "deep-terrain-cut": 1482,
+      "divergences": 34,
+      "lake-nodes": 1528,
+      "sources": 2821,
+      "terminals": 1253
+    },
+    "issues": [
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-3066",
+        "vertex": 66
+      },
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-13227",
+        "vertex": 293
+      },
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-14897",
+        "vertex": 141
+      },
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-11713",
+        "vertex": 11
+      },
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-11713",
+        "vertex": 12
+      },
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-11713",
+        "vertex": 13
+      },
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-11713",
+        "vertex": 14
+      },
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-11713",
+        "vertex": 34
+      },
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-11713",
+        "vertex": 35
+      },
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-11713",
+        "vertex": 36
+      },
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-11713",
+        "vertex": 37
+      },
+      {
+        "code": "deep-terrain-cut",
+        "river": "river-13828",
+        "vertex": 83
+      }
+    ],
+    "latitudeBiomes": {
+      "polar": {
+        "ice": 0.7609551197721651,
+        "tundra": 0.11234289800862936,
+        "water": 0.12670198221921303
+      },
+      "temperate": {
+        "alpine": 0.021659981510134253,
+        "desert": 0.07621428088668497,
+        "forest": 0.07350084598690669,
+        "grassland": 0.0637763168960844,
+        "ice": 0.022067326549989972,
+        "savanna": 0.0012007688784479384,
+        "shrubland": 0.09656058535925781,
+        "steppe": 0.11438112266859943,
+        "taiga": 0.023232085493818663,
+        "temperate-rainforest": 0.026650026149071346,
+        "tropical-woodland": 0.00009278636177596153,
+        "tundra": 0.29858443749021135,
+        "water": 0.12763708318849834,
+        "wetland": 0.027979997220157513,
+        "woodland": 0.026462355360312998
+      },
+      "tropical": {
+        "alpine": 0.005815237458637795,
+        "desert": 0.0048721594535978165,
+        "forest": 0.05679075306205135,
+        "grassland": 0.05627005308271255,
+        "rainforest": 0.23304598854644584,
+        "savanna": 0.0606046594519037,
+        "shrubland": 0.022212020542725763,
+        "steppe": 0.07704286641029347,
+        "temperate-rainforest": 0.05240706436964273,
+        "tropical-woodland": 0.1323239640237433,
+        "water": 0.16636526483101152,
+        "wetland": 0.10699980548667665,
+        "woodland": 0.02525016328052916
+      }
+    },
+    "moistureBudgetError": 2.085809222828039e-13,
+    "nodes": 6955,
+    "reaches": 5736,
+    "rivers": 2932,
+    "seed": "gallery-002",
+    "version": "continuous-3"
+  }
+]

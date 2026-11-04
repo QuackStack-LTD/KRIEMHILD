@@ -22,6 +22,11 @@ npm start
 
 Open **http://127.0.0.1:8124**. On Windows, `start.bat` performs the same steps. The launcher also recognizes a portable Go installation at `.tools/go`.
 
+For source distribution, package a commit with `node scripts/verify-source.mjs HEAD`.
+This verifies archive contents and builds a clean extraction; it does not include
+the optional local Go SDK, credentials, databases or dependency installations.
+See [archive investigation and baseline](docs/atlas-redesign/BASELINE.md).
+
 For development, run these in separate terminals:
 
 ```sh
@@ -71,8 +76,9 @@ Use **View → Save → Export world ZIP** for a portable backup of a completed 
 ```sh
 go test ./...
 go vet ./...
-npm test
+npm ci
 npm run build
+npm test
 ```
 
 `npm test` includes a real Go process restart and continuous ZIP round trip. Go integration

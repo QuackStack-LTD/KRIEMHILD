@@ -1,0 +1,144 @@
+{
+  "version": "sequence-corpus/2",
+  "id": "brief6-missing-script-sign",
+  "bounds": {
+    "calls": 1,
+    "work": 13000000,
+    "reportBytes": 262144
+  },
+  "cases": [
+    {
+      "id": "missing-script-sign",
+      "description": "Pinned Script rejects an unresolved sign or reading",
+      "tags": ["brief6", "missing-script-sign"],
+      "review": {
+        "status": "reviewed",
+        "reviewer": "Codex (independent derivation; not human approval)",
+        "provenance": "ValidateWriting returns missing_sign for absent sign identity; RenderScript returns unresolved_reading for an explicit absent reading. unspell wraps the raw status at inverse.signs before enumeration; no reverse spelling or partial preimage. Existing TestVectorReadingsAndExplicitChoices supplies the reading semantics; corpus/2 adds these raw statuses without relabelling them unsupported or no_result."
+      },
+      "pin": {
+        "languageId": "88888888888888888888888888888888",
+        "revision": "57d62c51f97c83715b0fbf4b147a910b5d66fd8700191523f7a14459cd782cd5",
+        "schema": 4,
+        "canonicalizer": "kriemhild-typed-json/1",
+        "engine": "languages/4",
+        "adapter": "sequence-compose/1",
+        "compiler": "languages-compiler/4",
+        "segmentation": "uniseg/0.4.7-unicode/15.0.0",
+        "normalizer": "x-text/0.29.0-unicode/15.0.0",
+        "script": {
+          "id": "77777777777777777777777777777777",
+          "revision": "e50260f7197fd260b418f4578be091b415927c863a70a7ed057dbb198cc5a849"
+        },
+        "renderer": "vector-script/1",
+        "rendererAdapter": "sign-layout/1",
+        "rendererCompiler": "vector-script-compiler/1"
+      },
+      "inputLayer": "sign",
+      "request": {
+        "spelling": {
+          "units": [
+            {
+              "kind": "sign",
+              "sign": {
+                "kind": "sign",
+                "sign": "absent-sign",
+                "reading": "read-p",
+                "roles": ["phonetic"]
+              }
+            }
+          ]
+        },
+        "revision": "57d62c51f97c83715b0fbf4b147a910b5d66fd8700191523f7a14459cd782cd5",
+        "engine": "languages/4",
+        "operation": "unspell",
+        "policy": "all",
+        "limit": 128,
+        "compiler": "languages-compiler/4",
+        "adapter": "sequence-compose/1"
+      },
+      "outcome": "rejected",
+      "comparison": "exact",
+      "expected": {
+        "spelling": {
+          "version": "sequence-orthography/1",
+          "segmentation": "uniseg/0.4.7-unicode/15.0.0",
+          "normalizer": "x-text/0.29.0-unicode/15.0.0",
+          "inputLayer": "surface",
+          "outputLayer": "sign",
+          "script": {
+            "id": "77777777777777777777777777777777",
+            "revision": "e50260f7197fd260b418f4578be091b415927c863a70a7ed057dbb198cc5a849"
+          },
+          "renderer": "vector-script/1",
+          "rendererAdapter": "sign-layout/1",
+          "rendererCompiler": "vector-script-compiler/1",
+          "steps": 1,
+          "clusters": [],
+          "spellings": [],
+          "preimages": []
+        },
+        "schema": 4,
+        "compiler": "languages-compiler/4",
+        "status": "missing_sign",
+        "languageId": "88888888888888888888888888888888",
+        "revision": "57d62c51f97c83715b0fbf4b147a910b5d66fd8700191523f7a14459cd782cd5",
+        "engine": "languages/4",
+        "canonicalizer": "kriemhild-typed-json/1",
+        "selection": "sha256-canonical-candidates/1",
+        "request": {
+          "revision": "57d62c51f97c83715b0fbf4b147a910b5d66fd8700191523f7a14459cd782cd5",
+          "engine": "languages/4",
+          "operation": "unspell",
+          "policy": "all",
+          "limit": 128
+        },
+        "candidates": [],
+        "diagnostics": [
+          {
+            "code": "missing_sign",
+            "severity": "error",
+            "module": "sequenceWriting",
+            "path": "inverse.signs",
+            "message": "Inverse signs must resolve under the pinned Script, roles, readings and context."
+          }
+        ],
+        "truncated": false,
+        "examined": 0,
+        "knownValid": 0,
+        "rejected": 0,
+        "diagnosticsOmitted": 0,
+        "adapter": "sequence-compose/1",
+        "kernel": "languages-spike/1",
+        "input": {
+          "spelling": {
+            "units": [
+              {
+                "kind": "sign",
+                "sign": {
+                  "kind": "sign",
+                  "sign": "absent-sign",
+                  "reading": "read-p",
+                  "roles": ["phonetic"]
+                }
+              }
+            ]
+          },
+          "revision": "57d62c51f97c83715b0fbf4b147a910b5d66fd8700191523f7a14459cd782cd5",
+          "engine": "languages/4",
+          "operation": "unspell",
+          "policy": "all",
+          "limit": 128,
+          "compiler": "languages-compiler/4",
+          "adapter": "sequence-compose/1"
+        },
+        "dependencies": [
+          {
+            "id": "77777777777777777777777777777777",
+            "revision": "e50260f7197fd260b418f4578be091b415927c863a70a7ed057dbb198cc5a849"
+          }
+        ]
+      }
+    }
+  ]
+}

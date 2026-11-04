@@ -1,0 +1,1331 @@
+{
+  "spelling": {
+    "version": "sequence-orthography/1",
+    "segmentation": "uniseg/0.4.7-unicode/15.0.0",
+    "normalizer": "x-text/0.29.0-unicode/15.0.0",
+    "inputLayer": "surface",
+    "outputLayer": "sign",
+    "script": {
+      "id": "77777777777777777777777777777777",
+      "revision": "e50260f7197fd260b418f4578be091b415927c863a70a7ed057dbb198cc5a849"
+    },
+    "renderer": "vector-script/1",
+    "rendererAdapter": "sign-layout/1",
+    "rendererCompiler": "vector-script-compiler/1",
+    "steps": 914,
+    "clusters": [],
+    "spellings": [],
+    "preimages": [
+      {
+        "id": "9db6fa49995d111ca4de0d229351aee1b11035f4de78af7b8c576d7feca0ea14",
+        "units": [
+          {
+            "kind": "segment",
+            "value": "p"
+          },
+          {
+            "kind": "segment",
+            "value": "a"
+          },
+          {
+            "kind": "segment",
+            "value": "d"
+          },
+          {
+            "kind": "segment",
+            "value": "a"
+          }
+        ],
+        "forward": {
+          "id": "9db6fa49995d111ca4de0d229351aee1b11035f4de78af7b8c576d7feca0ea14",
+          "input": [
+            {
+              "kind": "segment",
+              "value": "p"
+            },
+            {
+              "kind": "segment",
+              "value": "a"
+            },
+            {
+              "kind": "segment",
+              "value": "d"
+            },
+            {
+              "kind": "segment",
+              "value": "a"
+            }
+          ],
+          "output": [
+            {
+              "unit": {
+                "kind": "sign",
+                "sign": {
+                  "kind": "sign",
+                  "sign": "spell-p",
+                  "reading": "read-p",
+                  "roles": [
+                    "phonetic"
+                  ]
+                }
+              },
+              "sources": [
+                0
+              ],
+              "rules": [
+                "map-p",
+                "sign-p"
+              ]
+            },
+            {
+              "unit": {
+                "kind": "sign",
+                "sign": {
+                  "kind": "sign",
+                  "sign": "spell-acute",
+                  "reading": "read-acute",
+                  "roles": [
+                    "phonetic"
+                  ]
+                }
+              },
+              "sources": [
+                1
+              ],
+              "rules": [
+                "map-a",
+                "sign-acute"
+              ]
+            },
+            {
+              "unit": {
+                "kind": "sign",
+                "sign": {
+                  "kind": "sign",
+                  "sign": "spell-d",
+                  "reading": "read-d",
+                  "roles": [
+                    "phonetic"
+                  ]
+                }
+              },
+              "sources": [
+                2
+              ],
+              "rules": [
+                "map-d",
+                "sign-d"
+              ]
+            },
+            {
+              "unit": {
+                "kind": "sign",
+                "sign": {
+                  "kind": "sign",
+                  "sign": "spell-acute",
+                  "reading": "read-acute",
+                  "roles": [
+                    "phonetic"
+                  ]
+                }
+              },
+              "sources": [
+                3
+              ],
+              "rules": [
+                "map-a",
+                "sign-acute"
+              ]
+            }
+          ],
+          "stages": [
+            {
+              "stage": "surface-spelling",
+              "kind": "rewrite",
+              "inputLayer": "surface",
+              "outputLayer": "grapheme",
+              "offsetUnit": "source-token",
+              "before": [
+                {
+                  "unit": {
+                    "kind": "segment",
+                    "value": "p"
+                  },
+                  "sources": [
+                    0
+                  ],
+                  "rules": []
+                },
+                {
+                  "unit": {
+                    "kind": "segment",
+                    "value": "a"
+                  },
+                  "sources": [
+                    1
+                  ],
+                  "rules": []
+                },
+                {
+                  "unit": {
+                    "kind": "segment",
+                    "value": "d"
+                  },
+                  "sources": [
+                    2
+                  ],
+                  "rules": []
+                },
+                {
+                  "unit": {
+                    "kind": "segment",
+                    "value": "a"
+                  },
+                  "sources": [
+                    3
+                  ],
+                  "rules": []
+                }
+              ],
+              "after": [
+                {
+                  "unit": {
+                    "kind": "grapheme",
+                    "value": "p"
+                  },
+                  "sources": [
+                    0
+                  ],
+                  "rules": [
+                    "map-p"
+                  ]
+                },
+                {
+                  "unit": {
+                    "kind": "grapheme",
+                    "value": "é"
+                  },
+                  "sources": [
+                    1
+                  ],
+                  "rules": [
+                    "map-a"
+                  ]
+                },
+                {
+                  "unit": {
+                    "kind": "grapheme",
+                    "value": "d"
+                  },
+                  "sources": [
+                    2
+                  ],
+                  "rules": [
+                    "map-d"
+                  ]
+                },
+                {
+                  "unit": {
+                    "kind": "grapheme",
+                    "value": "é"
+                  },
+                  "sources": [
+                    3
+                  ],
+                  "rules": [
+                    "map-a"
+                  ]
+                }
+              ],
+              "matches": [
+                {
+                  "rule": "map-p",
+                  "start": 0,
+                  "end": 1,
+                  "action": "replaced"
+                },
+                {
+                  "rule": "map-a",
+                  "start": 1,
+                  "end": 2,
+                  "action": "replaced"
+                },
+                {
+                  "rule": "map-d",
+                  "start": 2,
+                  "end": 3,
+                  "action": "replaced"
+                },
+                {
+                  "rule": "map-a",
+                  "start": 3,
+                  "end": 4,
+                  "action": "replaced"
+                }
+              ]
+            },
+            {
+              "stage": "sign-selection",
+              "kind": "rewrite",
+              "inputLayer": "grapheme",
+              "outputLayer": "sign",
+              "offsetUnit": "grapheme-cluster",
+              "before": [
+                {
+                  "unit": {
+                    "kind": "grapheme",
+                    "value": "p"
+                  },
+                  "sources": [
+                    0
+                  ],
+                  "rules": [
+                    "map-p"
+                  ]
+                },
+                {
+                  "unit": {
+                    "kind": "grapheme",
+                    "value": "é"
+                  },
+                  "sources": [
+                    1
+                  ],
+                  "rules": [
+                    "map-a"
+                  ]
+                },
+                {
+                  "unit": {
+                    "kind": "grapheme",
+                    "value": "d"
+                  },
+                  "sources": [
+                    2
+                  ],
+                  "rules": [
+                    "map-d"
+                  ]
+                },
+                {
+                  "unit": {
+                    "kind": "grapheme",
+                    "value": "é"
+                  },
+                  "sources": [
+                    3
+                  ],
+                  "rules": [
+                    "map-a"
+                  ]
+                }
+              ],
+              "after": [
+                {
+                  "unit": {
+                    "kind": "sign",
+                    "sign": {
+                      "kind": "sign",
+                      "sign": "spell-p",
+                      "reading": "read-p",
+                      "roles": [
+                        "phonetic"
+                      ]
+                    }
+                  },
+                  "sources": [
+                    0
+                  ],
+                  "rules": [
+                    "map-p",
+                    "sign-p"
+                  ]
+                },
+                {
+                  "unit": {
+                    "kind": "sign",
+                    "sign": {
+                      "kind": "sign",
+                      "sign": "spell-acute",
+                      "reading": "read-acute",
+                      "roles": [
+                        "phonetic"
+                      ]
+                    }
+                  },
+                  "sources": [
+                    1
+                  ],
+                  "rules": [
+                    "map-a",
+                    "sign-acute"
+                  ]
+                },
+                {
+                  "unit": {
+                    "kind": "sign",
+                    "sign": {
+                      "kind": "sign",
+                      "sign": "spell-d",
+                      "reading": "read-d",
+                      "roles": [
+                        "phonetic"
+                      ]
+                    }
+                  },
+                  "sources": [
+                    2
+                  ],
+                  "rules": [
+                    "map-d",
+                    "sign-d"
+                  ]
+                },
+                {
+                  "unit": {
+                    "kind": "sign",
+                    "sign": {
+                      "kind": "sign",
+                      "sign": "spell-acute",
+                      "reading": "read-acute",
+                      "roles": [
+                        "phonetic"
+                      ]
+                    }
+                  },
+                  "sources": [
+                    3
+                  ],
+                  "rules": [
+                    "map-a",
+                    "sign-acute"
+                  ]
+                }
+              ],
+              "matches": [
+                {
+                  "rule": "sign-p",
+                  "start": 0,
+                  "end": 1,
+                  "action": "replaced"
+                },
+                {
+                  "rule": "sign-acute",
+                  "start": 1,
+                  "end": 2,
+                  "action": "replaced"
+                },
+                {
+                  "rule": "sign-d",
+                  "start": 2,
+                  "end": 3,
+                  "action": "replaced"
+                },
+                {
+                  "rule": "sign-acute",
+                  "start": 3,
+                  "end": 4,
+                  "action": "replaced"
+                }
+              ]
+            }
+          ],
+          "text": "pédé",
+          "clusters": [
+            {
+              "index": 0,
+              "text": "p",
+              "byteStart": 0,
+              "byteEnd": 1,
+              "utf16Start": 0,
+              "utf16End": 1,
+              "codePoints": [
+                "U+0070"
+              ]
+            },
+            {
+              "index": 1,
+              "text": "é",
+              "byteStart": 1,
+              "byteEnd": 4,
+              "utf16Start": 1,
+              "utf16End": 3,
+              "codePoints": [
+                "U+0065",
+                "U+0301"
+              ]
+            },
+            {
+              "index": 2,
+              "text": "d",
+              "byteStart": 4,
+              "byteEnd": 5,
+              "utf16Start": 3,
+              "utf16End": 4,
+              "codePoints": [
+                "U+0064"
+              ]
+            },
+            {
+              "index": 3,
+              "text": "é",
+              "byteStart": 5,
+              "byteEnd": 8,
+              "utf16Start": 4,
+              "utf16End": 6,
+              "codePoints": [
+                "U+0065",
+                "U+0301"
+              ]
+            }
+          ],
+          "render": {
+            "status": "success",
+            "scriptId": "77777777777777777777777777777777",
+            "revision": "e50260f7197fd260b418f4578be091b415927c863a70a7ed057dbb198cc5a849",
+            "engine": "vector-script/1",
+            "adapter": "sign-layout/1",
+            "compiler": "vector-script-compiler/1",
+            "input": {
+              "revision": "e50260f7197fd260b418f4578be091b415927c863a70a7ed057dbb198cc5a849",
+              "engine": "vector-script/1",
+              "adapter": "sign-layout/1",
+              "compiler": "vector-script-compiler/1",
+              "sequence": {
+                "id": "spelling",
+                "name": "Spelled sign sequence",
+                "items": [
+                  {
+                    "kind": "sign",
+                    "sign": "spell-p",
+                    "reading": "read-p",
+                    "roles": [
+                      "phonetic"
+                    ]
+                  },
+                  {
+                    "kind": "sign",
+                    "sign": "spell-acute",
+                    "reading": "read-acute",
+                    "roles": [
+                      "phonetic"
+                    ]
+                  },
+                  {
+                    "kind": "sign",
+                    "sign": "spell-d",
+                    "reading": "read-d",
+                    "roles": [
+                      "phonetic"
+                    ]
+                  },
+                  {
+                    "kind": "sign",
+                    "sign": "spell-acute",
+                    "reading": "read-acute",
+                    "roles": [
+                      "phonetic"
+                    ]
+                  }
+                ]
+              }
+            },
+            "sequence": {
+              "id": "spelling",
+              "name": "Spelled sign sequence",
+              "items": [
+                {
+                  "kind": "sign",
+                  "sign": "spell-p",
+                  "reading": "read-p",
+                  "roles": [
+                    "phonetic"
+                  ]
+                },
+                {
+                  "kind": "sign",
+                  "sign": "spell-acute",
+                  "reading": "read-acute",
+                  "roles": [
+                    "phonetic"
+                  ]
+                },
+                {
+                  "kind": "sign",
+                  "sign": "spell-d",
+                  "reading": "read-d",
+                  "roles": [
+                    "phonetic"
+                  ]
+                },
+                {
+                  "kind": "sign",
+                  "sign": "spell-acute",
+                  "reading": "read-acute",
+                  "roles": [
+                    "phonetic"
+                  ]
+                }
+              ]
+            },
+            "signs": [
+              {
+                "path": "sequence.items.0",
+                "sign": "spell-p",
+                "glyph": "ka",
+                "reading": "read-p",
+                "text": "p",
+                "grapheme": "p",
+                "roles": [
+                  "phonetic"
+                ],
+                "associations": [],
+                "x": 0,
+                "baseline": 1000,
+                "scale": 1,
+                "advance": 1080
+              },
+              {
+                "path": "sequence.items.1",
+                "sign": "spell-acute",
+                "glyph": "ka",
+                "reading": "read-acute",
+                "text": "é",
+                "grapheme": "é",
+                "roles": [
+                  "phonetic"
+                ],
+                "associations": [],
+                "x": 1080,
+                "baseline": 1000,
+                "scale": 1,
+                "advance": 1080
+              },
+              {
+                "path": "sequence.items.2",
+                "sign": "spell-d",
+                "glyph": "ka",
+                "reading": "read-d",
+                "text": "d",
+                "grapheme": "d",
+                "roles": [
+                  "phonetic"
+                ],
+                "associations": [],
+                "x": 2160,
+                "baseline": 1000,
+                "scale": 1,
+                "advance": 1080
+              },
+              {
+                "path": "sequence.items.3",
+                "sign": "spell-acute",
+                "glyph": "ka",
+                "reading": "read-acute",
+                "text": "é",
+                "grapheme": "é",
+                "roles": [
+                  "phonetic"
+                ],
+                "associations": [],
+                "x": 3240,
+                "baseline": 1000,
+                "scale": 1,
+                "advance": 1080
+              }
+            ],
+            "trace": [
+              {
+                "stage": "resolve-sign",
+                "path": "sequence.items.0",
+                "sign": "spell-p",
+                "glyph": "ka",
+                "reading": "read-p",
+                "roles": [
+                  "phonetic"
+                ],
+                "x": 0,
+                "baseline": 1000
+              },
+              {
+                "stage": "resolve-sign",
+                "path": "sequence.items.1",
+                "sign": "spell-acute",
+                "glyph": "ka",
+                "reading": "read-acute",
+                "roles": [
+                  "phonetic"
+                ],
+                "x": 1080,
+                "baseline": 1000
+              },
+              {
+                "stage": "resolve-sign",
+                "path": "sequence.items.2",
+                "sign": "spell-d",
+                "glyph": "ka",
+                "reading": "read-d",
+                "roles": [
+                  "phonetic"
+                ],
+                "x": 2160,
+                "baseline": 1000
+              },
+              {
+                "stage": "resolve-sign",
+                "path": "sequence.items.3",
+                "sign": "spell-acute",
+                "glyph": "ka",
+                "reading": "read-acute",
+                "roles": [
+                  "phonetic"
+                ],
+                "x": 3240,
+                "baseline": 1000
+              }
+            ],
+            "choices": [],
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"-250 -250 4820 1900\" role=\"img\" aria-label=\"Spelled sign sequence\"><title>Spelled sign sequence</title><g data-sign=\"spell-p\" data-glyph=\"ka\" transform=\"translate(0 200) scale(1)\"><path d=\"M 100 800 L 500 100 L 900 800 Z\" fill=\"none\" stroke=\"#182126\" stroke-width=\"24\"/></g><g data-sign=\"spell-acute\" data-glyph=\"ka\" transform=\"translate(1080 200) scale(1)\"><path d=\"M 100 800 L 500 100 L 900 800 Z\" fill=\"none\" stroke=\"#182126\" stroke-width=\"24\"/></g><g data-sign=\"spell-d\" data-glyph=\"ka\" transform=\"translate(2160 200) scale(1)\"><path d=\"M 100 800 L 500 100 L 900 800 Z\" fill=\"none\" stroke=\"#182126\" stroke-width=\"24\"/></g><g data-sign=\"spell-acute\" data-glyph=\"ka\" transform=\"translate(3240 200) scale(1)\"><path d=\"M 100 800 L 500 100 L 900 800 Z\" fill=\"none\" stroke=\"#182126\" stroke-width=\"24\"/></g></svg>",
+            "diagnostics": []
+          }
+        },
+        "analyses": [
+          {
+            "lexeme": "rock",
+            "cell": "many",
+            "features": {
+              "number": "many",
+              "shape": "plain"
+            },
+            "underlying": [
+              "p",
+              "a",
+              "t"
+            ],
+            "segments": [
+              "p",
+              "a",
+              "d",
+              "a"
+            ],
+            "trace": [
+              {
+                "stage": "lexical",
+                "ruleId": "rock",
+                "before": [],
+                "after": [
+                  "p",
+                  "a",
+                  "t"
+                ]
+              },
+              {
+                "stage": "cell",
+                "ruleId": "many",
+                "before": [
+                  "p",
+                  "a",
+                  "t"
+                ],
+                "after": [
+                  "p",
+                  "a",
+                  "t"
+                ]
+              },
+              {
+                "stage": "allomorph",
+                "ruleId": "plural-suffix/after-t",
+                "before": [
+                  "p",
+                  "a",
+                  "t"
+                ],
+                "after": [
+                  "p",
+                  "a",
+                  "t",
+                  "<morpheme>",
+                  "a"
+                ]
+              },
+              {
+                "stage": "boundary-rule",
+                "ruleId": "t-before-a-suffix",
+                "before": [
+                  "p",
+                  "a",
+                  "t",
+                  "<morpheme>",
+                  "a"
+                ],
+                "after": [
+                  "p",
+                  "a",
+                  "d",
+                  "<morpheme>",
+                  "a"
+                ]
+              },
+              {
+                "stage": "erase-boundaries",
+                "ruleId": "stem-edge",
+                "before": [
+                  "p",
+                  "a",
+                  "d",
+                  "<morpheme>",
+                  "a"
+                ],
+                "after": [
+                  "p",
+                  "a",
+                  "d",
+                  "a"
+                ]
+              }
+            ]
+          },
+          {
+            "lexeme": "stone",
+            "cell": "many",
+            "features": {
+              "number": "many",
+              "shape": "plain"
+            },
+            "underlying": [
+              "p",
+              "a",
+              "t"
+            ],
+            "segments": [
+              "p",
+              "a",
+              "d",
+              "a"
+            ],
+            "trace": [
+              {
+                "stage": "lexical",
+                "ruleId": "stone",
+                "before": [],
+                "after": [
+                  "p",
+                  "a",
+                  "t"
+                ]
+              },
+              {
+                "stage": "cell",
+                "ruleId": "many",
+                "before": [
+                  "p",
+                  "a",
+                  "t"
+                ],
+                "after": [
+                  "p",
+                  "a",
+                  "t"
+                ]
+              },
+              {
+                "stage": "allomorph",
+                "ruleId": "plural-suffix/after-t",
+                "before": [
+                  "p",
+                  "a",
+                  "t"
+                ],
+                "after": [
+                  "p",
+                  "a",
+                  "t",
+                  "<morpheme>",
+                  "a"
+                ]
+              },
+              {
+                "stage": "boundary-rule",
+                "ruleId": "t-before-a-suffix",
+                "before": [
+                  "p",
+                  "a",
+                  "t",
+                  "<morpheme>",
+                  "a"
+                ],
+                "after": [
+                  "p",
+                  "a",
+                  "d",
+                  "<morpheme>",
+                  "a"
+                ]
+              },
+              {
+                "stage": "erase-boundaries",
+                "ruleId": "stem-edge",
+                "before": [
+                  "p",
+                  "a",
+                  "d",
+                  "<morpheme>",
+                  "a"
+                ],
+                "after": [
+                  "p",
+                  "a",
+                  "d",
+                  "a"
+                ]
+              }
+            ]
+          }
+        ],
+        "derivations": [
+          {
+            "candidate": "20cf34b11769dbe611a782fed2ffdd0f1d5b651190304f6b24332541b21b7f17",
+            "lexeme": "rock",
+            "cell": "many",
+            "steps": [
+              {
+                "stage": "lexical",
+                "ruleId": "rock",
+                "before": [],
+                "after": [
+                  {
+                    "segment": "p"
+                  },
+                  {
+                    "segment": "a"
+                  },
+                  {
+                    "segment": "t"
+                  }
+                ]
+              },
+              {
+                "stage": "cell",
+                "ruleId": "many",
+                "before": [
+                  {
+                    "segment": "p"
+                  },
+                  {
+                    "segment": "a"
+                  },
+                  {
+                    "segment": "t"
+                  }
+                ],
+                "after": [
+                  {
+                    "segment": "p"
+                  },
+                  {
+                    "segment": "a"
+                  },
+                  {
+                    "segment": "t"
+                  }
+                ]
+              },
+              {
+                "stage": "allomorph",
+                "ruleId": "plural-suffix",
+                "allomorph": "after-t",
+                "before": [
+                  {
+                    "segment": "p"
+                  },
+                  {
+                    "segment": "a"
+                  },
+                  {
+                    "segment": "t"
+                  }
+                ],
+                "after": [
+                  {
+                    "segment": "p"
+                  },
+                  {
+                    "segment": "a"
+                  },
+                  {
+                    "segment": "t"
+                  },
+                  {
+                    "boundary": "morpheme"
+                  },
+                  {
+                    "segment": "a"
+                  }
+                ],
+                "alternatives": [
+                  {
+                    "id": "after-t",
+                    "decision": "selected"
+                  },
+                  {
+                    "id": "after-n",
+                    "decision": "precedence-skipped"
+                  },
+                  {
+                    "id": "else-a",
+                    "decision": "precedence-skipped"
+                  }
+                ]
+              },
+              {
+                "stage": "boundary-rule",
+                "ruleId": "t-before-a-suffix",
+                "before": [
+                  {
+                    "segment": "p"
+                  },
+                  {
+                    "segment": "a"
+                  },
+                  {
+                    "segment": "t"
+                  },
+                  {
+                    "boundary": "morpheme"
+                  },
+                  {
+                    "segment": "a"
+                  }
+                ],
+                "after": [
+                  {
+                    "segment": "p"
+                  },
+                  {
+                    "segment": "a"
+                  },
+                  {
+                    "segment": "d"
+                  },
+                  {
+                    "boundary": "morpheme"
+                  },
+                  {
+                    "segment": "a"
+                  }
+                ]
+              },
+              {
+                "stage": "erase-boundaries",
+                "ruleId": "stem-edge",
+                "before": [
+                  {
+                    "segment": "p"
+                  },
+                  {
+                    "segment": "a"
+                  },
+                  {
+                    "segment": "d"
+                  },
+                  {
+                    "boundary": "morpheme"
+                  },
+                  {
+                    "segment": "a"
+                  }
+                ],
+                "after": [
+                  {
+                    "segment": "p"
+                  },
+                  {
+                    "segment": "a"
+                  },
+                  {
+                    "segment": "d"
+                  },
+                  {
+                    "segment": "a"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "candidate": "877a348ab0a876bf38472306cbee0053abd393e44f20b842543f70e6986a560f",
+            "lexeme": "stone",
+            "cell": "many",
+            "steps": [
+              {
+                "stage": "lexical",
+                "ruleId": "stone",
+                "before": [],
+                "after": [
+                  {
+                    "segment": "p"
+                  },
+                  {
+                    "segment": "a"
+                  },
+                  {
+                    "segment": "t"
+                  }
+                ]
+              },
+              {
+                "stage": "cell",
+                "ruleId": "many",
+                "before": [
+                  {
+                    "segment": "p"
+                  },
+                  {
+                    "segment": "a"
+                  },
+                  {
+                    "segment": "t"
+                  }
+                ],
+                "after": [
+                  {
+                    "segment": "p"
+                  },
+                  {
+                    "segment": "a"
+                  },
+                  {
+                    "segment": "t"
+                  }
+                ]
+              },
+              {
+                "stage": "allomorph",
+                "ruleId": "plural-suffix",
+                "allomorph": "after-t",
+                "before": [
+                  {
+                    "segment": "p"
+                  },
+                  {
+                    "segment": "a"
+                  },
+                  {
+                    "segment": "t"
+                  }
+                ],
+                "after": [
+                  {
+                    "segment": "p"
+                  },
+                  {
+                    "segment": "a"
+                  },
+                  {
+                    "segment": "t"
+                  },
+                  {
+                    "boundary": "morpheme"
+                  },
+                  {
+                    "segment": "a"
+                  }
+                ],
+                "alternatives": [
+                  {
+                    "id": "after-t",
+                    "decision": "selected"
+                  },
+                  {
+                    "id": "after-n",
+                    "decision": "precedence-skipped"
+                  },
+                  {
+                    "id": "else-a",
+                    "decision": "precedence-skipped"
+                  }
+                ]
+              },
+              {
+                "stage": "boundary-rule",
+                "ruleId": "t-before-a-suffix",
+                "before": [
+                  {
+                    "segment": "p"
+                  },
+                  {
+                    "segment": "a"
+                  },
+                  {
+                    "segment": "t"
+                  },
+                  {
+                    "boundary": "morpheme"
+                  },
+                  {
+                    "segment": "a"
+                  }
+                ],
+                "after": [
+                  {
+                    "segment": "p"
+                  },
+                  {
+                    "segment": "a"
+                  },
+                  {
+                    "segment": "d"
+                  },
+                  {
+                    "boundary": "morpheme"
+                  },
+                  {
+                    "segment": "a"
+                  }
+                ]
+              },
+              {
+                "stage": "erase-boundaries",
+                "ruleId": "stem-edge",
+                "before": [
+                  {
+                    "segment": "p"
+                  },
+                  {
+                    "segment": "a"
+                  },
+                  {
+                    "segment": "d"
+                  },
+                  {
+                    "boundary": "morpheme"
+                  },
+                  {
+                    "segment": "a"
+                  }
+                ],
+                "after": [
+                  {
+                    "segment": "p"
+                  },
+                  {
+                    "segment": "a"
+                  },
+                  {
+                    "segment": "d"
+                  },
+                  {
+                    "segment": "a"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "morphologyStatus": "ambiguous",
+        "inverse": {
+          "version": "survivor-trie/1",
+          "identity": "8aaa6947f767d6de24185009abad1c5bd4d5afdb9c435e213eab958f18210a08",
+          "request": "6fea8c73683508e8ff7fb3646e4ce4b9f744c65a58a1ac0372fd4df58b40b505",
+          "units": "phonological-segment-ids",
+          "records": 12,
+          "eligible": 9,
+          "pruned": 3,
+          "nodesVisited": 4,
+          "steps": 297,
+          "payloadBytes": 27823,
+          "stop": "ambiguous"
+        }
+      }
+    ]
+  },
+  "schema": 4,
+  "compiler": "languages-compiler/4",
+  "status": "ambiguous",
+  "languageId": "88888888888888888888888888888888",
+  "revision": "57d62c51f97c83715b0fbf4b147a910b5d66fd8700191523f7a14459cd782cd5",
+  "engine": "languages/4",
+  "canonicalizer": "kriemhild-typed-json/1",
+  "selection": "sha256-canonical-candidates/1",
+  "request": {
+    "revision": "57d62c51f97c83715b0fbf4b147a910b5d66fd8700191523f7a14459cd782cd5",
+    "engine": "languages/4",
+    "operation": "unspell",
+    "policy": "all",
+    "limit": 128
+  },
+  "candidates": [],
+  "diagnostics": [],
+  "truncated": false,
+  "examined": 0,
+  "knownValid": 2,
+  "rejected": 0,
+  "diagnosticsOmitted": 0,
+  "adapter": "sequence-compose/1",
+  "kernel": "languages-spike/1",
+  "input": {
+    "spelling": {
+      "units": [
+        {
+          "kind": "sign",
+          "sign": {
+            "kind": "sign",
+            "sign": "spell-p",
+            "reading": "read-p",
+            "roles": [
+              "phonetic"
+            ]
+          }
+        },
+        {
+          "kind": "sign",
+          "sign": {
+            "kind": "sign",
+            "sign": "spell-acute",
+            "reading": "read-acute",
+            "roles": [
+              "phonetic"
+            ]
+          }
+        },
+        {
+          "kind": "sign",
+          "sign": {
+            "kind": "sign",
+            "sign": "spell-d",
+            "reading": "read-d",
+            "roles": [
+              "phonetic"
+            ]
+          }
+        },
+        {
+          "kind": "sign",
+          "sign": {
+            "kind": "sign",
+            "sign": "spell-acute",
+            "reading": "read-acute",
+            "roles": [
+              "phonetic"
+            ]
+          }
+        }
+      ],
+      "analyze": true
+    },
+    "revision": "57d62c51f97c83715b0fbf4b147a910b5d66fd8700191523f7a14459cd782cd5",
+    "engine": "languages/4",
+    "operation": "unspell",
+    "policy": "all",
+    "limit": 128,
+    "compiler": "languages-compiler/4",
+    "adapter": "sequence-compose/1"
+  },
+  "dependencies": [
+    {
+      "id": "77777777777777777777777777777777",
+      "revision": "e50260f7197fd260b418f4578be091b415927c863a70a7ed057dbb198cc5a849"
+    }
+  ]
+}

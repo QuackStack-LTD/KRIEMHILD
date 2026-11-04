@@ -1,0 +1,297 @@
+{
+  "version": "sequence-corpus/1",
+  "id": "brief6-left-context-miss",
+  "bounds": {
+    "calls": 1,
+    "work": 13000000,
+    "reportBytes": 262144
+  },
+  "cases": [
+    {
+      "id": "left-context-miss",
+      "description": "Snapshot literal contexts and virtual word edges",
+      "tags": ["brief6", "left-context-miss"],
+      "review": {
+        "status": "reviewed",
+        "reviewer": "Codex (independent derivation; not human approval)",
+        "provenance": "Independently derived from SEQUENCE_ORTHOGRAPHY.md Rewrite semantics and TestSequenceInverseContextsOverlapsEpsilonAndLimits. Contexts read original p/a/n, even after p becomes X. Work: initial 1, three positions x (1+6), context probes 4 (3 for left miss), resegment 2/output, stage+run 2; two-edge case 23. No engine output captured."
+      },
+      "pin": {
+        "languageId": "88888888888888888888888888888888",
+        "revision": "0ce7d88a7a0a394b3adce733ca199b5a43a62fed22f51fc1d58d70dd4fa15031",
+        "schema": 4,
+        "canonicalizer": "kriemhild-typed-json/1",
+        "engine": "languages/4",
+        "adapter": "sequence-compose/1",
+        "compiler": "languages-compiler/4",
+        "segmentation": "uniseg/0.4.7-unicode/15.0.0",
+        "normalizer": "x-text/0.29.0-unicode/15.0.0",
+        "script": {
+          "id": "77777777777777777777777777777777",
+          "revision": "e50260f7197fd260b418f4578be091b415927c863a70a7ed057dbb198cc5a849"
+        },
+        "renderer": "vector-script/1",
+        "rendererAdapter": "sign-layout/1",
+        "rendererCompiler": "vector-script-compiler/1"
+      },
+      "inputLayer": "surface",
+      "request": {
+        "spelling": {
+          "units": [
+            {
+              "kind": "segment",
+              "value": "n"
+            },
+            {
+              "kind": "segment",
+              "value": "a"
+            },
+            {
+              "kind": "segment",
+              "value": "n"
+            }
+          ]
+        },
+        "revision": "0ce7d88a7a0a394b3adce733ca199b5a43a62fed22f51fc1d58d70dd4fa15031",
+        "engine": "languages/4",
+        "operation": "spell",
+        "policy": "all",
+        "limit": 128,
+        "compiler": "languages-compiler/4",
+        "adapter": "sequence-compose/1"
+      },
+      "outcome": "success",
+      "comparison": "exact",
+      "expected": {
+        "spelling": {
+          "version": "sequence-orthography/1",
+          "segmentation": "uniseg/0.4.7-unicode/15.0.0",
+          "normalizer": "x-text/0.29.0-unicode/15.0.0",
+          "inputLayer": "surface",
+          "outputLayer": "grapheme",
+          "script": {
+            "id": "77777777777777777777777777777777",
+            "revision": "e50260f7197fd260b418f4578be091b415927c863a70a7ed057dbb198cc5a849"
+          },
+          "renderer": "vector-script/1",
+          "rendererAdapter": "sign-layout/1",
+          "rendererCompiler": "vector-script-compiler/1",
+          "steps": 33,
+          "clusters": [],
+          "spellings": [
+            {
+              "id": "72d2e45e90d121ae68ff5740a6a231db727b2d180e5728192f49d03f43758f62",
+              "input": [
+                {
+                  "kind": "segment",
+                  "value": "n"
+                },
+                {
+                  "kind": "segment",
+                  "value": "a"
+                },
+                {
+                  "kind": "segment",
+                  "value": "n"
+                }
+              ],
+              "output": [
+                {
+                  "unit": {
+                    "kind": "grapheme",
+                    "value": "n"
+                  },
+                  "sources": [0],
+                  "rules": ["plain-n"]
+                },
+                {
+                  "unit": {
+                    "kind": "grapheme",
+                    "value": "é"
+                  },
+                  "sources": [1],
+                  "rules": ["plain-a"]
+                },
+                {
+                  "unit": {
+                    "kind": "grapheme",
+                    "value": "N"
+                  },
+                  "sources": [2],
+                  "rules": ["word-right"]
+                }
+              ],
+              "stages": [
+                {
+                  "stage": "context-map",
+                  "kind": "rewrite",
+                  "inputLayer": "surface",
+                  "outputLayer": "grapheme",
+                  "offsetUnit": "source-token",
+                  "before": [
+                    {
+                      "unit": {
+                        "kind": "segment",
+                        "value": "n"
+                      },
+                      "sources": [0],
+                      "rules": []
+                    },
+                    {
+                      "unit": {
+                        "kind": "segment",
+                        "value": "a"
+                      },
+                      "sources": [1],
+                      "rules": []
+                    },
+                    {
+                      "unit": {
+                        "kind": "segment",
+                        "value": "n"
+                      },
+                      "sources": [2],
+                      "rules": []
+                    }
+                  ],
+                  "after": [
+                    {
+                      "unit": {
+                        "kind": "grapheme",
+                        "value": "n"
+                      },
+                      "sources": [0],
+                      "rules": ["plain-n"]
+                    },
+                    {
+                      "unit": {
+                        "kind": "grapheme",
+                        "value": "é"
+                      },
+                      "sources": [1],
+                      "rules": ["plain-a"]
+                    },
+                    {
+                      "unit": {
+                        "kind": "grapheme",
+                        "value": "N"
+                      },
+                      "sources": [2],
+                      "rules": ["word-right"]
+                    }
+                  ],
+                  "matches": [
+                    {
+                      "rule": "plain-n",
+                      "start": 0,
+                      "end": 1,
+                      "action": "replaced"
+                    },
+                    {
+                      "rule": "plain-a",
+                      "start": 1,
+                      "end": 2,
+                      "action": "replaced"
+                    },
+                    {
+                      "rule": "word-right",
+                      "start": 2,
+                      "end": 3,
+                      "action": "replaced"
+                    }
+                  ]
+                }
+              ],
+              "text": "néN",
+              "clusters": [
+                {
+                  "index": 0,
+                  "text": "n",
+                  "byteStart": 0,
+                  "byteEnd": 1,
+                  "utf16Start": 0,
+                  "utf16End": 1,
+                  "codePoints": ["U+006E"]
+                },
+                {
+                  "index": 1,
+                  "text": "é",
+                  "byteStart": 1,
+                  "byteEnd": 4,
+                  "utf16Start": 1,
+                  "utf16End": 3,
+                  "codePoints": ["U+0065", "U+0301"]
+                },
+                {
+                  "index": 2,
+                  "text": "N",
+                  "byteStart": 4,
+                  "byteEnd": 5,
+                  "utf16Start": 3,
+                  "utf16End": 4,
+                  "codePoints": ["U+004E"]
+                }
+              ]
+            }
+          ],
+          "preimages": []
+        },
+        "schema": 4,
+        "compiler": "languages-compiler/4",
+        "status": "success",
+        "languageId": "88888888888888888888888888888888",
+        "revision": "0ce7d88a7a0a394b3adce733ca199b5a43a62fed22f51fc1d58d70dd4fa15031",
+        "engine": "languages/4",
+        "canonicalizer": "kriemhild-typed-json/1",
+        "selection": "sha256-canonical-candidates/1",
+        "request": {
+          "revision": "0ce7d88a7a0a394b3adce733ca199b5a43a62fed22f51fc1d58d70dd4fa15031",
+          "engine": "languages/4",
+          "operation": "spell",
+          "policy": "all",
+          "limit": 128
+        },
+        "candidates": [],
+        "diagnostics": [],
+        "truncated": false,
+        "examined": 0,
+        "knownValid": 1,
+        "rejected": 0,
+        "diagnosticsOmitted": 0,
+        "adapter": "sequence-compose/1",
+        "kernel": "languages-spike/1",
+        "input": {
+          "spelling": {
+            "units": [
+              {
+                "kind": "segment",
+                "value": "n"
+              },
+              {
+                "kind": "segment",
+                "value": "a"
+              },
+              {
+                "kind": "segment",
+                "value": "n"
+              }
+            ]
+          },
+          "revision": "0ce7d88a7a0a394b3adce733ca199b5a43a62fed22f51fc1d58d70dd4fa15031",
+          "engine": "languages/4",
+          "operation": "spell",
+          "policy": "all",
+          "limit": 128,
+          "compiler": "languages-compiler/4",
+          "adapter": "sequence-compose/1"
+        },
+        "dependencies": [
+          {
+            "id": "77777777777777777777777777777777",
+            "revision": "e50260f7197fd260b418f4578be091b415927c863a70a7ed057dbb198cc5a849"
+          }
+        ]
+      }
+    }
+  ]
+}

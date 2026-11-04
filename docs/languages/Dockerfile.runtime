@@ -1,0 +1,16 @@
+# Focused integration runtime. Context contains a verified CGO-free Linux app
+# binary and production React dist built from the inspected working revision.
+# This does not replace or bypass the repository's unchanged production gates.
+FROM alpine:3.23
+RUN apk add --no-cache ca-certificates \
+    && addgroup -g 10001 kriemhild \
+    && adduser -D -H -u 10001 -G kriemhild kriemhild \
+    && mkdir -p /app /data && chown 10001:10001 /data
+WORKDIR /app
+COPY --chmod=0555 kriemhild /app/kriemhild
+COPY dist /app/dist
+ENV KRIEMHILD_ADDR=127.0.0.1:8124 KRIEMHILD_AUTH_MODE=local KRIEMHILD_DIST=/app/dist KRIEMHILD_DATA_DIR=/data
+USER 10001:10001
+VOLUME ["/data"]
+STOPSIGNAL SIGTERM
+ENTRYPOINT ["/app/kriemhild"]

@@ -1,6 +1,7 @@
 package world
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 )
@@ -29,6 +30,9 @@ type IllustrationObject struct {
 	Hidden   bool         `json:"hidden,omitempty"`
 }
 type Illustration struct {
+	LandKey string                        `json:"landKey,omitempty"`
+	Regions [][][2]float64                `json:"regions,omitempty"` // derived selected connected land, map coordinates
+	LandIDs []string                      `json:"landIds,omitempty"`
 	Version int                           `json:"version"`
 	ID      string                        `json:"id"`
 	Title   string                        `json:"title"`
@@ -41,6 +45,9 @@ type Illustration struct {
 }
 
 func (a Illustration) Validate() error {
+	if len(a.LandKey) > 80 {
+		return fmt.Errorf("invalid land selection revision")
+	}
 	if a.Version != 1 || !validID(a.ID) || len(a.Title) > 180 || len(a.Focus) > 160 || len(a.Layers) > 32 || len(a.Objects) > 3000 {
 		return fmt.Errorf("invalid illustration")
 	}
@@ -49,6 +56,18 @@ func (a Illustration) Validate() error {
 	}
 	if a.Style != "medieval" && a.Style != "historical" {
 		return fmt.Errorf("invalid illustration style")
+	}
+	count := 0
+	for _, ring := range a.Regions {
+		count += len(ring)
+		for _, p := range ring {
+			if !finite(p[0]) || !finite(p[1]) || p[0] < -4 || p[0] > 4 || p[1] < -4 || p[1] > 4 {
+				return fmt.Errorf("invalid selected land geometry")
+			}
+		}
+	}
+	if count > 80000 || len(a.LandIDs) > 10000 {
+		return fmt.Errorf("selected land exceeds illustration geometry budget")
 	}
 	for _, v := range a.Bounds {
 		if !finite(v) || v < -4 || v > 4 {
@@ -89,6 +108,9 @@ func (a Illustration) Validate() error {
 func (s *State) PutIllustration(a Illustration) error {
 	if err := a.Validate(); err != nil {
 		return err
+	}
+	if old, ok := s.Header.Illustrations[a.ID]; ok && bytes.Equal(raw(old), raw(a)) {
+		return nil
 	}
 	if len(s.Header.Illustrations) >= 32 {
 		if _, ok := s.Header.Illustrations[a.ID]; !ok {

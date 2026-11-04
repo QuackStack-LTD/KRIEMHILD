@@ -1,0 +1,88 @@
+{
+  "url": "http://127.0.0.1:8125/world/654eeab56b475687a27310c565a72de7/build?tileDebug=1&world=eaf5418978f6db4a6e2ca71ec669c854&age=311207b974a11e78ab18e9fa13854d47",
+  "world": "654eeab56b475687a27310c565a72de7",
+  "spec": {
+    "climateVersion": 2,
+    "version": "continuous-3",
+    "seed": "d1feae98-6510-4a72-951b-44e93a01ae86",
+    "preset": "earthlike",
+    "radiusKm": 6371,
+    "landCoverage": 0.32,
+    "continents": 5,
+    "complexity": 1,
+    "islands": 1,
+    "relief": 0.8,
+    "rainfall": 1.65,
+    "tilt": 23.4,
+    "layoutVariant": 0,
+    "tileSize": 256,
+    "surfaceWidth": 4096
+  },
+  "jobs": 1,
+  "before": {
+    "bed": 1094.3925634765612,
+    "waterSurface": 0,
+    "waterDepth": 0,
+    "water": "dry",
+    "coastDistanceKm": 313.9890362548826,
+    "temperature": -1.3356157678532017,
+    "precipitation": 120.83063359060664,
+    "pet": 445.7888714193963,
+    "moisture": 0.16262940778115073,
+    "roughness": 0.2193419197201716,
+    "biome": "tundra",
+    "landmass": {
+      "center": [
+        0.7595033584534487,
+        0.954654980278463
+      ],
+      "extent": 0.8687811432437578,
+      "family": "broad-shield",
+      "id": "continent-0"
+    },
+    "climate": {
+      "aridity": 0.27203249769907645,
+      "dryMonths": 11.180000000000007,
+      "exposure": 0.03463688217371276,
+      "rainShadow": 0.03445002547562706,
+      "seasonality": 0.9630411598440675,
+      "slope": 0.0005226430688315676,
+      "soil": 48.601591750164935,
+      "windX": 0.9544255390525938,
+      "windY": -0.18384943931215464
+    }
+  },
+  "after": {
+    "bed": 1094.3925634765612,
+    "waterSurface": 0,
+    "waterDepth": 0,
+    "water": "dry",
+    "coastDistanceKm": 313.9890362548826,
+    "temperature": -1.3356157678532017,
+    "precipitation": 120.83063359060664,
+    "pet": 445.7888714193963,
+    "moisture": 0.16262940778115073,
+    "roughness": 0.2193419197201716,
+    "biome": "tundra",
+    "landmass": {
+      "center": [
+        0.7595033584534487,
+        0.954654980278463
+      ],
+      "extent": 0.8687811432437578,
+      "family": "broad-shield",
+      "id": "continent-0"
+    },
+    "climate": {
+      "aridity": 0.27203249769907645,
+      "dryMonths": 11.180000000000007,
+      "exposure": 0.03463688217371276,
+      "rainShadow": 0.03445002547562706,
+      "seasonality": 0.9630411598440675,
+      "slope": 0.0005226430688315676,
+      "soil": 48.601591750164935,
+      "windX": 0.9544255390525938,
+      "windY": -0.18384943931215464
+    }
+  }
+}

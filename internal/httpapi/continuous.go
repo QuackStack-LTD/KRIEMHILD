@@ -9,6 +9,7 @@ import (
 	"kriemhild/internal/storage"
 	"kriemhild/internal/terrain/detail"
 	"kriemhild/internal/terrain/generate"
+	"kriemhild/internal/terrain/hydrology"
 	"kriemhild/internal/terrain/landmass"
 	"kriemhild/internal/terrain/model"
 	"kriemhild/internal/terrain/tiles"
@@ -43,6 +44,7 @@ func (s *Server) continuousRoutes() {
 	s.mux.HandleFunc("GET /api/sessions/{id}/terrain/sample", s.continuousSample)
 	s.mux.HandleFunc("GET /api/sessions/{id}/terrain/mesh", s.continuousMesh)
 	s.mux.HandleFunc("GET /api/sessions/{id}/terrain/features", s.continuousFeatures)
+	s.mux.HandleFunc("GET /api/sessions/{id}/terrain/land-selection", s.landSelection)
 	s.mux.HandleFunc("POST /api/sessions/{id}/settlements/preview", s.previewSettlement)
 	s.mux.HandleFunc("POST /api/sessions/{id}/settlements", s.acceptSettlement)
 }
@@ -65,6 +67,9 @@ func (s *Server) startTerrainJob(w http.ResponseWriter, r *http.Request) {
 	}
 	// Old versions remain readable; all valid new jobs use the fully materialized path.
 	req.Spec.Version = model.Version
+	if req.Spec.ClimateVersion < model.ClimateVersion {
+		req.Spec.ClimateVersion = model.ClimateVersion
+	}
 	select {
 	case s.slots <- struct{}{}:
 	default:
@@ -97,10 +102,10 @@ func (s *Server) startTerrainJob(w http.ResponseWriter, r *http.Request) {
 		var identity string
 		if err == nil {
 			job.mu.Lock()
-			job.Stage, job.Progress = "project integration", .95
+			job.Stage, job.Progress = "geological history, groundwater and resource systems", .95
 			job.mu.Unlock()
 			start := time.Now()
-			solver, err = legacyProjection(p)
+			solver, err = legacyProjectionContext(ctx, p)
 			p.Diagnostics.Timings["platform projection"] = float64(time.Since(start).Microseconds()) / 1000
 			if err == nil {
 				var meta, fields []byte
@@ -159,10 +164,11 @@ func (s *Server) terrainJobState(w http.ResponseWriter, r *http.Request) {
 	}
 	respond(w, 200, map[string]any{"stage": job.Stage, "progress": job.Progress, "status": job.Status, "error": job.Error, "session": job.Session})
 }
-func continuousTransform(ops []world.Operation, w, h int) tiles.Transform {
+func continuousTransform(ops []world.Operation, w, h int, p *model.Planet) tiles.Transform {
 	if len(ops) == 0 {
 		return nil
 	}
+	corrected := p.Spec.Version == model.Version && p.Spec.ClimateVersion >= 2
 	return func(s model.Sample, lon, lat float64) model.Sample {
 		x, y := (model.Wrap(lon)+math.Pi)/model.Tau*float64(w-1), (.5-lat/math.Pi)*float64(h-1)
 		wb := 0
@@ -170,7 +176,11 @@ func continuousTransform(ops []world.Operation, w, h int) tiles.Transform {
 			wb = 1
 		}
 		a := world.Apply(terrain.DetailPoint{Elevation: s.Bed, WaterLevel: s.WaterSurface, WaterDepth: s.WaterDepth, WaterBody: wb, Vegetation: s.Moisture, Biome: s.Biome}, x, y, ops)
-		s.Temperature -= (a.Elevation - s.Bed) * .0065
+		lapse := (a.Elevation - s.Bed) * .0065
+		if corrected {
+			lapse = (math.Max(0, a.Elevation) - math.Max(0, s.Bed)) * .0065
+		}
+		s.Temperature -= lapse
 		s.Bed, s.WaterSurface, s.WaterDepth, s.Moisture, s.Biome = a.Elevation, a.WaterLevel, a.WaterDepth, a.Vegetation, a.Biome
 		if a.WaterBody == 0 {
 			s.Water = "dry"
@@ -197,7 +207,7 @@ func (v *session) prepareContinuousOperation(op *world.Operation) {
 				px, py := model.Clamp(x+offset[0]*op.Radius, 0, float64(v.solver.W-1)), model.Clamp(y+offset[1]*op.Radius, 0, float64(v.solver.H-1))
 				lon, lat := -math.Pi+model.Tau*px/float64(v.solver.W-1), math.Pi/2-math.Pi*py/float64(v.solver.H-1)
 				s := sampler.Sample(lon, lat)
-				if f := continuousTransform(v.authored().Ops(world.Bounds{X: px, Y: py}), v.solver.W, v.solver.H); f != nil {
+				if f := continuousTransform(v.authored().Ops(world.Bounds{X: px, Y: py}), v.solver.W, v.solver.H, v.planet); f != nil {
 					s = f(s, lon, lat)
 				}
 				op.Samples[j*9+i] += s.Bed / 5
@@ -260,8 +270,8 @@ func (s *Server) continuousTile(w http.ResponseWriter, r *http.Request) {
 		v.tileIdentity = fmt.Sprintf("%x", h.Sum(nil))
 	}
 	opBytes, _ := json.Marshal(ops)
-	key := fmt.Sprintf("%s/%d/%d/%d/%d/%s/%x", v.tileIdentity, a[0], a[1], a[2], size, style, sha256.Sum256(opBytes))
-	transform := continuousTransform(ops, v.solver.W, v.solver.H)
+	key := fmt.Sprintf("%s/%s/%d/%d/%d/%d/%s/%x", tiles.RenderingVersion, v.tileIdentity, a[0], a[1], a[2], size, style, sha256.Sum256(opBytes))
+	transform := continuousTransform(ops, v.solver.W, v.solver.H, p)
 	v.mu.Unlock()
 	w.Header().Set("Content-Type", "image/png")
 	w.Header().Set("X-Terrain-Version", p.Spec.Version)
@@ -271,19 +281,22 @@ func (s *Server) continuousTile(w http.ResponseWriter, r *http.Request) {
 		w.Write(data)
 		return
 	}
+	queueStart := time.Now()
 	select {
 	case s.detailSlots <- struct{}{}:
 		defer func() { <-s.detailSlots }()
 	case <-r.Context().Done():
 		return
 	}
+	queueMS := float64(time.Since(queueStart).Microseconds()) / 1000
 	if data, ok := s.terrainTileCache.Get(key); ok {
 		w.Header().Set("X-Terrain-Cache", "hit")
 		w.Write(data)
 		return
 	}
 	start := time.Now()
-	data, err := tiles.Render(r.Context(), p, a[0], a[1], a[2], size, style, transform)
+	var timing tiles.RenderTiming
+	data, err := tiles.RenderMeasured(r.Context(), p, a[0], a[1], a[2], size, style, transform, &timing)
 	if err != nil {
 		if r.Context().Err() == nil {
 			fail(w, 400, err.Error())
@@ -291,7 +304,8 @@ func (s *Server) continuousTile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.terrainTileCache.Put(key, data)
-	w.Header().Set("Server-Timing", fmt.Sprintf("terrain;dur=%.2f", float64(time.Since(start).Microseconds())/1000))
+	w.Header().Set("Server-Timing", fmt.Sprintf("terrain-queue;dur=%.2f, terrain;dur=%.2f", queueMS, float64(time.Since(start).Microseconds())/1000))
+	w.Header().Add("Server-Timing", fmt.Sprintf("sampling;dur=%.2f, edits;dur=%.2f, raster;dur=%.2f, png;dur=%.2f", timing.SamplingMS, timing.TransformMS, timing.RasterMS, timing.EncodeMS))
 	w.Header().Set("X-Terrain-Cache", "miss")
 	w.Header().Set("Content-Type", "image/png")
 	w.Header().Set("X-Terrain-Version", p.Spec.Version)
@@ -309,29 +323,43 @@ func (s *Server) continuousSample(w http.ResponseWriter, r *http.Request) {
 	if v == nil {
 		return
 	}
-	defer v.mu.Unlock()
 	if v.planet == nil {
+		v.mu.Unlock()
 		fail(w, 409, "Legacy terrain has no continuous sampler")
 		return
 	}
+	revision := v.authored().Header.Revision
+	if requested := r.URL.Query().Get("revision"); requested != "" && requested != strconv.Itoa(revision) {
+		v.mu.Unlock()
+		fail(w, 409, "Terrain changed during geographic inspection")
+		return
+	}
+	p := v.planet // Immutable source; authored edits are captured separately.
 	lon *= math.Pi / 180
 	lat *= math.Pi / 180
-	a := detail.New(v.planet).Sample(lon, lat)
 	x, y := (model.Wrap(lon)+math.Pi)/model.Tau*float64(v.solver.W-1), (.5-lat/math.Pi)*float64(v.solver.H-1)
-	if f := continuousTransform(v.authored().Ops(world.Bounds{X: x, Y: y}), v.solver.W, v.solver.H); f != nil {
+	ops := append([]world.Operation(nil), v.authored().Ops(world.Bounds{X: x, Y: y})...)
+	transform := continuousTransform(ops, v.solver.W, v.solver.H, p)
+	v.mu.Unlock()
+	started := time.Now()
+	a := detail.New(p).Sample(lon, lat)
+	if f := transform; f != nil {
 		a = f(a, lon, lat)
 	}
 	var mass any
 	if a.Water == "dry" {
-		if m := landmass.Identity(v.planet, lon, lat); m != nil {
+		if m := landmass.Identity(p, lon, lat); m != nil {
 			mass = map[string]any{"id": m.ID, "family": m.Family, "center": m.Center, "extent": m.Extent}
 		}
 	}
+	w.Header().Set("Server-Timing", fmt.Sprintf("query;dur=%.2f", float64(time.Since(started).Microseconds())/1000))
+	w.Header().Set("X-Terrain-Revision", strconv.Itoa(revision))
 	respond(w, 200, struct {
 		model.Sample
+		Revision int                `json:"revision"`
 		Landmass any                `json:"landmass,omitempty"`
 		Climate  map[string]float64 `json:"climate"`
-	}{a, mass, sampleClimate(v.planet, lon, lat)})
+	}{a, revision, mass, sampleClimate(p, lon, lat)})
 }
 func sampleClimate(p *model.Planet, lon, lat float64) map[string]float64 {
 	fields := map[string]float64{}
@@ -347,14 +375,23 @@ func (s *Server) continuousFeatures(w http.ResponseWriter, r *http.Request) {
 	if v == nil {
 		return
 	}
-	defer v.mu.Unlock()
 	if v.planet == nil {
+		v.mu.Unlock()
 		fail(w, 409, "Legacy terrain")
 		return
 	}
+	p, revision, stale := v.planet, v.authored().Header.Revision, v.terrainAnalysisStale()
+	v.mu.Unlock()
 	var coasts [][]model.Point
-	if v.planet.Surface != nil {
-		coasts = v.planet.Surface.Coasts
+	if p.Surface != nil {
+		coasts = p.Surface.Coasts
 	}
-	respond(w, 200, map[string]any{"rivers": v.planet.Rivers, "coasts": coasts, "legend": tiles.BiomeColors, "masses": v.planet.Masses, "revision": v.authored().Header.Revision, "units": "radians; elevations and widths in metres; discharge in m3/s"})
+	graph := hydrology.Build(p)
+	out := map[string]any{"rivers": p.Rivers, "coasts": coasts, "legend": tiles.BiomeColors, "masses": p.Masses, "revision": revision, "analysisStale": stale,
+		"hydrology": map[string]any{"revision": graph.Revision, "counts": graph.Counts, "issues": graph.Issues, "nodes": len(graph.Nodes), "reaches": len(graph.Reaches)},
+		"units":     "radians; elevations and widths in metres; discharge in m3/s"}
+	if r.URL.Query().Get("topology") == "1" {
+		out["topology"] = graph
+	}
+	respond(w, 200, out)
 }

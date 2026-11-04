@@ -8,6 +8,9 @@ import (
 
 func TestMountainDetailHasRegionalReliefAndKeepsParentAnchors(t *testing.T) {
 	p := &model.Planet{Spec: model.DefaultSpec(), Seed: 37, Grid: model.Grid{Width: 192, Height: 96, Fields: map[string][]float64{}}}
+	// The old procedural refinement used climate anchors. New materialized
+	// relief has its own version and deliberately removes that grid envelope.
+	p.Spec.ReliefVersion = 0
 	for k, v := range map[string]float64{"roughness": .8, "temperature": 0, "moisture": .5, "windX": 1} {
 		a := make([]float64, 192*96)
 		for i := range a {

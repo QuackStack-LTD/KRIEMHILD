@@ -1,0 +1,134 @@
+{
+  "version": "sequence-corpus/1",
+  "id": "brief6-wrong-input-layer",
+  "bounds": {
+    "calls": 1,
+    "work": 13000000,
+    "reportBytes": 262144
+  },
+  "cases": [
+    {
+      "id": "wrong-input-layer",
+      "description": "Validly typed grapheme rejected as surface input",
+      "tags": ["brief6", "wrong-input-layer"],
+      "review": {
+        "status": "reviewed",
+        "reviewer": "Codex (independent derivation; not human approval)",
+        "provenance": "executeSpelling documented surface layer restriction and TestSequenceValidationCompatibilityAndReadiness. Preflight pins are valid; production rejects the request before matching."
+      },
+      "pin": {
+        "languageId": "88888888888888888888888888888888",
+        "revision": "57d62c51f97c83715b0fbf4b147a910b5d66fd8700191523f7a14459cd782cd5",
+        "schema": 4,
+        "canonicalizer": "kriemhild-typed-json/1",
+        "engine": "languages/4",
+        "adapter": "sequence-compose/1",
+        "compiler": "languages-compiler/4",
+        "segmentation": "uniseg/0.4.7-unicode/15.0.0",
+        "normalizer": "x-text/0.29.0-unicode/15.0.0",
+        "script": {
+          "id": "77777777777777777777777777777777",
+          "revision": "e50260f7197fd260b418f4578be091b415927c863a70a7ed057dbb198cc5a849"
+        },
+        "renderer": "vector-script/1",
+        "rendererAdapter": "sign-layout/1",
+        "rendererCompiler": "vector-script-compiler/1"
+      },
+      "inputLayer": "surface",
+      "request": {
+        "spelling": {
+          "units": [
+            {
+              "kind": "grapheme",
+              "value": "p"
+            }
+          ]
+        },
+        "revision": "57d62c51f97c83715b0fbf4b147a910b5d66fd8700191523f7a14459cd782cd5",
+        "engine": "languages/4",
+        "operation": "spell",
+        "policy": "all",
+        "limit": 128,
+        "compiler": "languages-compiler/4",
+        "adapter": "sequence-compose/1"
+      },
+      "outcome": "rejected",
+      "comparison": "exact",
+      "expected": {
+        "spelling": {
+          "version": "sequence-orthography/1",
+          "segmentation": "uniseg/0.4.7-unicode/15.0.0",
+          "normalizer": "x-text/0.29.0-unicode/15.0.0",
+          "inputLayer": "surface",
+          "outputLayer": "sign",
+          "script": {
+            "id": "77777777777777777777777777777777",
+            "revision": "e50260f7197fd260b418f4578be091b415927c863a70a7ed057dbb198cc5a849"
+          },
+          "renderer": "vector-script/1",
+          "rendererAdapter": "sign-layout/1",
+          "rendererCompiler": "vector-script-compiler/1",
+          "steps": 1,
+          "clusters": [],
+          "spellings": [],
+          "preimages": []
+        },
+        "schema": 4,
+        "compiler": "languages-compiler/4",
+        "status": "invalid_unit",
+        "languageId": "88888888888888888888888888888888",
+        "revision": "57d62c51f97c83715b0fbf4b147a910b5d66fd8700191523f7a14459cd782cd5",
+        "engine": "languages/4",
+        "canonicalizer": "kriemhild-typed-json/1",
+        "selection": "sha256-canonical-candidates/1",
+        "request": {
+          "revision": "57d62c51f97c83715b0fbf4b147a910b5d66fd8700191523f7a14459cd782cd5",
+          "engine": "languages/4",
+          "operation": "spell",
+          "policy": "all",
+          "limit": 128
+        },
+        "candidates": [],
+        "diagnostics": [
+          {
+            "code": "invalid_unit",
+            "severity": "error",
+            "module": "sequenceWriting",
+            "path": "input",
+            "message": "Input must belong to the declared post-phonological layer."
+          }
+        ],
+        "truncated": false,
+        "examined": 0,
+        "knownValid": 0,
+        "rejected": 0,
+        "diagnosticsOmitted": 0,
+        "adapter": "sequence-compose/1",
+        "kernel": "languages-spike/1",
+        "input": {
+          "spelling": {
+            "units": [
+              {
+                "kind": "grapheme",
+                "value": "p"
+              }
+            ]
+          },
+          "revision": "57d62c51f97c83715b0fbf4b147a910b5d66fd8700191523f7a14459cd782cd5",
+          "engine": "languages/4",
+          "operation": "spell",
+          "policy": "all",
+          "limit": 128,
+          "compiler": "languages-compiler/4",
+          "adapter": "sequence-compose/1"
+        },
+        "dependencies": [
+          {
+            "id": "77777777777777777777777777777777",
+            "revision": "e50260f7197fd260b418f4578be091b415927c863a70a7ed057dbb198cc5a849"
+          }
+        ]
+      }
+    }
+  ]
+}

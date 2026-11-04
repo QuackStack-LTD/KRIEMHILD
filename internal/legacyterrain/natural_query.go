@@ -48,6 +48,23 @@ type NaturalIndex struct {
 	cells [][]int
 }
 
+// NaturalCellsWithinKM returns intersecting regional footprints. An overlap is
+// evidence for a generated range, not a surveyed point occurrence.
+func (e *Environment) NaturalCellsWithinKM(x, y, radius float64) []int {
+	out := []int{}
+	if e == nil || e.Geography == nil {
+		return out
+	}
+	for yy := 0; yy < e.Options.Rows; yy++ {
+		for xx := 0; xx < e.Options.Columns; xx++ {
+			if e.distanceToCellKM(x, y, xx, yy) <= radius {
+				out = append(out, yy*e.Options.Columns+xx)
+			}
+		}
+	}
+	return out
+}
+
 func NewNaturalIndex(e *Environment) *NaturalIndex {
 	idx := &NaturalIndex{e: e}
 	if e == nil || e.Resources == nil || e.Geology == nil {

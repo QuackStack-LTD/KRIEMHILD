@@ -1,0 +1,1023 @@
+{
+  "inverse": {
+    "version": "survivor-trie/1",
+    "identity": "a9a9254a86fadc00e0736b421aa8cc599cced6886e92dc9d348c27d285c26aae",
+    "request": "e5ee2df33b630bec2797f280be99aa0cf1aff2001ddcb95d08bae9f5da68114b",
+    "units": "phonological-segment-ids",
+    "records": 12,
+    "eligible": 9,
+    "pruned": 3,
+    "nodesVisited": 4,
+    "steps": 297,
+    "payloadBytes": 27823,
+    "stop": "ambiguous"
+  },
+  "rejectedDerivations": [
+    {
+      "failure": {
+        "code": "word_shape",
+        "severity": "error",
+        "module": "phonotactics",
+        "path": "request.segments",
+        "message": "The complete form matches none of the authored allowed word patterns."
+      },
+      "candidate": "",
+      "lexeme": "tree",
+      "cell": "many",
+      "steps": [
+        {
+          "stage": "lexical",
+          "ruleId": "tree",
+          "before": [],
+          "after": [
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            },
+            {
+              "segment": "a"
+            }
+          ]
+        },
+        {
+          "stage": "cell",
+          "ruleId": "many",
+          "before": [
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            },
+            {
+              "segment": "a"
+            }
+          ],
+          "after": [
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            },
+            {
+              "segment": "a"
+            }
+          ]
+        },
+        {
+          "stage": "allomorph",
+          "ruleId": "plural-suffix",
+          "allomorph": "else-a",
+          "before": [
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            },
+            {
+              "segment": "a"
+            }
+          ],
+          "after": [
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "a"
+            }
+          ],
+          "alternatives": [
+            {
+              "id": "after-t",
+              "decision": "condition-failed"
+            },
+            {
+              "id": "after-n",
+              "decision": "condition-failed"
+            },
+            {
+              "id": "else-a",
+              "decision": "selected"
+            }
+          ]
+        },
+        {
+          "stage": "boundary-rule",
+          "ruleId": "t-before-a-suffix",
+          "before": [
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "a"
+            }
+          ],
+          "after": [
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "a"
+            }
+          ]
+        },
+        {
+          "stage": "erase-boundaries",
+          "ruleId": "stem-edge",
+          "before": [
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "a"
+            }
+          ],
+          "after": [
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "a"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "failure": {
+        "code": "word_shape",
+        "severity": "error",
+        "module": "phonotactics",
+        "path": "request.segments",
+        "message": "The complete form matches none of the authored allowed word patterns."
+      },
+      "candidate": "",
+      "lexeme": "tree",
+      "cell": "framed",
+      "steps": [
+        {
+          "stage": "lexical",
+          "ruleId": "tree",
+          "before": [],
+          "after": [
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            },
+            {
+              "segment": "a"
+            }
+          ]
+        },
+        {
+          "stage": "cell",
+          "ruleId": "framed",
+          "before": [
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            },
+            {
+              "segment": "a"
+            }
+          ],
+          "after": [
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            },
+            {
+              "segment": "a"
+            }
+          ]
+        },
+        {
+          "stage": "allomorph",
+          "ruleId": "frame",
+          "allomorph": "i-a-frame",
+          "before": [
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            },
+            {
+              "segment": "a"
+            }
+          ],
+          "after": [
+            {
+              "segment": "i"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "a"
+            }
+          ],
+          "alternatives": [
+            {
+              "id": "i-a-frame",
+              "decision": "selected"
+            }
+          ]
+        },
+        {
+          "stage": "allomorph",
+          "ruleId": "after-frame",
+          "allomorph": "frame-confirm",
+          "before": [
+            {
+              "segment": "i"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "a"
+            }
+          ],
+          "after": [
+            {
+              "segment": "i"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "a"
+            }
+          ],
+          "alternatives": [
+            {
+              "id": "frame-confirm",
+              "decision": "selected"
+            }
+          ]
+        },
+        {
+          "stage": "boundary-rule",
+          "ruleId": "t-before-a-suffix",
+          "before": [
+            {
+              "segment": "i"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "a"
+            }
+          ],
+          "after": [
+            {
+              "segment": "i"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "a"
+            }
+          ]
+        },
+        {
+          "stage": "erase-boundaries",
+          "ruleId": "stem-edge",
+          "before": [
+            {
+              "segment": "i"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "a"
+            }
+          ],
+          "after": [
+            {
+              "segment": "i"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "a"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "schema": 3,
+  "compiler": "languages-compiler/3",
+  "derivations": [
+    {
+      "candidate": "20cf34b11769dbe611a782fed2ffdd0f1d5b651190304f6b24332541b21b7f17",
+      "lexeme": "rock",
+      "cell": "many",
+      "steps": [
+        {
+          "stage": "lexical",
+          "ruleId": "rock",
+          "before": [],
+          "after": [
+            {
+              "segment": "p"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            }
+          ]
+        },
+        {
+          "stage": "cell",
+          "ruleId": "many",
+          "before": [
+            {
+              "segment": "p"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            }
+          ],
+          "after": [
+            {
+              "segment": "p"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            }
+          ]
+        },
+        {
+          "stage": "allomorph",
+          "ruleId": "plural-suffix",
+          "allomorph": "after-t",
+          "before": [
+            {
+              "segment": "p"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            }
+          ],
+          "after": [
+            {
+              "segment": "p"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "a"
+            }
+          ],
+          "alternatives": [
+            {
+              "id": "after-t",
+              "decision": "selected"
+            },
+            {
+              "id": "after-n",
+              "decision": "precedence-skipped"
+            },
+            {
+              "id": "else-a",
+              "decision": "precedence-skipped"
+            }
+          ]
+        },
+        {
+          "stage": "boundary-rule",
+          "ruleId": "t-before-a-suffix",
+          "before": [
+            {
+              "segment": "p"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "a"
+            }
+          ],
+          "after": [
+            {
+              "segment": "p"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "d"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "a"
+            }
+          ]
+        },
+        {
+          "stage": "erase-boundaries",
+          "ruleId": "stem-edge",
+          "before": [
+            {
+              "segment": "p"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "d"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "a"
+            }
+          ],
+          "after": [
+            {
+              "segment": "p"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "d"
+            },
+            {
+              "segment": "a"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "candidate": "877a348ab0a876bf38472306cbee0053abd393e44f20b842543f70e6986a560f",
+      "lexeme": "stone",
+      "cell": "many",
+      "steps": [
+        {
+          "stage": "lexical",
+          "ruleId": "stone",
+          "before": [],
+          "after": [
+            {
+              "segment": "p"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            }
+          ]
+        },
+        {
+          "stage": "cell",
+          "ruleId": "many",
+          "before": [
+            {
+              "segment": "p"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            }
+          ],
+          "after": [
+            {
+              "segment": "p"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            }
+          ]
+        },
+        {
+          "stage": "allomorph",
+          "ruleId": "plural-suffix",
+          "allomorph": "after-t",
+          "before": [
+            {
+              "segment": "p"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            }
+          ],
+          "after": [
+            {
+              "segment": "p"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "a"
+            }
+          ],
+          "alternatives": [
+            {
+              "id": "after-t",
+              "decision": "selected"
+            },
+            {
+              "id": "after-n",
+              "decision": "precedence-skipped"
+            },
+            {
+              "id": "else-a",
+              "decision": "precedence-skipped"
+            }
+          ]
+        },
+        {
+          "stage": "boundary-rule",
+          "ruleId": "t-before-a-suffix",
+          "before": [
+            {
+              "segment": "p"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "t"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "a"
+            }
+          ],
+          "after": [
+            {
+              "segment": "p"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "d"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "a"
+            }
+          ]
+        },
+        {
+          "stage": "erase-boundaries",
+          "ruleId": "stem-edge",
+          "before": [
+            {
+              "segment": "p"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "d"
+            },
+            {
+              "boundary": "morpheme"
+            },
+            {
+              "segment": "a"
+            }
+          ],
+          "after": [
+            {
+              "segment": "p"
+            },
+            {
+              "segment": "a"
+            },
+            {
+              "segment": "d"
+            },
+            {
+              "segment": "a"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "status": "ambiguous",
+  "languageId": "55555555555555555555555555555555",
+  "revision": "fd802a20cb1bcd6ce254a441edc0ae1733c31dbcad3207b50a4bdf1dc330f2b0",
+  "engine": "languages/3",
+  "canonicalizer": "kriemhild-typed-json/1",
+  "selection": "sha256-canonical-candidates/1",
+  "request": {
+    "revision": "fd802a20cb1bcd6ce254a441edc0ae1733c31dbcad3207b50a4bdf1dc330f2b0",
+    "engine": "languages/3",
+    "operation": "analyze",
+    "segments": [
+      "p",
+      "a",
+      "d",
+      "a"
+    ],
+    "policy": "all",
+    "limit": 64
+  },
+  "candidates": [
+    {
+      "lexeme": "rock",
+      "cell": "many",
+      "features": {
+        "number": "many",
+        "shape": "plain"
+      },
+      "underlying": [
+        "p",
+        "a",
+        "t"
+      ],
+      "segments": [
+        "p",
+        "a",
+        "d",
+        "a"
+      ],
+      "trace": [
+        {
+          "stage": "lexical",
+          "ruleId": "rock",
+          "before": [],
+          "after": [
+            "p",
+            "a",
+            "t"
+          ]
+        },
+        {
+          "stage": "cell",
+          "ruleId": "many",
+          "before": [
+            "p",
+            "a",
+            "t"
+          ],
+          "after": [
+            "p",
+            "a",
+            "t"
+          ]
+        },
+        {
+          "stage": "allomorph",
+          "ruleId": "plural-suffix/after-t",
+          "before": [
+            "p",
+            "a",
+            "t"
+          ],
+          "after": [
+            "p",
+            "a",
+            "t",
+            "\u003cmorpheme\u003e",
+            "a"
+          ]
+        },
+        {
+          "stage": "boundary-rule",
+          "ruleId": "t-before-a-suffix",
+          "before": [
+            "p",
+            "a",
+            "t",
+            "\u003cmorpheme\u003e",
+            "a"
+          ],
+          "after": [
+            "p",
+            "a",
+            "d",
+            "\u003cmorpheme\u003e",
+            "a"
+          ]
+        },
+        {
+          "stage": "erase-boundaries",
+          "ruleId": "stem-edge",
+          "before": [
+            "p",
+            "a",
+            "d",
+            "\u003cmorpheme\u003e",
+            "a"
+          ],
+          "after": [
+            "p",
+            "a",
+            "d",
+            "a"
+          ]
+        }
+      ]
+    },
+    {
+      "lexeme": "stone",
+      "cell": "many",
+      "features": {
+        "number": "many",
+        "shape": "plain"
+      },
+      "underlying": [
+        "p",
+        "a",
+        "t"
+      ],
+      "segments": [
+        "p",
+        "a",
+        "d",
+        "a"
+      ],
+      "trace": [
+        {
+          "stage": "lexical",
+          "ruleId": "stone",
+          "before": [],
+          "after": [
+            "p",
+            "a",
+            "t"
+          ]
+        },
+        {
+          "stage": "cell",
+          "ruleId": "many",
+          "before": [
+            "p",
+            "a",
+            "t"
+          ],
+          "after": [
+            "p",
+            "a",
+            "t"
+          ]
+        },
+        {
+          "stage": "allomorph",
+          "ruleId": "plural-suffix/after-t",
+          "before": [
+            "p",
+            "a",
+            "t"
+          ],
+          "after": [
+            "p",
+            "a",
+            "t",
+            "\u003cmorpheme\u003e",
+            "a"
+          ]
+        },
+        {
+          "stage": "boundary-rule",
+          "ruleId": "t-before-a-suffix",
+          "before": [
+            "p",
+            "a",
+            "t",
+            "\u003cmorpheme\u003e",
+            "a"
+          ],
+          "after": [
+            "p",
+            "a",
+            "d",
+            "\u003cmorpheme\u003e",
+            "a"
+          ]
+        },
+        {
+          "stage": "erase-boundaries",
+          "ruleId": "stem-edge",
+          "before": [
+            "p",
+            "a",
+            "d",
+            "\u003cmorpheme\u003e",
+            "a"
+          ],
+          "after": [
+            "p",
+            "a",
+            "d",
+            "a"
+          ]
+        }
+      ]
+    }
+  ],
+  "diagnostics": [],
+  "truncated": false,
+  "examined": 9,
+  "knownValid": 2,
+  "rejected": 2,
+  "diagnosticsOmitted": 0,
+  "adapter": "finite-compose/2",
+  "kernel": "languages-spike/1",
+  "input": {
+    "revision": "fd802a20cb1bcd6ce254a441edc0ae1733c31dbcad3207b50a4bdf1dc330f2b0",
+    "engine": "languages/3",
+    "operation": "analyze",
+    "segments": [
+      "p",
+      "a",
+      "d",
+      "a"
+    ],
+    "policy": "all",
+    "limit": 64,
+    "compiler": "languages-compiler/3",
+    "adapter": "finite-compose/2"
+  }
+}

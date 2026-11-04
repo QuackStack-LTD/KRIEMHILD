@@ -1,0 +1,143 @@
+[
+  {
+    "renderer": "viewport",
+    "dpr": 3,
+    "complete": true,
+    "process": [
+      {
+        "Id": 3948,
+        "ProcessName": "chrome",
+        "WorkingSet64": 131969024,
+        "PeakWorkingSet64": 135917568,
+        "PrivateMemorySize64": 62754816
+      },
+      {
+        "Id": 11876,
+        "ProcessName": "chrome",
+        "WorkingSet64": 19742720,
+        "PeakWorkingSet64": 19746816,
+        "PrivateMemorySize64": 10125312
+      },
+      {
+        "Id": 15152,
+        "ProcessName": "chrome",
+        "WorkingSet64": 512086016,
+        "PeakWorkingSet64": 512778240,
+        "PrivateMemorySize64": 382132224
+      },
+      {
+        "Id": 15424,
+        "ProcessName": "chrome",
+        "WorkingSet64": 39669760,
+        "PeakWorkingSet64": 41377792,
+        "PrivateMemorySize64": 17461248
+      },
+      {
+        "Id": 15456,
+        "ProcessName": "chrome",
+        "WorkingSet64": 414679040,
+        "PeakWorkingSet64": 417095680,
+        "PrivateMemorySize64": 138493952
+      },
+      {
+        "Id": 15872,
+        "ProcessName": "chrome",
+        "WorkingSet64": 86425600,
+        "PeakWorkingSet64": 86429696,
+        "PrivateMemorySize64": 48340992
+      },
+      {
+        "Id": 16316,
+        "ProcessName": "chrome",
+        "WorkingSet64": 31952896,
+        "PeakWorkingSet64": 31956992,
+        "PrivateMemorySize64": 17186816
+      }
+    ],
+    "processAfterGC": [
+      {
+        "Id": 3948,
+        "ProcessName": "chrome",
+        "WorkingSet64": 132206592,
+        "PeakWorkingSet64": 135917568,
+        "PrivateMemorySize64": 62877696
+      },
+      {
+        "Id": 11876,
+        "ProcessName": "chrome",
+        "WorkingSet64": 19742720,
+        "PeakWorkingSet64": 19746816,
+        "PrivateMemorySize64": 10125312
+      },
+      {
+        "Id": 15152,
+        "ProcessName": "chrome",
+        "WorkingSet64": 404549632,
+        "PeakWorkingSet64": 512778240,
+        "PrivateMemorySize64": 381825024
+      },
+      {
+        "Id": 15424,
+        "ProcessName": "chrome",
+        "WorkingSet64": 39694336,
+        "PeakWorkingSet64": 41377792,
+        "PrivateMemorySize64": 17465344
+      },
+      {
+        "Id": 15456,
+        "ProcessName": "chrome",
+        "WorkingSet64": 271319040,
+        "PeakWorkingSet64": 417095680,
+        "PrivateMemorySize64": 102719488
+      },
+      {
+        "Id": 15872,
+        "ProcessName": "chrome",
+        "WorkingSet64": 86487040,
+        "PeakWorkingSet64": 86491136,
+        "PrivateMemorySize64": 48345088
+      },
+      {
+        "Id": 16316,
+        "ProcessName": "chrome",
+        "WorkingSet64": 31981568,
+        "PeakWorkingSet64": 31985664,
+        "PrivateMemorySize64": 17186816
+      }
+    ],
+    "software": true,
+    "memory": {
+      "jsHeap": 38691579,
+      "frame": {
+        "time": 3596.7999999970198,
+        "event": "frame",
+        "generation": 2,
+        "phase": "final",
+        "revision": 10,
+        "bounds": {
+          "x": 0,
+          "y": -0.13642297650130553,
+          "w": 2,
+          "h": 1.272845953002611
+        },
+        "z": 3,
+        "pixels": {
+          "width": 4596,
+          "height": 2925
+        },
+        "duration": 2410.7999999970198,
+        "bytes": 7363387,
+        "cacheBytes": 11606307,
+        "workingCanvasBytes": 187990928,
+        "decodedFrameBytes": 107546400,
+        "hits": 0,
+        "misses": 272,
+        "evictions": 0
+      },
+      "images": 2,
+      "status": "Equirectangular · 6371 km radius\nMove over the map\n0.0× detail\n8006.0 km ━━━━━\nReady",
+      "failures": []
+    },
+    "note": "Working set after completion; per-process lifetime peaks are upper bounds, not simultaneous aggregate peaks. Warm server caches."
+  }
+]

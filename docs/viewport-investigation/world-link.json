@@ -1,0 +1,21 @@
+{
+  "worlds": [
+    {
+      "id": "55815c1c9264170f1e4dc6076b0300a5",
+      "name": "The Ordered World",
+      "description": "",
+      "currentAge": "29707595f0daafd73a8246dafc832771",
+      "revision": 29,
+      "updatedAt": 1791998454791
+    }
+  ],
+  "ages": [
+    {
+      "id": "29707595f0daafd73a8246dafc832771",
+      "name": "First Age",
+      "timelineId": "9d238e58aec4ab2d0c1198693fe69d0a"
+    }
+  ],
+  "attachedTerrains": [],
+  "attachedMaps": []
+}

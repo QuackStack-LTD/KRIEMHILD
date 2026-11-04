@@ -14,7 +14,7 @@ func (e *Environment) ValidateNaturalData() error {
 	}
 	g, r := e.Geology, e.Resources
 	n, w, h := len(e.Mask), e.Options.Columns, e.Options.Rows
-	if g.Version != 1 || r.Version != 1 || r.GeologyVersion != g.Version || len(g.Cells) != n || g.Coordinates == "" || r.Units == "" || len(g.Provinces) == 0 || len(g.Provinces) > n || len(g.Formations) > 3*n || len(g.Structures) > n || len(r.Occurrences) > len(ResourceCatalog)*n {
+	if g.Version != 1 || (r.Version != 1 && r.Version != 2) || r.GeologyVersion != g.Version || len(g.Cells) != n || g.Coordinates == "" || r.Units == "" || len(g.Provinces) == 0 || len(g.Provinces) > n || len(g.Formations) > 3*n || len(g.Structures) > n || len(r.Occurrences) > len(ResourceCatalog)*n {
 		return fmt.Errorf("invalid natural-layer schema or dimensions")
 	}
 	ids := map[string]string{}
@@ -71,6 +71,9 @@ func (e *Environment) ValidateNaturalData() error {
 		}
 		if p.Geometry.Kind != "region" || p.Setting == "" || p.Rock == "" || p.Process == "" || !finite(p.AgeMa) || p.AgeMa < 0 || p.AgeMa > 4600 || !unit(p.History.OrganicPreservation) || !finite(p.History.MaxBurial) || p.History.MaxBurial < 0 || !finite(p.History.MaxTemperature) || p.History.MaxTemperature < 0 {
 			return fmt.Errorf("invalid geological history %s", p.ID)
+		}
+		if r.Version == 2 && (p.Type == "" || p.Crust == "" || !unit(p.FaultDensity) || !finite(p.UpliftMetres) || p.UpliftMetres < 0 || !unit(p.Metamorphism) || p.History.SourceEnvironment == "" || !finite(p.History.BurialDurationMa) || p.History.BurialDurationMa < 0 || !finite(p.History.HeatFlowMWM2) || p.History.HeatFlowMWM2 < 0 || !unit(p.History.Preservation) || p.History.Maturity == "") {
+			return fmt.Errorf("invalid continuous geological history %s", p.ID)
 		}
 		age := p.AgeMa
 		for _, event := range p.Events {
@@ -221,7 +224,7 @@ func (e *Environment) ValidateNaturalData() error {
 		if o.Variant != "placer" {
 			continue
 		}
-		if o.Type != "gold" && o.Type != "tin" && o.Type != "gemstones" {
+		if o.Type != "gold" && o.Type != "tin" && o.Type != "gemstones" && o.Type != "diamonds" && o.Type != "ruby-sapphire" {
 			return fmt.Errorf("unsupported placer %s", o.ID)
 		}
 		reachable := map[int]bool{}
@@ -270,6 +273,83 @@ func (e *Environment) ValidateNaturalData() error {
 	for _, d := range ResourceCatalog {
 		if d.Continuous && len(r.Potential[d.ID]) != n {
 			return fmt.Errorf("missing potential field %s", d.ID)
+		}
+	}
+	if r.Version == 2 {
+		if len(r.Source) != 64 || r.Source != e.NaturalSource || r.Generator != "continuous-resources/1" || len(r.Systems) > len(r.Occurrences) || len(r.Districts) > len(r.Occurrences) {
+			return fmt.Errorf("invalid continuous resource provenance/hierarchy")
+		}
+		systems := map[string]ResourceSystem{}
+		districts := map[string]ResourceDistrict{}
+		members := map[string]string{}
+		for _, s := range r.Systems {
+			if s.ID == "" || systems[s.ID].ID != "" || ids[s.ProvinceID] != "province" || len(s.FormationIDs) == 0 || len(s.ReasonCodes) == 0 {
+				return fmt.Errorf("invalid resource system")
+			}
+			for _, id := range s.FormationIDs {
+				if ids[id] != "formation" {
+					return fmt.Errorf("invalid resource host")
+				}
+			}
+			commodities := map[string]bool{}
+			for _, id := range s.Commodities {
+				if _, ok := catalog[id]; !ok || commodities[id] {
+					return fmt.Errorf("invalid resource system commodity")
+				}
+				commodities[id] = true
+			}
+			if s.Kind == "" || len(s.Commodities) == 0 {
+				return fmt.Errorf("empty resource system")
+			}
+			systems[s.ID] = s
+		}
+		for _, d := range r.Districts {
+			if d.ID == "" || districts[d.ID].ID != "" || systems[d.SystemID].ID == "" {
+				return fmt.Errorf("invalid resource district")
+			}
+			if err := geometry(d.ID, d.Geometry); err != nil {
+				return err
+			}
+			districts[d.ID] = d
+			for _, id := range d.Occurrences {
+				if resources[id].ID == "" || members[id] != "" {
+					return fmt.Errorf("invalid district membership")
+				}
+				members[id] = d.ID
+			}
+		}
+		for _, o := range r.Occurrences {
+			if systems[o.SystemID].ID == "" || districts[o.DistrictID].SystemID != o.SystemID || members[o.ID] != o.DistrictID || !finite(o.Quantity) || o.Quantity < 0 || !finite(o.Grade) || o.Grade < 0 || !finite(o.ExtentKM2) || o.ExtentKM2 <= 0 || o.QuantityUnit == "" || o.GradeUnit == "" || o.Availability == "" || o.Provenance != "procedural/inferred" || len(o.ReasonCodes) == 0 {
+				return fmt.Errorf("invalid resource endowment or provenance %s", o.ID)
+			}
+			sys := systems[o.SystemID]
+			commodity := false
+			for _, id := range sys.Commodities {
+				commodity = commodity || id == o.Type
+			}
+			if !commodity || sys.Kind != resourceSystemKind(o.Type, o.Variant) {
+				return fmt.Errorf("resource does not belong to its mineral system %s", o.ID)
+			}
+			districtCells := map[int]bool{}
+			for _, i := range districts[o.DistrictID].Geometry.Cells {
+				districtCells[i] = true
+			}
+			cells := o.Geometry.Cells
+			if o.Geometry.Point != nil {
+				cells = []int{int(math.Round(o.Geometry.Point[1]))*w + int(math.Round(o.Geometry.Point[0]))}
+			}
+			extent := 0.
+			for _, i := range cells {
+				if !districtCells[i] {
+					return fmt.Errorf("resource outside district %s", o.ID)
+				}
+				if e.Geography != nil {
+					extent += e.GeographicCellAreaKM2(i)
+				}
+			}
+			if e.Geography == nil || math.Abs(o.ExtentKM2-extent) > .001 {
+				return fmt.Errorf("resource extent disagrees with footprint %s", o.ID)
+			}
 		}
 	}
 	return nil
