@@ -108,7 +108,7 @@ func TestSequenceCorpusStrictDecodeAndExpectationValidation(t *testing.T) {
 		name string
 		edit func(*SequenceCorpus)
 	}{
-		{"schema", func(c *SequenceCorpus) { c.Version = "sequence-corpus/2" }},
+		{"schema", func(c *SequenceCorpus) { c.Version = "sequence-corpus/3" }},
 		{"typed-invalid-utf8", func(c *SequenceCorpus) { c.Cases[0].Description = string([]byte{0xff}) }},
 		{"oversized-string", func(c *SequenceCorpus) {
 			c.Cases[0].Expected.Diagnostics = append(c.Cases[0].Expected.Diagnostics, Diagnostic{Message: strings.Repeat("x", 65537)})

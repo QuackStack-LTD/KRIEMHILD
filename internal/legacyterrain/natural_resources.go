@@ -17,6 +17,9 @@ var ResourceCatalog = []ResourceDefinition{
 	{"halite", "Mined salt", "industrial", false}, {"limestone", "Limestone", "industrial", false}, {"gypsum", "Gypsum", "industrial", false}, {"quartz-silica", "Quartz and silica", "industrial", false}, {"industrial-clay", "Industrial clay", "industrial", false}, {"phosphate-rock", "Phosphate rock", "industrial", false}, {"sulfur", "Sulfur", "industrial", false}, {"potash", "Potash", "industrial", false}, {"gemstones", "Gemstones", "industrial", false}, {"construction-stone", "Construction stone", "industrial", false},
 	{"groundwater-aquifer", "Groundwater aquifer", "water", true}, {"mineral-spring", "Mineral spring", "water", false}, {"hot-spring", "Hot spring", "water", false}, {"geyser", "Geyser", "water", false}, {"hydrothermal-vent", "Hydrothermal vent", "water", false}, {"freshwater", "Freshwater", "water", true},
 	{"coral", "Reef-building coral", "ecological", true}, {"timber", "Timber", "ecological", true}, {"marine-fish", "Marine fisheries", "ecological", true}, {"freshwater-fish", "Freshwater fisheries", "ecological", true}, {"wildlife", "Wildlife and game", "ecological", true}, {"fertile-soil", "Fertile soil", "ecological", true}, {"peat", "Peat", "ecological", false}, {"wind-energy", "Wind energy", "renewable", true}, {"solar-energy", "Solar energy", "renewable", true},
+	// Append catalog entries to preserve legacy seeded commodity indices.
+	{"manganese", "Manganese", "metal", false}, {"rare-earth-elements", "Rare earth elements", "metal", false}, {"tungsten", "Tungsten", "metal", false}, {"molybdenum", "Molybdenum", "metal", false},
+	{"diamonds", "Diamonds", "gemstone", false}, {"emerald", "Emerald", "gemstone", false}, {"ruby-sapphire", "Ruby and sapphire", "gemstone", false}, {"opal", "Opal", "gemstone", false}, {"garnet", "Garnet", "gemstone", false}, {"amethyst", "Amethyst", "gemstone", false}, {"sand-gravel", "Sand and gravel", "construction", false}, {"granite", "Granite and dimension stone", "construction", false},
 }
 
 type resourceContext struct {
@@ -63,7 +66,7 @@ func (c resourceContext) layer(rock string) *RockStratum {
 	return nil
 }
 func (c resourceContext) petroleum() bool {
-	return c.cover != nil && c.layer("organic-shale") != nil && c.p.History.OrganicPreservation > .35 && c.p.History.MaxBurial > 1800 && c.p.History.Trap != "" && c.layer("sandstone") != nil && (c.layer("shale") != nil || c.layer("evaporite") != nil)
+	return c.cover != nil && c.layer("organic-shale") != nil && c.p.History.OrganicPreservation > .35 && c.p.History.MaxBurial > 1800 && c.p.History.Trap != "" && c.layer("sandstone") != nil && (c.layer("shale") != nil || c.layer("evaporite") != nil) && (c.e.NaturalSource == "" || c.p.History.Migration && c.p.History.Preservation > .3 && c.p.History.BurialDurationMa > 5)
 }
 func (e *Environment) resourceContexts() []resourceContext {
 	g := e.Geology
@@ -116,6 +119,50 @@ func resourceEligibility(id string, c resourceContext) resourceCandidate {
 		return resourceCandidate{v, why, rounded(clamp(score, 0, 1)), rounded(depth)}
 	}
 	switch id {
+	case "diamonds":
+		if c.p.Type == "ancient-craton" && c.p.AgeMa > 2000 && intruded && c.intrusion.Rock == "kimberlite" {
+			return result("mantle-kimberlite", "Ancient stable continental lithosphere and a recorded mantle-derived kimberlite intrusion provide diamond transport.", .18, 180)
+		}
+	case "rare-earth-elements":
+		if intruded && c.intrusion.Rock == "carbonatite" {
+			return result("carbonatite", "An uncommon alkaline carbonatitic intrusive system concentrates rare earth elements.", .25, 200)
+		}
+	case "manganese":
+		if h.FormerMarine && c.layer("limestone") != nil && c.p.AgeMa > 100 {
+			return result("marine-sedimentary", "Marine sedimentary concentration preserved manganese-bearing strata.", .4, 120)
+		}
+	case "tungsten", "molybdenum":
+		if granite && hydrothermal {
+			return result("granitic-hydrothermal", "Evolved continental intrusion and hydrothermal pathways produced a specialized metal system.", .35, 250)
+		}
+	case "emerald":
+		if granite && fractured && (c.bed.Rock == "schist" || c.bed.Rock == "gneiss") && c.p.AgeMa > 900 {
+			return result("metamorphic-contact", "Rare hydrothermal reactions at an intrusive/metamorphic rock contact provide an emerald host.", .16, 90)
+		}
+	case "ruby-sapphire":
+		if fractured && (c.rock("marble") || c.rock("schist")) {
+			return result("metamorphic-corundum", "Suitable metamorphic host rocks and geological fluids provide a corundum gemstone environment.", .22, 80)
+		}
+	case "opal":
+		if c.cover != nil && c.layer("sandstone") != nil && c.c.Weathering > .2 && f("groundFlow") > .06 {
+			return result("silica-groundwater", "Silica-bearing weathering products were redistributed by groundwater in sedimentary rock.", .25, 20)
+		}
+	case "garnet":
+		if c.rock("schist") || c.rock("gneiss") {
+			return result("metamorphic-garnet", "Regional metamorphic mineral growth formed garnet-bearing rock.", .4, 50)
+		}
+	case "amethyst":
+		if hydrothermal && (c.rock("basalt") || granite) {
+			return result("hydrothermal-quartz", "Silica-bearing hydrothermal fluids crystallized quartz in veins or volcanic cavities.", .35, 40)
+		}
+	case "sand-gravel":
+		if c.cover != nil && (c.cover.Rock == "alluvium" || c.c.Deposition > .25) && (f("river") > 0 || f("shelf") > .2 || c.c.Deposition > .4) {
+			return result("transported-aggregate", "Actual erosion and sediment routing deposited sand and gravel in a basin or channel.", .85, 3)
+		}
+	case "granite":
+		if dry && c.rock("granite") && c.c.Erosion > .08 {
+			return result("exposed-intrusive-stone", "Uplift and erosion exposed a mapped granite body suitable for dimension stone.", .8, 15)
+		}
 	case "coal":
 		if s := c.layer("coal-bearing-shale"); s != nil && h.AncientWetland && h.MaxBurial > 400 && h.MaxTemperature < 200 && s.Organic > .3 {
 			return result("buried-coal", "Preserved ancient wetland vegetation was buried in a sedimentary basin.", s.Organic, s.Top)
@@ -261,6 +308,20 @@ func resourceEligibility(id string, c resourceContext) resourceCandidate {
 		}
 	case "groundwater-aquifer":
 		if !marine && f("recharge") > .015 && ((c.layer("sandstone") != nil && c.layer("shale") != nil) || c.rock("alluvium") || fractured) {
+			if c.e.NaturalSource != "" {
+				variant := "regional-fractured-rock"
+				if c.cover != nil && c.cover.Rock == "alluvium" {
+					variant = "shallow-alluvial"
+				} else if c.cover != nil && (c.cover.Rock == "limestone" || c.cover.Rock == "marble") {
+					variant = "karst-carbonate"
+				} else if c.layer("sandstone") != nil && c.layer("shale") != nil {
+					variant = "confined-sedimentary"
+					if f("groundwaterHead") > f("elevation")+10 {
+						variant = "artesian-potential"
+					}
+				}
+				return result(variant, "Supplied infiltration enters the mapped permeable/fractured host. Confinement comes from seal strata; artesian potential additionally requires an elevated upstream head on the saved drainage route.", clamp(f("groundFlow")/1.5+f("recharge"), 0, 1), 20+f("waterTableDepth"))
+			}
 			return result("recharged-aquifer", "Recharge enters permeable or fractured rock; fine strata provide confinement or a lower storage boundary.", clamp(f("groundFlow")/1.5+f("recharge"), 0, 1), 20+f("waterTableDepth"))
 		}
 	case "mineral-spring":
@@ -364,12 +425,29 @@ func (e *Environment) BuildNaturalResources() {
 			// Coherent mineralization districts, constrained by eligibility.
 			// Ecological/potential fields are spatial yields, not random deposits.
 			variation := sample(float64(i%w)/float64(w)*18+float64(k)*31, float64(i/w)/float64(h)*18+float64(k)*17)
+			if e.NaturalSource != "" {
+				// Related commodities share a mineral-system field. Eligibility is
+				// still independently required for EVERY commodity and cell.
+				group := resourceSystemKind(definition.ID, candidate.Variant)
+				phase := float64(Seed(group)%997) / 17
+				variation = sample(float64(i%w)/float64(w)*12+phase, float64(i/w)/float64(h)*12+phase*.7)
+			}
 			threshold := .61
 			if definition.ID == "limestone" || definition.ID == "construction-stone" {
 				threshold = .3
 			}
 			if definition.ID == "geyser" {
 				threshold = .86
+			}
+			if e.NaturalSource != "" {
+				switch definition.ID {
+				case "diamonds", "emerald", "rare-earth-elements":
+					threshold = .91
+				case "chromium", "platinum-group-metals", "tungsten", "ruby-sapphire":
+					threshold = .78
+				case "industrial-clay", "sand-gravel", "garnet", "granite":
+					threshold = .35
+				}
 			}
 			if !definition.Continuous && variation < threshold {
 				continue
@@ -441,8 +519,11 @@ func (e *Environment) BuildNaturalResources() {
 			r.Occurrences = append(r.Occurrences, o)
 		}
 	}
-	for _, id := range []string{"gold", "tin", "gemstones"} {
+	for _, id := range []string{"gold", "tin", "gemstones", "diamonds", "ruby-sapphire"} {
 		e.buildPlacerResources(id)
+	}
+	if e.NaturalSource != "" {
+		e.describeResourceSystems()
 	}
 }
 

@@ -114,6 +114,7 @@ type HydroCanal struct {
 	Aqueducts   []int   `json:"aqueducts"`
 }
 type HydrologyState struct {
+	Projection     string            `json:"projection,omitempty"`
 	Topology       *HydroTopology    `json:"topology,omitempty"`
 	NetworkVersion int               `json:"networkVersion,omitempty"`
 	Rivers         []RiverSystem     `json:"rivers,omitempty"`

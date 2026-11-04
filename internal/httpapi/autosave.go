@@ -10,6 +10,7 @@ import (
 	"kriemhild/internal/legacyterrain"
 	"kriemhild/internal/storage"
 	terrainmodel "kriemhild/internal/terrain/model"
+	"kriemhild/internal/terrain/resources"
 	"kriemhild/internal/world"
 	"net/http"
 	"os"
@@ -208,6 +209,9 @@ func restoreCheckpoint(id string, parts map[string][]byte, cacheRoot string) (v 
 		}
 	} else if parts["continuous/fields"] != nil {
 		return nil, fmt.Errorf("missing continuous terrain metadata")
+	}
+	if solver.Environment != nil && solver.Environment.NaturalSource != "" && (v.planet == nil || solver.Environment.NaturalSource != resources.Source(v.planet)) {
+		return nil, fmt.Errorf("resource source does not match continuous terrain")
 	}
 	if v.undo == nil {
 		v.undo = map[string]terrain.Snapshot{}

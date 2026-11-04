@@ -4,8 +4,28 @@ import "math"
 
 func (e *Environment) geographicPoint(x, y float64) (latitude, longitude float64) {
 	g := e.Geography
+	if e.continuousCoordinates() {
+		return (g.North - clamp(y/float64(e.Options.Rows-1), 0, 1)*(g.North-g.South)) * math.Pi / 180, (g.West + x/float64(e.Options.Columns-1)*(g.East-g.West)) * math.Pi / 180
+	}
 	return (g.North - (y+.5)/float64(e.Options.Rows)*(g.North-g.South)) * math.Pi / 180,
 		(g.West + (x+.5)/float64(e.Options.Columns)*(g.East-g.West)) * math.Pi / 180
+}
+
+func (e *Environment) continuousCoordinates() bool {
+	return e.NaturalSource != "" && e.Hydrology != nil && e.Hydrology.Projection == "continuous-receivers/1"
+}
+
+// Endpoint columns share a meridian and endpoint rows meet the poles. Their
+// footprints are half-width; the two seam columns must not double-count area.
+func (e *Environment) GeographicCellAreaKM2(cell int) float64 {
+	if e.Geography == nil || cell < 0 || cell >= e.Options.Columns*e.Options.Rows {
+		return 0
+	}
+	area := e.Geography.CellAreaKM2[cell/e.Options.Columns]
+	if e.continuousCoordinates() && (cell%e.Options.Columns == 0 || cell%e.Options.Columns == e.Options.Columns-1) {
+		area *= .5
+	}
+	return area
 }
 
 func sphericalDistance(lat, lon, otherLat, otherLon, radius float64) float64 {

@@ -1,10 +1,12 @@
 package httpapi
 
 import (
+	"context"
 	"fmt"
 	"kriemhild/internal/legacyterrain"
 	"kriemhild/internal/terrain/detail"
 	"kriemhild/internal/terrain/model"
+	"kriemhild/internal/terrain/resources"
 	"kriemhild/internal/terrain/tectonics"
 	"math"
 )
@@ -12,6 +14,9 @@ import (
 // legacyProjection is a read adapter for shared geography/ecology/archive clients.
 // The solver holds a completed classification only; it never generates this planet.
 func legacyProjection(p *model.Planet) (*terrain.Solver, error) {
+	return legacyProjectionContext(context.Background(), p)
+}
+func legacyProjectionContext(ctx context.Context, p *model.Planet) (*terrain.Solver, error) {
 	c, err := terrain.DecodeConfig(terrain.Defaults)
 	if err != nil {
 		return nil, err
@@ -25,7 +30,7 @@ func legacyProjection(p *model.Planet) (*terrain.Solver, error) {
 	s := &terrain.Solver{Rules: rules, W: w, H: h, N: n, T: len(c.Types), K: len(c.Continents), Z: len(c.Climates), Radius2: 1, WrapX: true, Status: "done", Dom: make([]uint32, n), Locked: make([]int, n), Pinned: make([]int, n), InQueue: make([]bool, n), Pos: make([]int, n), Buckets: make([][]int, len(c.Types)+1)}
 	e := &terrain.Environment{Version: model.Version, Options: terrain.EnvironmentOptions{Columns: w, Rows: h, Seed: p.Spec.Seed, LatitudeNorth: 90, LatitudeSouth: -90, LandPercent: p.Spec.LandCoverage * 100, Ruggedness: p.Spec.Relief * 100, Rainfall: p.Spec.Rainfall}, Fields: map[string][]float64{}, Mask: make([]int, n), Heights: make([]int, n), WaterBodies: []terrain.WaterBody{}, Reefs: []terrain.ReefRegion{}}
 	keys := append(append(append([]string{}, terrain.FieldNames...), terrain.SurfaceFields...), terrain.RealismFields...)
-	keys = append(keys, "biome")
+	keys = append(keys, "biome", "lake")
 	for _, k := range keys {
 		e.Fields[k] = make([]float64, n)
 	}
@@ -38,16 +43,20 @@ func legacyProjection(p *model.Planet) (*terrain.Solver, error) {
 		lon, lat := -math.Pi+model.Tau*float64(i%w)/float64(w-1), math.Pi/2-math.Pi*float64(i/w)/float64(h-1)
 		a := sampler.Sample(lon, lat)
 		e.Heights[i] = int(a.Bed / 4)
-		if a.Water == "dry" {
+		if a.Water != "ocean" && a.Water != "lake" {
 			e.Mask[i] = 1
 		}
 		for k, val := range map[string]float64{"elevation": a.Bed, "bathymetry": math.Min(0, a.Bed), "temperature": a.Temperature, "precipitation": a.Precipitation, "moisture": a.Moisture, "latitude": lat * 180 / math.Pi, "waterLevel": a.WaterSurface, "waterDepth": a.WaterDepth, "flow": -1, "vegetation": a.Moisture, "drainageElevation": a.Bed, "fertility": a.Moisture, "aridity": 1 - a.Moisture, "windX": p.Grid.At("windX", lon, lat), "windY": p.Grid.At("windY", lon, lat)} {
 			e.Fields[k][i] = val
 		}
 		if a.Water != "dry" {
-			e.Fields["waterBody"][i] = 1
+			e.Fields["waterBody"][i] = 2
 			if a.Water == "ocean" {
+				e.Fields["waterBody"][i] = 1
 				e.Fields["ocean"][i] = 1
+			}
+			if a.Water == "lake" {
+				e.Fields["lake"][i] = 1
 			}
 		}
 		id := a.Biome
@@ -95,14 +104,21 @@ func legacyProjection(p *model.Planet) (*terrain.Solver, error) {
 	// expose their authoritative monthly fields through the continuous model.
 	if p.Spec.RadiusKM >= 500 && p.Spec.RadiusKM <= 50000 {
 		e.Climate = climate
-		g := &terrain.GeographicScale{Version: 1, Projection: "equirectangular", Coverage: "planet", Radius: p.Spec.RadiusKM, WidthPX: float64(w), HeightPX: float64(h), PixelsPerCell: 1, WorldScale: p.Spec.RadiusKM * math.Pi / float64(h), North: 90, South: -90, West: -180, East: 180, WrapX: true, CellAreaKM2: make([]float64, h)}
+	}
+	{
+		g := &terrain.GeographicScale{Version: 1, Projection: "equirectangular", Coverage: "planet", Radius: p.Spec.RadiusKM, WidthPX: float64(w), HeightPX: float64(h), PixelsPerCell: 1, WorldScale: p.Spec.RadiusKM * math.Pi / float64(h-1), North: 90, South: -90, West: -180, East: 180, WrapX: true, CellAreaKM2: make([]float64, h)}
 		for y := range g.CellAreaKM2 {
-			north, south := (90-180*float64(y)/float64(h))*math.Pi/180, (90-180*float64(y+1)/float64(h))*math.Pi/180
-			g.CellAreaKM2[y] = g.Radius * g.Radius * 360 * math.Pi / 180 / float64(w) * (math.Sin(north) - math.Sin(south))
+			north, south := math.Min(90, 90-180*(float64(y)-.5)/float64(h-1))*math.Pi/180, math.Max(-90, 90-180*(float64(y)+.5)/float64(h-1))*math.Pi/180
+			g.CellAreaKM2[y] = g.Radius * g.Radius * 360 * math.Pi / 180 / float64(w-1) * (math.Sin(north) - math.Sin(south))
 		}
 		e.Geography = g
 	}
 	s.Environment = e
+	if e.Geography != nil {
+		if err := resources.Populate(ctx, p, e); err != nil {
+			return nil, err
+		}
+	}
 	if err := terrain.RestoreProjectSolver(s, c, e, s.Snapshot()); err != nil {
 		return nil, err
 	}

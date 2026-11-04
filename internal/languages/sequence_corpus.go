@@ -4,6 +4,7 @@ package languages
 // extend Definition.Tests, change source hashes, or own a mutable language head.
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"kriemhild/internal/languages/spike"
 	"reflect"
@@ -12,6 +13,30 @@ import (
 )
 
 const SequenceCorpusVersion = "sequence-corpus/1"
+
+// Version 2 adds early inverse/Script rejection shapes and explicit Unicode
+// coordinate tables. Version 1 is not reinterpreted.
+const SequenceCorpusVersion2 = "sequence-corpus/2"
+
+type CorpusSpan struct {
+	Start int `json:"start"`
+	End   int `json:"end"`
+}
+
+type CorpusCoordinate struct {
+	Unit  string       `json:"unit"`
+	Spans []CorpusSpan `json:"spans"`
+}
+
+// Definition validation is a separate phase, never a successful Execute result.
+// Compare every semantic validation field; compile size/capability metadata is
+// not a linguistic validation expectation. Identity is checked through case pins.
+type CorpusDefinitionValidation struct {
+	Status             string          `json:"status"`
+	Ready              map[string]bool `json:"ready"`
+	Diagnostics        []Diagnostic    `json:"diagnostics"`
+	DiagnosticsOmitted int             `json:"diagnosticsOmitted"`
+}
 
 type CorpusReview struct {
 	Status     string `json:"status"`
@@ -43,17 +68,20 @@ type CorpusDomain struct {
 	MaxLength int         `json:"maxLength"`
 }
 type SequenceCase struct {
-	ID          string        `json:"id"`
-	Description string        `json:"description"`
-	Tags        []string      `json:"tags"`
-	Review      CorpusReview  `json:"review"`
-	Pin         CorpusPin     `json:"pin"`
-	InputLayer  string        `json:"inputLayer"`
-	Request     Request       `json:"request"`
-	Outcome     string        `json:"outcome"`
-	Comparison  string        `json:"comparison"`
-	Expected    *Result       `json:"expected"`
-	Domain      *CorpusDomain `json:"domain,omitempty"`
+	ID          string                      `json:"id"`
+	Description string                      `json:"description"`
+	Tags        []string                    `json:"tags"`
+	Review      CorpusReview                `json:"review"`
+	Pin         CorpusPin                   `json:"pin"`
+	InputLayer  string                      `json:"inputLayer"`
+	Request     Request                     `json:"request"`
+	Outcome     string                      `json:"outcome"`
+	Comparison  string                      `json:"comparison"`
+	Expected    *Result                     `json:"expected"`
+	Domain      *CorpusDomain               `json:"domain,omitempty"`
+	Coordinates []CorpusCoordinate          `json:"coordinates,omitempty"`
+	Phase       string                      `json:"phase,omitempty"`
+	Validation  *CorpusDefinitionValidation `json:"validation,omitempty"`
 }
 type SequenceCorpus struct {
 	Version string         `json:"version"`
@@ -70,6 +98,21 @@ func DecodeSequenceCorpus(raw []byte) (SequenceCorpus, error) {
 	var c SequenceCorpus
 	if err := spike.DecodeJSON(raw, &c); err != nil {
 		return c, err
+	}
+	if c.Version == SequenceCorpusVersion {
+		var fields struct {
+			Cases []map[string]json.RawMessage `json:"cases"`
+		}
+		if err := json.Unmarshal(raw, &fields); err != nil {
+			return c, err
+		}
+		for _, test := range fields.Cases {
+			for _, key := range []string{"coordinates", "phase", "validation"} {
+				if _, present := test[key]; present {
+					return c, corpusError(c.ID, key+" requires sequence-corpus/2, including null/empty fields")
+				}
+			}
+		}
 	}
 	return c, ValidateSequenceCorpus(c)
 }
@@ -130,8 +173,8 @@ func ValidateSequenceCorpus(c SequenceCorpus) error {
 	if !corpusStringsValid(reflect.ValueOf(c)) {
 		return corpusError(c.ID, "invalid UTF-8 or string exceeds 64 KiB")
 	}
-	if c.Version != SequenceCorpusVersion || !validCorpusText(c.ID, 80) || len(c.Cases) == 0 || len(c.Cases) > 32 {
-		return corpusError(c.ID, "require sequence-corpus/1, an ID and 1–32 cases")
+	if (c.Version != SequenceCorpusVersion && c.Version != SequenceCorpusVersion2) || !validCorpusText(c.ID, 80) || len(c.Cases) == 0 || len(c.Cases) > 32 {
+		return corpusError(c.ID, "require sequence-corpus/1 or sequence-corpus/2, an ID and 1–32 cases")
 	}
 	if c.Bounds.Calls < 1 || c.Bounds.Calls > 128 || c.Bounds.Work < 1 || c.Bounds.Work > 100000000 || c.Bounds.ReportBytes < 1024+len(c.Cases)*1024 || c.Bounds.ReportBytes > 2<<20 {
 		return corpusError(c.ID, "invalid calls/work/reportBytes bounds (max 128/100000000/2097152)")
@@ -161,7 +204,8 @@ func ValidateSequenceCorpus(c SequenceCorpus) error {
 			return bad("at most eight language revisions")
 		}
 		q := test.Request
-		if q.Operation != "spell" && q.Operation != "unspell" && q.Operation != "graphemes" {
+		definitionValidation := c.Version == SequenceCorpusVersion2 && test.Phase == "definition-validation"
+		if q.Operation != "spell" && q.Operation != "unspell" && q.Operation != "graphemes" && !(definitionValidation && q.Operation == "validate-definition") {
 			return bad("only production sequence operations supported")
 		}
 		if q.Revision != test.Pin.Revision || q.Engine != test.Pin.Engine || q.Adapter != test.Pin.Adapter || q.Compiler != test.Pin.Compiler || q.Policy != "all" || q.Seed != "" || q.Limit < 1 || q.Limit > 128 || len(Canonical(q)) > 16384 || len(q.Text) > 4096 || len(q.Segments) > 256 {
@@ -182,6 +226,33 @@ func ValidateSequenceCorpus(c SequenceCorpus) error {
 		if test.Comparison == "unordered-preimages" && q.Operation != "unspell" {
 			return bad("unordered preimages only applies to inverse")
 		}
+		if c.Version == SequenceCorpusVersion && (test.Coordinates != nil || test.Phase != "" || test.Validation != nil) {
+			return bad("phase, validation and coordinates require sequence-corpus/2")
+		}
+		if definitionValidation {
+			v := test.Validation
+			if v == nil || test.Expected != nil || test.Domain != nil || test.Coordinates != nil || test.Outcome != "rejected" || test.Comparison != "exact" || q.Operation != "validate-definition" || q.Spelling != nil || q.Lexeme != "" || len(q.Features) > 0 || len(q.Segments) > 0 || q.Text != "" || q.Template != "" || q.Construction != "" || len(q.Roles) > 0 {
+				return bad("definition-validation requires only exact pinned source, rejected outcome and a validation expectation")
+			}
+			if (v.Status != "partial" && v.Status != "invalid") || v.Ready == nil || v.Ready["spell"] || v.Ready["unspell"] || len(v.Ready) > 32 || len(v.Diagnostics) == 0 || len(v.Diagnostics) > 256 || v.DiagnosticsOmitted != 0 || len(Canonical(v)) > 256<<10 {
+				return bad("require a complete rejected definition validation result")
+			}
+			hasError := false
+			for _, d := range v.Diagnostics {
+				hasError = hasError || d.Severity == "error"
+			}
+			if !hasError {
+				return bad("definition rejection requires an error diagnostic")
+			}
+			total += len(Canonical(v))
+			if total > 1<<20 {
+				return bad("total expectations exceed 1 MiB")
+			}
+			continue
+		}
+		if test.Phase != "" || test.Validation != nil {
+			return bad("unsupported phase or validation on an execution case")
+		}
 		e := test.Expected
 		if e == nil || len(e.Tests) > 0 || string(Canonical(e.Input)) != string(Canonical(q)) || string(Canonical(e.Request)) != string(Canonical(q.Request)) || e.LanguageID != test.Pin.LanguageID || e.Canonicalizer != test.Pin.Canonicalizer || e.Revision != test.Pin.Revision || e.Engine != test.Pin.Engine || e.Adapter != test.Pin.Adapter || e.Compiler != test.Pin.Compiler || e.Schema != 4 || test.Outcome != CorpusOutcome(e.Status) {
 			return bad("expectation identity/request/status inconsistent")
@@ -193,10 +264,19 @@ func ValidateSequenceCorpus(c SequenceCorpus) error {
 		if total > 1<<20 {
 			return bad("total expectations exceed 1 MiB")
 		}
+		if c.Version == SequenceCorpusVersion && (e.Status == "missing_sign" || e.Status == "unresolved_reading") {
+			return bad("Script reference rejection expectations require sequence-corpus/2")
+		}
 		if err := validateCorpusResult(*e); err != nil {
 			return bad(err.Error())
 		}
-		if e.Spelling != nil && (e.Spelling.Version != SequenceVersion || e.Spelling.Segmentation != test.Pin.Segmentation || e.Spelling.Normalizer != test.Pin.Normalizer || q.Operation != "graphemes" && (e.Spelling.Script != test.Pin.Script || e.Spelling.Renderer != test.Pin.Renderer || e.Spelling.RendererAdapter != test.Pin.RendererAdapter || e.Spelling.RendererCompiler != test.Pin.RendererCompiler)) {
+		if len(test.Coordinates) > 0 {
+			if c.Version != SequenceCorpusVersion2 || q.Operation != "graphemes" || e.Status != "success" || e.Spelling == nil || string(Canonical(test.Coordinates)) != string(Canonical(corpusCoordinates(e.Spelling.Clusters))) {
+				return bad("coordinates require /2 graphemes success and exact typed UTF-8/code-point/UTF-16/grapheme spans")
+			}
+		}
+		earlyInverse := c.Version == SequenceCorpusVersion2 && corpusEarlyInverseRejection(*e)
+		if e.Spelling != nil && (e.Spelling.Version != SequenceVersion || e.Spelling.Segmentation != test.Pin.Segmentation || e.Spelling.Normalizer != test.Pin.Normalizer || q.Operation != "graphemes" && !earlyInverse && (e.Spelling.Script != test.Pin.Script || e.Spelling.Renderer != test.Pin.Renderer || e.Spelling.RendererAdapter != test.Pin.RendererAdapter || e.Spelling.RendererCompiler != test.Pin.RendererCompiler)) {
 			return bad("expectation contradicts Unicode/Script/renderer pins")
 		}
 		if test.Domain != nil {
@@ -222,6 +302,36 @@ func ValidateSequenceCorpus(c SequenceCorpus) error {
 		}
 	}
 	return nil
+}
+
+// Code-point positions are cumulative counts, independently named rather than
+// aliasing byte, UTF-16 or cluster offsets. Complete Result comparison already
+// compares every cluster/code point from which these redundant spans derive.
+func corpusCoordinates(clusters []GraphemeCluster) []CorpusCoordinate {
+	out := []CorpusCoordinate{{"utf8-byte", []CorpusSpan{}}, {"unicode-code-point", []CorpusSpan{}}, {"utf16-code-unit", []CorpusSpan{}}, {"grapheme-cluster", []CorpusSpan{}}}
+	point := 0
+	for _, c := range clusters {
+		out[0].Spans = append(out[0].Spans, CorpusSpan{c.ByteStart, c.ByteEnd})
+		out[1].Spans = append(out[1].Spans, CorpusSpan{point, point + len(c.CodePoints)})
+		out[2].Spans = append(out[2].Spans, CorpusSpan{c.UTF16Start, c.UTF16End})
+		out[3].Spans = append(out[3].Spans, CorpusSpan{c.Index, c.Index + 1})
+		point += len(c.CodePoints)
+	}
+	return out
+}
+
+// This is the exact production initialization shape, not a wildcard allowing
+// dependencies or traces to be omitted from ordinary successful expectations.
+func corpusEarlyInverseRejection(r Result) bool {
+	if r.Status != "unsupported_inverse" || r.Input.Operation != "unspell" || r.Spelling == nil || r.KnownValid != 0 || len(r.Diagnostics) != 1 {
+		return false
+	}
+	d := r.Diagnostics[0]
+	if d.Code != "unsupported_inverse" || d.Severity != "error" || d.Module != "sequenceWriting" || d.Path != "sequenceWriting" || d.RuleID != "" || d.Message != "Compile compatible source and pinned dependencies; lossy inverse stages are not executable." {
+		return false
+	}
+	want := SpellingResult{Version: SequenceVersion, Segmentation: GraphemeVersion, Normalizer: NormalizationVersion, Steps: 1, Clusters: []GraphemeCluster{}, Spellings: []SpellingRun{}, Preimages: []SpellingPreimage{}}
+	return string(Canonical(r.Spelling)) == string(Canonical(want))
 }
 
 func corpusStringsValid(v reflect.Value) bool {
@@ -256,7 +366,7 @@ func corpusStringsValid(v reflect.Value) bool {
 
 func validateCorpusResult(r Result) error {
 	switch r.Status {
-	case "success", "ambiguous", "choice_required", "no_result", "no_mapping", "no_valid_candidate", "unsupported", "unsupported_inverse", "unsupported_normalization", "unsupported_operation", "missing_dependency", "not_ready", "cancelled", "execution_limit", "candidate_limit", "invalid_input", "invalid_unicode", "invalid_rule", "invalid_reference", "invalid_unit", "invalid_selection", "invalid_policy", "unknown_segment", "missing_glyph", "missing_reading":
+	case "success", "ambiguous", "choice_required", "no_result", "no_mapping", "no_valid_candidate", "unsupported", "unsupported_inverse", "unsupported_normalization", "unsupported_operation", "missing_dependency", "not_ready", "cancelled", "execution_limit", "candidate_limit", "invalid_input", "invalid_unicode", "invalid_rule", "invalid_reference", "invalid_unit", "invalid_selection", "invalid_policy", "unknown_segment", "missing_glyph", "missing_reading", "missing_sign", "unresolved_reading":
 	default:
 		return fmt.Errorf("unknown expected engine status")
 	}

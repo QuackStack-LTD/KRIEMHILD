@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 // Run from the repository root after building the CLI and Dockerfile.engine.
@@ -46,52 +46,84 @@ const cases = [
     "sequence-normalized.request.json",
   ],
   ["sequence-corpus", "sequence.json", null],
+  ...readdirSync(`${fixtures}/sequence-corpus`)
+    .filter((name) => name.endsWith(".corpus.json"))
+    .sort()
+    .map((name) => ["coverage:" + name, name, null]),
 ];
 const results = [];
 for (const [name, definition, request] of cases) {
   const args = (root, requestRoot) =>
-    name === "sequence-corpus"
+    name.startsWith("coverage:")
       ? [
           "-operation",
           "corpus-run",
           "-corpus",
-          `${root}/sequence.corpus.json`,
-          "-corpus-definition",
-          `${root}/sequence.json`,
-          "-corpus-definition",
-          `${root}/sequence-normalized.json`,
+          `${root}/sequence-corpus/${definition}`,
+          ...(definition.startsWith("topology-missing-")
+            ? ["sequence-corpus/topology-missing.definition.json"]
+            : definition.startsWith("invalid-")
+              ? [
+                  `sequence-corpus/${definition.replace(".corpus.json", ".definition.json")}`,
+                ]
+              : [
+                  "sequence.json",
+                  "sequence-normalized.json",
+                  ...[
+                    "contexts",
+                    "priority",
+                    "topology",
+                    "nfd",
+                    "deletion",
+                    "inverse-disabled",
+                  ].map((n) => `sequence-corpus/${n}.definition.json`),
+                ]
+          ).flatMap((file) => ["-corpus-definition", `${root}/${file}`]),
           "-script",
           `${root}/sequence-script.json`,
         ]
-      : name === "vector-import"
-        ? ["-operation", "svg-import", "-source", `${root}/${definition}`]
-        : name.startsWith("vector-")
-          ? [
-              "-operation",
-              request ? "script-render" : "script-compile",
-              "-script",
-              `${root}/${definition}`,
-              ...(request ? ["-request", `${root}/${request}`] : []),
-            ]
-          : [
-              "-definition",
-              `${root}/${definition}`,
-              ...(definition === "reference.json"
-                ? ["-script", `${root}/script.json`]
-                : definition.startsWith("sequence")
-                  ? ["-script", `${root}/sequence-script.json`]
+      : name === "sequence-corpus"
+        ? [
+            "-operation",
+            "corpus-run",
+            "-corpus",
+            `${root}/sequence.corpus.json`,
+            "-corpus-definition",
+            `${root}/sequence.json`,
+            "-corpus-definition",
+            `${root}/sequence-normalized.json`,
+            "-script",
+            `${root}/sequence-script.json`,
+          ]
+        : name === "vector-import"
+          ? ["-operation", "svg-import", "-source", `${root}/${definition}`]
+          : name.startsWith("vector-")
+            ? [
+                "-operation",
+                request ? "script-render" : "script-compile",
+                "-script",
+                `${root}/${definition}`,
+                ...(request ? ["-request", `${root}/${request}`] : []),
+              ]
+            : [
+                "-definition",
+                `${root}/${definition}`,
+                ...(definition === "reference.json"
+                  ? ["-script", `${root}/script.json`]
+                  : definition.startsWith("sequence")
+                    ? ["-script", `${root}/sequence-script.json`]
+                    : []),
+                ...(request
+                  ? [
+                      "-operation",
+                      "run",
+                      "-request",
+                      request.startsWith("@")
+                        ? `${requestRoot}/${request.slice(1)}`
+                        : `${root}/${request}`,
+                    ]
                   : []),
-              ...(request
-                ? [
-                    "-operation",
-                    "run",
-                    "-request",
-                    request.startsWith("@")
-                      ? `${requestRoot}/${request.slice(1)}`
-                      : `${root}/${request}`,
-                  ]
-                : []),
-            ];
+              ];
   let previous;
   for (let repeat = 0; repeat < 2; repeat++) {
     const windows = execFileSync(executable, args(fixtures, requests));

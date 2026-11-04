@@ -1,0 +1,119 @@
+{
+  "version": "sequence-corpus/1",
+  "id": "brief6-topology-mismatch-inverse-a2",
+  "bounds": {
+    "calls": 1,
+    "work": 13000000,
+    "reportBytes": 262144
+  },
+  "cases": [
+    {
+      "id": "topology-mismatch-inverse-a2",
+      "description": "Production inverse followed by A2 exact pre-erasure topology check",
+      "tags": ["brief6", "topology-mismatch-inverse-a2"],
+      "review": {
+        "status": "reviewed",
+        "reviewer": "Codex (independent derivation; not human approval)",
+        "provenance": "Full analyses, candidate IDs, allomorph alternatives, typed pre/post-erasure derivations and A2 counters copied unchanged from reviewed sequence-inverse.golden.json (rock/stone). Only documented revision-bound index/request IDs are rehashed. Same p,a,d,a A2 input returns two analyses; boundary at 3 accepts both, shifted to 2 accepts neither. Independent work: initial/resegment 3; inverse queue+rules+append+terminal+replay 16; final replay 13; established A2 297; accepted-preimage 1 (0 on mismatch) = 330 (329 negative). No engine capture."
+      },
+      "pin": {
+        "languageId": "88888888888888888888888888888888",
+        "revision": "8ce0dbf5236eb1596649bcc93beb0dc25fae367e46ef393536850559f5c3d5f0",
+        "schema": 4,
+        "canonicalizer": "kriemhild-typed-json/1",
+        "engine": "languages/4",
+        "adapter": "sequence-compose/1",
+        "compiler": "languages-compiler/4",
+        "segmentation": "uniseg/0.4.7-unicode/15.0.0",
+        "normalizer": "x-text/0.29.0-unicode/15.0.0",
+        "script": {
+          "id": "77777777777777777777777777777777",
+          "revision": "e50260f7197fd260b418f4578be091b415927c863a70a7ed057dbb198cc5a849"
+        },
+        "renderer": "vector-script/1",
+        "rendererAdapter": "sign-layout/1",
+        "rendererCompiler": "vector-script-compiler/1"
+      },
+      "inputLayer": "grapheme",
+      "request": {
+        "spelling": {
+          "analyze": true
+        },
+        "revision": "8ce0dbf5236eb1596649bcc93beb0dc25fae367e46ef393536850559f5c3d5f0",
+        "engine": "languages/4",
+        "operation": "unspell",
+        "text": "C",
+        "policy": "all",
+        "limit": 128,
+        "compiler": "languages-compiler/4",
+        "adapter": "sequence-compose/1"
+      },
+      "outcome": "no_result",
+      "comparison": "exact",
+      "expected": {
+        "spelling": {
+          "version": "sequence-orthography/1",
+          "segmentation": "uniseg/0.4.7-unicode/15.0.0",
+          "normalizer": "x-text/0.29.0-unicode/15.0.0",
+          "inputLayer": "surface-boundaries",
+          "outputLayer": "grapheme",
+          "script": {
+            "id": "77777777777777777777777777777777",
+            "revision": "e50260f7197fd260b418f4578be091b415927c863a70a7ed057dbb198cc5a849"
+          },
+          "renderer": "vector-script/1",
+          "rendererAdapter": "sign-layout/1",
+          "rendererCompiler": "vector-script-compiler/1",
+          "steps": 329,
+          "clusters": [],
+          "spellings": [],
+          "preimages": []
+        },
+        "schema": 4,
+        "compiler": "languages-compiler/4",
+        "status": "no_result",
+        "languageId": "88888888888888888888888888888888",
+        "revision": "8ce0dbf5236eb1596649bcc93beb0dc25fae367e46ef393536850559f5c3d5f0",
+        "engine": "languages/4",
+        "canonicalizer": "kriemhild-typed-json/1",
+        "selection": "sha256-canonical-candidates/1",
+        "request": {
+          "revision": "8ce0dbf5236eb1596649bcc93beb0dc25fae367e46ef393536850559f5c3d5f0",
+          "engine": "languages/4",
+          "operation": "unspell",
+          "text": "C",
+          "policy": "all",
+          "limit": 128
+        },
+        "candidates": [],
+        "diagnostics": [],
+        "truncated": false,
+        "examined": 0,
+        "knownValid": 0,
+        "rejected": 0,
+        "diagnosticsOmitted": 0,
+        "adapter": "sequence-compose/1",
+        "kernel": "languages-spike/1",
+        "input": {
+          "spelling": {
+            "analyze": true
+          },
+          "revision": "8ce0dbf5236eb1596649bcc93beb0dc25fae367e46ef393536850559f5c3d5f0",
+          "engine": "languages/4",
+          "operation": "unspell",
+          "text": "C",
+          "policy": "all",
+          "limit": 128,
+          "compiler": "languages-compiler/4",
+          "adapter": "sequence-compose/1"
+        },
+        "dependencies": [
+          {
+            "id": "77777777777777777777777777777777",
+            "revision": "e50260f7197fd260b418f4578be091b415927c863a70a7ed057dbb198cc5a849"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -14,6 +14,12 @@ type GeologicalEvent struct {
 	Environment string  `json:"environment"`
 }
 type GeologicalHistory struct {
+	SourceEnvironment   string  `json:"sourceEnvironment,omitempty"`
+	BurialDurationMa    float64 `json:"burialDurationMa,omitempty"`
+	HeatFlowMWM2        float64 `json:"heatFlowMwM2,omitempty"`
+	Maturity            string  `json:"maturity,omitempty"`
+	Preservation        float64 `json:"preservation,omitempty"`
+	Migration           bool    `json:"migration,omitempty"`
 	Inference           string  `json:"inference,omitempty"`
 	Confidence          float64 `json:"confidence,omitempty"`
 	FormerMarine        bool    `json:"formerMarine"`
@@ -27,14 +33,19 @@ type GeologicalHistory struct {
 	Paleoclimate        string  `json:"paleoclimate"`
 }
 type GeologicalProvince struct {
-	ID       string            `json:"id"`
-	Setting  string            `json:"setting"`
-	AgeMa    float64           `json:"ageMa"`
-	Rock     string            `json:"dominantRock"`
-	Process  string            `json:"process"`
-	Geometry NaturalGeometry   `json:"geometry"`
-	History  GeologicalHistory `json:"history"`
-	Events   []GeologicalEvent `json:"events"`
+	Type         string            `json:"type,omitempty"`
+	Crust        string            `json:"crust,omitempty"`
+	FaultDensity float64           `json:"faultDensity,omitempty"`
+	UpliftMetres float64           `json:"upliftMetres,omitempty"`
+	Metamorphism float64           `json:"metamorphism,omitempty"`
+	ID           string            `json:"id"`
+	Setting      string            `json:"setting"`
+	AgeMa        float64           `json:"ageMa"`
+	Rock         string            `json:"dominantRock"`
+	Process      string            `json:"process"`
+	Geometry     NaturalGeometry   `json:"geometry"`
+	History      GeologicalHistory `json:"history"`
+	Events       []GeologicalEvent `json:"events"`
 }
 type RockStratum struct {
 	ID           string  `json:"id"`
@@ -88,6 +99,16 @@ type NaturalReference struct {
 	ID   string `json:"id"`
 }
 type ResourceOccurrence struct {
+	SystemID      string             `json:"systemId,omitempty"`
+	DistrictID    string             `json:"districtId,omitempty"`
+	ExtentKM2     float64            `json:"extentKm2,omitempty"`
+	Quantity      float64            `json:"quantity,omitempty"`
+	QuantityUnit  string             `json:"quantityUnit,omitempty"`
+	Grade         float64            `json:"grade,omitempty"`
+	GradeUnit     string             `json:"gradeUnit,omitempty"`
+	Availability  string             `json:"availability,omitempty"`
+	Provenance    string             `json:"provenance,omitempty"`
+	ReasonCodes   []string           `json:"reasonCodes,omitempty"`
 	Properties    map[string]float64 `json:"properties,omitempty"`
 	ID            string             `json:"id"`
 	Type          string             `json:"type"`
@@ -102,6 +123,10 @@ type ResourceOccurrence struct {
 	References    []NaturalReference `json:"references"`
 }
 type ResourceState struct {
+	Source         string               `json:"source,omitempty"`
+	Generator      string               `json:"generator,omitempty"`
+	Systems        []ResourceSystem     `json:"systems,omitempty"`
+	Districts      []ResourceDistrict   `json:"districts,omitempty"`
 	Version        int                  `json:"version"`
 	GeologyVersion int                  `json:"geologyVersion"`
 	Units          string               `json:"units"`
@@ -109,6 +134,21 @@ type ResourceState struct {
 	// Renewable goods and aquifers are actual generated potential fields,
 	// not biome-based guesses performed by the hover UI.
 	Potential map[string][]float64 `json:"potential"`
+}
+
+type ResourceSystem struct {
+	ID           string   `json:"id"`
+	Kind         string   `json:"kind"`
+	ProvinceID   string   `json:"provinceId"`
+	FormationIDs []string `json:"formationIds"`
+	Commodities  []string `json:"commodities"`
+	ReasonCodes  []string `json:"reasonCodes"`
+}
+type ResourceDistrict struct {
+	ID          string          `json:"id"`
+	SystemID    string          `json:"systemId"`
+	Geometry    NaturalGeometry `json:"geometry"`
+	Occurrences []string        `json:"occurrences"`
 }
 
 func (e *Environment) naturalID(kind string, cell int) string {

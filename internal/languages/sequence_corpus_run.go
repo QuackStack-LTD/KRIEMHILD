@@ -14,19 +14,20 @@ type CorpusDiff struct {
 	Actual   string `json:"actual"`
 }
 type CorpusCaseReport struct {
-	ID                    string       `json:"id"`
-	Status                string       `json:"status"`
-	ExpectedOutcome       string       `json:"expectedOutcome"`
-	ActualOutcome         string       `json:"actualOutcome"`
-	Passed                bool         `json:"passed"`
-	Reviewed              bool         `json:"reviewed"`
-	Complete              bool         `json:"complete"`
-	Calls                 int          `json:"calls"`
-	ChargedWork           int          `json:"chargedWork"`
-	ObservedSpellingSteps int          `json:"observedSpellingSteps"`
-	DomainInputs          int          `json:"domainInputs"`
-	Actual                *Result      `json:"actual,omitempty"`
-	Diffs                 []CorpusDiff `json:"diffs"`
+	ID                    string                      `json:"id"`
+	Status                string                      `json:"status"`
+	ExpectedOutcome       string                      `json:"expectedOutcome"`
+	ActualOutcome         string                      `json:"actualOutcome"`
+	Passed                bool                        `json:"passed"`
+	Reviewed              bool                        `json:"reviewed"`
+	Complete              bool                        `json:"complete"`
+	Calls                 int                         `json:"calls"`
+	ChargedWork           int                         `json:"chargedWork"`
+	ObservedSpellingSteps int                         `json:"observedSpellingSteps"`
+	DomainInputs          int                         `json:"domainInputs"`
+	Actual                *Result                     `json:"actual,omitempty"`
+	Validation            *CorpusDefinitionValidation `json:"validation,omitempty"`
+	Diffs                 []CorpusDiff                `json:"diffs"`
 }
 type CorpusReport struct {
 	Version     string             `json:"version"`
@@ -70,7 +71,19 @@ func prepareSequenceCorpus(ctx context.Context, c SequenceCorpus, resolve Corpus
 			return nil, corpusError(test.ID, "language identity/hash/schema mismatch")
 		}
 		w := d.SequenceWriting
-		if string(Canonical(test.Expected.Dependencies)) != string(Canonical(ScriptDependencies(d))) {
+		if test.Expected != nil && c.Version == SequenceCorpusVersion2 && corpusEarlyInverseRejection(*test.Expected) {
+			lossy := w.Inverse == "unsupported"
+			for _, stage := range w.Stages {
+				lossy = lossy || stage.Kind == "normalize"
+				for _, rule := range stage.Rules {
+					lossy = lossy || len(rule.Output) == 0
+				}
+			}
+			if !lossy {
+				return nil, corpusError(test.ID, "early inverse rejection requires an authored inverse prohibition, deletion or normalization")
+			}
+		}
+		if test.Expected != nil && string(Canonical(test.Expected.Dependencies)) != string(Canonical(ScriptDependencies(d))) {
 			return nil, corpusError(test.ID, "expected dependency topology contradicts retained source")
 		}
 		if w.Script != p.Script || w.Segmentation != p.Segmentation || w.Normalizer != p.Normalizer || w.Renderer != p.Renderer || w.RendererAdapter != p.RendererAdapter || w.RendererCompiler != p.RendererCompiler {
@@ -94,7 +107,7 @@ func prepareSequenceCorpus(ctx context.Context, c SequenceCorpus, resolve Corpus
 		if deps[p.Script].Schema != 2 {
 			return nil, corpusError(test.ID, "sequence corpus requires the pinned Script 2 renderer")
 		}
-		if test.Expected.Spelling != nil {
+		if test.Expected != nil && test.Expected.Spelling != nil {
 			runs := append([]SpellingRun{}, test.Expected.Spelling.Spellings...)
 			for _, preimage := range test.Expected.Spelling.Preimages {
 				runs = append(runs, preimage.Forward)
@@ -138,7 +151,7 @@ func RunSequenceCorpus(ctx context.Context, corpus SequenceCorpus, resolve Corpu
 		return CorpusReport{Version: SequenceCorpusVersion, Status: "invalid_corpus", Cases: []CorpusCaseReport{}}, err
 	}
 	c := Clone(corpus)
-	out := CorpusReport{Version: SequenceCorpusVersion, Corpus: c.ID, SourceHash: Hash(c), Mode: "execute", Status: "success", Cases: []CorpusCaseReport{}}
+	out := CorpusReport{Version: c.Version, Corpus: c.ID, SourceHash: Hash(c), Mode: "execute", Status: "success", Cases: []CorpusCaseReport{}}
 	if validateOnly {
 		out.Mode = "validate"
 	}
@@ -190,13 +203,28 @@ func RunSequenceCorpus(ctx context.Context, corpus SequenceCorpus, resolve Corpu
 				a = Compile(ctx, prepared[i].definition, prepared[i].scripts)
 				artifacts.Put(test.Pin.Revision, a)
 			}
-			actual := a.Execute(ctx, Clone(test.Request))
-			r.Actual = &actual
-			r.ActualOutcome = CorpusOutcome(actual.Status)
+			actual := Result{}
+			if test.Phase == "definition-validation" {
+				report := a.Report()
+				v := CorpusDefinitionValidation{report.Status, report.Ready, report.Diagnostics, report.DiagnosticsOmitted}
+				r.Validation = &v
+				r.ActualOutcome = "success"
+				for _, d := range v.Diagnostics {
+					if d.Severity == "error" && !v.Ready["spell"] && !v.Ready["unspell"] {
+						r.ActualOutcome = "rejected"
+					}
+				}
+				actual.Status = report.Status
+				r.Diffs = corpusValueDiffs(test.Validation, &v, "validation")
+			} else {
+				actual = a.Execute(ctx, Clone(test.Request))
+				r.Actual = &actual
+				r.ActualOutcome = CorpusOutcome(actual.Status)
+				r.Diffs = corpusDiffs(*test.Expected, actual, test.Comparison)
+			}
 			if actual.Spelling != nil {
 				r.ObservedSpellingSteps += actual.Spelling.Steps
 			}
-			r.Diffs = corpusDiffs(*test.Expected, actual, test.Comparison)
 			r.Complete = true
 			if test.Domain != nil && len(r.Diffs) == 0 {
 				r.Status = checkCorpusDomain(ctx, a, test, *test.Domain, charge, &r)
@@ -223,6 +251,7 @@ func RunSequenceCorpus(ctx context.Context, corpus SequenceCorpus, resolve Corpu
 		}
 		if len(Canonical(out))+len(Canonical(r)) > c.Bounds.ReportBytes-1024-(len(c.Cases)-i-1)*1024 {
 			r.Actual = nil
+			r.Validation = nil
 			r.Diffs = []CorpusDiff{{Path: "report", Expected: "within reportBytes", Actual: "limit_reached"}}
 			r.Status = "limit_reached"
 			r.ActualOutcome = "limit_reached"
@@ -336,6 +365,10 @@ func corpusDiffs(expected, actual Result, policy string) []CorpusDiff {
 			}
 		}
 	}
+	return corpusValueDiffs(expected, actual, "result")
+}
+
+func corpusValueDiffs(expected, actual any, root string) []CorpusDiff {
 	var e, a any
 	_ = json.Unmarshal(Canonical(expected), &e)
 	_ = json.Unmarshal(Canonical(actual), &a)
@@ -386,7 +419,7 @@ func corpusDiffs(expected, actual Result, policy string) []CorpusDiff {
 		}
 		diffs = append(diffs, CorpusDiff{path, summary(e), summary(a)})
 	}
-	visit("result", e, a)
+	visit(root, e, a)
 	return diffs
 }
 func CorpusSummary(r CorpusReport) string {

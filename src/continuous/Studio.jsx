@@ -60,6 +60,12 @@ import {
 } from "./land-selection.js";
 import Dialog from "../worldbuilding/ui/Dialog.jsx";
 import "./studio.css";
+import TerrainResourceReport from "./TerrainResourceReport.jsx";
+import {
+  resourceDistance,
+  resourceRing,
+  resourceQuery,
+} from "./terrain-resources.js";
 
 const uid = () => crypto.randomUUID().replaceAll("-", "");
 const layerFor = (kind) =>
@@ -86,6 +92,10 @@ const toMap = (p, state) => [(p[0] / (state.W - 1)) * 2, p[1] / (state.H - 1)];
 
 export default function Studio({ initialState, onExit }) {
   const [show3D, setShow3D] = useState(false);
+  const [resourcesOpen, setResourcesOpen] = useState(false),
+    [resourceCenter, setResourceCenter] = useState(null),
+    [resourceRadius, setResourceRadius] = useState(5),
+    [resourcePan, setResourcePan] = useState(false);
   const [exportWidth, setExportWidth] = useState(2048);
   const [previewQuality, setPreviewQuality] = useState(readPreviewQuality);
   const [previewSaved, setPreviewSaved] = useState(true);
@@ -216,6 +226,10 @@ export default function Studio({ initialState, onExit }) {
   presentation.current = cartographicLevel(camera.w, presentation.current);
   const detailLevel = presentation.current;
   const base = `sessions/${state?.id}`;
+  const resourceMaximum = Math.min(
+    5000,
+    Math.PI * (state?.continuous?.spec.radiusKm ?? 6371),
+  );
   const displayStyle = illustrating ? "atlas" : style;
   const wrapIllustration = !!(illustrating && art?.regions?.length);
   const illustrationCoverage = useMemo(
@@ -355,6 +369,7 @@ export default function Studio({ initialState, onExit }) {
     setTool("select");
   }
   function startIllustration() {
+    setResourcesOpen(false);
     constructionCamera.current = camera;
     const focus = selected?.recordStatus !== "draft" ? selected : null;
     const inherited = entities.find(
@@ -638,6 +653,7 @@ export default function Studio({ initialState, onExit }) {
     const key = (e) => {
       if (e.target.matches("input,textarea,select")) return;
       if (e.key === "Escape") {
+        setResourcesOpen(false);
         setArtSelected(null);
         setDraft([]);
         setSelected(null);
@@ -895,6 +911,22 @@ export default function Studio({ initialState, onExit }) {
   function down(e) {
     if (e.button !== 0) return;
     e.currentTarget.setPointerCapture(e.pointerId);
+    if (resourcesOpen && !resourcePan && !e.shiftKey) {
+      const center = position(e);
+      setResourceCenter(center);
+      drag.current = { resourceCenter: center, start: [e.clientX, e.clientY] };
+      return;
+    }
+    if (resourcesOpen) {
+      drag.current = {
+        resourcePan: true,
+        start: [e.clientX, e.clientY],
+        camera,
+        point: position(e),
+        moved: false,
+      };
+      return;
+    }
     if (mapSetup?.step === "land") {
       drag.current = { landStart: position(e), start: [e.clientX, e.clientY] };
       return;
@@ -945,6 +977,23 @@ export default function Studio({ initialState, onExit }) {
     const d = drag.current,
       dx = e.clientX - d.start[0],
       dy = e.clientY - d.start[1];
+    if (d.resourceCenter) {
+      if (Math.hypot(dx, dy) > 4)
+        setResourceRadius(
+          Math.max(
+            0.05,
+            Math.min(
+              resourceMaximum,
+              resourceDistance(
+                d.resourceCenter,
+                p,
+                state.continuous.spec.radiusKm,
+              ),
+            ),
+          ),
+        );
+      return;
+    }
     if (d.landStart) {
       const a = d.landStart;
       setLandBox({
@@ -990,6 +1039,7 @@ export default function Studio({ initialState, onExit }) {
     const d = drag.current;
     drag.current = null;
     if (!d) return;
+    if (d.resourceCenter || d.resourcePan) return;
     if (d.landStart) {
       if (!mapSetup?.loading) {
         const p = position(e);
@@ -1562,6 +1612,7 @@ export default function Studio({ initialState, onExit }) {
                 run(async () => {
                   if (id !== "generate") await ensureWorldMap();
                   setMode(id);
+                  setResourcesOpen(false);
                   if (id === "generate" || id === "atlas")
                     if (illustrating) leaveIllustration();
                   setTool(id === "settlement" ? "settlement" : "inspect");
@@ -1588,6 +1639,26 @@ export default function Studio({ initialState, onExit }) {
         <button disabled={!state} onClick={() => setShow3D(true)}>
           3D Terrain
         </button>
+        {(mode === "map" || mode === "settlement" || mode === "atlas") && (
+          <button
+            disabled={!state}
+            aria-pressed={resourcesOpen}
+            onClick={() => {
+              if (illustrating) leaveIllustration();
+              if (mapSetup) {
+                setupSequence.current++;
+                setMapSetup(null);
+                setLandBox(null);
+              }
+              setResourcesOpen((v) => !v);
+              setSelected(null);
+              setDraft([]);
+              setPanel(true);
+            }}
+          >
+            Terrain Resources
+          </button>
+        )}
         {mode !== "generate" && (
           <button
             disabled={!state}
@@ -1989,6 +2060,26 @@ export default function Studio({ initialState, onExit }) {
                     />
                   )}
                   {settlement?.entities.map((e) => feature(e, true))}
+                  {resourcesOpen &&
+                    resourceCenter &&
+                    [-2, 0, 2].map((offset) => (
+                      <path
+                        key={offset}
+                        data-resource-circle="true"
+                        data-editor-handle="resource-circle"
+                        d={drawPath(
+                          resourceRing(
+                            resourceCenter,
+                            resourceRadius,
+                            state.continuous.spec.radiusKm,
+                          ).map((p) => [p[0] + offset, p[1]]),
+                        )}
+                        fill="none"
+                        stroke="#83eed8"
+                        strokeWidth={2}
+                        pointerEvents="none"
+                      />
+                    ))}
                   {!illustrating &&
                     selected?.points.map((p, i) => (
                       <circle
@@ -2129,7 +2220,66 @@ export default function Studio({ initialState, onExit }) {
             </div>
           )}
         </main>
-        {panel && (
+        {panel && resourcesOpen && (
+          <aside className="studio-panel" aria-label="Terrain Resources">
+            <section>
+              <h2>Terrain Resources</h2>
+              <p>
+                Click to place a circle. Drag to choose its radius. Scroll to
+                zoom; Shift-drag or choose Pan to move the map.
+              </p>
+              <div className="resource-panel-controls">
+                <button
+                  aria-pressed={!resourcePan}
+                  onClick={() => setResourcePan(false)}
+                >
+                  Draw circle
+                </button>
+                <button
+                  aria-pressed={resourcePan}
+                  onClick={() => setResourcePan(true)}
+                >
+                  Pan
+                </button>
+                <button onClick={() => setResourcesOpen(false)}>
+                  Close resources
+                </button>
+              </div>
+              <label className="resource-radius-label">
+                Observed radius <output>{resourceRadius.toFixed(2)} km</output>
+                <input
+                  aria-label="Terrain resource radius"
+                  type="range"
+                  min={0.05}
+                  max={resourceMaximum}
+                  step="any"
+                  value={resourceRadius}
+                  onChange={(e) => setResourceRadius(Number(e.target.value))}
+                />
+                <input
+                  aria-label="Terrain resource radius in kilometres"
+                  type="number"
+                  min={0.05}
+                  max={resourceMaximum}
+                  step={0.05}
+                  value={resourceRadius}
+                  onChange={(e) => {
+                    const r = Number(e.target.value);
+                    if (r >= 0.05 && r <= resourceMaximum) setResourceRadius(r);
+                  }}
+                />
+              </label>
+              <TerrainResourceReport
+                path={
+                  resourceCenter
+                    ? `${base}/terrain/resources?${resourceQuery(resourceCenter, resourceRadius)}&revision=${state.project.revision}`
+                    : null
+                }
+              />
+            </section>
+          </aside>
+        )}
+        {panel && !resourcesOpen && (
           <aside className="studio-panel">
             {mapSetup?.step === "land" && (
               <section aria-label="Choose land for the map">

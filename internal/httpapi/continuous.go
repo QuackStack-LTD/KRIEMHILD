@@ -102,10 +102,10 @@ func (s *Server) startTerrainJob(w http.ResponseWriter, r *http.Request) {
 		var identity string
 		if err == nil {
 			job.mu.Lock()
-			job.Stage, job.Progress = "project integration", .95
+			job.Stage, job.Progress = "geological history, groundwater and resource systems", .95
 			job.mu.Unlock()
 			start := time.Now()
-			solver, err = legacyProjection(p)
+			solver, err = legacyProjectionContext(ctx, p)
 			p.Diagnostics.Timings["platform projection"] = float64(time.Since(start).Microseconds()) / 1000
 			if err == nil {
 				var meta, fields []byte

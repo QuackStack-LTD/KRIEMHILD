@@ -163,8 +163,10 @@ versions, arbitrary fonts, shaping or semantics. Normalization uses pinned x/tex
 or changed interpretation requires version/policy and golden review.
 
 Sequence corpus expectations in the old candidate-only corpus format are
-explicitly rejected (`unsupported_case`); complete pinned external goldens are
-used here. A richer typed corpus expectation/editor is future work. Vertical
+explicitly rejected (`unsupported_case`). External [typed sequence corpora](SEQUENCE_CORPUS.md)
+compare complete pinned results; corpus `/2` also represents definition validation,
+early inverse rejection and distinct Unicode coordinate expectations. A full
+end-user corpus-authoring editor remains outside this workstream. Vertical
 layout, two-dimensional quadrats, advanced bidi, fonts, prosody, recursive grammar,
 semantic interpretation and generalized ligatures remain unsupported.
 

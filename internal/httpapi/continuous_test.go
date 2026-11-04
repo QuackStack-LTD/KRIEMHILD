@@ -71,6 +71,22 @@ func TestContinuousArchiveRoundTrip(t *testing.T) {
 	if restored.planet == nil || !reflect.DeepEqual(v.planet.Grid, restored.planet.Grid) || !reflect.DeepEqual(v.planet.Masses, restored.planet.Masses) || restored.world.Entities["town"].Name != "Old town" {
 		t.Fatal("archive lost terrain or authored identity")
 	}
+	if !reflect.DeepEqual(solver.Environment.Resources, restored.solver.Environment.Resources) || !reflect.DeepEqual(solver.Environment.Geology, restored.solver.Environment.Geology) || !reflect.DeepEqual(solver.Environment.Hydrology, restored.solver.Environment.Hydrology) || solver.Environment.NaturalSource != restored.solver.Environment.NaturalSource {
+		t.Fatal("archive changed geological endowment, provenance or groundwater")
+	}
+	var manifest projectManifest
+	if err := json.Unmarshal(files["manifest.json"], &manifest); err != nil {
+		t.Fatal(err)
+	}
+	if len(manifest.ResourceParts) < 2 || manifest.Schema != resourceProjectSchema {
+		t.Fatal("large resource inventory did not use explicitly versioned chunks")
+	}
+	manifest.ResourceParts[0], manifest.ResourceParts[1] = manifest.ResourceParts[1], manifest.ResourceParts[0]
+	badManifest, _ := json.Marshal(manifest)
+	files["manifest.json"] = badManifest
+	if _, err := decodeProject(files, t.TempDir()); err == nil {
+		t.Fatal("out-of-order resource chunks accepted")
+	}
 	if restored.planet.Spec.ClimateVersion != 1 || len(restored.planet.Grid.Fields["coldest"]) == 0 || len(restored.planet.Grid.Fields["rainfall-11"]) == 0 {
 		t.Fatal("archive lost active climate version or monthly summaries")
 	}
@@ -152,6 +168,9 @@ func testContinuousAgeIsolationAndColdRestart(t *testing.T, climateVersion int) 
 	}
 	if cold.planet == nil || len(cold.world.Operations) != 1 || !reflect.DeepEqual(cold.planet.Grid, p.Grid) {
 		t.Fatal("cold restore lost terrain or edits")
+	}
+	if !reflect.DeepEqual(cold.solver.Environment.Resources, fv.solver.Environment.Resources) || !reflect.DeepEqual(cold.solver.Environment.Geology, fv.solver.Environment.Geology) || !reflect.DeepEqual(cold.solver.Environment.Hydrology, fv.solver.Environment.Hydrology) {
+		t.Fatal("cold restart changed natural layers")
 	}
 	if cold.planet.Spec.ClimateVersion != p.Spec.ClimateVersion {
 		t.Fatal("cold restart changed climate version")

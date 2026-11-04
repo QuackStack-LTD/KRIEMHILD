@@ -55,6 +55,34 @@ func TestLanguagesSequenceCorpusAPIExactPinsReadOnlyAndPermissions(t *testing.T)
 			t.Fatal(response.Corpus.Status, response.Corpus.Calls)
 		}
 	}
+	// /2 preserves the same read-only access and review gate, including when
+	// the engine rejects a missing reading under a valid, fully retained pin.
+	version2, err := languages.DecodeSequenceCorpus(read("sequence-corpus/missing-script-reading.corpus.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, mode := range []string{"validate", "execute"} {
+		w := secured(s, viewer, "POST", path, string(languages.Canonical(map[string]any{"ageId": doc.World.CurrentAge, "mode": mode, "corpus": version2})))
+		if w.Code != 200 {
+			t.Fatal("version 2", w.Code, w.Body)
+		}
+		var response struct {
+			Corpus languages.CorpusReport `json:"corpus"`
+		}
+		if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+			t.Fatal(err)
+		}
+		if response.Corpus.Version != languages.SequenceCorpusVersion2 || mode == "validate" && response.Corpus.Calls != 0 {
+			t.Fatal("version 2 preflight", response.Corpus)
+		}
+		if mode == "execute" && (len(response.Corpus.Cases) != 1 || len(response.Corpus.Cases[0].Diffs) != 0 || response.Corpus.Cases[0].Actual.Status != "unresolved_reading" || response.Corpus.Cases[0].Passed != (version2.Cases[0].Review.Status == "reviewed")) {
+			t.Fatal("version 2 rejection/review gate", response.Corpus)
+		}
+	}
+	capabilities := secured(s, viewer, "GET", base+"/capabilities", "")
+	if capabilities.Code != 200 || !strings.Contains(capabilities.Body.String(), `"versions":["sequence-corpus/1","sequence-corpus/2"]`) {
+		t.Fatal("corpus version discovery", capabilities.Code, capabilities.Body)
+	}
 	w := secured(s, owner, "GET", "/api/worlds/"+doc.World.ID, "")
 	if err := json.Unmarshal(w.Body.Bytes(), &doc); err != nil {
 		t.Fatal(err)

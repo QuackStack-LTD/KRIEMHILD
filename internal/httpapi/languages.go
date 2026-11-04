@@ -19,7 +19,7 @@ func isLanguageCompute(r *http.Request) bool {
 }
 func (s *Server) languageRoutes() {
 	s.mux.HandleFunc("GET /api/worlds/{world}/languages/capabilities", func(w http.ResponseWriter, r *http.Request) {
-		respond(w, 200, map[string]any{"profiles": languages.Capabilities(), "scripts": languages.ScriptCapabilities(), "corpora": map[string]any{"version": languages.SequenceCorpusVersion, "support": "supported", "modes": []string{"validate", "execute"}, "maxCases": 32, "scope": "External exact pinned sequence verification; candidate-only regression remains unchanged."}})
+		respond(w, 200, map[string]any{"profiles": languages.Capabilities(), "scripts": languages.ScriptCapabilities(), "corpora": map[string]any{"version": languages.SequenceCorpusVersion, "versions": []string{languages.SequenceCorpusVersion, languages.SequenceCorpusVersion2}, "support": "supported", "modes": []string{"validate", "execute"}, "maxCases": 32, "scope": "External exact pinned sequence verification; candidate-only regression remains unchanged."}})
 	})
 	s.mux.HandleFunc("POST /api/worlds/{world}/languages", s.saveLanguage)
 	s.mux.HandleFunc("GET /api/worlds/{world}/languages/{language}", s.getLanguage)

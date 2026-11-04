@@ -212,16 +212,29 @@ func (e *Environment) ValidateGeographicData() error {
 		return nil
 	}
 	w, h := e.Options.Columns, e.Options.Rows
-	if s.Version != 1 || s.Projection != "equirectangular" || !finite(s.Radius) || s.Radius < 500 || s.Radius > 50000 || !finite(s.North) || !finite(s.South) || s.North > 90 || s.South < -90 || s.North <= s.South || !finite(s.East) || !finite(s.West) || s.East > 180 || s.West < -180 || s.East <= s.West || len(s.CellAreaKM2) != h {
+	minRadius, maxRadius := 500., 50000.
+	if e.Version == "continuous-3" && len(e.NaturalSource) == 64 && e.Hydrology != nil && e.Hydrology.Projection == "continuous-receivers/1" {
+		minRadius, maxRadius = 100, 100000
+	}
+	if s.Version != 1 || s.Projection != "equirectangular" || !finite(s.Radius) || s.Radius < minRadius || s.Radius > maxRadius || !finite(s.North) || !finite(s.South) || s.North > 90 || s.South < -90 || s.North <= s.South || !finite(s.East) || !finite(s.West) || s.East > 180 || s.West < -180 || s.East <= s.West || len(s.CellAreaKM2) != h {
 		return fmt.Errorf("invalid stored geographic reference system")
 	}
-	if !finite(s.PixelsPerCell) || s.PixelsPerCell <= 0 || !finite(s.WidthPX) || !finite(s.HeightPX) || math.Abs(s.WidthPX/s.PixelsPerCell-float64(w)) > 1e-6 || math.Abs(s.HeightPX/s.PixelsPerCell-float64(h)) > 1e-6 || !finite(s.WorldScale) || math.Abs(s.WorldScale-s.Radius*(s.North-s.South)*math.Pi/180/float64(h)) > 1e-6 || s.WrapX != (math.Abs(s.East-s.West-360) < 1e-6) {
+	verticalSteps := float64(h)
+	if e.continuousCoordinates() {
+		verticalSteps = float64(h - 1)
+	}
+	if !finite(s.PixelsPerCell) || s.PixelsPerCell <= 0 || !finite(s.WidthPX) || !finite(s.HeightPX) || math.Abs(s.WidthPX/s.PixelsPerCell-float64(w)) > 1e-6 || math.Abs(s.HeightPX/s.PixelsPerCell-float64(h)) > 1e-6 || !finite(s.WorldScale) || math.Abs(s.WorldScale-s.Radius*(s.North-s.South)*math.Pi/180/verticalSteps) > 1e-6 || s.WrapX != (math.Abs(s.East-s.West-360) < 1e-6) {
 		return fmt.Errorf("geographic grid dimensions or wrapping disagree with extent")
 	}
 	for y, a := range s.CellAreaKM2 {
 		north := (s.North - (s.North-s.South)*float64(y)/float64(h)) * math.Pi / 180
 		south := (s.North - (s.North-s.South)*float64(y+1)/float64(h)) * math.Pi / 180
 		expected := s.Radius * s.Radius * (s.East - s.West) * math.Pi / 180 / float64(w) * (math.Sin(north) - math.Sin(south))
+		if e.continuousCoordinates() {
+			north = (s.North - (s.North-s.South)*math.Max(0, float64(y)-.5)/float64(h-1)) * math.Pi / 180
+			south = (s.North - (s.North-s.South)*math.Min(float64(h-1), float64(y)+.5)/float64(h-1)) * math.Pi / 180
+			expected = s.Radius * s.Radius * (s.East - s.West) * math.Pi / 180 / float64(w-1) * (math.Sin(north) - math.Sin(south))
+		}
 		if !finite(a) || a <= 0 || math.Abs(a-expected) > expected*1e-9 {
 			return fmt.Errorf("invalid spherical cell area in row %d", y)
 		}

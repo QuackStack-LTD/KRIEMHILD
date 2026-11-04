@@ -1,4 +1,4 @@
-# Sequence corpus /1
+# Sequence corpus /1 and /2
 
 `sequence-corpus/1` is standalone verification data, not language source or a
 mutable language store. No language, Script, canonicalizer or archive version
@@ -125,8 +125,78 @@ World ZIP. Archive 5 retains the immutable definitions and Script bodies needed
 by the external corpus. Explicitly bind the same corpus to the imported World/Age
 to reproduce it. Archive 4 rejection and older readers are unchanged.
 
-Only the four retained Brief 4 expectations were approved for this initial
-corpus by the author on 2026-10-28. The wrapper copies those expectations without
-running the engine to generate them. Structural/adversarial tests intentionally
-mutate wrappers to assert rejection or mismatch; they do not publish new goldens.
-Additional linguistic scenarios require independently reviewed expectations.
+The initial four retained Brief 4 expectations were approved by the author on
+2026-10-28 and remain byte-for-byte intact. Brief 6 adds focused fixtures in
+`internal/languages/testdata/sequence-corpus/`. The author explicitly authorized
+independent derivation with **Codex review provenance**, followed by source-control
+review; that metadata does not claim human approval. Expectations were authored
+from retained goldens, production tests and documented rule semantics before
+executing them. No engine-output capture or golden regeneration is provided.
+
+## Additive version 2
+
+`sequence-corpus/1` remains readable with identical canonical result bytes, bounds,
+pins and comparisons. `/2` is explicitly required for three additions:
+
+- Early `unsupported_inverse` results have the exact initialized-but-unconfigured
+  production spelling object: version/Unicode policies, one work step, empty
+  arrays and empty pipeline/Script/renderer fields. The diagnostic is exact.
+  Preflight still resolves every immutable dependency and verifies that source
+  explicitly disables inverse or contains deletion/normalization. Successful
+  results cannot use this exception. Invented or partly filled rejection shapes
+  fail validation.
+- The renderer's actual `missing_sign` and `unresolved_reading` rejection statuses
+  are accepted and compared as `rejected`, preserving the raw statuses. They are
+  not renamed `missing_reading`, `unsupported`, or `no_result`.
+- An optional `coordinates` table on successful `graphemes` cases records four
+  ordered, distinctly named half-open span arrays: `utf8-byte`,
+  `unicode-code-point`, `utf16-code-unit`, `grapheme-cluster`. The whole table is
+  checked against the complete expected clusters and code-point arrays; exact
+  Result comparison verifies those same clusters against execution. Code-point
+  positions are cumulative counts, not aliases for bytes or UTF-16 offsets.
+
+Version 2 also supports `phase="definition-validation"` with
+`request.operation="validate-definition"`, `outcome="rejected"`, `expected=null`
+and a `validation` expectation. This calls the existing production compiler and
+**never Execute**. The exact semantic validation record contains `status`, the
+complete `ready` map, all ordered `diagnostics`, and `diagnosticsOmitted=0`.
+At least one error and disabled spell/unspell are required. The containing
+definition can remain `partial` because independent morphology is ready; its
+corpus outcome is still rejection. Compile counters, size metadata and adapter
+capability descriptions are outside this validation record; all identity/version
+checks remain in the exact pins. Execution cases still compare complete Results.
+Validate-only mode performs source/pin preflight with zero compiler/execution
+calls even for this phase. A rejected definition is never an execution success.
+
+`phase`, `validation` and `coordinates` fields are rejected in `/1`, including
+explicit null/empty fields. `/1` readers cannot read `/2`; no language, Script,
+compiler, adapter, renderer, normalizer or archive schema is changed. Reports
+retain the selected corpus version after successful decoding/preflight. CLI
+pre-decode errors retain the historical `/1` error envelope. API capability discovery retains `version`
+as `/1` and adds a `versions` list. CLI exit 0/1/2/3 and review gates are unchanged.
+
+For example, with the previously built CLI:
+
+```powershell
+.cache/languages/corpus-cli.exe -operation corpus-run `
+  -corpus internal/languages/testdata/sequence-corpus/topology-exact-inverse-a2.corpus.json `
+  -corpus-definition internal/languages/testdata/sequence-corpus/topology.definition.json `
+  -script internal/languages/testdata/sequence-script.json
+```
+
+The two topology-negative fixtures preserve the same surface segments while
+shifting or omitting the pre-erasure morpheme boundary. Their explicit raw streams
+spell, but inverse followed by A2 returns `no_result`. Positive expectations retain
+the complete reviewed rock/stone candidates, derivations, allomorph alternatives
+and pre/post-erasure boundary provenance. Adjacent, leading and trailing morpheme
+boundaries are rejected as malformed topology. Word edges are virtual contexts;
+there is no stored word-boundary token or word-boundary erasure stage.
+
+NFC and NFD compare exact original/normalized strings, stage spans, provenance and
+all clusters. There is no normalization-insensitive comparison. Unicode evidence
+is pinned to the implementation's Unicode 15.0 tables and the authored cluster
+examples; it makes no claim about later Unicode, fonts or arbitrary editors.
+
+See [BRIEF_6_AUDIT.md](BRIEF_6_AUDIT.md) for the final evidence matrix, commands,
+review record, compatibility and resource limitations. This closes the current
+sequence-orthography corpus workstream.

@@ -25,44 +25,48 @@ import (
 )
 
 type session struct {
-	tileIdentity    string
-	planet          *terrainmodel.Planet
-	settlement      *settlementDraft
-	creatorID       string
-	actorID         string
-	collabRevision  int
-	historyRevision int
-	biosphereHover  *biosphereHoverCache
-	climate         authoredClimate
-	natural         *terrain.NaturalIndex
-	mu              sync.Mutex
-	solver          *terrain.Solver
-	last            time.Time
-	undo            map[string]terrain.Snapshot
-	order           []string
-	detail          *terrain.DetailModel
-	dir             string
-	cacheRoot       string
-	tiles           map[string]bool
-	generation      json.RawMessage
-	projectUI       json.RawMessage
-	worldID         string
-	base            *terrain.Snapshot
-	edits           []json.RawMessage
-	persisted       bool
-	unsaved         bool
-	dirty           bool
-	detailPersisted bool
-	savedTiles      map[string]bool
-	viewClient      string
-	viewSequence    uint64
-	retired         bool
-	historical      *history.Map
-	historyWorld    string
-	world           *world.State
-	composed        map[string][]byte
+	resourcePlanet      *terrainmodel.Planet
+	resourceEnvironment *terrain.Environment
+	tileIdentity        string
+	planet              *terrainmodel.Planet
+	settlement          *settlementDraft
+	creatorID           string
+	actorID             string
+	collabRevision      int
+	historyRevision     int
+	biosphereHover      *biosphereHoverCache
+	climate             authoredClimate
+	natural             *terrain.NaturalIndex
+	mu                  sync.Mutex
+	solver              *terrain.Solver
+	last                time.Time
+	undo                map[string]terrain.Snapshot
+	order               []string
+	detail              *terrain.DetailModel
+	dir                 string
+	cacheRoot           string
+	tiles               map[string]bool
+	generation          json.RawMessage
+	projectUI           json.RawMessage
+	worldID             string
+	base                *terrain.Snapshot
+	edits               []json.RawMessage
+	persisted           bool
+	unsaved             bool
+	dirty               bool
+	detailPersisted     bool
+	savedTiles          map[string]bool
+	viewClient          string
+	viewSequence        uint64
+	retired             bool
+	historical          *history.Map
+	historyWorld        string
+	world               *world.State
+	composed            map[string][]byte
 }
 type Server struct {
+	resourceMu       sync.Mutex
+	resourceSnapshot *resourceSnapshot
 	languageCache    *languages.Cache
 	languageSlots    chan struct{}
 	terrainTileCache *terraintiles.Cache
@@ -134,6 +138,9 @@ func NewWithOptions(dist string, options Options) *Server {
 	s.mux.HandleFunc("POST /api/sessions/{id}/world/artworks", s.saveArtwork)
 	s.mux.HandleFunc("POST /api/sessions/{id}/illustrated-maps", s.saveIllustratedMap)
 	s.mux.HandleFunc("GET /api/sessions/{id}/world/natural", s.worldNatural)
+	s.mux.HandleFunc("GET /api/sessions/{id}/terrain/resources", s.sessionResources)
+	s.mux.HandleFunc("GET /api/worlds/{world}/settlements/{entity}/resources", s.settlementResources)
+	s.mux.HandleFunc("GET /api/worlds/{world}/settlements/{entity}/resources/{image}", s.settlementResources)
 	s.mux.HandleFunc("GET /api/sessions/{id}/world/climate", s.worldClimateOverlay)
 	s.mux.HandleFunc("POST /api/sessions/{id}/world", s.worldCommand)
 	s.mux.HandleFunc("POST /api/projects/import", s.importProject)

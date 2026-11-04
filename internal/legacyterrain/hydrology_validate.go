@@ -12,6 +12,9 @@ func (e *Environment) ValidateHydrology() []HydroDiagnostic {
 	if e.Hydrology == nil {
 		return out
 	}
+	if e.Hydrology.Projection != "" {
+		return e.validateContinuousHydrology()
+	}
 	add := func(id, reason string) {
 		out = append(out, HydroDiagnostic{Object: id, Reason: reason, Severity: "error"})
 	}

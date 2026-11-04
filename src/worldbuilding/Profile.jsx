@@ -1,5 +1,6 @@
 import useUnsavedChanges from "./ui/useUnsavedChanges.js";
 import IllustratedMapImage from "./IllustratedMapImage.jsx";
+import SettlementResources from "./SettlementResources.jsx";
 import { confirmAction } from "./ui/feedback.js";
 import Dialog from "./ui/Dialog.jsx";
 import CharacterRelationEditor from "./CharacterRelationEditor.jsx";
@@ -476,6 +477,8 @@ export default function Profile({
           </div>
         </section>
       )}
+      {registry.types[entity.kind]?.category === "settlements" &&
+        !entity.deleted && <SettlementResources doc={doc} entity={entity} />}
       <form onSubmit={save}>
         <div className="profile-columns">
           {!place && (

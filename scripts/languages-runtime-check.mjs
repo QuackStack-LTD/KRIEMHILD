@@ -1,6 +1,6 @@
 // Runs inside a disposable Node container sharing the test app's network.
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 const base = "http://127.0.0.1:8124",
   phase = process.argv[2],
   existing = process.argv[3];
@@ -139,6 +139,18 @@ if (phase === "create") {
       definitionRevision: hash,
     });
   }
+  for (const file of (await readdir("/fixtures/sequence-corpus"))
+    .filter((name) => name.endsWith(".definition.json"))
+    .sort()) {
+    doc = await api(`/api/worlds/${doc.world.id}/languages`, {
+      ageId: doc.world.currentAge,
+      revision: doc.world.revision,
+      kind: "language",
+      definition: await json(`sequence-corpus/${file}`),
+      metadata: {},
+      note: "Brief 6 exact retained coverage source; no compile or activation",
+    });
+  }
 } else {
   assert.equal(phase, "restart");
   doc = await api(`/api/worlds/${existing}`);
@@ -200,6 +212,42 @@ async function sequenceCorpusReplay(worldID) {
   return replayed.corpus;
 }
 const corpusReport = await sequenceCorpusReplay(world);
+async function coverageReplay(worldID) {
+  const before = await api(`/api/worlds/${worldID}`);
+  const reports = [];
+  for (const file of (await readdir("/fixtures/sequence-corpus"))
+    .filter((name) => name.endsWith(".corpus.json"))
+    .sort()) {
+    const corpus = await json(`sequence-corpus/${file}`);
+    const target = `/api/worlds/${worldID}/languages/${sequence.languageId}/corpus`;
+    const validated = await api(target, {
+      ageId: age,
+      mode: "validate",
+      corpus,
+    });
+    assert.equal(validated.corpus.status, "success");
+    assert.equal(validated.corpus.calls, 0);
+    const { corpus: report } = await api(target, {
+      ageId: age,
+      mode: "execute",
+      corpus,
+    });
+    assert.equal(report.status, "success", file);
+    assert.equal(report.cases[0].passed, true, file);
+    assert.deepEqual(
+      report.cases[0].validation ?? report.cases[0].actual,
+      corpus.cases[0].validation ?? corpus.cases[0].expected,
+      file,
+    );
+    reports.push(report);
+  }
+  assert.equal(
+    (await api(`/api/worlds/${worldID}`)).world.revision,
+    before.world.revision,
+  );
+  return reports;
+}
+const coverageReports = await coverageReplay(world);
 for (const name of ["inflect", "seeded", "parse", "corpus"]) {
   const request = await json(`${name}.request.json`),
     expected = await json(`${name}.golden.json`);
@@ -297,6 +345,11 @@ const imported = await importedResponse.json();
 assert.notEqual(imported.world.id, world);
 await brief3Replay(imported.world.id);
 assert.deepEqual(
+  await coverageReplay(imported.world.id),
+  coverageReports,
+  "Brief 6 complete coverage changed after World ZIP import",
+);
+assert.deepEqual(
   await sequenceCorpusReplay(imported.world.id),
   corpusReport,
   "Corpus structured result changed after ZIP import into a different World",
@@ -365,6 +418,7 @@ console.log(
       "vector-mixed-readings-roles-layout",
       "brief3-pinned-replay-after-import",
       "sequence-corpus-exact-pins-read-only-18-calls-7-domain-inputs",
+      "brief6-25-reviewed-corpora-including-definition-validation-and-inverse-a2-topology",
       phase === "create" ? "historical-apply" : "restart-persistence",
     ],
   }),
