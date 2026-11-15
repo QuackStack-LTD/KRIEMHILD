@@ -87,8 +87,19 @@ func TestContinuousArchiveRoundTrip(t *testing.T) {
 	if _, err := decodeProject(files, t.TempDir()); err == nil {
 		t.Fatal("out-of-order resource chunks accepted")
 	}
-	if restored.planet.Spec.ClimateVersion != 1 || len(restored.planet.Grid.Fields["coldest"]) == 0 || len(restored.planet.Grid.Fields["rainfall-11"]) == 0 {
+	if restored.planet.Spec.ClimateVersion != p.Spec.ClimateVersion || len(restored.planet.Grid.Fields["coldest"]) == 0 || len(restored.planet.Grid.Fields["rainfall-11"]) == 0 {
 		t.Fatal("archive lost active climate version or monthly summaries")
+	}
+	if p.Spec.ClimateVersion >= 4 {
+		foundSteppeSubtype := false
+		for _, cell := range restored.solver.Environment.Climate.Cells {
+			if strings.HasSuffix(cell.Biome, "-steppe") {
+				foundSteppeSubtype = true
+			}
+		}
+		if !foundSteppeSubtype {
+			t.Fatal("archive projection lost steppe subtype identity")
+		}
 	}
 	if !reflect.DeepEqual(restored.world.Header.Illustrations[art.ID], art) {
 		t.Fatal("archive lost editable illustration")
@@ -96,7 +107,7 @@ func TestContinuousArchiveRoundTrip(t *testing.T) {
 }
 
 func TestContinuousAgeIsolationAndColdRestart(t *testing.T) {
-	for _, version := range []int{2, 3} {
+	for _, version := range []int{2, 3, 4} {
 		t.Run(fmt.Sprintf("climate-%d", version), func(t *testing.T) { testContinuousAgeIsolationAndColdRestart(t, version) })
 	}
 }

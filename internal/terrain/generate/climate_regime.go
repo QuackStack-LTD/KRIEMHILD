@@ -6,16 +6,31 @@ import "kriemhild/internal/terrain/model"
 // vegetation assignment. Version 1's existing thresholds are deliberately
 // retained; terrain/wetlands and alpine exposure belong to vegetation selection.
 type ClimateRegime struct {
-	Thermal   string  `json:"thermal"`
-	Moisture  string  `json:"moisture"`
-	Rainfall  string  `json:"rainfall"`
-	Coldest   float64 `json:"coldest"`
-	Warmest   float64 `json:"warmest"`
-	Rain      float64 `json:"annualRain"`
-	PET       float64 `json:"annualPET"`
-	Aridity   float64 `json:"aridity"`
-	DryMonths float64 `json:"dryMonths"`
-	Perhumid  bool    `json:"perhumid"`
+	MeanTemperature       float64 `json:"meanTemperature,omitempty"`
+	WaterDeficit          float64 `json:"annualMonthlyDeficit,omitempty"`
+	TemperatureRange      float64 `json:"temperatureRange,omitempty"`
+	Driest                float64 `json:"driestMonth,omitempty"`
+	Wettest               float64 `json:"wettestMonth,omitempty"`
+	SummerRain            float64 `json:"summerRain,omitempty"`
+	WinterRain            float64 `json:"winterRain,omitempty"`
+	SummerDriest          float64 `json:"summerDriest,omitempty"`
+	WinterWettest         float64 `json:"winterWettest,omitempty"`
+	LongestDrySeason      float64 `json:"longestDrySeason,omitempty"`
+	GrowingMonths         float64 `json:"growingMonths,omitempty"`
+	GrowingDryMonths      float64 `json:"growingDryMonths,omitempty"`
+	FreezingMonths        float64 `json:"freezingMonths,omitempty"`
+	MinimumMonthlyBalance float64 `json:"minimumMonthlyBalance,omitempty"`
+	Continentality        float64 `json:"continentality,omitempty"`
+	Thermal               string  `json:"thermal"`
+	Moisture              string  `json:"moisture"`
+	Rainfall              string  `json:"rainfall"`
+	Coldest               float64 `json:"coldest"`
+	Warmest               float64 `json:"warmest"`
+	Rain                  float64 `json:"annualRain"`
+	PET                   float64 `json:"annualPET"`
+	Aridity               float64 `json:"aridity"`
+	DryMonths             float64 `json:"dryMonths"`
+	Perhumid              bool    `json:"perhumid"`
 }
 
 func ClimateRegimeAt(p *model.Planet, lon, lat, bed float64) ClimateRegime {
@@ -23,6 +38,9 @@ func ClimateRegimeAt(p *model.Planet, lon, lat, bed float64) ClimateRegime {
 }
 
 func climateRegimeAt(p *model.Planet, lon, lat, bed float64, vegetationOnly bool) ClimateRegime {
+	if p.Spec.ClimateVersion >= 4 {
+		return climateRegimeV4(p, lon, lat, bed)
+	}
 	g := p.Grid
 	delta := p.AtmosphericLapse(lon, lat, bed)
 	var fallback [7]float64
@@ -84,6 +102,9 @@ func climateRegimeAt(p *model.Planet, lon, lat, bed float64, vegetationOnly bool
 }
 
 func vegetationAt(p *model.Planet, c ClimateRegime, lon, lat, bed float64) string {
+	if p.Spec.ClimateVersion >= 4 {
+		return vegetationV4(p, c, lon, lat, bed)
+	}
 	g := p.Grid
 	if c.Thermal == "ice" {
 		return "ice"

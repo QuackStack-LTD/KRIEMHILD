@@ -85,12 +85,12 @@ func (s *Server) openStoredProject(w http.ResponseWriter, r *http.Request) {
 				fail(w, 422, err.Error())
 				return
 			}
-			state := sessionState(v)
+			state := sessionStateView(v, r.URL.Query().Get("view") == "terrain")
 			state["id"] = id
 			state["worldId"] = v.worldID
 			state["projectUI"] = v.projectUI
 			state["storedDetailCount"] = len(v.tiles)
-			respond(w, 201, state)
+			respondHistory(w, r, 201, state)
 			return
 		}
 		v.mu.Unlock()
@@ -109,7 +109,7 @@ func (s *Server) openStoredProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(parts) == 0 {
-		_, m, lookupErr := s.projects.MapContext(r.Context(), r.PathValue("id"))
+		_, m, lookupErr := s.projects.MapHeader(r.Context(), r.PathValue("id"))
 		if lookupErr == nil {
 			parts, err = s.projects.SnapshotParts(r.Context(), m.Snapshot)
 			if err != nil {
@@ -171,12 +171,12 @@ func (s *Server) openStoredProject(w http.ResponseWriter, r *http.Request) {
 	v.last = time.Now()
 	s.sessions[id] = v
 	s.mu.Unlock()
-	state := sessionState(v)
+	state := sessionStateView(v, r.URL.Query().Get("view") == "terrain")
 	state["id"] = id
 	state["worldId"] = v.worldID
 	state["projectUI"] = v.projectUI
 	state["storedDetailCount"] = len(v.tiles)
-	respond(w, 201, state)
+	respondHistory(w, r, 201, state)
 }
 
 // Retire live writers under the same locks used for import/open. A delayed Save

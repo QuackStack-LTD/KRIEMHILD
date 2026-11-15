@@ -48,19 +48,27 @@ func compressJSON(value any) ([]byte, error) {
 	return b.Bytes(), nil
 }
 func expandJSON(data []byte, value any) error {
-	z, err := gzip.NewReader(bytes.NewReader(data))
+	b, err := expandCheckpointBytes(data)
 	if err != nil {
 		return err
+	}
+	return json.Unmarshal(b, value)
+}
+
+func expandCheckpointBytes(data []byte) ([]byte, error) {
+	z, err := gzip.NewReader(bytes.NewReader(data))
+	if err != nil {
+		return nil, err
 	}
 	defer z.Close()
 	b, err := io.ReadAll(io.LimitReader(z, maxExpandedBytes+1))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if len(b) > maxExpandedBytes {
-		return fmt.Errorf("checkpoint exceeds supported size")
+		return nil, fmt.Errorf("checkpoint exceeds supported size")
 	}
-	return json.Unmarshal(b, value)
+	return b, nil
 }
 
 // Caller holds the session lock. A completed response means this transaction
@@ -72,6 +80,19 @@ func (s *Server) saveWorld(v *session, changed bool) error {
 	if s.projects == nil {
 		return fmt.Errorf("project database is not configured")
 	}
+	if v.historical != nil {
+		ctx := storage.WithActor(context.Background(), v.actorID)
+		revision, err := s.projects.CurrentRevision(ctx, v.historyWorld)
+		if err != nil {
+			return err
+		}
+		if revision != v.historyRevision {
+			if err := s.applyHistoricalMap(ctx, v); err != nil {
+				return err
+			}
+		}
+	}
+	previousHistoryRevision := v.historyRevision
 	v.dirty = v.dirty || changed
 	if v.worldID == "" {
 		v.worldID = token()
@@ -148,6 +169,7 @@ func (s *Server) saveWorld(v *session, changed bool) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	ctx = storage.WithActor(ctx, v.actorID)
+	habitatsChanged := changed || v.authored().PendingTerrainEdits() || len(parts["authored-climate"]) > 0
 	historical, err := s.projects.CommitHistoricalMap(ctx, v.worldID, parts, v.authored())
 	if err != nil {
 		return err
@@ -163,8 +185,22 @@ func (s *Server) saveWorld(v *session, changed bool) error {
 
 	v.persisted = true
 	if historical {
-		if d, _, e := s.projects.MapContext(ctx, v.worldID); e == nil {
+		if d, m, e := s.projects.MapHeader(ctx, v.worldID); e == nil {
 			v.historyRevision = d.World.Revision
+			v.historical = m
+			// Geographic saves cannot change species or population records.
+			// Retain a warm resource-inspection cache across these known edits.
+			s.ecologyMu.Lock()
+			if c := s.ecologyCache; c != nil && c.world == v.historyWorld && c.revision == previousHistoryRevision {
+				c.revision = v.historyRevision
+				if c.root.ProjectID == v.worldID {
+					c.root.Snapshot = m.Snapshot
+					if habitatsChanged {
+						c.sourceVerified = false
+					}
+				}
+			}
+			s.ecologyMu.Unlock()
 		}
 	}
 	v.unsaved = false
@@ -296,8 +332,12 @@ func restoreCheckpoint(id string, parts map[string][]byte, cacheRoot string) (v 
 			continue
 		}
 		key := strings.TrimPrefix(name, "tile/")
+		raw, readErr := expandCheckpointBytes(b)
+		if readErr != nil {
+			return nil, readErr
+		}
 		var tile terrain.DetailTile
-		if err = expandJSON(b, &tile); err != nil {
+		if err = json.Unmarshal(raw, &tile); err != nil {
 			return nil, err
 		}
 		if key != detailKey(tile.Level, tile.X, tile.Y) {
@@ -306,11 +346,7 @@ func restoreCheckpoint(id string, parts map[string][]byte, cacheRoot string) (v 
 		if err = terrain.ValidateDetailTile(tile, solver.Environment); err != nil {
 			return nil, err
 		}
-		var raw json.RawMessage
-		if err = expandJSON(b, &raw); err != nil {
-			return nil, err
-		}
-		if err = v.putDetail(key, raw); err != nil {
+		if err = v.putDetail(key, bytes.TrimSpace(raw)); err != nil {
 			return nil, err
 		}
 		v.savedTiles[key] = true
@@ -351,7 +387,13 @@ func (s *Server) saveView(w http.ResponseWriter, r *http.Request) {
 	}
 	v.last = time.Now()
 	if req.Client != "" && req.Client == v.viewClient && req.Sequence <= v.viewSequence {
-		respond(w, 200, map[string]any{"worldId": v.worldID, "unsaved": v.unsaved})
+		if v.planet != nil && v.historical != nil && v.unsaved {
+			if err := s.saveWorld(v, false); err != nil {
+				fail(w, 503, "Could not automatically save terrain view. Use Save terrain to retry.")
+				return
+			}
+		}
+		respond(w, 200, map[string]any{"worldId": v.worldID, "unsaved": v.unsaved, "historyRevision": v.historyRevision})
 		return
 	}
 	var fields map[string]json.RawMessage
@@ -373,10 +415,19 @@ func (s *Server) saveView(w http.ResponseWriter, r *http.Request) {
 	v.projectUI = req.UI
 	v.viewClient = req.Client
 	v.viewSequence = req.Sequence
-	respond(w, 200, map[string]any{"worldId": v.worldID, "unsaved": v.unsaved})
+	if v.planet != nil && v.historical != nil && v.unsaved {
+		if view, exists := fields["continuousView"]; exists {
+			v.authored().Header.View = view
+		}
+		if err := s.saveWorld(v, false); err != nil {
+			fail(w, 503, "Could not automatically save terrain view. Use Save terrain to retry.")
+			return
+		}
+	}
+	respond(w, 200, map[string]any{"worldId": v.worldID, "unsaved": v.unsaved, "historyRevision": v.historyRevision})
 }
 
-// View staging never writes to the database. Only explicit Save commits a world.
+// Generation previews remain staged until explicitly attached to a World/Age.
 func sameJSON(a, b json.RawMessage) bool {
 	var x, y any
 	if json.Unmarshal(a, &x) != nil || json.Unmarshal(b, &y) != nil {
@@ -409,6 +460,10 @@ func (s *Server) commitWorld(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer v.mu.Unlock()
+	if v.planet != nil && v.historical == nil {
+		fail(w, 409, "Save terrain to a World from the Terrain Generator first.")
+		return
+	}
 	if req.Revision != nil && *req.Revision != v.authored().Header.Revision {
 		fail(w, 409, "World changed; refresh before saving.")
 		return

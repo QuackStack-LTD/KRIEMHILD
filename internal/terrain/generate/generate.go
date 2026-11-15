@@ -175,7 +175,7 @@ func audit(p *model.Planet) {
 	if math.Abs(p.Diagnostics.LandCoverage-p.Spec.LandCoverage) > .08 {
 		p.Diagnostics.Warnings = append(p.Diagnostics.Warnings, fmt.Sprintf("Land coverage %.0f%% differs from preference %.0f%%; protected straits were retained.", p.Diagnostics.LandCoverage*100, p.Spec.LandCoverage*100))
 	}
-	if p.Diagnostics.BiomeShares["desert"]+p.Diagnostics.BiomeShares["steppe"] > .45 {
+	if p.Diagnostics.BiomeShares["desert"]+SteppeShare(p.Diagnostics.BiomeShares) > .45 {
 		p.Diagnostics.Warnings = append(p.Diagnostics.Warnings, "Drylands exceed 45% of land; inspect precipitation and PET.")
 	}
 }

@@ -39,6 +39,11 @@ export class GeographicQuery {
     this.serial++;
     this.controller?.abort();
   }
+  invalidate() {
+    this.cancel();
+    this.cache.clear();
+    this.bytes = 0;
+  }
   async select({ session, identity, revision, point }, onResult) {
     this.source(identity, revision);
     this.cancel();

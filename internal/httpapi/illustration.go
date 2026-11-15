@@ -20,7 +20,8 @@ func artworkBounds(v *session) world.Bounds {
 	return world.Bounds{X: 0, Y: 0, Width: float64(v.solver.W - 1), Height: float64(v.solver.H - 1)}
 }
 
-// Explicit generation flushes a complete source snapshot before rendering.
+// Continuous illustration sampling never commits terrain. Legacy generation
+// retains its archive-compatible source-snapshot behavior.
 // No viewport query, visibility switch, or object-count cap determines content.
 func (s *Server) illustrationData(w http.ResponseWriter, r *http.Request) {
 	v := s.worldSession(w, r)
@@ -182,13 +183,15 @@ func (s *Server) illustrationData(w http.ResponseWriter, r *http.Request) {
 			samples[y*cols+x] = q
 		}
 	}
-	if err := s.saveWorld(v, false); err != nil {
-		fail(w, 503, "Could not save the illustration's source map: "+err.Error())
-		return
+	if v.planet == nil {
+		if err := s.saveWorld(v, false); err != nil {
+			fail(w, 503, "Could not save the illustration's source map: "+err.Error())
+			return
+		}
 	}
-	out := map[string]any{"name": model.Header.Name, "revision": model.Header.Revision, "mapId": model.Header.MapID, "worldId": v.worldID, "historicalMap": v.historical, "bounds": b, "columns": cols, "rows": rows, "samples": samples, "entities": entities, "features": features, "saved": true, "unsaved": false, "terrainWidth": v.solver.W, "terrainHeight": v.solver.H}
+	out := map[string]any{"name": model.Header.Name, "revision": model.Header.Revision, "mapId": model.Header.MapID, "worldId": v.worldID, "historicalMap": v.historical, "bounds": b, "columns": cols, "rows": rows, "samples": samples, "entities": entities, "features": features, "saved": v.planet == nil, "unsaved": v.unsaved, "terrainWidth": v.solver.W, "terrainHeight": v.solver.H}
 	if v.historical != nil && s.projects != nil {
-		d, err := s.projects.History(r.Context(), v.historyWorld)
+		d, err := s.projects.AgeMapProjection(r.Context(), v.historyWorld, v.historical.AgeID)
 		if err != nil {
 			fail(w, 503, "Could not load the illustration's geographical relationships: "+err.Error())
 			return
@@ -282,6 +285,10 @@ func (s *Server) saveArtwork(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer v.mu.Unlock()
+	if v.planet != nil {
+		fail(w, 409, "Save illustrations from the Medieval Illustrator; terrain is saved separately in the Terrain Generator.")
+		return
+	}
 	model := v.authored()
 	if a.SourceRevision != model.Header.Revision {
 		fail(w, 409, "The map changed since this illustration was generated. Regenerate the preview.")

@@ -1,11 +1,12 @@
 import useUnsavedChanges from "./ui/useUnsavedChanges.js";
+import { rebaseProfileName } from "./name-changes.js";
 import IllustratedMapImage from "./IllustratedMapImage.jsx";
 import SettlementResources from "./SettlementResources.jsx";
-import { confirmAction } from "./ui/feedback.js";
+import { confirmAction, requestText } from "./ui/feedback.js";
 import Dialog from "./ui/Dialog.jsx";
 import CharacterRelationEditor from "./CharacterRelationEditor.jsx";
 import { MapPreview, SettlementPlaceholder } from "./Workspace.jsx";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   activeEntities,
   entityIn,
@@ -298,6 +299,17 @@ export default function Profile({
     [relation, setRelation] = useState(null),
     [saved, setSaved] = useState(""),
     [portraitError, setPortraitError] = useState("");
+  const previousEntity = useRef(entity);
+  useEffect(() => {
+    const old = previousEntity.current;
+    previousEntity.current = entity;
+    if (
+      old.id === entity.id &&
+      old.ageId === entity.ageId &&
+      old.name !== entity.name
+    )
+      setDraft((value) => rebaseProfileName(value, old, entity));
+  }, [entity]);
   useUnsavedChanges(JSON.stringify(draft) !== JSON.stringify(entity), () =>
     setDraft(entity),
   );
@@ -355,6 +367,30 @@ export default function Profile({
       setSaved(`Saved in ${age.name}`);
     }
   }
+  const renameButton = !entity.deleted && (
+    <button
+      type="button"
+      onClick={async () => {
+        const name = await requestText("Entity name", entity.name);
+        if (!name) return;
+        const next = await command({
+          kind: "rename-entity",
+          ageId: entity.ageId,
+          entityId: entity.id,
+          name,
+        });
+        const renamed = next?.entities.find(
+          (e) => e.id === entity.id && e.ageId === entity.ageId,
+        );
+        if (renamed)
+          setDraft((value) =>
+            rebaseProfileName({ ...value, name: entity.name }, entity, renamed),
+          );
+      }}
+    >
+      Rename
+    </button>
+  );
   const links = (family) =>
     relations.filter((r) =>
       family === "family"
@@ -462,6 +498,7 @@ export default function Profile({
           {breadcrumb}
           <div className="settlement-banner-details">
             <h1>{entity.name}</h1>
+            {renameButton}
             {p.illustratedMap && (
               <a
                 href={`/worlds/${doc.world.id}/library?age=${entity.ageId}&record=${encodeURIComponent(p.illustratedMap.fileId)}`}
@@ -547,6 +584,7 @@ export default function Profile({
               {label(entity.kind)} / {age?.name}
             </span>
             <h1>{entity.name}</h1>
+            {!place && !p.illustratedMap && renameButton}
             {entity.deleted && (
               <p className="historical-notice">
                 This is an archived historical record. It is not active in this

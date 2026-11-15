@@ -27,14 +27,15 @@ type LibraryImage struct {
 	Height int    `json:"height"`
 }
 type LibraryFile struct {
-	Record    *ArchiveRecord   `json:"record,omitempty"`
-	Custody   []CustodyEvent   `json:"custody,omitempty"`
-	CopyOf    string           `json:"copyOf,omitempty"`
-	Status    string           `json:"status,omitempty"`
-	ID        string           `json:"id"`
-	AgeID     string           `json:"ageId"`
-	ArchiveID string           `json:"archiveId"`
-	Versions  []LibraryVersion `json:"versions"`
+	ResourceSurvey *ResourceSurvey  `json:"resourceSurvey,omitempty"`
+	Record         *ArchiveRecord   `json:"record,omitempty"`
+	Custody        []CustodyEvent   `json:"custody,omitempty"`
+	CopyOf         string           `json:"copyOf,omitempty"`
+	Status         string           `json:"status,omitempty"`
+	ID             string           `json:"id"`
+	AgeID          string           `json:"ageId"`
+	ArchiveID      string           `json:"archiveId"`
+	Versions       []LibraryVersion `json:"versions"`
 }
 
 func (d *Document) LibraryFile(age, id string) *LibraryFile {
@@ -66,6 +67,11 @@ func (d *Document) validateLibrary() error {
 			return fmt.Errorf("invalid Library file or archive reference")
 		}
 		seen[key] = true
+		if f.ResourceSurvey != nil {
+			if err := f.ResourceSurvey.Validate(d, f.AgeID); err != nil {
+				return err
+			}
+		}
 		for _, v := range f.Versions {
 			if v.Banner != nil {
 				b := v.Banner
@@ -115,6 +121,14 @@ func (d *Document) inheritLibrary(from, to string, overwrite bool) {
 			f.Versions[i].Provenance = cloneArchiveRecord(f.Versions[i].Provenance)
 		}
 		f.Record = cloneArchiveRecord(f.Record)
+		if f.ResourceSurvey != nil {
+			copy := *f.ResourceSurvey
+			if copy.Year != nil {
+				year := *copy.Year
+				copy.Year = &year
+			}
+			f.ResourceSurvey = &copy
+		}
 		f.Custody = append([]CustodyEvent(nil), f.Custody...)
 		if old := d.LibraryFile(to, f.ID); old == nil {
 			d.LibraryFiles = append(d.LibraryFiles, f)
@@ -174,6 +188,12 @@ func (d *Document) validateArchiveDeletion(age string, ids []string) error {
 // A branch from a particular year must not inherit documents or versions that
 // demonstrably had not arrived yet. Undated authored files retain legacy behavior.
 func (d *Document) libraryAtYear(f LibraryFile, to, from string, year int64) (LibraryFile, bool) {
+	if s := f.ResourceSurvey; s != nil && s.SourceAge == from && s.Year != nil && *s.Year > year {
+		if e := d.Entity(to, f.ID); e != nil {
+			e.Deleted = true
+		}
+		return f, false
+	}
 	oldVersions := f.Versions
 	f.Versions = nil
 	for _, v := range oldVersions {

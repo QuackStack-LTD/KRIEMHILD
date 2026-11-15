@@ -158,6 +158,8 @@ export async function illustrationAssets(svg, width = 2048) {
     '[data-illustration-layer="decoration"]',
   ))
     e.remove();
+  const geographic = banner.getAttribute("data-illustration-map-bounds");
+  if (geographic) banner.setAttribute("viewBox", geographic);
   return {
     map,
     banner: await paint(

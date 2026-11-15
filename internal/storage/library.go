@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"kriemhild/internal/history"
 	"time"
@@ -35,7 +36,7 @@ func (s *Store) SaveLibraryFile(ctx context.Context, worldID string, revision in
 	if f != nil && (f.Status == "lost" || f.Status == "destroyed") && (len(f.Versions) == 0 || f.Versions[len(f.Versions)-1].Hash != h) {
 		return nil, fmt.Errorf("the contents of lost or destroyed documents cannot be edited")
 	}
-	if f != nil && f.Record != nil && f.ArchiveID != archive {
+	if f != nil && (f.Record != nil || f.ResourceSurvey != nil) && f.ArchiveID != archive {
 		return nil, fmt.Errorf("use Preservation & custody to transfer a historical document")
 	}
 	if f == nil {
@@ -66,12 +67,17 @@ func (s *Store) LibraryContent(ctx context.Context, worldID, age, id, version st
 		return nil, history.LibraryVersion{}, err
 	}
 	defer tx.Rollback()
-	d, err := readHistory(ctx, tx, worldID)
-	if err != nil {
+	// A file download needs one record, not all species and climate profiles in
+	// every Age of its World.
+	var raw []byte
+	if err = tx.QueryRowContext(ctx, "SELECT data FROM history_library_files WHERE world_id=$1 AND id=$2", worldID, age+"/"+id).Scan(&raw); err != nil {
 		return nil, history.LibraryVersion{}, err
 	}
-	f := d.LibraryFile(age, id)
-	if f == nil || len(f.Versions) == 0 {
+	var f history.LibraryFile
+	if err = json.Unmarshal(raw, &f); err != nil {
+		return nil, history.LibraryVersion{}, err
+	}
+	if len(f.Versions) == 0 {
 		return nil, history.LibraryVersion{}, sql.ErrNoRows
 	}
 	v := f.Versions[len(f.Versions)-1]

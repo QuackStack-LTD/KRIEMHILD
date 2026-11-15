@@ -15,7 +15,9 @@ cleanup() {
 }
 trap cleanup EXIT
 docker network create "$network" >/dev/null
-field() { python3 -c 'import json,sys; print(json.load(sys.stdin)[sys.argv[1]])' "$1"; }
+field() { python3 -c 'import json,sys; v=json.load(sys.stdin)
+for key in sys.argv[1].split("."): v=v[key]
+print(v)' "$1"; }
 start_app() {
   local volume=$1 dsn=${2:-}
   local args=()
@@ -53,38 +55,76 @@ exercise() {
   asset=$(python3 -c 'import re,sys; print(re.search(r"src=\"(/assets/[^\"]+)\"",open(sys.argv[1]).read()).group(1))' "$work/index.html")
   curl -fsS "$base$asset" >/dev/null
   [[ $(curl -fsS "$base/api/projects" | field database) == "$driver" ]]
-  curl -fsS "$base/api/sessions" -H 'Content-Type: application/json' \
-    --data '{"environment":{"columns":16,"rows":16,"seed":"container-smoke","realism":true}}' > "$work/state.json"
-  local id status world
-  id=$(field id < "$work/state.json")
-  status=$(field status < "$work/state.json")
-  for ((i=0;i<100;i++)); do
-    if [[ "$status" == done ]]; then break; fi
-    curl -fsS "$base/api/sessions/$id/step" -H 'Content-Type: application/json' --data '{"count":10000}' > "$work/step.json"
-    status=$(python3 -c 'import json,sys;print(json.load(sys.stdin)["state"]["status"])' < "$work/step.json")
+  curl -fsS "$base/api/worlds" -H 'Content-Type: application/json' \
+    --data '{"name":"Container persistence check"}' > "$work/world.json"
+  local id status world age job project revision
+  world=$(field world.id < "$work/world.json")
+  age=$(field world.currentAge < "$work/world.json")
+  curl -fsS "$base/api/terrain/generation-jobs" -H 'Content-Type: application/json' \
+    --data '{"spec":{"surfaceWidth":1024,"seed":"container-smoke"}}' > "$work/job.json"
+  job=$(field id < "$work/job.json")
+  status=running
+  for ((i=0;i<240;i++)); do
+    curl -fsS "$base/api/terrain/generation-jobs/$job" > "$work/job.json"
+    status=$(field status < "$work/job.json")
+    if [[ "$status" == ready || "$status" == failed ]]; then break; fi
+    sleep 1
   done
-  [[ "$status" == done ]]
-  curl -fsS "$base/api/sessions/$id/detail/2/0/0" > "$work/tile.json"
-  curl -fsS "$base/api/sessions/$id/view" -H 'Content-Type: application/json' --data '{"ui":{"seedUsed":42,"camera2d":{"scale":120}}}' > "$work/staged.json"
-  curl -fsS "$base/api/sessions/$id/save" -H 'Content-Type: application/json' --data '{}' > "$work/saved.json"
-  world=$(curl -fsS "$base/api/projects" | python3 -c 'import json,sys;print(json.load(sys.stdin)["projects"][0]["id"])')
+  if [[ "$status" != ready ]]; then cat "$work/job.json" >&2; return 1; fi
+  id=$(field session < "$work/job.json")
+  curl -fsS "$base/api/worlds/$world/accept" -H 'Content-Type: application/json' \
+    --data "{\"session\":\"$id\",\"ageId\":\"$age\",\"name\":\"Smoke terrain\"}" > "$work/accepted.json"
+  project=$(field map.projectId < "$work/accepted.json")
+  curl -fsS "$base/api/sessions/$id/world/state?view=terrain" > "$work/state.json"
+  revision=$(field project.revision < "$work/state.json")
+  python3 - "$work/state.json" "$revision" > "$work/edit.json" <<'PY'
+import json,sys
+s=json.load(open(sys.argv[1]))
+print(json.dumps({'kind':'operation','revision':int(sys.argv[2]),'operation':{
+    'id':'smoke-edit','kind':'raise','layer':'elevation',
+    'center':[.45*(s['W']-1),.45*(s['H']-1)],'radius':2,'amount':120}}))
+PY
+  curl -fsS "$base/api/sessions/$id/terrain/sample?lon=-18&lat=9" > "$work/before.json"
+  curl -fsS "$base/api/sessions/$id/world" -H 'Content-Type: application/json' \
+    --data-binary "@$work/edit.json" > "$work/edited.json"
+  curl -fsS "$base/api/sessions/$id/terrain/sample?lon=-18&lat=9" > "$work/sample.json"
+  python3 - "$work/before.json" "$work/sample.json" <<'PY'
+import json,sys
+before,after=(json.load(open(p)) for p in sys.argv[1:])
+assert abs(after['bed']-before['bed']-120)<1e-8, 'terrain edit was not applied'
+PY
+  curl -fsS "$base/api/sessions/$id/terrain/tiles/2/3/1?style=natural" > "$work/tile.png"
+  curl -fsS "$base/api/sessions/$id/terrain/resources?longitude=-18&latitude=9&radiusKm=10" > "$work/resources.json"
+  python3 - "$work/resources.json" <<'PY'
+import json,sys
+report=json.load(open(sys.argv[1]))
+assert report['areaKm2']>0 and report['fields'], 'resource inspection failed'
+PY
+  curl -fsS "$base/api/sessions/$id/view" -H 'Content-Type: application/json' \
+    --data '{"ui":{"continuousView":{"camera":{"x":0.8,"y":0.3,"w":0.1,"h":0.05},"style":"terrain","mode":"map"}},"merge":true}' > "$work/staged.json"
+  # Accepted terrain and its view autosave. Restart without an explicit save.
   curl -fsS -X DELETE "$base/api/sessions/$id" >/dev/null
   stop_app
   start_app "$volume" "$dsn"
-  curl -fsS "$base/api/projects/$world/open" -H 'Content-Type: application/json' --data '{}' > "$work/restored.json"
+  curl -fsS "$base/api/projects/$project/open?view=terrain" -H 'Content-Type: application/json' --data '{}' > "$work/restored.json"
   id=$(field id < "$work/restored.json")
-  curl -fsS "$base/api/sessions/$id/detail/2/0/0" > "$work/restored-tile.json"
-  cmp "$work/tile.json" "$work/restored-tile.json"
-  python3 - "$work/state.json" "$work/restored.json" <<'PY'
+  curl -fsS "$base/api/sessions/$id/terrain/tiles/2/3/1?style=natural" > "$work/restored-tile.png"
+  curl -fsS "$base/api/sessions/$id/terrain/sample?lon=-18&lat=9" > "$work/restored-sample.json"
+  cmp "$work/tile.png" "$work/restored-tile.png"
+  python3 - "$work/state.json" "$work/restored.json" "$work/sample.json" "$work/restored-sample.json" <<'PY'
 import json,sys
-original,restored=(json.load(open(p)) for p in sys.argv[1:])
-assert original['environment'] == restored['environment'], 'geography changed on restart'
-assert restored['storedDetailCount'] >= 3, 'detail hierarchy missing'
-assert restored['projectUI']['camera2d']['scale'] == 120, 'camera state missing'
+original,restored,before,after=(json.load(open(p)) for p in sys.argv[1:])
+assert original['continuous']['spec'] == restored['continuous']['spec'], 'geography changed on restart'
+assert before['bed'] == after['bed'], 'automatic terrain save lost on restart'
+assert restored['projectUI']['continuousView']['camera']['w'] == .1, 'camera state missing'
 PY
-  curl -fsS "$base/api/sessions/$id/project" -H 'Content-Type: application/json' --data '{"ui":{"seedUsed":42}}' -o "$work/world.zip"
+  curl -fsS "$base/api/sessions/$id/project" -H 'Content-Type: application/json' --data '{}' -o "$work/world.zip"
+  python3 - "$work/world.zip" <<'PY'
+import sys,zipfile
+assert zipfile.is_zipfile(sys.argv[1]), 'world export is not a ZIP archive'
+PY
   stop_app
-  echo "$driver: frontend, non-root runtime, explicit save, restart, stored detail, ZIP export and graceful shutdown passed"
+  echo "$driver: frontend, non-root runtime, generation, resources, autosave, restart, terrain/view persistence, ZIP export and graceful shutdown passed"
 }
 exercise sqlite "$prefix-sqlite"
 docker run -d --name "$postgres" --network "$network" \

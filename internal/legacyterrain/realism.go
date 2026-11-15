@@ -272,7 +272,9 @@ func (e *Environment) transportSand() {
 }
 
 func (e *Environment) groupDunes() {
-	if e.Fields["duneField"] == nil {
+	// Continuous terrain adapters expose physical fields without the legacy
+	// feature catalogue. Climate rechecks must not invent or dereference it.
+	if e.Entities == nil || e.Fields["duneField"] == nil {
 		return
 	}
 	w, h := e.Options.Columns, e.Options.Rows

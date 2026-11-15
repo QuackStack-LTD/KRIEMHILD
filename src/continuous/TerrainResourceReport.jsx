@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { request } from "./api.js";
+import ResourceReportActions from "./ResourceReportActions.jsx";
+import ResourceResultGroup from "./ResourceResultGroup.jsx";
 import "./terrain-resources.css";
 
 const title = (s) => s.replaceAll("-", " ").replaceAll("_", " ");
@@ -50,7 +52,13 @@ export function useResourceReport(path) {
     ? state
     : { report: null, error: "", loading: !!path };
 }
-export function ResourceReport({ report, error, loading }) {
+export function ResourceReport({
+  report,
+  error,
+  loading,
+  path,
+  actions = true,
+}) {
   if (loading) return <p role="status">Reading this terrain area…</p>;
   if (error) return <p role="alert">{error}</p>;
   if (!report)
@@ -65,14 +73,20 @@ export function ResourceReport({ report, error, loading }) {
     organisms = Object.groupBy(report.biosphere.lifeforms, (r) => r.group);
   return (
     <div className="terrain-resource-report">
+      {actions && (
+        <ResourceReportActions
+          key={report.fingerprint || path}
+          report={report}
+          path={path}
+        />
+      )}
       <p className="resource-coordinates">
         {number(report.latitude)}° latitude · {number(report.longitude)}°
         longitude
         <br />
-        {number(report.radiusKm)} km radius · {number(report.areaKm2)} km²
-        observed
+        {number(report.areaKm2)} km² observed
       </p>
-      {(report.stale || report.biosphere.stale) && (
+      {report.biosphere.stale && (
         <p className="resource-warning" role="status">
           Terrain or habitat edits have made this analysis stale. These are the
           saved generated ranges; regenerate and accept the affected
@@ -162,18 +176,15 @@ export function ResourceReport({ report, error, loading }) {
         {report.truncated && (
           <p role="status">
             Showing the first {report.resources.length} occurrences. Reduce the
-            radius to inspect a smaller inventory.
+            circle size to inspect a smaller inventory.
           </p>
         )}
         {!report.resources.length && (
           <p>No generated resource footprint intersects this circle.</p>
         )}
         {Object.entries(materials).map(([kind, items]) => (
-          <details key={kind}>
-            <summary>
-              {title(kind)} <small>· {items.length}</small>
-            </summary>
-            {items.map((r) => (
+          <ResourceResultGroup key={kind} label={title(kind)} items={items}>
+            {(r) => (
               <article className="resource-item" key={r.id}>
                 <strong>
                   {title(r.variant)} ·{" "}
@@ -215,8 +226,8 @@ export function ResourceReport({ report, error, loading }) {
                   ))}
                 </details>
               </article>
-            ))}
-          </details>
+            )}
+          </ResourceResultGroup>
         ))}
       </section>
       <section aria-label="Geological features">
@@ -301,19 +312,7 @@ export function ResourceReport({ report, error, loading }) {
               ))}
             </details>
             {Object.entries(organisms).map(([group, items]) => (
-              <details key={group} open>
-                <summary>
-                  {title(group)} ({items.length})
-                </summary>
-                {items.map((l) => (
-                  <p key={l.id}>
-                    <strong>{l.name}</strong> · {title(l.status)}
-                    <br />
-                    {l.roles?.map(title).join(", ")} · relative abundance{" "}
-                    {number(l.abundance)}
-                  </p>
-                ))}
-              </details>
+              <LifeformResults key={group} group={group} items={items} />
             ))}
             {!report.biosphere.lifeforms.length && (
               <p>No present lifeforms are recorded in these habitat ranges.</p>
@@ -368,6 +367,71 @@ export function ResourceReport({ report, error, loading }) {
     </div>
   );
 }
+
+export function LifeformResults({ group, items }) {
+  const [search, setSearch] = useState(""),
+    [page, setPage] = useState(0);
+  const matches = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return query
+      ? items.filter((item) => item.name.toLowerCase().includes(query))
+      : items;
+  }, [items, search]);
+  const size = 100,
+    last = Math.max(0, Math.ceil(matches.length / size) - 1),
+    current = Math.min(page, last);
+  return (
+    <details open>
+      <summary>
+        {title(group)} ({items.length})
+      </summary>
+      {items.length > size && (
+        <label>
+          Find {title(group)}
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setPage(0);
+            }}
+          />
+        </label>
+      )}
+      {matches.slice(current * size, (current + 1) * size).map((lifeform) => (
+        <p key={lifeform.id}>
+          <strong>{lifeform.name}</strong> · {title(lifeform.status)}
+          <br />
+          {lifeform.roles?.map(title).join(", ")} · relative abundance{" "}
+          {number(lifeform.abundance)}
+        </p>
+      ))}
+      {items.length > size && (
+        <div>
+          <p role="status">
+            {matches.length ? current * size + 1 : 0}–
+            {Math.min((current + 1) * size, matches.length)} of {matches.length}{" "}
+            matching lifeforms
+          </p>
+          <button
+            type="button"
+            disabled={current === 0}
+            onClick={() => setPage(current - 1)}
+          >
+            Previous lifeforms
+          </button>
+          <button
+            type="button"
+            disabled={current === last}
+            onClick={() => setPage(current + 1)}
+          >
+            Next lifeforms
+          </button>
+        </div>
+      )}
+    </details>
+  );
+}
 export default function TerrainResourceReport({ path }) {
-  return <ResourceReport {...useResourceReport(path)} />;
+  return <ResourceReport {...useResourceReport(path)} path={path} />;
 }

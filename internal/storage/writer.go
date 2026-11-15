@@ -14,6 +14,7 @@ import (
 
 var ErrWritingConflict = errors.New("writing changed in another session; recover your local edits or reload")
 var writerSchema = []string{
+	`CREATE TABLE IF NOT EXISTS writer_files(world_id TEXT NOT NULL,hash TEXT NOT NULL,data BYTEA NOT NULL,PRIMARY KEY(world_id,hash))`,
 	`CREATE TABLE IF NOT EXISTS writer_projects(id TEXT PRIMARY KEY,world_id TEXT NOT NULL,revision INTEGER NOT NULL,data TEXT NOT NULL)`,
 	`CREATE TABLE IF NOT EXISTS writer_nodes(id TEXT PRIMARY KEY,project_id TEXT NOT NULL REFERENCES writer_projects(id),revision INTEGER NOT NULL,data TEXT NOT NULL)`,
 	`CREATE INDEX IF NOT EXISTS writer_nodes_project ON writer_nodes(project_id)`,
@@ -30,6 +31,7 @@ type WriterSettings struct {
 	DefaultAge    string  `json:"defaultAge,omitempty"`
 }
 type WritingProject struct {
+	Deleted         bool           `json:"deleted,omitempty"`
 	ImportedWorldID string         `json:"importedWorldId,omitempty"`
 	ID              string         `json:"id"`
 	WorldID         string         `json:"worldId"`
@@ -48,6 +50,12 @@ type WritingReference struct {
 	Wording  string `json:"wording,omitempty"`
 }
 type WritingNode struct {
+	Format       string             `json:"format,omitempty"`
+	FileHash     string             `json:"fileHash,omitempty"`
+	FileName     string             `json:"fileName,omitempty"`
+	MIME         string             `json:"mime,omitempty"`
+	FileSize     int64              `json:"fileSize,omitempty"`
+	TrashRootID  string             `json:"trashRootId,omitempty"`
 	AuthorID     string             `json:"authorId,omitempty"`
 	ID           string             `json:"id"`
 	ProjectID    string             `json:"projectId"`
@@ -83,6 +91,7 @@ type WritingVersion struct {
 	Label string      `json:"label"`
 }
 type WriterBundle struct {
+	Files    map[string][]byte           `json:"files,omitempty"`
 	Comments []Comment                   `json:"comments,omitempty"`
 	Updates  map[string][]DocumentUpdate `json:"updates,omitempty"`
 	Format   string                      `json:"format"`
@@ -346,6 +355,9 @@ func writerBundleTx(ctx context.Context, tx *sql.Tx, id string, versions bool) (
 	}
 	err = rows.Err()
 	rows.Close()
+	if err == nil {
+		b.Files, err = writerBundleFiles(ctx, tx, b)
+	}
 	return b, err
 }
 
@@ -368,6 +380,7 @@ func validateWriterContent(raw json.RawMessage) (string, error) {
 		var n struct {
 			Type    string            `json:"type"`
 			Text    string            `json:"text"`
+			Attrs   map[string]any    `json:"attrs"`
 			Content []json.RawMessage `json:"content"`
 			Marks   []struct {
 				Type  string         `json:"type"`
@@ -377,8 +390,15 @@ func validateWriterContent(raw json.RawMessage) (string, error) {
 		if err := json.Unmarshal(b, &n); err != nil {
 			return "", err
 		}
-		if !strings.Contains("|doc|paragraph|heading|text|blockquote|bulletList|orderedList|listItem|horizontalRule|hardBreak|codeBlock|", "|"+n.Type+"|") {
+		if !strings.Contains("|doc|paragraph|heading|text|blockquote|bulletList|orderedList|listItem|horizontalRule|hardBreak|codeBlock|image|", "|"+n.Type+"|") {
 			return "", fmt.Errorf("unsupported editor node %s", n.Type)
+		}
+		if n.Type == "image" {
+			src, _ := n.Attrs["src"].(string)
+			if (!strings.HasPrefix(src, "/api/writer/projects/") && !strings.HasPrefix(src, "/api/worlds/")) || strings.ContainsAny(src, "\r\n\x00") || len(src) > 1500 || len(n.Content) > 0 {
+				return "", fmt.Errorf("images must use a stored archive file")
+			}
+			return "", nil
 		}
 		for _, m := range n.Marks {
 			if !strings.Contains("|bold|italic|strike|underline|code|link|worldReference|", "|"+m.Type+"|") {
@@ -448,7 +468,7 @@ func validateWriterNode(n *WritingNode, p WritingProject, nodes []WritingNode) e
 	if n.ID == "" || len(n.ID) > 100 || n.ProjectID != p.ID || strings.TrimSpace(n.Title) == "" || len(n.Title) > 300 || n.Schema != 1 || n.Target < 0 {
 		return fmt.Errorf("invalid manuscript node")
 	}
-	if !strings.Contains("|book|part|chapter|scene|note|research|outline|frontMatter|backMatter|", "|"+n.Type+"|") {
+	if !strings.Contains("|book|part|chapter|scene|note|research|outline|frontMatter|backMatter|folder|document|asset|", "|"+n.Type+"|") {
 		return fmt.Errorf("invalid node type")
 	}
 	if !strings.Contains("|Idea|Outlined|Drafting|Needs revision|Final|", "|"+n.Status+"|") {
@@ -469,12 +489,12 @@ func validateWriterNode(n *WritingNode, p WritingProject, nodes []WritingNode) e
 		if !ok || (x.Deleted && !n.Deleted) {
 			return fmt.Errorf("parent is not in this project")
 		}
-		if !strings.Contains("|book|part|chapter|", "|"+x.Type+"|") {
+		if !strings.Contains("|book|part|chapter|folder|", "|"+x.Type+"|") {
 			return fmt.Errorf("parent must be a book, part or chapter")
 		}
 		parent = x.ParentID
 	}
-	if n.Type != "book" && n.Type != "part" && n.Type != "chapter" {
+	if !writerContainer(n.Type) {
 		for _, x := range nodes {
 			if x.ParentID == n.ID && !x.Deleted {
 				return fmt.Errorf("move child nodes before converting this container")
@@ -559,11 +579,17 @@ func saveWriterNodeTx(ctx context.Context, tx *sql.Tx, project string, n *Writin
 	if err != nil {
 		return err
 	}
+	if p.Deleted {
+		return fmt.Errorf("restore the folder before editing")
+	}
 	nodes, err := writerNodes(ctx, tx, project)
 	if err != nil {
 		return err
 	}
 	if err = validateWriterNode(n, p, nodes); err != nil {
+		return err
+	}
+	if err = validateWriterFile(ctx, tx, p.WorldID, *n); err != nil {
 		return err
 	}
 	var old *WritingNode
@@ -602,7 +628,7 @@ func saveWriterNodeTx(ctx context.Context, tx *sql.Tx, project string, n *Writin
 			}
 		}
 	}
-	if p.WorldID != "" && needsWorld {
+	if p.WorldID != "" && needsWorld && (n.StoryAge != "" || n.POV != "" || n.Location != "" || len(n.References) > 0) {
 		d, e := readHistory(ctx, tx, p.WorldID)
 		if e != nil {
 			return e
@@ -747,12 +773,18 @@ func importWriterTx(ctx context.Context, tx *sql.Tx, b WriterBundle, world strin
 	if _, err = tx.ExecContext(ctx, `INSERT INTO writer_projects(id,world_id,revision,data) VALUES($1,$2,1,$3)`, p.ID, world, string(raw)); err != nil {
 		return p, err
 	}
+	if err = importWriterFiles(ctx, tx, world, b.Files); err != nil {
+		return p, err
+	}
 	for i := range nodes {
 		n := &nodes[i]
 		if n.Revision < 1 {
 			return p, fmt.Errorf("invalid node revision")
 		}
 		if err = validateWriterNode(n, p, nodes); err != nil {
+			return p, err
+		}
+		if err = validateWriterFile(ctx, tx, world, *n); err != nil {
 			return p, err
 		}
 		raw, _ = json.Marshal(n)

@@ -6,6 +6,8 @@ The continuous terrain rebuild is an **in-progress replacement**, with working g
 
 The opening page is a **Project Hub** with named recent worlds and ZIP/folder import. Fresh terrain opens the new Generator, Map Builder and Settlement Builder workspace. Existing continuous maps open in the new editor; older maps open in the archive viewer. Switching editors never regenerates the map. See [retirement scope](docs/terrain-rebuild/RETIREMENT.md). Older terrain documentation describes historical formats, not current UI controls.
 
+Use **Water bodies** in the terrain workspace to name generated oceans, lakes and rivers, or place named seas, bays, straits and other water regions. **Rename terrain** is available in the Atlas and workspace header; entity profiles and the builder inspector also provide renaming. Canonical names follow stable entity IDs across references and open editors, within the selected Age. Naming remains explicit; edits to accepted terrain save automatically.
+
 ## Run
 
 Legacy physical worlds use terrain- and climate-driven drainage, lake water budgets,
@@ -54,8 +56,17 @@ Terrain Generator, Map Builder and Settlement Builder use `src/continuous/` and 
 package is isolated in `internal/legacyterrain` for saved archive types, validation, queries
 and historical fixture tests. Production terrain and detail generation use only the new pipeline.
 
-Library, Characters, Writing, Biosphere, Magic & Technology, histories, relationships,
+Library, Characters, Biosphere, Magic & Technology, histories, relationships,
 authentication, collaboration and storage retain their existing implementations.
+The World-level [Writer's Archive](docs/WRITER-WORKSPACE.md) provides folders,
+document editing, image/file imports, export, and linked inworld Library archives.
+The [terrain resource archive](docs/TERRAIN_RESOURCE_ARCHIVES.md) captures observed
+circles as documents, maps retained knowledge, and charts each Age separately.
+
+The [climate distribution revision](docs/terrain-rebuild/CLIMATE_V4_DISTRIBUTION_SPEC.md)
+adds monthly temperate/boreal vegetation and three steppe types while retaining
+historical climate versions. See the [model and paired validation](docs/terrain-rebuild/CLIMATE.md)
+and [fixed-seed comparison gallery](docs/terrain-rebuild/climate-v4/fixed/index.html).
 
 ## Docker and project database
 
@@ -65,11 +76,11 @@ For a complete Keycloak, HTTPS, PostgreSQL and scheduled-backup stack, follow [s
 docker compose up -d
 ```
 
-Open your configured HTTPS origin. The container serves React and the Go API through the reverse proxy. Hosted mode persists accepted map changes and requires authentication; loopback local mode retains the explicit **Save** workflow. **Projects / Recent Worlds** shows only accessible worlds. Owners can delete worlds. ZIP export remains a separate portable content backup.
+Open your configured HTTPS origin. The container serves React and the Go API through the reverse proxy. Hosted mode requires authentication. Open a World and choose an Age to generate or view terrain. **Save terrain** accepts a generation preview; subsequent terrain edits and view settings save automatically in both hosted and local mode. The welcome page lists Worlds. Owners can delete worlds. ZIP export remains a separate portable content backup.
 
 Running the binary or image without `DATABASE_URL` still uses embedded SQLite. With PostgreSQL configured, it requires that database to be available. See [container setup and releases](docs/CONTAINERS.md) and [world saving and deletion](docs/AUTOSAVE.md).
 
-Use **View → Save → Export world ZIP** for a portable backup of a completed world, explored detail and edits. **Open world ZIP** or **Open world folder** restores it without regenerating geography or depending on old server caches. See [Portable world projects](docs/WORLD_PROJECTS.md) for the manifest and validation. Active sessions expire after 30 minutes of inactivity, and only explicitly saved versions remain in the database. Terrain painting is available through the Builders, not the Generator. Builder undo/redo persists. This is a local application; it starts on the loopback interface.
+Use **View → Save → Export world ZIP** for a portable backup of a completed world, explored detail and edits. **Open world ZIP** or **Open world folder** restores it without regenerating geography or depending on old server caches. See [Portable world projects](docs/WORLD_PROJECTS.md) for the manifest and validation. Active sessions expire after 30 minutes of inactivity; accepted terrain edits are automatically persisted. Terrain painting is available through the Builders, not the Generator. Builder undo/redo persists. This is a local application; it starts on the loopback interface.
 
 ## Validation
 
@@ -96,6 +107,9 @@ See [Historical Worlds](docs/HISTORICAL_WORLDS.md) for the retained World/Age hi
 Biosphere provides habitat-based ecological generation and editing, with guided previews,
 reference and fictional lifeforms, biological rules, Age-independent histories and World
 ZIP persistence. See [Biosphere architecture and workflow](docs/WORLDBUILDING.md#biosphere-version-1).
+
+See [terrain memory and loading performance](docs/TERRAIN_MEMORY_PERFORMANCE.md)
+for the inspection/World-opening fixes, benchmark results and regression coverage.
 
 ### Magic & Technology
 

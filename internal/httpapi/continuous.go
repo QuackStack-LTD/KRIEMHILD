@@ -44,32 +44,22 @@ func (s *Server) continuousRoutes() {
 	s.mux.HandleFunc("GET /api/sessions/{id}/terrain/sample", s.continuousSample)
 	s.mux.HandleFunc("GET /api/sessions/{id}/terrain/mesh", s.continuousMesh)
 	s.mux.HandleFunc("GET /api/sessions/{id}/terrain/features", s.continuousFeatures)
+	s.mux.HandleFunc("GET /api/sessions/{id}/terrain/water-bodies", s.listWaterBodies)
+	s.mux.HandleFunc("GET /api/sessions/{id}/world/names", s.sessionNames)
+	s.mux.HandleFunc("POST /api/sessions/{id}/terrain/water-bodies/{source}", s.nameWaterBody)
 	s.mux.HandleFunc("GET /api/sessions/{id}/terrain/land-selection", s.landSelection)
 	s.mux.HandleFunc("POST /api/sessions/{id}/settlements/preview", s.previewSettlement)
 	s.mux.HandleFunc("POST /api/sessions/{id}/settlements", s.acceptSettlement)
 }
 func (s *Server) startTerrainJob(w http.ResponseWriter, r *http.Request) {
-	defaults := model.DefaultSpec()
-	defaults.Seed = ""
+	spec, err := decodeTerrainJobSpec(w, r)
+	if err != nil {
+		fail(w, 400, err.Error())
+		return
+	}
 	req := struct {
 		Spec model.Spec `json:"spec"`
-	}{Spec: defaults}
-	if err := decode(w, r, &req); err != nil {
-		fail(w, 400, err.Error())
-		return
-	}
-	if req.Spec.Seed == "" {
-		req.Spec.Seed = token()
-	}
-	if err := req.Spec.Validate(); err != nil {
-		fail(w, 400, err.Error())
-		return
-	}
-	// Old versions remain readable; all valid new jobs use the fully materialized path.
-	req.Spec.Version = model.Version
-	if req.Spec.ClimateVersion < model.ClimateVersion {
-		req.Spec.ClimateVersion = model.ClimateVersion
-	}
+	}{spec}
 	select {
 	case s.slots <- struct{}{}:
 	default:
@@ -138,6 +128,26 @@ func (s *Server) startTerrainJob(w http.ResponseWriter, r *http.Request) {
 	respond(w, 202, map[string]string{"id": id, "status": "running"})
 }
 
+// Defaults apply only to a new-world request; explicit historical versions,
+// including zero, remain intact. Saved metadata uses model.Decode instead.
+func decodeTerrainJobSpec(w http.ResponseWriter, r *http.Request) (model.Spec, error) {
+	defaults := model.DefaultSpec()
+	defaults.Seed = ""
+	req := struct {
+		Spec model.Spec `json:"spec"`
+	}{defaults}
+	if err := decode(w, r, &req); err != nil {
+		return model.Spec{}, err
+	}
+	if req.Spec.Seed == "" {
+		req.Spec.Seed = token()
+	}
+	if err := req.Spec.Validate(); err != nil {
+		return model.Spec{}, err
+	}
+	return req.Spec, nil
+}
+
 func terrainSourceIdentity(meta, fields []byte) string {
 	h := sha256.New()
 	h.Write(meta)
@@ -185,7 +195,11 @@ func continuousTransform(ops []world.Operation, w, h int, p *model.Planet) tiles
 		if a.WaterBody == 0 {
 			s.Water = "dry"
 			if s.Biome == "water" {
-				s.Biome = generate.Biome(s.Temperature, s.Precipitation, s.PET, s.Bed, false)
+				if p.Spec.ClimateVersion >= 4 {
+					s.Biome = generate.BiomeAt(p, lon, lat, s.Bed, false)
+				} else {
+					s.Biome = generate.Biome(s.Temperature, s.Precipitation, s.PET, s.Bed, false)
+				}
 			}
 		} else if wb == 0 {
 			s.Water = "lake"
@@ -370,6 +384,12 @@ func sampleClimate(p *model.Planet, lon, lat float64) map[string]float64 {
 	}
 	return fields
 }
+func continuousFeatureSource(p *model.Planet) string {
+	if p == nil {
+		return ""
+	}
+	return p.Derived("httpapi.feature-source", func() any { return token() }).(string)
+}
 func (s *Server) continuousFeatures(w http.ResponseWriter, r *http.Request) {
 	v := s.worldSession(w, r)
 	if v == nil {
@@ -381,13 +401,29 @@ func (s *Server) continuousFeatures(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	p, revision, stale := v.planet, v.authored().Header.Revision, v.terrainAnalysisStale()
+	named := map[string]world.Entity{}
+	for _, entity := range v.authored().Entities {
+		if !entity.Deleted && entity.SourceID != "" {
+			named[entity.SourceID] = entity
+		}
+	}
 	v.mu.Unlock()
 	var coasts [][]model.Point
 	if p.Surface != nil {
 		coasts = p.Surface.Coasts
 	}
-	graph := hydrology.Build(p)
-	out := map[string]any{"rivers": p.Rivers, "coasts": coasts, "legend": tiles.BiomeColors, "masses": p.Masses, "revision": revision, "analysisStale": stale,
+	graph := p.Derived("httpapi.hydrology", func() any { return hydrology.Build(p) }).(hydrology.Graph)
+	type namedRiver struct {
+		model.River
+		Name     string `json:"name,omitempty"`
+		EntityID string `json:"entityId,omitempty"`
+	}
+	rivers := make([]namedRiver, 0, len(p.Rivers))
+	for _, river := range p.Rivers {
+		e := named[river.ID]
+		rivers = append(rivers, namedRiver{River: river, Name: e.Name, EntityID: e.LogicalID})
+	}
+	out := map[string]any{"rivers": rivers, "coasts": coasts, "terrainSource": continuousFeatureSource(p), "legend": tiles.BiomeColors, "masses": p.Masses, "revision": revision, "analysisStale": stale,
 		"hydrology": map[string]any{"revision": graph.Revision, "counts": graph.Counts, "issues": graph.Issues, "nodes": len(graph.Nodes), "reaches": len(graph.Reaches)},
 		"units":     "radians; elevations and widths in metres; discharge in m3/s"}
 	if r.URL.Query().Get("topology") == "1" {

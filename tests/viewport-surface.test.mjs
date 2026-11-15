@@ -123,6 +123,85 @@ async function until(fn) {
   for (let i = 0; i < 200 && !fn(); i++) await act(() => pause(10));
   assert.ok(fn());
 }
+test("drawing-only revisions retain the committed raster and camera changes request the current revision", async () => {
+  const root = createRoot(document.getElementById("root"));
+  let loading;
+  const requests = [];
+  globalThis.fetch = async (url) => {
+    requests.push(url);
+    return new Response(new Blob(["png"]), {
+      headers: {
+        "X-Terrain-Revision": new URL(url, "http://localhost").searchParams.get(
+          "revision",
+        ),
+      },
+    });
+  };
+  decode = async () => {};
+  const props = {
+    identity: "feature-only",
+    session: "s",
+    revision: 1,
+    invalidations: [],
+    styles: ["natural"],
+    camera: { x: 0, y: 0, w: 2, h: 1 },
+    width: 256,
+    height: 128,
+    onLoading: (n) => (loading = n),
+  };
+  const render = async () =>
+    act(() =>
+      root.render(
+        React.createElement(
+          "svg",
+          null,
+          React.createElement(
+            Surface,
+            props,
+            React.createElement(ViewportLayer, { style: "natural" }),
+          ),
+        ),
+      ),
+    );
+  try {
+    await render();
+    await until(() => loading === 0);
+    const original = document.querySelector("image").getAttribute("href");
+    const count = requests.length;
+    props.revision = 2;
+    props.invalidations = [
+      { revision: 2, raster: false, x: 3, y: 2, w: 0, h: 0 },
+    ];
+    await render();
+    await act(() => pause(110));
+    assert.equal(
+      requests.length,
+      count,
+      "drawing-only edit fetched terrain tiles",
+    );
+    assert.equal(
+      document.querySelector("image").getAttribute("href"),
+      original,
+      "drawing-only edit replaced the raster",
+    );
+    props.camera = { x: 0.9, y: 0.4, w: 0.05, h: 0.025 };
+    await render();
+    await until(() => loading === 0);
+    assert.ok(requests.length > count);
+    assert.ok(
+      requests
+        .slice(count)
+        .every(
+          (url) =>
+            new URL(url, "http://localhost").searchParams.get("revision") ===
+            "2",
+        ),
+    );
+  } finally {
+    await act(() => root.unmount());
+  }
+  assert.equal(live.size, 0);
+});
 test("decoded layers commit together; obsolete decode cannot replace the latest camera; URLs release", async () => {
   const root = createRoot(document.getElementById("root"));
   let loading;

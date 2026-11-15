@@ -9,6 +9,7 @@ import (
 
 func seasonalFixture(mean, amplitude, rain, pet, bed float64, mediterranean bool) *model.Planet {
 	p := &model.Planet{Spec: model.DefaultSpec(), Grid: model.Grid{Width: 2, Height: 2, Fields: map[string][]float64{}}}
+	p.Spec.ClimateVersion = 1 // Historical classifier fixtures are independent of the new-world default.
 	set := func(k string, v float64) { p.Grid.Fields[k] = []float64{v, v, v, v} }
 	set("temperature", mean)
 	set("precipitation", rain)

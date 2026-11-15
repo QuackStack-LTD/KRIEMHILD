@@ -697,6 +697,23 @@ func (s *State) Parts(all bool) map[string]any {
 	return p
 }
 func (s *State) Saved() { s.dirty = map[string]bool{} }
+
+// Drawing metadata cannot change habitat provenance; brushes, river geometry
+// and layer visibility can. Keep inspection caches warm across other saves.
+func (s *State) PendingTerrainEdits() bool {
+	for key := range s.dirty {
+		if key == "layers" || strings.HasPrefix(key, "operation/") {
+			return true
+		}
+		if strings.HasPrefix(key, "entity/") {
+			e := s.Entities[strings.TrimPrefix(key, "entity/")]
+			if e.River != nil || e.Kind == "river" {
+				return true
+			}
+		}
+	}
+	return false
+}
 func (s *State) Validate(w, h int) error {
 	if len(s.Header.Illustrations) > 32 {
 		return fmt.Errorf("too many illustrations")
@@ -841,6 +858,11 @@ func (s *State) Validate(w, h int) error {
 }
 
 func AllowedGeometry(layer, kind, geometry string) bool {
+	// A geographic name anchor identifies a canal without drawing or altering
+	// its channel. Infrastructure on the roads layer still requires a line.
+	if layer == "natural-features" && kind == "canal" && geometry == "point" {
+		return true
+	}
 	if kind == "custom-structure" {
 		return geometry == "point" || geometry == "line" || geometry == "polygon"
 	}
@@ -870,6 +892,10 @@ func AllowedGeometry(layer, kind, geometry string) bool {
 // pending commands or marking unrelated inherited entities as local edits.
 func (s *State) RefreshRepresentations(shapes map[string]Entity) {
 	dirty := s.dirty
+	canonical := map[string]Entity{}
+	for id, shape := range shapes {
+		canonical[id] = shape
+	}
 	referenced := map[string]bool{}
 	for _, c := range s.Header.History {
 		if strings.HasPrefix(c.Key, "entity/") {
@@ -903,8 +929,14 @@ func (s *State) RefreshRepresentations(shapes map[string]Entity) {
 		if strings.HasPrefix(key, "entity/") {
 			id := strings.TrimPrefix(key, "entity/")
 			shapes[id] = s.Entities[id]
+			if named, exists := canonical[id]; exists {
+				shape := shapes[id]
+				shape.Name, shape.LabelName = named.Name, named.LabelName
+				shapes[id] = shape
+			}
 		}
 	}
+	s.rebaseNames(canonical)
 	s.Entities = shapes
 	s.Reindex(int(s.W)+1, int(s.H)+1)
 	s.dirty = dirty

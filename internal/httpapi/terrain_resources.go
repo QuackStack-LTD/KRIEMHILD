@@ -2,9 +2,11 @@ package httpapi
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"kriemhild/internal/history"
 	terrain "kriemhild/internal/legacyterrain"
+	"kriemhild/internal/resourcesurvey"
 	"kriemhild/internal/terrain/detail"
 	"kriemhild/internal/terrain/model"
 	"kriemhild/internal/terrain/resources"
@@ -47,6 +49,8 @@ type resourceRiver struct {
 	Destination       string  `json:"destination"`
 }
 type terrainResourceReport struct {
+	Fingerprint     string                        `json:"fingerprint,omitempty"`
+	Context         *resourceReportContext        `json:"context,omitempty"`
 	Longitude       float64                       `json:"longitude"`
 	Latitude        float64                       `json:"latitude"`
 	RadiusKM        float64                       `json:"radiusKm"`
@@ -99,61 +103,162 @@ func readResourceCircle(r *http.Request, center model.Point, minimum, maximum fl
 	return model.Point{lon * math.Pi / 180, lat * math.Pi / 180}, radius, nil
 }
 
-func (s *Server) sessionResources(w http.ResponseWriter, r *http.Request) {
+type resourceReportContext struct {
+	WorldID   string `json:"worldId"`
+	AgeID     string `json:"ageId"`
+	TerrainID string `json:"terrainId"`
+	MapID     string `json:"mapId"`
+	Snapshot  string `json:"snapshot"`
+	Revision  int    `json:"revision"`
+}
+type resourceInput struct {
+	p              *model.Planet
+	e              *terrain.Environment
+	transform      tiles.Transform
+	derived, stale bool
+	context        *resourceReportContext
+}
+
+func (s *Server) captureResourceInput(w http.ResponseWriter, r *http.Request) *resourceInput {
+	if r.PathValue("world") != "" && r.PathValue("entity") != "" {
+		return s.captureSavedResourceInput(w, r)
+	}
 	v := s.worldSession(w, r)
 	if v == nil {
+		return nil
+	}
+	in := &resourceInput{p: v.planet, e: v.solver.Environment, stale: v.terrainAnalysisStale()}
+	if v.historical != nil {
+		m := *v.historical
+		in.context = &resourceReportContext{WorldID: v.historyWorld, AgeID: m.AgeID, TerrainID: m.TerrainID, MapID: m.ID, Snapshot: m.Snapshot, Revision: v.authored().Header.Revision}
+	}
+	if in.p != nil && (in.e == nil || in.e.NaturalSource == "") {
+		in.derived = true
+		if v.resourcePlanet == in.p {
+			in.e = v.resourceEnvironment
+		} else {
+			in.e = nil
+		}
+	}
+	if v.world != nil && v.planet != nil {
+		in.transform = continuousTransform(v.world.Ops(world.Bounds{Width: float64(v.solver.W - 1), Height: float64(v.solver.H - 1)}), v.solver.W, v.solver.H, v.planet)
+	}
+	v.mu.Unlock()
+	// Projection and ecology are expensive immutable reads. Neither holds up
+	// tiles, geographic edits or a second inspection on this session.
+	if in.derived && in.e == nil {
+		if err := s.projectResourceInput(r.Context(), v, in); err != nil {
+			if r.Context().Err() == nil {
+				fail(w, 422, err.Error())
+			}
+			return nil
+		}
+	}
+	if in.e == nil || in.e.Geography == nil || in.e.Geology == nil || in.e.Resources == nil {
+		fail(w, 409, "This terrain has no generated geological inventory or physical distance scale")
+		return nil
+	}
+	return in
+}
+
+func (s *Server) projectResourceInput(ctx context.Context, v *session, in *resourceInput) error {
+	// Coalesce cold inspections without locking terrain edits or rendering.
+	v.resourceProjectionMu.Lock()
+	defer v.resourceProjectionMu.Unlock()
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	v.mu.Lock()
+	if v.resourcePlanet == in.p {
+		in.e = v.resourceEnvironment
+	}
+	v.mu.Unlock()
+	if in.e != nil {
+		return nil
+	}
+	projected, err := legacyProjectionContext(ctx, in.p)
+	if err != nil {
+		return err
+	}
+	in.e = projected.Environment
+	v.mu.Lock()
+	if v.planet == in.p {
+		v.resourcePlanet = in.p
+		v.resourceEnvironment = in.e
+	}
+	v.mu.Unlock()
+	return nil
+}
+func (s *Server) resourceReport(r *http.Request, in *resourceInput, center model.Point, radius float64) (terrainResourceReport, error) {
+	var spots map[int]spotBiosphere
+	if in.context != nil && s.projects != nil {
+		var err error
+		spots, err = s.ecologySpots(r, in.context.WorldID, in.context.AgeID, in.context.TerrainID, true)
+		if err != nil {
+			return terrainResourceReport{}, err
+		}
+	}
+	limit := 512
+	if r.URL.Query().Get("complete") == "1" {
+		limit = 0
+	}
+	out := buildResourceReport(r.Context(), in.p, in.e, center, radius, spots, in.transform, limit)
+	out.Derived = in.derived
+	out.Stale = in.stale
+	out.Context = in.context
+	out.Fingerprint = resourceFingerprint(out)
+	return out, r.Context().Err()
+}
+
+func resourceFingerprint(report terrainResourceReport) string {
+	report.Context = nil
+	report.Fingerprint = ""
+	report.MinimumRadiusKM = 0
+	report.MaximumRadiusKM = 0
+	raw, _ := json.Marshal(report)
+	var value any
+	_ = json.Unmarshal(raw, &value)
+	// JSON coordinates round-trip through the browser. Ignore floating-point
+	// noise far below display/sampling precision when checking an observation.
+	var normalize func(any) any
+	normalize = func(v any) any {
+		switch x := v.(type) {
+		case float64:
+			n, _ := strconv.ParseFloat(strconv.FormatFloat(x, 'g', 12, 64), 64)
+			return n
+		case map[string]any:
+			for k, v := range x {
+				x[k] = normalize(v)
+			}
+		case []any:
+			for i, v := range x {
+				x[i] = normalize(v)
+			}
+		}
+		return v
+	}
+	raw, _ = json.Marshal(normalize(value))
+	return resourcesurvey.Hash(raw)
+}
+func (s *Server) sessionResources(w http.ResponseWriter, r *http.Request) {
+	in := s.captureResourceInput(w, r)
+	if in == nil {
 		return
 	}
-	defer v.mu.Unlock()
-	maximum := 5000.
-	if v.planet != nil {
-		maximum = math.Min(maximum, math.Pi*v.planet.Spec.RadiusKM)
-	}
+	maximum := math.Min(5000, math.Pi*in.e.Geography.Radius)
 	center, radius, err := readResourceCircle(r, model.Point{}, .05, maximum)
 	if err != nil {
 		fail(w, 400, err.Error())
 		return
 	}
-	env := v.solver.Environment
-	derived := false
-	if v.planet != nil && (env == nil || env.NaturalSource == "") {
-		if v.resourcePlanet != v.planet || v.resourceEnvironment == nil {
-			projected, e := legacyProjectionContext(r.Context(), v.planet)
-			if e != nil {
-				fail(w, 422, e.Error())
-				return
-			}
-			v.resourcePlanet = v.planet
-			v.resourceEnvironment = projected.Environment
+	out, err := s.resourceReport(r, in, center, radius)
+	if err != nil {
+		if r.Context().Err() == nil {
+			fail(w, 503, err.Error())
 		}
-		env = v.resourceEnvironment
-		derived = true
-	}
-	if env == nil || env.Geography == nil || env.Geology == nil || env.Resources == nil {
-		fail(w, 409, "This terrain has no generated geological inventory or physical distance scale")
 		return
 	}
-	var spots map[int]spotBiosphere
-	if v.historical != nil && s.projects != nil {
-		if d, e := s.projects.History(r.Context(), v.historyWorld); e == nil {
-			spots = s.resourceBiosphere(r, d, v.historical.AgeID, v.historical.TerrainID)
-		}
-	}
-	var transform tiles.Transform
-	if v.world != nil && v.planet != nil {
-		transform = continuousTransform(v.world.Ops(world.Bounds{Width: float64(v.solver.W - 1), Height: float64(v.solver.H - 1)}), v.solver.W, v.solver.H, v.planet)
-	}
-	out := buildResourceReport(r.Context(), v.planet, env, center, radius, spots, transform)
-	out.Derived = derived
-	if v.world != nil {
-		for _, op := range v.world.Operations {
-			if !op.Deleted {
-				out.Stale = true
-				break
-			}
-		}
-	}
-	respond(w, 200, out)
+	respondHistory(w, r, 200, out)
 }
 
 // One immutable saved snapshot is cached. Reading a profile never opens a
@@ -294,7 +399,7 @@ func (s *Server) settlementResources(w http.ResponseWriter, r *http.Request) {
 	if !s.historyStore(w) {
 		return
 	}
-	d, err := s.projects.History(r.Context(), r.PathValue("world"))
+	d, err := s.projects.AgeMapProjection(r.Context(), r.PathValue("world"), r.URL.Query().Get("age"))
 	if err != nil {
 		fail(w, 404, "World not found")
 		return
@@ -327,34 +432,35 @@ func (s *Server) settlementResources(w http.ResponseWriter, r *http.Request) {
 		renderResourceCircle(w, r, snapshot, center, radius, settlementResourceOutlines(d, m.AgeID, r.PathValue("entity"), m.TerrainID))
 		return
 	}
-	out := buildResourceReport(r.Context(), snapshot.p, snapshot.e, center, radius, s.resourceBiosphere(r, d, m.AgeID, m.TerrainID), snapshot.transform)
+	limit := 512
+	if r.URL.Query().Get("complete") == "1" {
+		limit = 0
+	}
+	out := buildResourceReport(r.Context(), snapshot.p, snapshot.e, center, radius, s.resourceBiosphere(r, d, m.AgeID, m.TerrainID), snapshot.transform, limit)
 	out.Derived = snapshot.derived
 	out.Stale = snapshot.stale
 	out.MinimumRadiusKM = minimum
 	out.MaximumRadiusKM = 50
+	out.Context = &resourceReportContext{WorldID: d.World.ID, AgeID: m.AgeID, TerrainID: m.TerrainID, MapID: m.ID, Snapshot: m.Snapshot}
+	out.Fingerprint = resourceFingerprint(out)
 	// Snapshot operations invalidate analyses; no authored height edit is used to
 	// invent a new fossil history. Native base resources remain explicitly stale.
 	if r.Context().Err() != nil {
 		return
 	}
-	respond(w, 200, out)
+	respondHistory(w, r, 200, out)
 }
 
 func (s *Server) resourceBiosphere(r *http.Request, d *history.Document, age, terrainID string) map[int]spotBiosphere {
-	spots := biosphereSpots(d, age, terrainID)
-	if saved := d.Biosphere(age, terrainID); saved != nil {
-		fresh, err := s.biosphereTerrain(r, d, age, terrainID)
-		if err != nil || saved.Source != fresh.Source {
-			for cell, b := range spots {
-				b.Stale = true
-				spots[cell] = b
-			}
-		}
-	}
+	spots, _ := s.ecologySpots(r, d.World.ID, age, terrainID, true)
 	return spots
 }
 
-func buildResourceReport(ctx context.Context, p *model.Planet, e *terrain.Environment, center model.Point, radius float64, spots map[int]spotBiosphere, transform tiles.Transform) terrainResourceReport {
+func buildResourceReport(ctx context.Context, p *model.Planet, e *terrain.Environment, center model.Point, radius float64, spots map[int]spotBiosphere, transform tiles.Transform, limits ...int) terrainResourceReport {
+	limit := 512
+	if len(limits) > 0 {
+		limit = limits[0]
+	}
 	w, h := e.Options.Columns, e.Options.Rows
 	planetRadius := e.Geography.Radius
 	x, y := (center[0]+math.Pi)/model.Tau*float64(w-1), (.5-center[1]/math.Pi)*float64(h-1)
@@ -420,7 +526,7 @@ func buildResourceReport(ctx context.Context, p *model.Planet, e *terrain.Enviro
 			continue
 		}
 		out.TotalResources++
-		if len(out.Resources) >= 512 {
+		if limit > 0 && len(out.Resources) >= limit {
 			out.Truncated = true
 			continue
 		}
@@ -475,6 +581,9 @@ func buildResourceReport(ctx context.Context, p *model.Planet, e *terrain.Enviro
 			}
 			physical = map[string]float64{"elevation": s.Bed, "waterLevel": s.WaterSurface, "waterDepth": s.WaterDepth, "temperature": s.Temperature, "precipitation": s.Precipitation, "moisture": s.Moisture, "pet": s.PET}
 			out.Biomes[s.Biome] += 1. / count
+			if s.Water != "dry" && s.Water != "ocean" {
+				out.FreshWater.FreshSurfaceFraction += 1. / count
+			}
 			stat("surface.coastDistanceKm", s.CoastDistance)
 			stat("surface.roughness", s.Roughness)
 			// Preserve native coordinates/units under their own namespace. In
@@ -500,15 +609,6 @@ func buildResourceReport(ctx context.Context, p *model.Planet, e *terrain.Enviro
 		}
 		if i < len(e.Fields["recharge"]) {
 			out.FreshWater.RechargeMMYear += e.Fields["recharge"][i] * 1000 / count
-		}
-		if sampler != nil {
-			s := sampler.Sample(pt[0], pt[1])
-			if transform != nil {
-				s = transform(s, pt[0], pt[1])
-			}
-			if s.Water != "dry" && s.Water != "ocean" {
-				out.FreshWater.FreshSurfaceFraction += 1. / count
-			}
 		}
 	}
 	out.FreshWater.RechargeM3Year = out.FreshWater.RechargeMMYear / 1000 * out.AreaKM2 * 1e6

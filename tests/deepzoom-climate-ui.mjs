@@ -19,7 +19,14 @@ try {
     if (r.method() === "POST" && r.url().endsWith("/terrain/generation-jobs"))
       jobs++;
   });
-  await page.goto(`${base}/world/new?tileDebug=1`);
+  const doc = await (
+    await page.request.post(`${base}/api/worlds`, {
+      data: { name: "Deep zoom climate audit" },
+    })
+  ).json();
+  await page.goto(
+    `${base}/world/new?world=${doc.world.id}&age=${doc.world.currentAge}&tileDebug=1`,
+  );
   await page.getByText("Climate & scale", { exact: true }).click();
   await page.getByLabel("Climate model").selectOption(String(climateVersion));
   await page
@@ -38,7 +45,7 @@ try {
     climateVersion,
   );
   await page
-    .getByRole("button", { name: "Accept terrain", exact: true })
+    .getByRole("button", { name: "Save terrain", exact: true })
     .waitFor({ timeout: 180000 });
   await page.waitForSelector('[data-phase="final"]', { timeout: 180000 });
   const session = await page.evaluate(
@@ -50,17 +57,24 @@ try {
       `${base}/api/sessions/${session}/terrain/sample?lon=54&lat=50.4`,
     )
   ).json();
-  await writeFile(`${out}/pending-accept.json`,JSON.stringify({session,before,climateVersion},null,2));
-  const acceptance=page.waitForResponse(r=>r.request().method()==='POST'&&r.url().endsWith('/accept'),{timeout:180000});
-  await page
-    .getByRole("button", { name: "Accept terrain", exact: true })
-    .click();
-  const accepted=await acceptance;
-  if(!accepted.ok()){
-    const message=await accepted.text();
-    await writeFile(`${out}/accept-error.json`,JSON.stringify({status:accepted.status(),message},null,2));
-    await page.screenshot({path:`${out}/accept-error.png`});
-    throw Error(`Accept terrain HTTP ${accepted.status()}: ${message}`);
+  await writeFile(
+    `${out}/pending-accept.json`,
+    JSON.stringify({ session, before, climateVersion }, null, 2),
+  );
+  const acceptance = page.waitForResponse(
+    (r) => r.request().method() === "POST" && r.url().endsWith("/accept"),
+    { timeout: 180000 },
+  );
+  await page.getByRole("button", { name: "Save terrain", exact: true }).click();
+  const accepted = await acceptance;
+  if (!accepted.ok()) {
+    const message = await accepted.text();
+    await writeFile(
+      `${out}/accept-error.json`,
+      JSON.stringify({ status: accepted.status(), message }, null, 2),
+    );
+    await page.screenshot({ path: `${out}/accept-error.png` });
+    throw Error(`Save terrain HTTP ${accepted.status()}: ${message}`);
   }
   await page.waitForURL(/world\/[a-f0-9]+\/build/, { timeout: 120000 });
   const url = page.url();

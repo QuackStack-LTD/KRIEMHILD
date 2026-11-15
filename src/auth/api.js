@@ -35,7 +35,9 @@ export function installAuthenticatedFetch() {
       if (
         response.ok &&
         session &&
-        (method !== "GET" || url.pathname.endsWith("/world/state"))
+        (method !== "GET" ||
+          url.pathname.endsWith("/world/state") ||
+          url.pathname.endsWith("/world/names"))
       ) {
         const revision = response.headers.get("X-Map-Revision");
         if (revision !== null)

@@ -508,7 +508,10 @@ func (s *Store) RevisionPage(ctx context.Context, world string, after, before in
 func (s *Store) RevisionSnapshot(ctx context.Context, world string, revision int) (string, error) {
 	var b string
 	e := s.db.QueryRowContext(ctx, `SELECT snapshot FROM world_revisions WHERE world_id=$1 AND revision=$2`, world, revision).Scan(&b)
-	return b, e
+	if e != nil {
+		return "", e
+	}
+	return expandMapRevision(ctx, s.db, world, b)
 }
 func (s *Store) WriterWorld(ctx context.Context, project string) (string, error) {
 	var id string

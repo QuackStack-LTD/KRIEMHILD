@@ -19,6 +19,7 @@
 !tests/world-project.test.mjs
 !tests/worldbuilding.test.mjs
 !tests/library-files.test.mjs
+!tests/pdf-fontkit.test.mjs
 **/.tools
 **/.tools/**
 **/data

@@ -133,11 +133,35 @@ test("World ZIP survives deletion of the original session and a Go server proces
         .length,
       0,
     );
+    const unlinkedSave = await fetch(
+      origin + `/api/sessions/${initial.id}/save`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      },
+    );
+    assert.equal(
+      unlinkedSave.status,
+      409,
+      "terrain must belong to a World before committing",
+    );
+    const world = await json("worlds", { name: "Restart verification" });
+    await json(`worlds/${world.world.id}/accept`, {
+      session: initial.id,
+      ageId: world.world.currentAge,
+      name: "Saved terrain",
+    });
     await json(`sessions/${initial.id}/save`, {});
-    const worlds = await fetch(origin + "/api/projects").then((r) => r.json());
+    const accepted = await fetch(origin + `/api/worlds/${world.world.id}`).then(
+      (r) => r.json(),
+    );
+    const projectID = accepted.maps[0].projectId;
     await stop();
     await launch();
-    const stored = await json(`projects/${worlds.projects[0].id}/open`, {});
+    const stored = await json(`projects/${projectID}/open`, {});
+    assert.equal(stored.historyWorldId, world.world.id);
+    assert.equal(stored.historicalMap.ageId, world.world.currentAge);
     assert.deepEqual(stored.continuous.spec, initial.continuous.spec);
     assert.deepEqual(
       await fetch(origin + "/api/sessions/" + stored.id + samplePath).then(

@@ -116,7 +116,7 @@ func (d *Document) applyBiosphere(c Command) error {
 		return fmt.Errorf("generate habitats before editing biosphere records")
 	}
 	next := biosphere.Clone(*c.Biosphere)
-	if next.Source != old.Source || !reflect.DeepEqual(next.Habitats, old.Habitats) {
+	if next.Source != old.Source || next.SourceSnapshot != old.SourceSnapshot || !reflect.DeepEqual(next.Habitats, old.Habitats) {
 		return fmt.Errorf("habitats are generated from saved terrain; use generation to refresh them")
 	}
 	for _, o := range next.Occurrences {

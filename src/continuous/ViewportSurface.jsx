@@ -7,6 +7,7 @@ import {
 import { previewRequest } from "./preview-quality.js";
 import { compositePreview } from "./preview-composite.js";
 import { ProjectedRaster } from "./MapProjection.js";
+import { terrainRenderRevision } from "./terrain-updates.js";
 
 const pyramid = new TerrainPyramid();
 const FrameContext = createContext(null);
@@ -94,6 +95,11 @@ export default function ViewportSurface({
     staging = useRef(new Set()),
     latest = useRef({ frame: null, overview: null }),
     counters = useRef({ cancelled: 0, outstanding: 0 });
+  const requestSource = useRef({ revision, epoch: 0 });
+  if (requestSource.current.revision !== revision) {
+    if (counters.current.outstanding > 0) requestSource.current.epoch++;
+    requestSource.current.revision = revision;
+  }
   const options = {
     session,
     identity,
@@ -111,7 +117,8 @@ export default function ViewportSurface({
     : viewportRequest(options);
   const signature = JSON.stringify([
     identity,
-    revision,
+    terrainRenderRevision(revision, invalidations),
+    requestSource.current.epoch,
     request.bounds,
     request.pixels,
     request.z,
@@ -172,6 +179,7 @@ export default function ViewportSurface({
       });
     };
     onLoading?.(1);
+    onError?.("");
     onProgress?.({
       generation: current,
       phase: "pending",
@@ -262,7 +270,10 @@ export default function ViewportSurface({
         .then(() => {
           completed = true;
           counters.current.outstanding--;
-          if (live) onLoading?.(0);
+          if (live) {
+            onLoading?.(0);
+            onError?.("");
+          }
         })
         .catch((error) => {
           completed = true;

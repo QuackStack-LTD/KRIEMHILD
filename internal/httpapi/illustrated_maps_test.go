@@ -11,6 +11,7 @@ import (
 	"kriemhild/internal/world"
 	"mime/multipart"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 )
 
@@ -30,6 +31,10 @@ func TestIllustratedMapEndpointRevisionAndSafeBanner(t *testing.T) {
 	}
 	body, _ := json.Marshal(map[string]any{"session": "map", "ageId": d.World.CurrentAge, "name": "Geography"})
 	autoRequest(t, s, "POST", "/api/worlds/"+d.World.ID+"/accept", string(body))
+	before, err := db.LoadParts(ctx, v.worldID)
+	if err != nil {
+		t.Fatal(err)
+	}
 	art := world.Illustration{Version: 1, ID: "medieval-world", Title: "World atlas", Scope: "world", Style: "medieval", Bounds: [4]float64{0, 0, 2, 1}, Layers: []world.IllustrationLayer{{ID: "labels", Name: "Labels", Visible: true, Opacity: 1}}, Objects: map[string]world.IllustrationObject{}}
 	if err = v.authored().PutIllustration(art); err != nil {
 		t.Fatal(err)
@@ -85,5 +90,15 @@ func TestIllustratedMapEndpointRevisionAndSafeBanner(t *testing.T) {
 		if !bytes.HasPrefix([]byte(rr.Header().Get("Content-Disposition")), []byte(expected)) {
 			t.Fatal("wrong download disposition", rr.Header())
 		}
+	}
+	after, err := db.LoadParts(ctx, v.worldID)
+	if err != nil || !reflect.DeepEqual(before, after) {
+		t.Fatal("saving an illustration changed the saved terrain", err)
+	}
+	delete(s.sessions, "map")
+	opened := autoRequest(t, s, "POST", "/api/projects/"+v.worldID+"/open", `{}`)
+	cold := s.sessions[opened["id"].(string)]
+	if !reflect.DeepEqual(cold.authored().Header.Illustrations[art.ID], art) {
+		t.Fatal("cold reopen lost independently saved illustration design", cold.authored().Header.Illustrations)
 	}
 }

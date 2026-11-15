@@ -1,6 +1,8 @@
 package httpapi
 
 import (
+	"bytes"
+	"fmt"
 	"image"
 	"image/color"
 	"image/png"
@@ -9,12 +11,46 @@ import (
 	"net/http"
 )
 
+type atlasFields struct {
+	Elevation   []float64 `json:"elevation"`
+	Temperature []float64 `json:"temperature"`
+	Aridity     []float64 `json:"aridity"`
+	Ocean       []float64 `json:"ocean"`
+	WaterDepth  []float64 `json:"waterDepth"`
+}
+
+// A thumbnail needs five scalar fields, not monthly climate, geological
+// history and the ecological suitability inputs for the entire terrain.
+func decodeAtlasEnvironment(raw []byte, resource bool) (*terrain.Environment, error) {
+	var fields atlasFields
+	var resources *terrain.ResourceState
+	if resource {
+		var view struct {
+			Fields    atlasFields            `json:"fields"`
+			Resources *terrain.ResourceState `json:"resources"`
+		}
+		if err := expandJSON(raw, &view); err != nil {
+			return nil, err
+		}
+		fields, resources = view.Fields, view.Resources
+	} else {
+		var view struct {
+			Fields atlasFields `json:"fields"`
+		}
+		if err := expandJSON(raw, &view); err != nil {
+			return nil, err
+		}
+		fields = view.Fields
+	}
+	return &terrain.Environment{Fields: map[string][]float64{"elevation": fields.Elevation, "temperature": fields.Temperature, "aridity": fields.Aridity, "ocean": fields.Ocean, "waterDepth": fields.WaterDepth}, Resources: resources}, nil
+}
+
 // Atlas previews read immutable saved terrain, without opening or regenerating it.
 func (s *Server) atlasPreview(w http.ResponseWriter, r *http.Request) {
 	if !s.historyStore(w) {
 		return
 	}
-	d, err := s.projects.History(r.Context(), r.PathValue("world"))
+	d, err := s.projects.HistoryMetadata(r.Context(), r.PathValue("world"))
 	if err != nil {
 		fail(w, 404, "World not found")
 		return
@@ -30,13 +66,26 @@ func (s *Server) atlasPreview(w http.ResponseWriter, r *http.Request) {
 			width, height = t.Width, t.Height
 		}
 	}
+	// Immutable base thumbnails can share the bounded presentation cache. Named
+	// habitat/resource highlights have additional historical inputs and bypass it.
+	cacheable := !r.URL.Query().Has("habitat") && !r.URL.Query().Has("resource")
+	cacheKey := fmt.Sprintf("atlas-preview-1/%s/%d/%d", m.Snapshot, width, height)
+	if cacheable {
+		if data, ok := s.terrainTileCache.Get(cacheKey); ok {
+			w.Header().Set("Content-Type", "image/png")
+			w.Header().Set("Cache-Control", "private, max-age=60")
+			w.Header().Set("X-Terrain-Cache", "hit")
+			_, _ = w.Write(data)
+			return
+		}
+	}
 	raw, err := s.projects.SnapshotPart(r.Context(), m.Snapshot, "environment")
 	if err != nil {
 		fail(w, 404, "Terrain preview unavailable")
 		return
 	}
-	var env *terrain.Environment
-	if expandJSON(raw, &env) != nil || env == nil {
+	env, err := decodeAtlasEnvironment(raw, r.URL.Query().Get("resource") != "")
+	if err != nil {
 		fail(w, 404, "Terrain preview unavailable")
 		return
 	}
@@ -46,7 +95,15 @@ func (s *Server) atlasPreview(w http.ResponseWriter, r *http.Request) {
 		}
 		return 0
 	}
-	highlight := habitatCells(d, m.AgeID, m.TerrainID, r.URL.Query().Get("habitat"))
+	var highlight map[int]bool
+	if habitat := r.URL.Query().Get("habitat"); habitat != "" {
+		ecology, err := s.projects.EcologyView(r.Context(), d.World.ID, m.AgeID, m.TerrainID)
+		if err != nil {
+			fail(w, 503, "Habitat preview unavailable")
+			return
+		}
+		highlight = habitatCells(ecology, m.AgeID, m.TerrainID, habitat)
+	}
 	if resourceID := r.URL.Query().Get("resource"); resourceID != "" {
 		highlight = map[int]bool{}
 		found := false
@@ -120,7 +177,16 @@ func (s *Server) atlasPreview(w http.ResponseWriter, r *http.Request) {
 			img.SetRGBA(x, y, c)
 		}
 	}
+	var encoded bytes.Buffer
+	if err := png.Encode(&encoded, img); err != nil {
+		fail(w, 500, "Terrain preview unavailable")
+		return
+	}
+	if cacheable {
+		s.terrainTileCache.Put(cacheKey, encoded.Bytes())
+	}
 	w.Header().Set("Content-Type", "image/png")
 	w.Header().Set("Cache-Control", "private, max-age=60")
-	_ = png.Encode(w, img)
+	w.Header().Set("X-Terrain-Cache", "miss")
+	_, _ = w.Write(encoded.Bytes())
 }

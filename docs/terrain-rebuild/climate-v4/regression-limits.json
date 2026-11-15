@@ -1,0 +1,13 @@
+{
+  "registeredBeforeCandidateDistributionReview": true,
+  "units": "fractions of area-weighted dry land; positive changes only",
+  "baselineResolutionComparison": {
+    "seeds": ["Kriemhild", "gallery-001", "gallery-002"],
+    "climateVersion": 1,
+    "surfaceWidths": [1024, 2048],
+    "maximumAbsoluteShareDifference": {"desert": 0.000236, "savanna": 0.000408, "steppe": 0.000385}
+  },
+  "rationale": "Numerical resolution differences are below 0.05 percentage points. The larger explicit release margins allow local physical corrections, not numerical error: one percentage point per seed for desert/savanna and half a point in the ensemble. Steppe also includes newly viable cold growing seasons and has a separate, reported allowance. These limits are diagnostic only and must not be relaxed after a candidate fails.",
+  "perSeedMaximumIncrease": {"desert": 0.01, "savanna": 0.01, "desert+savanna": 0.015, "steppe": 0.03},
+  "ensembleMaximumIncrease": {"desert": 0.005, "savanna": 0.005, "desert+savanna": 0.0075, "steppe": 0.01}
+}

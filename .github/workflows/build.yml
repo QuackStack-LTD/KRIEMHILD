@@ -1,21 +1,29 @@
-name: Build main
+name: Build and release main
+
 on:
   push:
     branches: [main]
+
 permissions:
-  contents: read
+  contents: write
+  packages: write
+
 concurrency:
   group: build-main
-  cancel-in-progress: true
+  cancel-in-progress: false
+
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: ./.github/actions/build-image
         with:
-          push: 'false'
-          tags: kriemhild:ci
-      - name: Check SQLite and PostgreSQL container persistence
-        run: bash scripts/container-smoke.sh kriemhild:ci
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup-image
+      - name: Build, check, publish images and release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/ci/build.sh

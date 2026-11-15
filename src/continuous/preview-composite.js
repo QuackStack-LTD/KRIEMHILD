@@ -1,11 +1,16 @@
 // Preview-only composition at the explicitly requested raster dimensions. The
 // Illustrator and exports keep their independent, original layer configuration.
+import { previewRaster } from "./preview-raster.js";
 export async function compositePreview(frame, opacity, signal) {
   const shade = frame.images.find((i) => i.style === "hillshade");
   const base = frame.images.find((i) => i.style !== "hillshade");
   if (!shade || !base || !(opacity > 0)) return frame;
   signal.throwIfAborted();
-  const canvas = new OffscreenCanvas(frame.pixels.width, frame.pixels.height);
+  const canvas = previewRaster(
+    frame.pixels.width,
+    frame.pixels.height,
+    (w, h) => new OffscreenCanvas(w, h),
+  );
   let color, relief;
   try {
     // Join both decodes even if one fails, so every successful bitmap is closed.

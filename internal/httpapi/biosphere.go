@@ -80,11 +80,17 @@ func (s *Server) biosphereTerrain(r *http.Request, d *history.Document, age, id 
 		}
 	}
 	// Restore only authored operations, without loading render tiles or spawning a session.
-	parts, err := s.projects.SnapshotPartsMatching(r.Context(), root.Snapshot, []string{"builder/operation/", "builder/entity/", "authored-climate"})
+	parts, err := s.projects.SnapshotPartsMatching(r.Context(), root.Snapshot, []string{"builder/header", "builder/operation/", "builder/entity/", "authored-climate"})
 	if err != nil {
 		return biosphere.State{}, err
 	}
 	authored := world.New(e.Options.Columns, e.Options.Rows)
+	var header struct {
+		Layers []world.Layer `json:"layers"`
+	}
+	if raw := parts["builder/header"]; len(raw) > 0 && expandJSON(raw, &header) == nil && len(header.Layers) > 0 {
+		authored.Header.Layers = header.Layers
+	}
 	for key, raw := range parts {
 		if strings.HasPrefix(key, "builder/operation/") {
 			var o world.Operation
@@ -102,7 +108,10 @@ func (s *Server) biosphereTerrain(r *http.Request, d *history.Document, age, id 
 		}
 	}
 	authored.Reindex(e.Options.Columns, e.Options.Rows)
-	if len(authored.Operations) > 0 || len(authored.Entities) > 0 {
+	// Names, settlements and deleted/hidden brush operations do not change the
+	// habitat surface. Recalculating their climate both changed provenance and
+	// invoked legacy-only helpers on continuous terrain read adapters.
+	if len(authored.Ops(world.Bounds{Width: authored.W, Height: authored.H})) > 0 {
 		base := e
 		e = authored.Environment(base)
 		var overlay authoredClimate
@@ -125,6 +134,7 @@ func (s *Server) biosphereTerrain(r *http.Request, d *history.Document, age, id 
 	if e.Geography != nil {
 		st.WrapX = e.Geography.WrapX
 	}
+	st.SourceSnapshot = root.Snapshot
 	if e.Climate != nil {
 		st.CellKM = e.Climate.Scale.NorthSouthKM
 		st.CellEastWestKM = e.Climate.Scale.EquatorialEastWestKM
@@ -136,12 +146,25 @@ func (s *Server) getBiosphere(w http.ResponseWriter, r *http.Request) {
 	if !s.historyStore(w) {
 		return
 	}
-	d, err := s.projects.History(r.Context(), r.PathValue("world"))
+	a := r.URL.Query().Get("age")
+	workspace := r.URL.Query().Get("view") == "workspace"
+	d, err := s.projects.BiosphereContext(r.Context(), r.PathValue("world"), a, r.PathValue("terrain"), workspace)
 	if err != nil {
 		fail(w, 404, "World not found")
 		return
 	}
-	a := r.URL.Query().Get("age")
+	if workspace {
+		if saved := d.Biosphere(a, r.PathValue("terrain")); saved != nil && !saved.Stale && saved.SourceSnapshot != "" {
+			for _, m := range d.Maps {
+				if m.TerrainID == saved.TerrainID && m.ParentID == "" && m.Snapshot == saved.SourceSnapshot {
+					fresh := *saved
+					fresh.Occurrences, fresh.Interactions, fresh.AcceptedGeneration = nil, nil, ""
+					respondHistory(w, r, 200, map[string]any{"environment": fresh, "saved": saved, "stale": false})
+					return
+				}
+			}
+		}
+	}
 	fresh, err := s.biosphereTerrain(r, d, a, r.PathValue("terrain"))
 	if err != nil {
 		fail(w, 422, err.Error())
@@ -149,7 +172,12 @@ func (s *Server) getBiosphere(w http.ResponseWriter, r *http.Request) {
 	}
 	saved := d.Biosphere(a, fresh.TerrainID)
 	stale := saved != nil && (saved.Stale || saved.Source != fresh.Source)
-	respond(w, 200, map[string]any{"environment": fresh, "saved": saved, "stale": stale})
+	if workspace {
+		for i := range fresh.Habitats {
+			fresh.Habitats[i].Profiles = nil
+		}
+	}
+	respondHistory(w, r, 200, map[string]any{"environment": fresh, "saved": saved, "stale": stale})
 }
 func (s *Server) generateBiosphere(w http.ResponseWriter, r *http.Request) {
 	if !s.historyStore(w) {
@@ -171,7 +199,7 @@ func (s *Server) generateBiosphere(w http.ResponseWriter, r *http.Request) {
 		fail(w, 400, err.Error())
 		return
 	}
-	d, err := s.projects.History(r.Context(), r.PathValue("world"))
+	d, err := s.projects.BiosphereContext(r.Context(), r.PathValue("world"), req.AgeID, r.PathValue("terrain"), false)
 	if err != nil {
 		fail(w, 404, "World not found")
 		return
@@ -265,7 +293,7 @@ func (s *Server) generateBiosphere(w http.ResponseWriter, r *http.Request) {
 		fail(w, 409, err.Error())
 		return
 	}
-	respond(w, 200, result)
+	respondHistory(w, r, 200, historyResponseView(result, r))
 }
 
 // Overlay is read-only, using habitat geometry in the existing Atlas preview.

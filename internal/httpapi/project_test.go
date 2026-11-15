@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-func projectFixture(t *testing.T) *session {
+func projectFixture(t testing.TB) *session {
 	t.Helper()
 	c, err := terrain.DecodeConfig(terrain.Defaults)
 	if err != nil {

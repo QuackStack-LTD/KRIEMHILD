@@ -9,6 +9,7 @@ import (
 )
 
 func (s *Server) writerRoutes() {
+	s.writerArchiveRoutes()
 	handle := func(pattern string, fn func(http.ResponseWriter, *http.Request) error) {
 		s.mux.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
 			if !s.historyStore(w) {

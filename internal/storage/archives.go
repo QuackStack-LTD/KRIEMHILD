@@ -94,6 +94,9 @@ func (s *Store) ArchiveCustody(ctx context.Context, world string, req ArchiveCus
 		if f.Record != nil && f.Record.RecordingAge == req.AgeID && req.Year < f.Record.CreationYear {
 			return fmt.Errorf("custody cannot precede document creation")
 		}
+		if survey := f.ResourceSurvey; survey != nil && survey.SourceAge == req.AgeID && survey.Year != nil && req.Year < *survey.Year {
+			return fmt.Errorf("custody cannot precede resource observation")
+		}
 		for _, c := range f.Custody {
 			if c.AgeID == req.AgeID && req.Year < c.Year {
 				return fmt.Errorf("custody changes must follow the document's recorded history")
@@ -134,6 +137,13 @@ func (s *Store) ArchiveCustody(ctx context.Context, world string, req ArchiveCus
 				}
 				d.LibraryFiles = append(d.LibraryFiles, copy)
 				f = &d.LibraryFiles[len(d.LibraryFiles)-1]
+			}
+			if survey := f.ResourceSurvey; survey != nil {
+				_, folder, err := resourceSurveyFolders(d, req.AgeID, to, survey.SourceAge, survey.Year)
+				if err != nil {
+					return err
+				}
+				to = folder
 			}
 			f.ArchiveID = to
 			f.Status = "present"

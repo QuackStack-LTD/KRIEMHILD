@@ -580,3 +580,39 @@ button.danger {
 .spot-biosphere summary {
   cursor: pointer;
 }
+.application-nav .world-scope-navigation {
+  margin-left: 8px;
+  margin-right: auto;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid #384b40;
+  border-radius: 8px;
+}
+.world-scope-navigation button {
+  padding: 6px 13px;
+  border: 0;
+  background: transparent;
+  color: #aebaac;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.world-scope-navigation button[aria-current="page"] {
+  background: #35483b;
+  color: #eee5c9;
+}
+.sidebar-scope-label {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: #9eaa91;
+  padding: 0 10px 8px;
+  text-transform: uppercase;
+}
+@media (max-width: 740px) {
+  .application-nav .world-scope-navigation {
+    margin-left: 0;
+  }
+  .world-scope-navigation button {
+    font-size: 10px;
+    padding: 4px 7px;
+  }
+}

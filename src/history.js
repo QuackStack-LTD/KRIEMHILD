@@ -1,5 +1,5 @@
-export async function historyRequest(path='',body,method=body===undefined?'GET':'POST'){
- const response=await fetch(`/api/worlds${path}`,{method,headers:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});
+export async function historyRequest(path='',body,method=body===undefined?'GET':'POST',signal){
+ const response=await fetch(`/api/worlds${path}`,{method,headers:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),signal});
  if(response.status===204)return null;const data=await response.json();if(!response.ok)throw Error(data.error||'World request failed');return data;
 }
 export function timelineWindow(timeline,current){const index=timeline.ages.indexOf(current);return {index,ages:timeline.ages.slice(Math.max(0,index-2),index+3),before:index>2,after:index+3<timeline.ages.length};}
@@ -23,7 +23,10 @@ export function mergeConflicts(doc,primary,secondary){
  const otherMaps=new Map(doc.maps.filter(m=>m.ageId===secondary).map(m=>[m.id,m]));
  const conflicts=doc.maps.filter(m=>m.ageId===primary&&otherMaps.has(m.id)&&m.snapshot!==otherMaps.get(m.id).snapshot).map(m=>({id:m.id,name:m.name,kind:'Map snapshot'}));
  const others=new Map(doc.entities.filter(e=>e.ageId===secondary).map(e=>[e.id,e]));
- const signature=e=>JSON.stringify({name:e.name,kind:e.kind,properties:e.properties,system:e.system,language:e.language,script:e.script,deleted:!!e.deleted,shapes:doc.representations.filter(r=>r.ageId===e.ageId&&r.entityId===e.id).map(r=>({map:r.mapId,shape:r.shape})).sort((a,b)=>a.map.localeCompare(b.map))});
+ const shapesByAge=new Map();
+ for(const r of doc.representations){if(r.ageId!==primary&&r.ageId!==secondary)continue;let age=shapesByAge.get(r.ageId);if(!age)shapesByAge.set(r.ageId,age=new Map());let shapes=age.get(r.entityId);if(!shapes)age.set(r.entityId,shapes=[]);shapes.push({map:r.mapId,shape:r.shape});}
+ for(const age of shapesByAge.values())for(const shapes of age.values())shapes.sort((a,b)=>a.map.localeCompare(b.map));
+ const signature=e=>JSON.stringify({name:e.name,kind:e.kind,properties:e.properties,system:e.system,language:e.language,script:e.script,biology:e.biology,content:e.content,archive:e.archive,names:e.names,deleted:!!e.deleted,shapes:shapesByAge.get(e.ageId)?.get(e.id)||[]});
  for(const e of doc.entities.filter(e=>e.ageId===primary)){const other=others.get(e.id);if(other&&signature(e)!==signature(other))conflicts.push({id:e.id,name:e.name,kind:e.deleted||other.deleted?"Record deletion":"Record properties / geometry"});}
  return conflicts;
 }

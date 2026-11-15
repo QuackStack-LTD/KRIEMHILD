@@ -10,6 +10,9 @@ import (
 // Measurements explicitly describe macro-grid resolution; they do not pretend
 // to measure the infinite-frequency continuous shoreline or classify every bay.
 func measure(p *model.Planet) {
+	if p.Spec.ClimateVersion >= 4 {
+		p.Diagnostics.ClimateBands = ClimateMeasurements(p)
+	}
 	g, d := &p.Grid, &p.Diagnostics
 	d.CoverageDeviation = d.LandCoverage - p.Spec.LandCoverage
 	d.RiverDestinations = map[string]int{}

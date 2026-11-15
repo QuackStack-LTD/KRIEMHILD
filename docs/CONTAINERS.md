@@ -42,9 +42,9 @@ When no database URL is provided, SQLite is automatic. An explicitly configured 
 
 Explicit flags override environment defaults. `/data` must be writable by UID/GID 10001; named volumes receive the image directory's ownership. For host bind mounts, create the directory with that ownership first. The app works with a read-only root filesystem and writable `/data` and `/tmp`, as configured in Compose.
 
-World data is persisted only by the explicit **Save** button. **Recent Worlds** opens saved geography, explored detail, edits, generation progress and cameras. **Export ZIP** creates a separate portable backup without changing the database. Import is staged until Save. API endpoints: `POST /api/sessions/{id}/save`, `GET /api/projects`, `POST /api/projects/{worldID}/open` and `DELETE /api/projects/{worldID}`. View updates are session-only. See [saving and deletion](AUTOSAVE.md).
+Accept generated terrain into a World and Age with **Save terrain**. Attached terrain edits and view changes then save automatically. Replacement generation previews and imported worlds retain their explicit acceptance controls. **Export ZIP** creates a separate portable backup without changing the database. API endpoints include `POST /api/sessions/{id}/save`, `GET /api/projects`, `POST /api/projects/{worldID}/open` and `DELETE /api/projects/{worldID}`. See [saving and deletion](AUTOSAVE.md).
 
-Click Save and wait for the Saved indicator before closing. Unsaved session state does not survive a server restart. Old working cache directories may remain after a crash; they are disposable once the app is stopped. Keep the SQLite database and its WAL together when backing up a running database, or stop the app first. Portable ZIP limits remain those in [WORLD_PROJECTS.md](WORLD_PROJECTS.md).
+Check the save indicator if a persistence error appears; unsaved previews do not survive a server restart. Old working cache directories may remain after a crash; they are disposable once the app is stopped. Keep the SQLite database and its WAL together when backing up a running database, or stop the app first. Portable ZIP limits remain those in [WORLD_PROJECTS.md](WORLD_PROJECTS.md).
 
 ## Container readiness audit
 
@@ -57,24 +57,39 @@ Click Save and wait for the Saved indicator before closing. Unsaved session stat
 | Lifecycle | Exec entrypoint receives SIGTERM; Go drains HTTP requests for up to 30 seconds before closing its database. Compose allows 40 seconds. |
 | Health | `/api/health` reports liveness; `/api/ready` also checks the database. The image's `-healthcheck` command needs no curl installation. |
 | Persistence | SQLite and PostgreSQL store automatic solver/view/tile checkpoints; saved detail takes precedence over regeneration. Legacy ZIP snapshots remain readable. |
-| Deployment boundary | Active sessions are in one Go process. Run one app instance; a shared database alone does not make in-flight sessions work across replicas. The builder has no authentication or per-user authorization; Compose binds localhost. Add an authenticated proxy before exposing a shared/public service. |
+| Deployment boundary | Active sessions are in one Go process. Run one app instance; a shared database alone does not make in-flight sessions work across replicas. The image defaults to OIDC authentication; the smoke test explicitly uses local mode on loopback. Configure authentication before deployment. |
 
 Image stages use Node 24 for frontend builds, Go 1.27 for backend builds, and Alpine 3.23 for runtime. Go source requires 1.26+. The Docker build runs Go tests/vet and focused frontend tests before assembling the runtime image.
 
-## CI and manual releases
+## CI and automatic releases
 
-- `build.yml`: pushes to `main` build and load a local AMD64 image, then run container smoke tests. No registry login or image push.
-- `pull_request.yml`: PRs targeting `main` build and smoke-test without registry credentials or publishing.
-- `release.yml`: manually run **Release** in GitHub Actions with a new tag such as `v1.0.0` or `v1.1.0-rc.1`. It tests a local candidate, publishes AMD64/ARM64 images, and creates a GitHub release/tag for the selected commit with generated notes and the image digest.
+- `pull-request.yml` runs `bash scripts/ci/pull-request.sh` for PRs targeting
+  `main`. It builds a local AMD64 image and checks SQLite/PostgreSQL persistence.
+  It has read-only repository permissions and never logs into GHCR or publishes.
+- `build.yml` runs `bash scripts/ci/build.sh` for pushes to `main`. After the same
+  checks pass, it builds and publishes AMD64/ARM64 images to GHCR and creates a
+  GitHub release for that commit. The separate release workflow was removed.
 
-The shared composite action defaults to `push: false`. Release publishing uses `GITHUB_TOKEN` with `packages: write` and `contents: write`; organization/package policy must allow that repository to publish. No personal token is required. The image namespace is derived from the lowercase repository owner/name: for this repository, `ghcr.io/quackstack-ltd/kriemhild`. Stable releases also update `latest`; prereleases only publish their version tag. Package visibility is controlled in GitHub's package settings. Existing tags are rejected. Workflows must be on the default branch before manual dispatch is available.
+Publishing uses `GITHUB_TOKEN` with `packages: write` and `contents: write`;
+organization/package policy must allow that repository to publish. No personal
+token is required. The image namespace is derived from the lowercase repository
+owner/name: `ghcr.io/quackstack-ltd/kriemhild` for this repository. Each successful
+main build publishes `sha-<full commit SHA>`, `main`, and `latest`. Its release tag
+is `main-<full commit SHA>` and its notes include the image digest. Rerunning the
+same commit updates that release instead of attempting a duplicate tag. Package
+visibility is controlled in GitHub's package settings.
 
-Actions are pinned to verified commit SHAs. BuildKit uses GitHub Actions cache storage; branch and PR builds never push images to a container registry.
+Actions are pinned to verified commit SHAs. The shared setup action configures
+Buildx/QEMU and restores a local BuildKit cache with GitHub Actions cache storage.
+The Bash helper in `scripts/ci/image.sh` supplies the same Docker build arguments
+to both entry points. Publishing starts only after the candidate passes its
+checks, and the main entry point rejects branch/PR invocations. Main release
+runs are serialized rather than canceled during publication.
 
 ## Verification
 
 ```sh
-go test ./...
+go test -timeout 30m ./...
 go vet ./...
 npm run build
 npm test
@@ -82,6 +97,13 @@ docker build -t kriemhild:ci .
 bash scripts/container-smoke.sh kriemhild:ci
 ```
 
-The smoke script requires Docker, Bash, curl and Python 3 (provided by the Ubuntu CI runner). It uses temporary isolated containers/volumes, checks frontend assets, non-root runtime and readiness, saves explored terrain, restarts the app, compares restored geography/tile bytes, and verifies graceful shutdown. It runs against both SQLite and a separate PostgreSQL container. `KRIEMHILD_TEST_DATABASE_URL` optionally enables the native Go PostgreSQL integration test against a test database.
+The smoke script requires Docker, Bash, curl and Python 3 (provided by the Ubuntu
+CI runner). It uses temporary isolated containers/volumes, checks frontend assets,
+non-root runtime and readiness, generates continuous terrain, accepts it into a
+World, edits it, inspects resources, and saves its view automatically. It then
+restarts the app, compares restored geography/tile bytes and camera settings,
+exports ZIP, and verifies graceful shutdown. It runs against both SQLite and a
+separate PostgreSQL container. Retired legacy generation endpoints are not used.
+`KRIEMHILD_TEST_DATABASE_URL` optionally enables native Go PostgreSQL tests.
 
-The original containerization passed Linux AMD64/ARM64 cross-compilation and actionlint. Autosave validation passes the production frontend build, all 26 Node tests, Go tests/vet, the consolidated Compose configuration and Bash syntax checks. Restart tests now verify automatic recovery before any ZIP export. Docker Desktop's engine was unresponsive and its service could not be started with the available Windows permissions during container setup, so actual image execution and PostgreSQL container smoke tests remain unverified locally. Both are configured in CI; their successful completion is required before treating container runtime validation as complete.
+The production frontend build completes without exceeding the unchanged 600 kB JavaScript chunk warning threshold. PDF export loads its font engine and compression/unicode dependencies in separate optional chunks. Validation includes the Node suite, multilingual PDF subset tests, Writer's Archive browser tests, workflow actionlint and Bash syntax checks. The native Go run passed all packages except the legacy terrain package, which exceeded the default aggregate 10-minute limit; container builds now allow 30 minutes without excluding tests. Docker Engine was unavailable locally, so image execution and PostgreSQL container smoke tests remain unverified locally; both workflows run these checks before publication.

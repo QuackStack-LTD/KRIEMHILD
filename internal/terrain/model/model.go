@@ -10,16 +10,16 @@ import (
 
 const Version = "continuous-3"
 const Schema = 1
-const ClimateVersion = 1
+const ClimateVersion = 4
 
-// Versions 2 and 3 remain explicit experimental new-world options. Saved worlds
-// retain their original version; the default is still version 1.
-const MaxClimateVersion = 3
+// New revisions are evaluated explicitly before default promotion. Saved worlds
+// always retain their original climate version.
+const MaxClimateVersion = 4
 const Tau = 2 * math.Pi
 
 type Spec struct {
 	ReliefVersion  int     `json:"reliefVersion,omitempty"`
-	ClimateVersion int     `json:"climateVersion,omitempty"`
+	ClimateVersion int     `json:"climateVersion"`
 	Version        string  `json:"version"`
 	Seed           string  `json:"seed"`
 	Preset         string  `json:"preset"`
@@ -111,24 +111,45 @@ type Grid struct {
 	Fields map[string][]float64 `json:"-"`
 }
 type Diagnostics struct {
-	ClimateBudget       []ClimateWaterBudget          `json:"climateWaterBudget,omitempty"`
-	Hydrology           *HydrologyDiagnostics         `json:"hydrology,omitempty"`
-	CoastLengthKM       float64                       `json:"macroCoastLengthKm"`
-	Compactness         float64                       `json:"macroSilhouetteCompactness"`
-	CoverageDeviation   float64                       `json:"coverageDeviation"`
-	LakeCoverage        float64                       `json:"lakeCoverage"`
-	LongestRiverKM      float64                       `json:"longestRiverKm"`
-	RiverDestinations   map[string]int                `json:"riverDestinations"`
-	CatchmentAreas      []float64                     `json:"catchmentAreasKm2"`
-	LatitudeBiomes      map[string]map[string]float64 `json:"latitudeBiomeShares"`
-	MoistureBudgetError float64                       `json:"moistureBudgetRelativeError"`
-	LandCoverage        float64                       `json:"landCoverage"`
-	MajorContinents     int                           `json:"majorContinents"`
-	LargestShare        float64                       `json:"largestShare"`
-	IslandAreas         []float64                     `json:"islandAreasKm2"`
-	BiomeShares         map[string]float64            `json:"biomeShares"`
-	Warnings            []string                      `json:"warnings"`
-	Timings             map[string]float64            `json:"timingsMs"`
+	ClimateBands        map[string]ClimateBandDiagnostics `json:"climateBands,omitempty"`
+	ClimateBudget       []ClimateWaterBudget              `json:"climateWaterBudget,omitempty"`
+	Hydrology           *HydrologyDiagnostics             `json:"hydrology,omitempty"`
+	CoastLengthKM       float64                           `json:"macroCoastLengthKm"`
+	Compactness         float64                           `json:"macroSilhouetteCompactness"`
+	CoverageDeviation   float64                           `json:"coverageDeviation"`
+	LakeCoverage        float64                           `json:"lakeCoverage"`
+	LongestRiverKM      float64                           `json:"longestRiverKm"`
+	RiverDestinations   map[string]int                    `json:"riverDestinations"`
+	CatchmentAreas      []float64                         `json:"catchmentAreasKm2"`
+	LatitudeBiomes      map[string]map[string]float64     `json:"latitudeBiomeShares"`
+	MoistureBudgetError float64                           `json:"moistureBudgetRelativeError"`
+	LandCoverage        float64                           `json:"landCoverage"`
+	MajorContinents     int                               `json:"majorContinents"`
+	LargestShare        float64                           `json:"largestShare"`
+	IslandAreas         []float64                         `json:"islandAreasKm2"`
+	BiomeShares         map[string]float64                `json:"biomeShares"`
+	Warnings            []string                          `json:"warnings"`
+	Timings             map[string]float64                `json:"timingsMs"`
+}
+
+// ClimateBandDiagnostics uses dry land for vegetation/regime fractions. Land
+// includes inland water in the precipitation volume; all quantities are area weighted.
+type ClimateBandDiagnostics struct {
+	LandAreaKM2       float64            `json:"landAreaKm2"`
+	DryLandAreaKM2    float64            `json:"dryLandAreaKm2"`
+	Temperature       float64            `json:"meanAnnualTemperature"`
+	Precipitation     float64            `json:"meanAnnualPrecipitation"`
+	PrecipitationKM3  float64            `json:"annualPrecipitationKm3"`
+	PET               float64            `json:"meanAnnualPET"`
+	Aridity           float64            `json:"meanAridity"`
+	IntegratedAridity float64            `json:"integratedAridity"`
+	DryMonths         float64            `json:"meanDryMonths"`
+	WaterDeficit      float64            `json:"meanAnnualMonthlyDeficit"`
+	GrowingMonths     float64            `json:"meanGrowingMonths"`
+	TemperatureRange  float64            `json:"meanTemperatureRange"`
+	Biomes            map[string]float64 `json:"biomeShares"`
+	Thermal           map[string]float64 `json:"thermalShares"`
+	Perhumid          float64            `json:"perhumidShare"`
 }
 
 // Monthly water quantities are mm over the WHOLE planet, area weighted. They
@@ -143,6 +164,7 @@ type ClimateWaterBudget struct {
 	StorageChange    float64 `json:"storageChange"`
 }
 type Planet struct {
+	derived     *derivedCache
 	Surface     *Surface    `json:"surface,omitempty"`
 	Schema      int         `json:"schema"`
 	Spec        Spec        `json:"spec"`

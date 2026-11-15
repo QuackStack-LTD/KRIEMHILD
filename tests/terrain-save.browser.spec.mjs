@@ -4,6 +4,37 @@ import { test, expect } from "@playwright/test";
 const project = process.env.KRIEMHILD_SAVE_TEST_PROJECT;
 const world = process.env.KRIEMHILD_SAVE_TEST_WORLD;
 
+test("terrain view changes autosave and navigation leaves without a confirmation", async ({
+  page,
+}) => {
+  test.skip(!project || !world, "Requires an expendable saved terrain.");
+  const saves = [];
+  page.on("request", (r) => {
+    if (
+      r.method() === "POST" &&
+      /\/(save|accept)$/.test(new URL(r.url()).pathname)
+    )
+      saves.push(r.url());
+  });
+  await page.goto(`/world/${project}/build`);
+  await expect(
+    page.getByRole("button", { name: "Terrain Generator", exact: true }),
+  ).toBeVisible();
+  await page
+    .locator('svg[aria-label="Interactive continuous world map"]')
+    .focus();
+  await page.keyboard.press("Control+s");
+  await expect(
+    page.getByRole("button", { name: "Save terrain", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".studio-save")).toHaveText("Saved");
+  expect(saves).toEqual([]);
+  await page.locator(".studio-brand").click();
+  await expect(page.getByRole("alertdialog")).toHaveCount(0);
+  await expect(page).toHaveURL(new RegExp(`/worlds/${world}`));
+  expect(saves).toEqual([]);
+});
+
 test("State and Settlement drafts publish only on named Apply; saved settlement art fills Atlas and responsive banners", async ({
   page,
   request,
@@ -40,7 +71,6 @@ test("State and Settlement drafts publish only on named Apply; saved settlement 
   await page.goto(
     `/world/${project}/build?world=${world}&age=${baseline.world.currentAge}&tileDebug=1`,
   );
-  await page.getByLabel("Autosave accepted terrain after 30 seconds").uncheck();
   const svg = page.getByRole("img", {
     name: "Interactive continuous world map",
     exact: true,
@@ -249,13 +279,15 @@ test("Save publishes records and artwork, and Illustrator names paint at close z
   await page.goto(
     `/world/${project}/build?world=${world}&age=${doc.world.currentAge}&tileDebug=1`,
   );
-  await page.getByLabel("Autosave accepted terrain after 30 seconds").uncheck();
   const save = async () => {
+    await page
+      .getByRole("button", { name: "Terrain Generator", exact: true })
+      .click();
     const [response] = await Promise.all([
       page.waitForResponse(
         (r) => r.url().endsWith("/save") && r.request().method() === "POST",
       ),
-      page.getByRole("button", { name: "Save", exact: true }).click(),
+      page.getByRole("button", { name: "Save terrain", exact: true }).click(),
     ]);
     expect(
       response.status(),
@@ -505,9 +537,6 @@ test("deep zoom keeps geographic features, terrain crops and inspection at the s
         'svg[aria-label="Interactive continuous world map"]',
       );
       await expect(svg).toHaveAttribute("data-camera", JSON.stringify(camera));
-      await page
-        .getByLabel("Autosave accepted terrain after 30 seconds")
-        .uncheck();
       await expect(
         svg.locator(`[data-map-feature="${country.id}"] polygon`),
       ).toHaveCount(1);

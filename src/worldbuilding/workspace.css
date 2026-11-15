@@ -83,6 +83,11 @@
 .entity-tile-copy {
   padding: 18px;
 }
+.terrain-grid .entity-tile > .history-actions {
+  margin: 0 18px;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 .entity-tile h3 {
   font:
     24px Georgia,

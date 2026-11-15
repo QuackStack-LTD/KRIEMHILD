@@ -84,3 +84,22 @@ test("query cache is revision keyed and bounded; cached selections still superse
     await service.select({ ...options, point: [i / 10, 0.5] }, () => {});
   assert.ok(service.cache.size <= 2 && service.bytes <= 1000);
 });
+
+test("renamed observations invalidate inspection labels without a raster revision", async () => {
+  let name = "Old",
+    calls = 0;
+  const service = new GeographicQuery({
+    fetchSample: async () => {
+      calls++;
+      return { name, revision: 1 };
+    },
+  });
+  const options = { session: "s", identity: "w", revision: 1, point: [1, 0.5] };
+  await service.select(options, () => {});
+  name = "New";
+  service.invalidate();
+  const value = await service.select(options, () => {});
+  assert.equal(value.name, "New");
+  assert.equal(calls, 2);
+  assert.equal(value.query.cache, "miss");
+});

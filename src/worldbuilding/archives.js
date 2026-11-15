@@ -51,7 +51,17 @@ export function archiveDefaults(owner) {
   };
 }
 export function matchesArchiveFilters(file, filters) {
-  const r = file.record;
+  const s = file.resourceSurvey;
+  const r =
+    file.record ||
+    (s && {
+      sourceAge: s.sourceAge,
+      category: "geographical",
+      fromYear: s.year ?? undefined,
+      toYear: s.year ?? undefined,
+      recordingYear: s.year ?? undefined,
+      relatedEntities: [s.terrainId],
+    });
   return Boolean(
     (!filters.age || r?.sourceAge === filters.age) &&
       (!filters.type || r?.category === filters.type) &&

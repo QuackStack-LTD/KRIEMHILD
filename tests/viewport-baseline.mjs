@@ -114,10 +114,17 @@ async function zoom(n, delay = 300, delta = -266) {
 let spec, world, session;
 try {
   const old = process.env.AUDIT_OLD === "1";
+  const doc = old
+    ? null
+    : await (
+        await page.request.post("http://127.0.0.1:8125/api/worlds", {
+          data: { name: "Viewport audit" },
+        })
+      ).json();
   await page.goto(
     old
       ? "http://127.0.0.1:8126/world/ae7e539f0fba71dad0417df2186d0ac8/build?tileDebug=1&terrainRenderer=tiles"
-      : "http://127.0.0.1:8125/world/new?tileDebug=1&terrainRenderer=tiles",
+      : `http://127.0.0.1:8125/world/new?world=${doc.world.id}&age=${doc.world.currentAge}&tileDebug=1&terrainRenderer=tiles`,
   );
   if (!old) {
     await page.getByLabel("Optional generation seed").fill("Kriemhild");
@@ -126,7 +133,7 @@ try {
       .first()
       .click();
     await page
-      .getByRole("button", { name: "Accept terrain", exact: true })
+      .getByRole("button", { name: "Save terrain", exact: true })
       .waitFor({ timeout: 180000 });
   }
   await page.waitForSelector("image", { timeout: 180000 });
@@ -145,7 +152,7 @@ try {
       timeout: 120000,
     });
     await page
-      .getByRole("button", { name: "Accept terrain", exact: true })
+      .getByRole("button", { name: "Save terrain", exact: true })
       .click();
     assert.equal((await accepted).status(), 201);
     await page
@@ -203,7 +210,12 @@ try {
   await capture(prefix + "-09-return");
   if (!old) {
     const saved = page.waitForResponse((r) => r.url().endsWith("/save"));
-    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Terrain Generator", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Save terrain", exact: true })
+      .click();
     assert.equal((await saved).status(), 200);
   }
   await page.reload();

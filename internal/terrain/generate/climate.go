@@ -53,11 +53,20 @@ func climate(ctx context.Context, p *model.Planet) error {
 				// Tapers inland, and to zero at equator/poles; no biome or area targets.
 				ts[i] += 8 * (1 - continental) * math.Pow(math.Sin(2*lat), 2)
 			}
+			if p.Spec.ClimateVersion >= 4 {
+				ts[i] = annualThermalV4(p.Seed, pt[0], lat, g.Fields["coast"][i]) - math.Max(0, bed)*.0065 + seasonal[i][month]
+			}
 			// Trade winds, midlatitude westerlies and polar easterlies.
 			// Meridional transport converges on the moving tropical rain belt.
 			latitude := lat - decl*.35
 			wx := math.Tanh((math.Abs(latitude)-.52)*10) * -math.Tanh((math.Abs(latitude)-1.15)*10)
 			wy := -.4*math.Sin(3*latitude) + .08*landmass.Noise(p.Seed+412, pt[0], lat, 4)
+			if p.Spec.ClimateVersion >= 4 {
+				// Three surface circulation cells: equatorward trades, poleward
+				// mid-latitude flow, equatorward polar flow. The historical sin(3*lat)
+				// sent nearly all 0-60 degree moisture toward the equator instead.
+				wy = -.4*math.Sin(6*latitude) + .08*landmass.Noise(p.Seed+412, pt[0], lat, 4)
+			}
 			if p.Spec.Version == "continuous-1" {
 				g.Fields["windX"][i], g.Fields["windY"][i] = wx, wy
 			} else {
@@ -88,11 +97,17 @@ func climate(ctx context.Context, p *model.Planet) error {
 			g.Fields["slope"][i] = math.Max(g.Fields["slope"][i], math.Abs(height-upwindHeight)/(p.Spec.RadiusKM*1000*model.Tau/float64(g.Width)*math.Max(.1, math.Cos(lat))))
 			convection := math.Exp(-math.Pow((lat-decl*.6)/.19, 2))
 			storm := math.Exp(-math.Pow((math.Abs(latitude)-.88)/.23, 2))
+			if p.Spec.ClimateVersion >= 4 {
+				storm = math.Exp(-math.Pow((math.Abs(latitude)-.88)/.28, 2))
+			}
 			subsidence := math.Exp(-math.Pow((math.Abs(latitude)-.49)/.18, 2))
 			condensation[i] = model.Clamp(.009+.11*convection+.065*storm-.018*subsidence+uplift/18000, .001, .5)
 			capacity[i] = 40 * math.Exp(model.Clamp(ts[i]*.045-.9, -3, 1)) * p.Spec.Rainfall
 			vapor[i] = capacity[i] * .5 * area[i]
 			es[i] = math.Max(4, 38+ts[i]*3.8) * (1 + .15*math.Cos(lat-decl))
+			if p.Spec.ClimateVersion >= 4 {
+				es[i] = potentialEvaporationV4(ts[i], lat, decl, g.Fields["coast"][i])
+			}
 		}
 		// Six-hour steps: spin up the circulation, then record 30 days. Scattering
 		// mass preserves it across the seam and unequal latitude cell areas.

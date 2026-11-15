@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // The map cache is process-local. Hosted PostgreSQL permits one writer process.
@@ -58,6 +59,9 @@ func remapWriterWorld(raw json.RawMessage, old, next string) json.RawMessage {
 		case map[string]any:
 			if x["worldId"] == old {
 				x["worldId"] = next
+			}
+			if src, ok := x["src"].(string); ok && old != "" && strings.HasPrefix(src, "/api/worlds/"+old+"/") {
+				x["src"] = "/api/worlds/" + next + "/" + strings.TrimPrefix(src, "/api/worlds/"+old+"/")
 			}
 			for _, child := range x {
 				walk(child)

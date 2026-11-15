@@ -9,6 +9,7 @@ import (
 	"kriemhild/internal/biosphere"
 	"kriemhild/internal/history"
 	terrain "kriemhild/internal/legacyterrain"
+	"kriemhild/internal/terrain/detail"
 	"kriemhild/internal/terrain/generate"
 	"kriemhild/internal/terrain/model"
 	"kriemhild/internal/terrain/resources"
@@ -231,8 +232,29 @@ func TestResourceRoutesReadOnlyAuthorizationAndSavedPreview(t *testing.T) {
 	if report.MinimumRadiusKM <= 0 || report.MaximumRadiusKM != 50 {
 		t.Fatal("missing radius constraints")
 	}
-	if _, ok := report.Fields["native.pet"]; !ok || math.Abs(report.Fields["native.pet"].Mean-report.Fields["pet"].Mean) > 1e-8 {
-		t.Fatal("native generated climate fields missing or PET replaced by placeholder")
+	if _, ok := report.Fields["native.pet"]; !ok {
+		t.Fatal("native generated climate fields missing")
+	}
+	expectedPET := report.Fields["native.pet"].Mean
+	if p.Spec.ClimateVersion >= 4 {
+		// V4 evaluates monthly demand at the actual sampled elevation, rather
+		// than interpolating annual native-grid demand. Check the report against
+		// that public monthly climate interface over its equal-area footprint.
+		expectedPET = 0
+		center := model.Point{report.Longitude * math.Pi / 180, report.Latitude * math.Pi / 180}
+		sampler := detail.New(p)
+		for i := 0; i < 256; i++ {
+			radial := spec.RadiusKM * math.Acos(1-(float64(i)+.5)/256*(1-math.Cos(report.RadiusKM/spec.RadiusKM)))
+			pt := geoDestination(center, radial, float64(i)*2.399963229728653, spec.RadiusKM)
+			bed := sampler.Sample(pt[0], pt[1]).Bed
+			for month := 0; month < 12; month++ {
+				_, _, pet := generate.MonthlyClimateAt(p, pt[0], pt[1], bed, month)
+				expectedPET += pet / 256
+			}
+		}
+	}
+	if math.Abs(expectedPET-report.Fields["pet"].Mean) > 1e-8 {
+		t.Fatalf("PET replaced by placeholder: got %g, expected monthly demand %g", report.Fields["pet"].Mean, expectedPET)
 	}
 	if _, ok := report.Fields["glacierMelt"]; ok {
 		t.Fatal("unimplemented legacy placeholder reported as a generated measurement")

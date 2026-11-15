@@ -12,7 +12,7 @@ import (
 	"testing"
 )
 
-func autoRequest(t *testing.T, s *Server, method, path, body string) map[string]any {
+func autoRequest(t testing.TB, s *Server, method, path, body string) map[string]any {
 	t.Helper()
 	r := httptest.NewRecorder()
 	s.ServeHTTP(r, httptest.NewRequest(method, path, bytes.NewBufferString(body)))

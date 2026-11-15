@@ -8,20 +8,48 @@ export default function TerrainRouter(props) {
     [error, setError] = useState("");
   useEffect(() => {
     const abort = new AbortController();
-    if (new URLSearchParams(location.search).has("legacyImport")) {
-      setEntry({ archive: true });
-    } else if (location.pathname === "/world/new") {
-      setEntry({});
-    } else {
+    const open = async () => {
+      const query = new URLSearchParams(location.search);
+      if (location.pathname === "/world/new") {
+        const world = query.get("world"),
+          age = query.get("age");
+        if (!world || !age)
+          throw Error("Open a World and choose an Age to generate terrain.");
+        const doc = await request(
+          `worlds/${world}?view=metadata`,
+          undefined,
+          "GET",
+          abort.signal,
+        );
+        if (!doc.ages.some((a) => a.id === age))
+          throw Error("Choose an existing Age in this World.");
+        setEntry({});
+        return;
+      }
       const id = location.pathname.match(/^\/world\/([a-f0-9]{32})\//)?.[1];
-      if (!id) setError("Map address not found");
-      else
-        request(`projects/${id}/open`, {}, "POST", abort.signal)
-          .then((state) => setEntry({ state, archive: !state.continuous }))
-          .catch((e) => {
-            if (e.name !== "AbortError") setError(e.message);
-          });
-    }
+      if (!id) throw Error("Map address not found");
+      const context = await request(
+        `map-context/${id}`,
+        undefined,
+        "GET",
+        abort.signal,
+      );
+      if (!context.world || !context.map)
+        throw Error("Open terrain from its World.");
+      query.set("world", context.world.id);
+      query.set("age", context.map.ageId);
+      history.replaceState({}, "", `${location.pathname}?${query}`);
+      const state = await request(
+        `projects/${id}/open?view=terrain`,
+        {},
+        "POST",
+        abort.signal,
+      );
+      setEntry({ state, archive: !state.continuous });
+    };
+    open().catch((e) => {
+      if (e.name !== "AbortError") setError(e.message);
+    });
     return () => abort.abort();
   }, []);
   if (error)

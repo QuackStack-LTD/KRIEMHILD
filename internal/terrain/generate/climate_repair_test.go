@@ -28,6 +28,7 @@ func TestMaritimeMidlatitudeGrowingSeason(t *testing.T) {
 		}
 	}
 	p := &model.Planet{Spec: model.DefaultSpec(), Grid: g}
+	p.Spec.ClimateVersion = 1 // Frozen hemispheric symmetry of the historical equation.
 	if err := climate(context.Background(), p); err != nil {
 		t.Fatal(err)
 	}

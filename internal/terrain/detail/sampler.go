@@ -59,6 +59,13 @@ func sampleWith(p *model.Planet, lon, lat float64, surface func(float64, float64
 			}
 		}
 	}
-	s.Biome = generate.BiomeAt(p, lon, lat, bed, s.Water != "dry")
+	if p.Spec.ClimateVersion >= 4 {
+		c := generate.ClimateRegimeAt(p, lon, lat, bed)
+		s.Temperature, s.Precipitation, s.PET = c.MeanTemperature, c.Rain, c.PET
+		s.Moisture = model.Clamp(c.Aridity*.6, 0, 1)
+		s.Biome = generate.BiomeFromClimate(p, c, lon, lat, bed, s.Water != "dry")
+	} else {
+		s.Biome = generate.BiomeAt(p, lon, lat, bed, s.Water != "dry")
+	}
 	return s
 }

@@ -6,12 +6,14 @@ import (
 	"kriemhild/internal/terrain/detail"
 	"kriemhild/internal/terrain/model"
 	"sync"
+	"unsafe"
+	"weak"
 )
 
 // Eight immutable halo tiles, independent of palette and authored edits. Holding
-// a planet pointer prevents identity reuse. Per-entry readiness deduplicates work.
+// weak planet identity prevents reuse without retaining closed worlds.
 type physicalKey struct {
-	Planet        *model.Planet
+	Planet        weak.Pointer[model.Planet]
 	Z, X, Y, Size int
 }
 type physicalEntry struct {
@@ -28,8 +30,13 @@ var physical = struct {
 }{items: map[physicalKey]*physicalEntry{}}
 
 func physicalSamples(ctx context.Context, p *model.Planet, z, x, y, size int) ([]model.Sample, error) {
-	key := physicalKey{p, z, x, y, size}
+	key := physicalKey{weak.Make(p), z, x, y, size}
 	physical.Lock()
+	for k := range physical.items {
+		if k.Planet.Value() == nil {
+			delete(physical.items, k)
+		}
+	}
 	physical.clock++
 	if e := physical.items[key]; e != nil {
 		e.used = physical.clock
@@ -83,7 +90,14 @@ func physicalSamples(ctx context.Context, p *model.Planet, z, x, y, size int) ([
 		delete(physical.items, key)
 	}
 	close(e.ready)
-	for len(physical.items) > 8 {
+	trimPhysicalCache(64 << 20)
+	physical.Unlock()
+	return e.samples, e.err
+}
+
+// Caller holds physical.Mutex; in-flight work is never evicted.
+func trimPhysicalCache(limit int) {
+	for len(physical.items) > 8 || physicalCacheBytes() > limit {
 		var oldest physicalKey
 		age := ^uint64(0)
 		for k, v := range physical.items {
@@ -100,8 +114,16 @@ func physicalSamples(ctx context.Context, p *model.Planet, z, x, y, size int) ([
 		}
 		delete(physical.items, oldest)
 	}
-	physical.Unlock()
-	return e.samples, e.err
+}
+
+// Caller holds physical.Mutex. Count sample storage rather than just tiles:
+// a 512-pixel tile needs nearly four times the RAM of a 256-pixel tile.
+func physicalCacheBytes() int {
+	bytes := 0
+	for _, e := range physical.items {
+		bytes += cap(e.samples) * int(unsafe.Sizeof(model.Sample{}))
+	}
+	return bytes
 }
 func PhysicalKey(p *model.Planet, z, x, y, size int) string {
 	return fmt.Sprintf("%s/%s/%d/%d/%d/%d", p.Spec.Version, p.Spec.Seed, z, x, y, size)

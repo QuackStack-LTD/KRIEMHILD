@@ -9,6 +9,8 @@ import (
 type Cache struct {
 	diskRoot    string
 	diskLimit   int64
+	diskUsed    int64
+	diskIndexed bool
 	mu          sync.Mutex
 	limit, used int
 	items       map[string]*list.Element

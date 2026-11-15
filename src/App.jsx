@@ -3,8 +3,12 @@ import {
   requestText,
   allowNavigation,
 } from "./worldbuilding/ui/feedback.js";
-import Dialog from "./worldbuilding/ui/Dialog.jsx";
+import AgeDialog from "./worldbuilding/AgeDialog.jsx";
 import AccountControls from "./auth/AccountControls.jsx";
+import useWorldNames, {
+  announceWorldChange,
+} from "./worldbuilding/useWorldNames.js";
+import { applyWorldNameChange } from "./worldbuilding/name-changes.js";
 import { useAuth } from "./auth/AuthProvider.jsx";
 import { accountRequest } from "./auth/api.js";
 import { lazy, Suspense } from "react";
@@ -64,7 +68,6 @@ import {
   graphLayout,
   edgePath,
   timelineWindow,
-  mergeConflicts,
   ageActionSource,
 } from "./history.js";
 import "./application.css";
@@ -171,258 +174,24 @@ function TimelineBar({ doc, onSelect, onNew, onGraph, onYears }) {
     </footer>
   );
 }
-function AgeDialog({ doc, sourceAge, sourceYear, onClose, onSubmit, busy }) {
-  const [name, setName] = useState(""),
-    [mode, setMode] = useState(sourceYear ? "branch" : "after"),
-    [other, setOther] = useState(
-      doc.ages.find((a) => a.id !== sourceAge)?.id || "",
-    ),
-    [policy, setPolicy] = useState(""),
-    [excluded, setExcluded] = useState([]),
-    [entityNames, setEntityNames] = useState({});
-  const inherited = [
-    ...new Map(
-      doc.entities
-        .filter(
-          (e) =>
-            (e.ageId === sourceAge ||
-              (mode === "merge" && e.ageId === other)) &&
-            !e.deleted,
-        )
-        .map((e) => [e.id, e]),
-    ).values(),
-  ];
-  const conflicts =
-    mode === "merge" ? mergeConflicts(doc, sourceAge, other) : [];
-  return (
-    <Dialog
-      title={<>Continue this history</>}
-      size="editor"
-      className="age-dialog"
-      onClose={onClose}
-      busy={busy}
-      onSubmit={(e) => {
-        e.preventDefault();
-        return onSubmit({
-          kind: mode === "connect" ? "connect" : "age",
-          ageId: sourceAge,
-          sourceYearId: sourceYear?.id || "",
-          name,
-          mode,
-          otherAge: other,
-          policy,
-          excludeIds: excluded.filter((id) =>
-            inherited.some((e) => e.id === id),
-          ),
-          entityNames: Object.fromEntries(
-            Object.entries(entityNames).filter(
-              ([id]) =>
-                !excluded.includes(id) && inherited.some((e) => e.id === id),
-            ),
-          ),
-        });
-      }}
-      actions={
-        <>
-          <button type="button" onClick={onClose} data-dialog-dismiss>
-            Cancel
-          </button>
-          <button className="primary" disabled={busy}>
-            Apply
-          </button>
-        </>
-      }
-    >
-      <p>
-        From <strong>{doc.ages.find((a) => a.id === sourceAge)?.name}</strong>
-        {sourceYear && <> / Year {sourceYear.number}</>}
-      </p>
-      {sourceYear && (
-        <p>
-          The new Age records this year as its origin and inherits the current
-          saved state. Earlier events are not used to rewind terrain or records.
-        </p>
-      )}
-      <label>
-        Operation
-        <select value={mode} onChange={(e) => setMode(e.target.value)}>
-          <option value="after">Continue after this Age</option>
-          {!sourceYear && (
-            <option value="before">Insert before this Age</option>
-          )}
-          <option value="branch">Branch into another timeline</option>
-          <option value="parallel">
-            Start an independent parallel timeline
-          </option>
-          {!sourceYear && (
-            <>
-              <option value="merge">Merge histories into a new Age</option>
-              <option value="connect">Connect to an existing Age</option>
-            </>
-          )}
-        </select>
-      </label>
-      {mode !== "connect" && (
-        <label>
-          Age name
-          <input
-            type="text"
-            autoFocus
-            required
-            maxLength={160}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </label>
-      )}
-      {["merge", "connect"].includes(mode) && (
-        <label>
-          {mode === "merge" ? "Other source Age" : "Destination Age"}
-          <select
-            required
-            value={other}
-            onChange={(e) => setOther(e.target.value)}
-          >
-            <option value="">Choose an Age</option>
-            {doc.ages
-              .filter((a) => mode === "connect" || a.id !== sourceAge)
-              .map((a) => (
-                <option value={a.id} key={a.id}>
-                  {a.name}
-                </option>
-              ))}
-          </select>
-        </label>
-      )}
-      {mode === "merge" && (
-        <details>
-          <summary>{conflicts.length} conflicting map or record states</summary>
-          <ul>
-            {conflicts.map((c) => (
-              <li key={c.kind + c.id}>
-                {c.name} - {c.kind}
-              </li>
-            ))}
-          </ul>
-        </details>
-      )}
-      {mode === "merge" && (
-        <label>
-          Conflicting state
-          <select
-            required
-            value={policy}
-            onChange={(e) => setPolicy(e.target.value)}
-          >
-            <option value="">Choose how to resolve conflicts</option>
-            <option value="primary">
-              Keep current Age's conflicting maps and records
-            </option>
-            <option value="secondary">
-              Keep the other Age's conflicting maps and records
-            </option>
-          </select>
-          <small>
-            Unique content from both Ages is retained. For matching identities,
-            this choice selects the map snapshot, geometry and properties.
-            Earlier Ages stay unchanged.
-          </small>
-        </label>
-      )}
-      <p>
-        {mode === "parallel"
-          ? "Copies the current Age into an independent timeline without a chronological connection."
-          : mode === "connect"
-            ? "Adds a chronological merge link without changing either Age’s saved content. Histories may loop back to earlier Ages."
-            : "New Ages inherit the saved terrains, maps and records of their source Age."}
-      </p>
-      {mode !== "connect" && (
-        <details>
-          <summary>
-            Review inherited records (
-            {inherited.filter((e) => !excluded.includes(e.id)).length} of{" "}
-            {inherited.length} included)
-          </summary>
-          <p>
-            Maps and terrain are inherited. Uncheck records to remove them from
-            the new Age; the source is preserved. Open their new profiles after
-            creation to make changes.
-          </p>
-          <button type="button" onClick={() => setExcluded([])}>
-            Include all
-          </button>
-          <button
-            type="button"
-            onClick={() => setExcluded(inherited.map((e) => e.id))}
-          >
-            Exclude all
-          </button>
-          <div className="inheritance-review">
-            {inherited.map((e) => (
-              <label key={e.id}>
-                <input
-                  type="checkbox"
-                  checked={!excluded.includes(e.id)}
-                  onChange={(ev) =>
-                    setExcluded((ids) =>
-                      ev.target.checked
-                        ? ids.filter((id) => id !== e.id)
-                        : [...ids, e.id],
-                    )
-                  }
-                />
-                {e.name}{" "}
-                <small>
-                  {e.kind} /{" "}
-                  {excluded.includes(e.id)
-                    ? "removed"
-                    : entityNames[e.id] && entityNames[e.id] !== e.name
-                      ? "modified"
-                      : doc.entities.some(
-                            (x) =>
-                              x.ageId === sourceAge &&
-                              x.id === e.id &&
-                              !x.deleted,
-                          )
-                        ? "carried forward"
-                        : "added from merge"}
-                </small>
-                <input
-                  type="text"
-                  aria-label={`Name ${e.name} in new Age`}
-                  disabled={excluded.includes(e.id)}
-                  value={entityNames[e.id] ?? e.name}
-                  maxLength={200}
-                  onChange={(ev) =>
-                    setEntityNames((names) => ({
-                      ...names,
-                      [e.id]: ev.target.value,
-                    }))
-                  }
-                />
-              </label>
-            ))}
-          </div>
-        </details>
-      )}
-    </Dialog>
-  );
-}
+
 export default function App() {
   const auth = useAuth();
   const [path, setPath] = useState(location.pathname + location.search),
     [doc, setDoc] = useState(null),
+    [docView, setDocView] = useState(""),
     [worlds, setWorlds] = useState([]),
     [worldFilter, setWorldFilter] = useState("all"),
-    [legacy, setLegacy] = useState([]),
     [name, setName] = useState(""),
-    [busy, setBusy] = useState(false),
+    [working, setBusy] = useState(false),
+    [loading, setLoading] = useState(false),
     [error, setError] = useState(""),
     [dialog, setDialog] = useState(false),
     [sourceYear, setSourceYear] = useState(null),
     [zoom, setZoom] = useState(1),
     [selected, setSelected] = useState(null),
     [navOpen, setNavOpen] = useState(false);
+  const busy = working || loading;
   const route = path
       .split("?")[0]
       .match(
@@ -431,6 +200,43 @@ export default function App() {
     id = route?.[1],
     page = route?.[2] || "world",
     query = new URLSearchParams(path.split("?")[1] || "");
+  const needsWorkspace =
+    dialog ||
+    !["world", "atlas", "terrains", "graph"].includes(page) ||
+    query.has("habitat");
+  const historyView =
+    page === "writing" && !dialog
+      ? "metadata"
+      : doc?.world.id === id && docView && docView !== "metadata"
+        ? docView
+        : needsWorkspace
+          ? "workspace"
+          : "atlas";
+  const rememberWorldRevision = useWorldNames(
+    id,
+    doc && doc.world.id === id ? doc.world.revision : undefined,
+    (next) => {
+      setDoc((previous) =>
+        previous?.world.id === next.world.id
+          ? {
+              ...next,
+              world: {
+                ...next.world,
+                currentAge: next.ages.some(
+                  (a) => a.id === previous.world.currentAge,
+                )
+                  ? previous.world.currentAge
+                  : next.world.currentAge,
+              },
+            }
+          : previous,
+      );
+    },
+    busy,
+    historyView,
+    (change) =>
+      setDoc((current) => applyWorldNameChange(current, change) || current),
+  );
   async function navigate(url) {
     if (!(await allowNavigation())) return;
     setNavOpen(false);
@@ -462,31 +268,102 @@ export default function App() {
   }
   useEffect(() => {
     let cancelled = false;
-    run(async () => {
-      if (path.startsWith("/world/")) return;
+    const abort = new AbortController();
+    const sameWorld = doc?.world.id === id && !!id;
+    const targetView =
+      page === "writing" && !dialog
+        ? "metadata"
+        : needsWorkspace
+          ? "workspace"
+          : "atlas";
+    if (!path.startsWith("/world/") && sameWorld && targetView === "metadata") {
+      setLoading(false);
+      if (docView !== "metadata") {
+        setDoc((current) => ({
+          world: current.world,
+          ages: current.ages,
+          terrains: current.terrains,
+          maps: current.maps,
+        }));
+        setDocView("metadata");
+      }
+      return;
+    }
+    if (!path.startsWith("/world/") && sameWorld && docView !== "metadata") {
+      setLoading(false);
+      if (docView === "workspace" && !needsWorkspace) {
+        setDoc((current) => ({
+          ...current,
+          biospheres: [],
+          entities: current.entities.filter(
+            (entity) => entity.kind !== "lifeform",
+          ),
+        }));
+        setDocView("atlas");
+        return;
+      }
+      if (docView === "workspace" || !needsWorkspace) return;
+    }
+    setLoading(true);
+    setError("");
+    (async () => {
+      if (path.startsWith("/world/")) {
+        setDoc(null);
+        setDocView("");
+        return;
+      }
       if (id) {
-        const d = await historyRequest(`/${id}`);
+        const d = await historyRequest(
+          `/${id}?view=${targetView}`,
+          undefined,
+          "GET",
+          abort.signal,
+        );
         if (!cancelled) {
-          setDoc(d);
-          setSelected(d.world.currentAge);
+          setDoc((previous) =>
+            sameWorld && previous?.world.id === id
+              ? {
+                  ...d,
+                  world: {
+                    ...d.world,
+                    currentAge: d.ages.some(
+                      (age) => age.id === previous.world.currentAge,
+                    )
+                      ? previous.world.currentAge
+                      : d.world.currentAge,
+                  },
+                }
+              : d,
+          );
+          setDocView(targetView);
+          if (!sameWorld) setSelected(d.world.currentAge);
           if (auth)
             void accountRequest(`/api/worlds/${id}/visit`, {}).catch(() => {});
         }
       } else {
-        const [w, l] = await Promise.all([
-          historyRequest(),
-          fetch("/api/projects").then((r) => r.json()),
-        ]);
+        const w = await historyRequest();
         if (!cancelled) {
           setWorlds(w);
-          setLegacy(l.projects || []);
         }
       }
-    });
+    })()
+      .catch((error) => {
+        if (!cancelled && error.name !== "AbortError") setError(error.message);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
     return () => {
       cancelled = true;
+      abort.abort();
     };
-  }, [path]);
+  }, [
+    id,
+    path.startsWith("/world/"),
+    needsWorkspace,
+    page === "writing",
+    dialog,
+  ]);
   if (path.startsWith("/world/"))
     return (
       <div className="terrain-app">
@@ -519,12 +396,26 @@ export default function App() {
     if (["select", "age"].includes(c.kind) && !(await allowNavigation()))
       return;
     return run(async () => {
-      const d = await historyRequest(`/${id}`, {
-        ...c,
-        revision: doc.world.revision,
-      });
+      const responseView =
+        docView === "workspace" || c.kind === "age" ? "workspace" : "atlas";
+      const naming = c.kind === "rename-entity" || c.kind === "rename-terrain";
+      const value = await historyRequest(
+        `/${id}?view=${naming ? "changes" : responseView}`,
+        {
+          ...c,
+          revision: doc.world.revision,
+        },
+      );
+      const d =
+        naming && value.nameChange
+          ? applyWorldNameChange(doc, value.nameChange)
+          : value;
+      if (!d) throw Error("World changed; refresh before retrying.");
       setDoc(d);
+      setDocView(responseView);
       setSelected(d.world.currentAge);
+      rememberWorldRevision(d.world.revision);
+      announceWorldChange(id);
       return d;
     });
   }
@@ -691,7 +582,10 @@ export default function App() {
     preview = doc?.ages.find(
       (a) => a.id === (selected || doc.world.currentAge),
     ),
-    layout = doc ? graphLayout(doc) : null;
+    layout =
+      doc && docView !== "metadata" && page === "graph"
+        ? graphLayout(doc)
+        : null;
   return (
     <div
       className={`history-app ${id ? "has-world" : ""} ${page === "graph" ? "showing-graph" : ""} ${page === "profile" ? "profile-page" : ""} ${page === "writing" ? "writing-page" : ""}`}
@@ -713,6 +607,20 @@ export default function App() {
         {id && doc?.world.id === id && (
           <>
             <span className="active-world-name">{doc.world.name}</span>
+            <nav className="world-scope-navigation" aria-label="World spaces">
+              <button
+                aria-current={page !== "writing" ? "page" : undefined}
+                onClick={() => navigate(`/worlds/${id}/graph`)}
+              >
+                Ages
+              </button>
+              <button
+                aria-current={page === "writing" ? "page" : undefined}
+                onClick={() => navigate(`/worlds/${id}/writing`)}
+              >
+                Writer's Archive
+              </button>
+            </nav>
           </>
         )}
         {busy && <span role="status">Working...</span>}
@@ -721,7 +629,7 @@ export default function App() {
           revision={doc?.world.revision || 0}
           onRefresh={async () => {
             if (!(await allowNavigation())) return;
-            const next = await historyRequest(`/${id}`);
+            const next = await historyRequest(`/${id}?view=${historyView}`);
             setDoc(next);
           }}
         />
@@ -738,6 +646,7 @@ export default function App() {
             }
           }}
         >
+          <span className="sidebar-scope-label">Ages · Worldbuilding</span>
           {[
             ["world", "Atlas"],
             ["biosphere", "Biosphere"],
@@ -767,16 +676,6 @@ export default function App() {
             </button>
           ))}
           <div className="sidebar-bottom">
-            <button
-              className="sidebar-writing"
-              onClick={() => navigate(`/worlds/${id}/writing`)}
-            >
-              <span>
-                <NavigationIcon name="writing" />
-                Writing
-              </span>
-              <small>Your drafts & notes</small>
-            </button>
             <button onClick={exportWorld}>Export World ZIP</button>
           </div>
         </nav>
@@ -830,12 +729,6 @@ export default function App() {
                 onChange={(e) => importWorld(e.target.files[0])}
               />
             </label>
-            <button
-              type="button"
-              onClick={() => navigate("/world/new?legacyImport=1")}
-            >
-              Terrain archives
-            </button>
           </form>
           <h2>Continue World</h2>
           <label className="hub-world-filter">
@@ -913,28 +806,10 @@ export default function App() {
           {worlds.length === 0 && (
             <p className="empty-worlds">Create your first World above.</p>
           )}
-          {legacy.length > 0 && (
-            <section>
-              <h2>Existing terrain projects</h2>
-              <p>
-                Open a saved map in the continuous editor or archive viewer. Its
-                terrain and explored detail are preserved.
-              </p>
-              <div className="world-grid">
-                {legacy.map((p) => (
-                  <article key={p.id}>
-                    <h3>{p.name}</h3>
-                    <button onClick={() => navigate(`/world/${p.id}/build`)}>
-                      Open saved map
-                    </button>
-                  </article>
-                ))}
-              </div>
-            </section>
-          )}
         </main>
       ) : (
         doc?.world.id === id &&
+        (page === "writing" || docView !== "metadata") &&
         current && (
           <>
             {page === "graph" ? (
@@ -1293,6 +1168,12 @@ export default function App() {
                 key={id}
                 doc={doc}
                 onBack={() => navigate(`/worlds/${id}`)}
+                onLibrary={(ageId, record = "") =>
+                  navigate(
+                    `/worlds/${id}/library?age=${ageId}&record=${record}`,
+                  )
+                }
+                onDocument={setDoc}
               />
             ) : page === "characters" ? (
               <Characters
@@ -1390,7 +1271,7 @@ export default function App() {
               <Library
                 key={current.id + query.get("record")}
                 doc={doc}
-                age={current}
+                age={doc.ages.find((a) => a.id === query.get("age")) || current}
                 command={command}
                 onDocument={setDoc}
                 onProfile={openProfile}
@@ -1418,6 +1299,16 @@ export default function App() {
                 onGenerate={() => generate(current.id)}
                 onMap={openMap}
                 onDeleteMap={removeMap}
+                onRenameTerrain={async (terrain) => {
+                  const name = await requestText("Terrain name", terrain.name);
+                  if (name)
+                    await command({
+                      kind: "rename-terrain",
+                      ageId: current.id,
+                      terrainId: terrain.id,
+                      name,
+                    });
+                }}
                 onProfile={openProfile}
                 onCreate={(m, kind, capitalOf, logicalId) =>
                   navigate(
@@ -1437,7 +1328,10 @@ export default function App() {
                 onGraph={() => navigate(`/worlds/${id}/graph`)}
               />
             )}
-            {dialog && (
+            {dialog && docView !== "workspace" && (
+              <p role="status">Reading inherited records…</p>
+            )}
+            {dialog && docView === "workspace" && (
               <AgeDialog
                 key={"age-dialog-" + ageActionSource(doc, page, selected)}
                 sourceAge={

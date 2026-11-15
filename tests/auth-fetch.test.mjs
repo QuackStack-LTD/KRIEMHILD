@@ -18,6 +18,11 @@ test("map writes serialize fresh revisions while real conflicts remain visible",
     fetch: async (input, init) => {
       if (input === "/api/sessions")
         return Response.json({ id: "map", mapRevision: 0 });
+      if (input === "/api/sessions/map/world/names")
+        return Response.json(
+          {},
+          { headers: { "X-Map-Revision": String(revision) } },
+        );
       active++;
       peak = Math.max(peak, active);
       const expected = Number(init.headers.get("If-Match"));
@@ -52,6 +57,14 @@ test("map writes serialize fresh revisions while real conflicts remain visible",
     });
     assert.equal(conflict.status, 409);
     assert.equal(calls.length, 4, "must not silently retry an edit");
+    await window.fetch("/api/sessions/map/world/names");
+    const renamed = await window.fetch("/api/sessions/map/view", {
+      method: "POST",
+    });
+    assert.ok(
+      renamed.ok,
+      "a canonical name refresh must advance the next map write's revision",
+    );
   } finally {
     globalThis.window = previous;
     globalThis.location = previousLocation;

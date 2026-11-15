@@ -66,7 +66,33 @@ type NetworkView struct {
 	RelationTypes []string        `json:"relationTypes,omitempty"`
 }
 
+type entityKey struct{ age, id string }
+
+// The caller must keep entity identities and slice positions stable until the
+// returned cleanup runs. This index is deliberately never retained across edits.
+func (d *Document) indexEntities() func() {
+	previous := d.entityIndex
+	index := make(map[entityKey]int, len(d.Entities))
+	for i, e := range d.Entities {
+		key := entityKey{e.AgeID, e.ID}
+		if _, exists := index[key]; !exists {
+			index[key] = i
+		}
+	}
+	d.entityIndex = index
+	return func() { d.entityIndex = previous }
+}
+
 func (d *Document) Entity(age, id string) *Entity {
+	if id == "" {
+		return nil
+	}
+	if d.entityIndex != nil {
+		if i, exists := d.entityIndex[entityKey{age, id}]; exists {
+			return &d.Entities[i]
+		}
+		return nil
+	}
 	for i := range d.Entities {
 		if d.Entities[i].AgeID == age && d.Entities[i].ID == id {
 			return &d.Entities[i]
@@ -310,6 +336,11 @@ func (d *Document) applyEntities(c Command) (bool, error) {
 		if err := d.validateEntity(e); err != nil {
 			return true, err
 		}
+		for _, r := range d.Representations {
+			if r.AgeID == e.AgeID && r.EntityID == e.ID && len(e.Name) > 160 {
+				return true, fmt.Errorf("mapped names must fit within 160 characters")
+			}
+		}
 		if err := validateYearEdit(e, old); err != nil {
 			return true, err
 		}
@@ -319,11 +350,14 @@ func (d *Document) applyEntities(c Command) (bool, error) {
 			previous.Locked = current.Locked
 			biologyChanged = !reflect.DeepEqual(previous, current)
 		}
+		previousName := e.Name
 		if old == nil {
 			d.Entities = append(d.Entities, e)
 		} else {
+			previousName = old.Name
 			*old = e
 		}
+		d.projectEntityName(e.AgeID, e.ID, previousName, e.Name)
 		if biologyChanged {
 			for i := range d.Biospheres {
 				state := &d.Biospheres[i]

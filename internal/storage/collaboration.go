@@ -40,6 +40,11 @@ func (s *Store) RestoreManuscript(ctx context.Context, project, node string, ver
 	current.Content = n.Content
 	current.Text = n.Text
 	current.References = n.References
+	current.FileHash = n.FileHash
+	current.FileName = n.FileName
+	current.MIME = n.MIME
+	current.FileSize = n.FileSize
+	current.Format = n.Format
 	if e = saveWriterNodeTx(ctx, tx, project, &current, fmt.Sprintf("Restored manuscript revision %d", version)); e != nil {
 		return current, e
 	}

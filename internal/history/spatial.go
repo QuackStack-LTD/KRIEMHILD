@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"kriemhild/internal/world"
 	"math"
+	"slices"
 	"sort"
 )
 
@@ -65,6 +66,16 @@ func (d *Document) Child(age, parentID, entityID, name string, b world.Bounds) (
 // Sync logical identity separately from a map's drawables. Inherited footprints
 // and geological features share identity; internal buildings remain map-local.
 func (d *Document) Sync(m Map, state *world.State) {
+	d.syncMap(m, state, true)
+}
+
+// SyncMapShapes accepts a projection containing the selected Age's geography.
+// Unloaded biological and other non-spatial records must not be pruned.
+func (d *Document) SyncMapShapes(m Map, state *world.State) {
+	d.syncMap(m, state, false)
+}
+
+func (d *Document) syncMap(m Map, state *world.State, complete bool) {
 	for shapeID, shape := range state.Entities {
 		id := shapeID
 		if shape.LogicalID != "" {
@@ -129,6 +140,7 @@ func (d *Document) Sync(m Map, state *world.State) {
 			}
 		}
 		if ei >= 0 {
+			previousName := d.Entities[ei].Name
 			e.Content = cloneContent(d.Entities[ei].Content)
 			e.CreatedAt = d.Entities[ei].CreatedAt
 			e.UpdatedAt = d.Entities[ei].UpdatedAt
@@ -142,6 +154,7 @@ func (d *Document) Sync(m Map, state *world.State) {
 			e.HomeMap = d.Entities[ei].HomeMap
 			e.SourceID = d.Entities[ei].SourceID
 			d.Entities[ei] = e
+			d.projectEntityName(m.AgeID, id, previousName, e.Name)
 		} else {
 			d.Entities = append(d.Entities, e)
 		}
@@ -183,7 +196,7 @@ func (d *Document) Sync(m Map, state *world.State) {
 			}
 		}
 	}
-	d.Resolve(m.AgeID)
+	d.resolve(m.AgeID, complete)
 }
 func contains(p [2]float64, polygon [][2]float64) bool {
 	inside := false
@@ -251,7 +264,16 @@ func enclosed(shape, area world.Entity, inside func([2]float64) bool) bool {
 }
 
 func (d *Document) Resolve(age string) {
-	d.pruneReferences(age)
+	d.resolve(age, true)
+}
+
+func (d *Document) resolve(age string, complete bool) {
+	if complete {
+		d.pruneReferences(age)
+	} else {
+		// Only explicit tombstones prove that a reference has become invalid.
+		d.PruneDeleted(age)
+	}
 	valid := map[string]bool{}
 	entities := map[string]Entity{}
 	for _, e := range d.Entities {
@@ -262,7 +284,7 @@ func (d *Document) Resolve(age string) {
 	}
 	out := d.Relations[:0]
 	for _, r := range d.Relations {
-		if r.AgeID != age || (!r.Automatic && valid[r.Source] && valid[r.Destination]) {
+		if r.AgeID != age || (!r.Automatic && (!complete || valid[r.Source] && valid[r.Destination])) {
 			out = append(out, r)
 		}
 	}
@@ -341,9 +363,22 @@ func (d *Document) Resolve(age string) {
 }
 func (d *Document) Shapes(m Map) map[string]world.Entity {
 	out := map[string]world.Entity{}
+	entities := map[string]Entity{}
+	for _, e := range d.Entities {
+		if e.AgeID == m.AgeID {
+			entities[e.ID] = e
+		}
+	}
 	for _, r := range d.Representations {
 		if r.AgeID == m.AgeID && r.MapID == m.ID {
-			out[r.Shape.ID] = r.Shape
+			shape := r.Shape
+			if e, exists := entities[r.EntityID]; exists && !e.Deleted {
+				if shape.LabelName == shape.Name {
+					shape.LabelName = e.Name
+				}
+				shape.Name = e.Name
+			}
+			out[r.Shape.ID] = shape
 		}
 	}
 	for id, s := range out {
@@ -400,6 +435,7 @@ func (d *Document) PruneDeleted(age string) {
 		if deleted[v.FamilyID] {
 			v.FamilyID = ""
 		}
+		v.MemberIDs = slices.DeleteFunc(append([]string(nil), v.MemberIDs...), func(id string) bool { return deleted[id] })
 	}
 
 }

@@ -7,8 +7,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"kriemhild/internal/biosphere"
 	"kriemhild/internal/history"
 	"kriemhild/internal/world"
+	"reflect"
 	"sort"
 	"strings"
 	"time"
@@ -33,6 +35,10 @@ func (s *Store) migrateHistory(ctx context.Context) error {
 	}
 	statements = append(statements, writerSchema...)
 	statements = append(statements, "CREATE UNIQUE INDEX IF NOT EXISTS history_map_project ON history_maps(project_id)")
+	statements = append(statements,
+		"CREATE INDEX IF NOT EXISTS history_entity_age_kind ON history_entities(world_id,age_id,kind)",
+		"CREATE INDEX IF NOT EXISTS history_representation_age ON history_representations(world_id,age_id)",
+		"CREATE INDEX IF NOT EXISTS history_relation_age ON history_relations(world_id,age_id)")
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -59,7 +65,18 @@ type historyQuery interface {
 	QueryRowContext(context.Context, string, ...any) *sql.Row
 }
 
+// Retain small fingerprints, not serialized copies, for differential saves.
+type historyFingerprints map[string]map[string][sha256.Size]byte
+
 func readHistory(ctx context.Context, q historyQuery, id string) (*history.Document, error) {
+	return readHistoryIndexed(ctx, q, id, nil)
+}
+
+func readHistoryIndexed(ctx context.Context, q historyQuery, id string, previous historyFingerprints) (*history.Document, error) {
+	return readHistoryProjected(ctx, q, id, previous, false)
+}
+
+func readHistoryProjected(ctx context.Context, q historyQuery, id string, previous historyFingerprints, workspace bool, atlas ...bool) (*history.Document, error) {
 	var raw string
 	d := &history.Document{}
 	if err := q.QueryRowContext(ctx, "SELECT data FROM history_worlds WHERE id=$1", id).Scan(&raw); err != nil {
@@ -70,26 +87,50 @@ func readHistory(ctx context.Context, q historyQuery, id string) (*history.Docum
 	}
 	dest := []any{&d.Ages, &d.Timelines, &d.Edges, &d.Terrains, &d.Maps, &d.Entities, &d.Representations, &d.Relations, &d.Years, &d.Biospheres, &d.LibraryFiles}
 	for i, table := range historyTables {
-		rows, err := q.QueryContext(ctx, "SELECT data FROM history_"+table+" WHERE world_id=$1 ORDER BY id", id)
+		atlasView := len(atlas) > 0 && atlas[0]
+		if atlasView && table == "biospheres" {
+			continue
+		}
+		condition := "world_id=$1"
+		if atlasView && table == "entities" {
+			condition += " AND kind<>'lifeform'"
+		}
+		rows, err := q.QueryContext(ctx, "SELECT id,data FROM history_"+table+" WHERE "+condition+" ORDER BY id", id)
 		if err != nil {
 			return nil, err
 		}
-		items := []json.RawMessage{}
+		// Decode each row directly into its typed slice. Building a second JSON
+		// array here used to duplicate every Biosphere and all of its cell data.
+		target := reflect.ValueOf(dest[i]).Elem()
+		target.Set(reflect.MakeSlice(target.Type(), 0, 0))
+		if previous != nil {
+			previous[table] = map[string][sha256.Size]byte{}
+		}
 		for rows.Next() {
-			var raw string
-			if err = rows.Scan(&raw); err != nil {
+			var key string
+			var raw []byte
+			if err = rows.Scan(&key, &raw); err == nil {
+				if previous != nil {
+					previous[table][key] = sha256.Sum256(raw)
+				}
+				value := reflect.New(target.Type().Elem())
+				if workspace && table == "biospheres" {
+					err = decodeWorkspaceBiosphere(raw, value.Interface().(*biosphere.State))
+				} else {
+					err = json.Unmarshal(raw, value.Interface())
+				}
+				if err == nil {
+					target.Set(reflect.Append(target, value.Elem()))
+				}
+			}
+			if err != nil {
 				rows.Close()
 				return nil, err
 			}
-			items = append(items, json.RawMessage(raw))
 		}
 		err = rows.Err()
 		rows.Close()
 		if err != nil {
-			return nil, err
-		}
-		b, _ := json.Marshal(items)
-		if err = json.Unmarshal(b, dest[i]); err != nil {
 			return nil, err
 		}
 	}
@@ -110,7 +151,7 @@ func (s *Store) History(ctx context.Context, id string) (*history.Document, erro
 	}
 	return d, tx.Commit()
 }
-func writeHistory(ctx context.Context, tx *sql.Tx, d *history.Document, expected int, create bool) error {
+func writeHistory(ctx context.Context, tx *sql.Tx, d *history.Document, expected int, create bool, baselines ...historyFingerprints) error {
 	if create {
 		if err := ensureOwnership(ctx, tx, d.World.ID); err != nil {
 			return err
@@ -140,26 +181,73 @@ func writeHistory(ctx context.Context, tx *sql.Tx, d *history.Document, expected
 	}
 	groups := []any{d.Ages, d.Timelines, d.Edges, d.Terrains, d.Maps, d.Entities, d.Representations, d.Relations, d.Years, d.Biospheres, d.LibraryFiles}
 	for i, table := range historyTables {
-		if _, err := tx.ExecContext(ctx, "DELETE FROM history_"+table+" WHERE world_id=$1", d.World.ID); err != nil {
+		var previous map[string][sha256.Size]byte
+		if len(baselines) > 0 {
+			previous = baselines[0][table]
+		}
+		records := reflect.ValueOf(groups[i])
+		if previous == nil {
+			if _, err := tx.ExecContext(ctx, "DELETE FROM history_"+table+" WHERE world_id=$1", d.World.ID); err != nil {
+				return err
+			}
+		} else {
+			// Remove vanished identities before inserting replacements, including
+			// maps with globally unique project IDs. Unchanged rows stay in place.
+			present := make(map[string]bool, records.Len())
+			for j := 0; j < records.Len(); j++ {
+				present[historyRecordKey(records.Index(j))] = true
+			}
+			for key := range previous {
+				if !present[key] {
+					if _, err := tx.ExecContext(ctx, "DELETE FROM history_"+table+" WHERE world_id=$1 AND id=$2", d.World.ID, key); err != nil {
+						return err
+					}
+				}
+			}
+		}
+		// Encode typed records once and reuse the insert statement. The former
+		// slice -> JSON -> map -> JSON path made several full-size copies.
+		statement, err := tx.PrepareContext(ctx, "INSERT INTO history_"+table+"(world_id,id,age_id,project_id,source_id,destination_id,kind,data) VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT(world_id,id) DO UPDATE SET age_id=excluded.age_id,project_id=excluded.project_id,source_id=excluded.source_id,destination_id=excluded.destination_id,kind=excluded.kind,data=excluded.data")
+		if err != nil {
 			return err
 		}
-		data, _ := json.Marshal(groups[i])
-		var records []map[string]json.RawMessage
-		json.Unmarshal(data, &records)
-		for _, record := range records {
-			value := func(key string) string { var v string; json.Unmarshal(record[key], &v); return v }
-			id, age := value("id"), value("ageId")
-			key := id
-			if age != "" {
-				key = age + "/" + id
+		for j := 0; j < records.Len(); j++ {
+			record := records.Index(j)
+			value := func(field string) string { return historyRecordField(record, field) }
+			key, age := historyRecordKey(record), value("AgeID")
+			raw, err := json.Marshal(record.Interface())
+			if err == nil {
+				if old, exists := previous[key]; exists && old == sha256.Sum256(raw) {
+					continue
+				}
+				_, err = statement.ExecContext(ctx, d.World.ID, key, age, value("ProjectID"), value("Source"), value("Destination"), value("Kind"), string(raw))
 			}
-			raw, _ := json.Marshal(record)
-			if _, err := tx.ExecContext(ctx, "INSERT INTO history_"+table+"(world_id,id,age_id,project_id,source_id,destination_id,kind,data) VALUES($1,$2,$3,$4,$5,$6,$7,$8)", d.World.ID, key, age, value("projectId"), value("source"), value("destination"), value("kind"), string(raw)); err != nil {
+			if err != nil {
+				statement.Close()
 				return err
 			}
 		}
+		if err = statement.Close(); err != nil {
+			return err
+		}
 	}
 	return recordRevision(ctx, tx, d.World.ID, d.World.Revision, d)
+}
+
+func historyRecordField(record reflect.Value, field string) string {
+	v := record.FieldByName(field)
+	if v.IsValid() {
+		return v.String()
+	}
+	return ""
+}
+
+func historyRecordKey(record reflect.Value) string {
+	id, age := historyRecordField(record, "ID"), historyRecordField(record, "AgeID")
+	if age != "" {
+		return age + "/" + id
+	}
+	return id
 }
 func (s *Store) CreateHistory(ctx context.Context, d *history.Document) error {
 	tx, err := s.beginHistory(ctx, false)
@@ -181,7 +269,8 @@ func (s *Store) UpdateHistory(ctx context.Context, id string, revision int, fn f
 		return nil, err
 	}
 	defer tx.Rollback()
-	d, err := readHistory(ctx, tx, id)
+	previous := historyFingerprints{}
+	d, err := readHistoryIndexed(ctx, tx, id, previous)
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +281,7 @@ func (s *Store) UpdateHistory(ctx context.Context, id string, revision int, fn f
 	if err = fn(d); err != nil {
 		return nil, err
 	}
-	if err = writeHistory(ctx, tx, d, old, false); err != nil {
+	if err = writeHistory(ctx, tx, d, old, false, previous); err != nil {
 		return nil, err
 	}
 	return d, tx.Commit()
@@ -232,6 +321,9 @@ func (s *Store) DeleteHistory(ctx context.Context, id string) error {
 		if _, e = tx.ExecContext(ctx, q, id); e != nil {
 			return e
 		}
+	}
+	if _, e = tx.ExecContext(ctx, `DELETE FROM writer_files WHERE world_id=$1`, id); e != nil {
+		return e
 	}
 	return tx.Commit()
 }
@@ -332,34 +424,41 @@ func (s *Store) CommitHistoricalMap(ctx context.Context, project string, parts m
 	if err != nil {
 		return true, err
 	}
-	d, err := readHistory(ctx, tx, id)
+	d, m, err := readMapHeader(ctx, tx, project)
 	if err != nil {
 		return true, err
 	}
-	m := d.Project(project)
-	old := d.World.Revision
+	changed := world.New(int(state.W)+1, int(state.H)+1)
+	for id, shape := range state.Entities {
+		if _, ok := parts["builder/entity/"+id]; ok {
+			changed.Entities[id] = shape
+		}
+	}
+	if len(changed.Entities) > 0 {
+		d, m, err = readMapEdit(ctx, tx, project)
+		if err != nil {
+			return true, err
+		}
+		if err = prepareMapReferences(ctx, tx, d, m, changed); err != nil {
+			return true, err
+		}
+	} else {
+		d.Maps = []history.Map{*m}
+		m = &d.Maps[0]
+	}
+	before := mapEditRows(d)
 	snapshot, err := saveSnapshot(ctx, tx, m.Snapshot, parts)
 	if err != nil {
 		return true, err
 	}
 	m.Snapshot = snapshot
 	m.Name = state.Header.Name
-	// Only changed drawables can update shared logical identity. An older
-	// open map must not overwrite a footprint just saved from its child map.
-	changed := world.New(int(state.W)+1, int(state.H)+1)
-	for id, shape := range state.Entities {
-		if _, ok := parts["builder/entity/"+id]; ok {
-			if shape.LogicalID != "" {
-				e := d.Entity(m.AgeID, shape.LogicalID)
-				if e == nil || e.Deleted || e.Kind != shape.Kind {
-					return true, fmt.Errorf("additional map region must reference an active entity of the same type")
-				}
-			}
-			changed.Entities[id] = shape
+	if len(changed.Entities) > 0 {
+		if err = syncMapEdit(d, m, changed); err != nil {
+			return true, err
 		}
 	}
-	d.Sync(*m, changed)
-	if err = writeHistory(ctx, tx, d, old, false); err != nil {
+	if err = writeMapEdit(ctx, tx, d, before); err != nil {
 		return true, err
 	}
 	return true, tx.Commit()
@@ -392,7 +491,13 @@ func (s *Store) HistoryBundle(ctx context.Context, id string) (Bundle, error) {
 	if hasProductiveRevisions(d) {
 		b.Schema = 3
 	}
-	for _, m := range d.Maps {
+	sourceMaps := append([]history.Map(nil), d.Maps...)
+	for _, f := range d.LibraryFiles {
+		if f.ResourceSurvey != nil && f.ResourceSurvey.SourceSnapshot != "" {
+			sourceMaps = append(sourceMaps, history.Map{Snapshot: f.ResourceSurvey.SourceSnapshot})
+		}
+	}
+	for _, m := range sourceMaps {
 		if m.Snapshot == "" {
 			return b, fmt.Errorf("map has not been saved")
 		}
@@ -438,6 +543,15 @@ func (s *Store) HistoryBundle(ctx context.Context, id string) (Bundle, error) {
 		}
 	}
 	linguisticBlobs := map[string][]byte{}
+	if err = collectResourceSurveyBlobs(ctx, tx, d, b.Blobs); err != nil {
+		return b, err
+	}
+	for _, f := range d.LibraryFiles {
+		if f.ResourceSurvey != nil {
+			b.Schema = max(b.Schema, 6)
+			break
+		}
+	}
 	if err = collectLinguisticBodies(ctx, tx, d, linguisticBlobs); err != nil {
 		return b, err
 	}
@@ -475,7 +589,7 @@ func (s *Store) HistoryBundle(ctx context.Context, id string) (Bundle, error) {
 	return b, tx.Commit()
 }
 func (b Bundle) Validate() error {
-	if b.Format != "KRIEMHILD-WORLD" || (b.Schema != 1 && b.Schema != 2 && b.Schema != 3 && b.Schema != 4 && b.Schema != 5) || b.Document == nil {
+	if b.Format != "KRIEMHILD-WORLD" || b.Schema < 1 || b.Schema > 6 || b.Document == nil {
 		return fmt.Errorf("unsupported World archive")
 	}
 	if b.Schema == 1 && hasLinguisticRecords(b.Document) {
@@ -492,12 +606,23 @@ func (b Bundle) Validate() error {
 	if err := validateLinguisticBundle(b.Document, b.Blobs, b.Schema); err != nil {
 		return err
 	}
+	if err := validateResourceSurveyBlobs(b.Document, b.Blobs); err != nil {
+		return err
+	}
+	for _, f := range b.Document.LibraryFiles {
+		if f.ResourceSurvey != nil && b.Schema < 6 {
+			return fmt.Errorf("Resource observations require World archive schema 6")
+		}
+	}
 	for _, m := range b.Document.Maps {
 		if b.Snapshots[m.Snapshot] == nil {
 			return fmt.Errorf("missing map snapshot")
 		}
 	}
 	for _, f := range b.Document.LibraryFiles {
+		if f.ResourceSurvey != nil && f.ResourceSurvey.SourceSnapshot != "" && b.Snapshots[f.ResourceSurvey.SourceSnapshot] == nil {
+			return fmt.Errorf("missing observed terrain snapshot")
+		}
 		for _, v := range f.Versions {
 			if v.Banner != nil {
 				data, ok := b.Blobs[v.Banner.Hash]

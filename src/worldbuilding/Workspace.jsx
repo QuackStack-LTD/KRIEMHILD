@@ -151,6 +151,7 @@ export function Atlas({
   onProfile,
   onCreate,
   onRename,
+  onRenameTerrain,
 }) {
   const [collection, setCollection] = useState("maps"),
     [search, setSearch] = useState(""),
@@ -326,6 +327,9 @@ export function Atlas({
                     <button onClick={() => onMap(root, "atlas")}>
                       Explore Atlas
                     </button>
+                    <button onClick={() => onRenameTerrain?.(t)}>
+                      Rename terrain
+                    </button>
                     <button
                       className="danger"
                       onClick={() => onDeleteMap(root)}
@@ -463,6 +467,13 @@ export function Atlas({
                   "desert",
                   "sea",
                   "ocean",
+                  "bay",
+                  "gulf",
+                  "strait",
+                  "reservoir",
+                  "canal",
+                  "waterfall",
+                  "wetland",
                 ].map((k) => (
                   <option key={k}>{k}</option>
                 ))}

@@ -174,6 +174,7 @@ type Settings struct {
 	Catalogue   []Species      `json:"catalogue,omitempty"`
 }
 type State struct {
+	SourceSnapshot     string        `json:"sourceSnapshot,omitempty"`
 	AcceptedGeneration string        `json:"acceptedGeneration,omitempty"`
 	WrapX              bool          `json:"wrapX,omitempty"`
 	CellKM             float64       `json:"cellKm,omitempty"`

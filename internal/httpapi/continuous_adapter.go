@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"kriemhild/internal/legacyterrain"
 	"kriemhild/internal/terrain/detail"
+	"kriemhild/internal/terrain/generate"
 	"kriemhild/internal/terrain/model"
 	"kriemhild/internal/terrain/resources"
 	"kriemhild/internal/terrain/tectonics"
@@ -35,6 +36,9 @@ func legacyProjectionContext(ctx context.Context, p *model.Planet) (*terrain.Sol
 		e.Fields[k] = make([]float64, n)
 	}
 	biomes := map[string]string{"grassland": "grass", "rainforest": "jungle", "alpine": "mountain", "water": "water", "steppe": "steppe", "ice": "snow", "tropical-woodland": "forest", "temperate-rainforest": "forest", "woodland": "forest", "shrubland": "scrub", "wetland": "marsh"}
+	for _, id := range []string{"temperate-steppe", "subtropical-steppe", "tropical-steppe"} {
+		biomes[id] = "steppe"
+	}
 	calendar := []terrain.ClimateSeason{{Name: "Annual cycle", Start: 0, Months: 12}}
 	climate := &terrain.ClimateState{Version: terrain.ClimateModelVersion, Source: model.Version, Parameters: terrain.ClimateParameters{Mode: "automatic", MinSeasons: 1, MaxSeasons: 6, AxialTilt: p.Spec.Tilt, OrbitalDays: 365.25, Circulation: 1}, Scale: terrain.ClimateScale{WidthPX: float64(w), HeightPX: float64(h), PixelsPerCell: 1, GridWidth: w, GridHeight: h, CellCount: n, RadiusKM: p.Spec.RadiusKM, LatitudeNorth: 90, LatitudeSouth: -90, LongitudeWest: -180, LongitudeEast: 180, NorthSouthKM: math.Pi * p.Spec.RadiusKM / float64(h-1), EquatorialEastWestKM: model.Tau * p.Spec.RadiusKM / float64(w-1), Coverage: "planet", Approximate: true}, Calendar: calendar, FinalCount: 1, Cells: make([]terrain.ClimateCell, n)}
 	zones := map[string]int{}
@@ -75,18 +79,25 @@ func legacyProjectionContext(ctx context.Context, p *model.Planet) (*terrain.Sol
 		e.Fields["plate"][i] = float64(plate.Plate)
 		e.Fields["tectonicStress"][i] = plate.Convergence
 		e.Fields["mountainCore"][i] = plate.Convergence
-		zone, ok := zones[id]
+		climateID := id
+		if p.Spec.ClimateVersion >= 4 {
+			climateID = a.Biome
+		}
+		zone, ok := zones[climateID]
 		if !ok {
 			zone = len(climate.Zones)
-			zones[id] = zone
-			climate.Zones = append(climate.Zones, terrain.ClimateRegion{ID: "continuous-" + id, Kind: id, Name: id})
+			zones[climateID] = zone
+			climate.Zones = append(climate.Zones, terrain.ClimateRegion{ID: "continuous-" + climateID, Kind: climateID, Name: climateID})
 		}
 		climate.Zones[zone].Cells = append(climate.Zones[zone].Cells, i)
-		cell := terrain.ClimateCell{Biome: id, Zone: zone, Seasons: calendar, Estimate: 1, Modifiers: terrain.ClimateModifiers{Elevation: a.Bed, Latitude: lat * 180 / math.Pi, Maritime: math.Exp(-math.Max(0, a.CoastDistance) / 500)}}
+		cell := terrain.ClimateCell{Biome: climateID, Zone: zone, Seasons: calendar, Estimate: 1, Modifiers: terrain.ClimateModifiers{Elevation: a.Bed, Latitude: lat * 180 / math.Pi, Maritime: math.Exp(-math.Max(0, a.CoastDistance) / 500)}}
 		for month := 0; month < 12; month++ {
 			temp := p.Grid.At(fmt.Sprintf("temperature-%02d", month), lon, lat) - (a.Bed-p.Grid.At("bed", lon, lat))*.0065
 			rain := p.Grid.At(fmt.Sprintf("rainfall-%02d", month), lon, lat)
 			pet := p.Grid.At(fmt.Sprintf("pet-%02d", month), lon, lat)
+			if p.Spec.ClimateVersion >= 4 {
+				temp, rain, pet = generate.MonthlyClimateAt(p, lon, lat, a.Bed, month)
+			}
 			moisture := model.Clamp(rain/math.Max(10, pet)*.6, 0, 1)
 			cell.Months[month] = terrain.ClimateMonth{Temperature: temp, Rain: rain, Evaporation: pet, Humidity: moisture, SoilMoisture: moisture, Drought: 1 - moisture, WindX: e.Fields["windX"][i], WindY: e.Fields["windY"][i], WindSpeed: 5, Daylight: 12}
 		}

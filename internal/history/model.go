@@ -129,6 +129,9 @@ type Relation struct {
 	Automatic         bool   `json:"automatic"`
 }
 type Document struct {
+	// Present only during read-only validation or post-inheritance reconciliation.
+	entityIndex map[entityKey]int
+
 	LibraryFiles    []LibraryFile     `json:"libraryFiles,omitempty"`
 	Biospheres      []biosphere.State `json:"biospheres,omitempty"`
 	Years           []Year            `json:"years,omitempty"`
@@ -143,6 +146,7 @@ type Document struct {
 	Relations       []Relation        `json:"relations"`
 }
 type Command struct {
+	TerrainID         string            `json:"terrainId,omitempty"`
 	Biosphere         *biosphere.State  `json:"biosphere,omitempty"`
 	BiosphereEdit     *BiosphereEdit    `json:"biosphereEdit,omitempty"`
 	EntityID          string            `json:"entityId,omitempty"`
@@ -255,150 +259,6 @@ func (d *Document) ValidateGraph() error {
 	}
 	return nil
 }
-func (d *Document) inherit(from, to string, overwrite bool) {
-	// File inheritance follows entity cloning so dated archive coverage can be
-	// reconciled in the destination Age without mutating the source records.
-	defer d.inheritLibrary(from, to, overwrite)
-	for _, v := range append([]NetworkView(nil), d.World.Networks...) {
-		if v.AgeID == from {
-			v.AgeID = to
-			v.RelationTypes = append([]string(nil), v.RelationTypes...)
-			v.MemberIDs = append([]string(nil), v.MemberIDs...)
-			v.LegacyData = append(json.RawMessage(nil), v.LegacyData...)
-			found := -1
-			for i, x := range d.World.Networks {
-				if x.AgeID == to && x.ID == v.ID {
-					found = i
-					break
-				}
-			}
-			if found < 0 {
-				d.World.Networks = append(d.World.Networks, v)
-			} else if overwrite {
-				d.World.Networks[found] = v
-			}
-		}
-	}
-	for _, v := range append([]biosphere.State(nil), d.Biospheres...) {
-		if v.AgeID != from {
-			continue
-		}
-		v = biosphere.Clone(v)
-		v.AgeID = to
-		found := false
-		for i, old := range d.Biospheres {
-			if old.AgeID == to && old.ID == v.ID {
-				if overwrite {
-					d.Biospheres[i] = v
-				}
-				found = true
-			}
-		}
-		if !found {
-			d.Biospheres = append(d.Biospheres, v)
-		}
-	}
-	for _, v := range append([]Terrain(nil), d.Terrains...) {
-		if v.AgeID != from {
-			continue
-		}
-		v.AgeID = to
-		found := -1
-		for i, x := range d.Terrains {
-			if x.AgeID == to && x.ID == v.ID {
-				found = i
-				break
-			}
-		}
-		if found < 0 {
-			d.Terrains = append(d.Terrains, v)
-		} else if overwrite {
-			d.Terrains[found] = v
-		}
-	}
-	for _, v := range append([]Map(nil), d.Maps...) {
-		if v.AgeID != from {
-			continue
-		}
-		v.AgeID = to
-		v.ProjectID = ID()
-		if old := d.Map(to, v.ID); old == nil {
-			d.Maps = append(d.Maps, v)
-		} else if overwrite {
-			*old = v
-		}
-	}
-	for _, v := range append([]Entity(nil), d.Entities...) {
-		v.Language = languages.Clone(v.Language)
-		v.Script = languages.Clone(v.Script)
-		v.Properties = append(json.RawMessage(nil), v.Properties...)
-		v.Content = cloneContent(v.Content)
-		v.System = cloneSystem(v.System)
-		v.Archive = cloneArchive(v.Archive)
-		v.Biology = biosphere.Clone(v.Biology)
-		v.Names = append([]EntityName(nil), v.Names...)
-		if v.ContinuityID == "" {
-			v.ContinuityID = v.ID
-		}
-		if v.AgeID != from {
-			continue
-		}
-		v.AgeID = to
-		found := -1
-		for i, x := range d.Entities {
-			if x.AgeID == to && x.ID == v.ID {
-				found = i
-				break
-			}
-		}
-		if found < 0 {
-			d.Entities = append(d.Entities, v)
-		} else if overwrite {
-			d.Entities[found] = v
-		}
-	}
-	for _, v := range append([]Representation(nil), d.Representations...) {
-		shapeData, _ := json.Marshal(v.Shape)
-		var clonedShape world.Entity
-		_ = json.Unmarshal(shapeData, &clonedShape)
-		v.Shape = clonedShape
-		v.Shape.Points = append([][2]float64(nil), v.Shape.Points...)
-		v.Shape.Cells = append([]int(nil), v.Shape.Cells...)
-		if v.AgeID != from {
-			continue
-		}
-		v.AgeID = to
-		found := -1
-		for i, x := range d.Representations {
-			if x.AgeID == to && x.ID == v.ID {
-				found = i
-				break
-			}
-		}
-		if found < 0 {
-			d.Representations = append(d.Representations, v)
-		} else if overwrite {
-			d.Representations[found] = v
-		}
-	}
-	for _, v := range append([]Relation(nil), d.Relations...) {
-		if v.AgeID == from {
-			v.AgeID = to
-			exists := false
-			for i, x := range d.Relations {
-				if x.AgeID == to && x.ID == v.ID {
-					if overwrite {
-						d.Relations[i] = v
-					}
-					exists = true
-				}
-			}
-			if !exists {
-				d.Relations = append(d.Relations, v)
-			}
-		}
-	}
-}
 func (d *Document) Apply(c Command) (err error) {
 	if c.Kind == "biosphere" {
 		return d.applyBiosphere(c)
@@ -419,6 +279,10 @@ func (d *Document) Apply(c Command) (err error) {
 		return err
 	}
 	switch c.Kind {
+	case "rename-entity":
+		return d.RenameEntity(c.AgeID, c.EntityID, c.Name)
+	case "rename-terrain":
+		return d.RenameTerrain(c.AgeID, c.TerrainID, c.Name)
 	case "delete-age":
 		if a == nil {
 			return fmt.Errorf("Age not found")
@@ -675,6 +539,7 @@ func (d *Document) Apply(c Command) (err error) {
 				return err
 			}
 		}
+		defer d.indexEntities()()
 		for id, name := range c.EntityNames {
 			if slices.Contains(c.ExcludeIDs, id) {
 				continue
@@ -711,6 +576,7 @@ func (d *Document) Apply(c Command) (err error) {
 	return d.ValidateGraph()
 }
 func (d *Document) Validate() error {
+	defer d.indexEntities()()
 	if err := d.validateLibrary(); err != nil {
 		return err
 	}

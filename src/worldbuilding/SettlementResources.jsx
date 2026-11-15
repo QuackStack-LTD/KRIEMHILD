@@ -69,7 +69,7 @@ export default function SettlementResources({ doc, entity }) {
         )}
       </div>
       <div className="settlement-resource-data">
-        <ResourceReport {...state} />
+        <ResourceReport {...state} path={`${base}?${query}`} />
       </div>
     </section>
   );

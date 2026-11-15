@@ -30,11 +30,6 @@ type spotBiosphere struct {
 	Habitats  []spotHabitat  `json:"habitats"`
 	Lifeforms []spotLifeform `json:"lifeforms"`
 }
-type biosphereHoverCache struct {
-	Revision                  int
-	AgeID, TerrainID, WorldID string
-	Cells                     map[int]spotBiosphere
-}
 
 // Cells share immutable community slices; do not duplicate every species for every pixel.
 func biosphereSpots(d *history.Document, age, terrainID string) map[int]spotBiosphere {
@@ -109,20 +104,10 @@ func (s *Server) spotBiosphere(r *http.Request, v *session, cell int) *spotBiosp
 	if s.projects == nil || v.historical == nil || v.historyWorld == "" {
 		return nil
 	}
-	revision, err := s.projects.HistoryRevision(r.Context(), v.historyWorld)
+	cells, err := s.ecologySpots(r, v.historyWorld, v.historical.AgeID, v.historical.TerrainID, false)
 	if err != nil {
 		return nil
 	}
-	m := v.historical
-	c := v.biosphereHover
-	if c == nil || c.Revision != revision || c.AgeID != m.AgeID || c.TerrainID != m.TerrainID || c.WorldID != v.historyWorld {
-		d, err := s.projects.History(r.Context(), v.historyWorld)
-		if err != nil {
-			return nil
-		}
-		c = &biosphereHoverCache{Revision: d.World.Revision, AgeID: m.AgeID, TerrainID: m.TerrainID, WorldID: v.historyWorld, Cells: biosphereSpots(d, m.AgeID, m.TerrainID)}
-		v.biosphereHover = c
-	}
-	spot := c.Cells[cell]
+	spot := cells[cell]
 	return &spot
 }

@@ -23,6 +23,14 @@ export function materializeManuscripts(bundle) {
       const remap = (value) => {
         if (!value || typeof value !== "object") return;
         if (value.worldId === old && old) value.worldId = next;
+        if (
+          old &&
+          typeof value.src === "string" &&
+          value.src.startsWith(`/api/worlds/${old}/`)
+        )
+          value.src =
+            `/api/worlds/${next}/` +
+            value.src.slice(`/api/worlds/${old}/`.length);
         for (const child of Object.values(value)) remap(child);
       };
       remap(content);

@@ -2,6 +2,7 @@ import { useRef } from "react";
 import { anchor } from "./geometry.js";
 import { riverWidth } from "./rivers.js";
 import { useMapProjection } from "./MapProjection.js";
+import { illustrationLayout } from "./illustration-layout.js";
 export default function IllustrationScene({
   config,
   objects,
@@ -28,6 +29,10 @@ export default function IllustrationScene({
   };
   const { x, y, w, h } = projection?.box(worldBounds) || worldBounds,
     pixel = sourcePixel * scale;
+  const layout = illustrationLayout(config),
+    header = projection?.box(layout.header) || layout.header,
+    title = project([layout.title.x, layout.title.y]),
+    compass = project([layout.compass.x, layout.compass.y]);
   function handlers(o, vertex) {
     return {
       onPointerDown: (e) => {
@@ -212,7 +217,7 @@ export default function IllustrationScene({
           <g
             key={l.id}
             data-illustration-layer={l.id}
-            opacity={l.opacity}
+            opacity={l.id === "decoration" ? undefined : l.opacity}
             mask={
               l.id === "waterways"
                 ? riverMask
@@ -263,37 +268,51 @@ export default function IllustrationScene({
               ))}
             {l.id === "decoration" && (
               <g
+                data-illustration-decoration="page-header"
                 pointerEvents="none"
-                fill="#503d2a"
-                stroke="#503d2a"
-                fontFamily="Georgia,serif"
               >
-                <text
-                  x={x + w / 2}
-                  y={y + h * 0.075}
-                  textAnchor="middle"
-                  stroke="none"
-                  fontSize={w / 52}
-                >
-                  {config.title}
-                </text>
+                <rect
+                  x={header.x}
+                  y={header.y}
+                  width={header.w}
+                  height={header.h}
+                  fill="#e9d9af"
+                />
                 <g
-                  transform={`translate(${x + w * 0.94},${y + h * 0.15}) scale(${w * 0.025})`}
-                  strokeWidth=".04"
+                  pointerEvents="none"
+                  opacity={l.opacity}
+                  fill="#503d2a"
+                  stroke="#503d2a"
+                  fontFamily="Georgia,serif"
                 >
-                  <path
-                    d="M0,-1 L.2,-.15 L1,0 L.2,.15 L0,1 L-.2,.15 L-1,0 L-.2,-.15 Z"
-                    fill="#e9d9af"
-                  />
-                  <path d="M0,-1 V1 M-1,0 H1" />
                   <text
-                    y="-1.15"
+                    x={title[0]}
+                    y={title[1]}
                     textAnchor="middle"
+                    dominantBaseline="middle"
                     stroke="none"
-                    fontSize=".45"
+                    fontSize={layout.title.size * scale}
                   >
-                    N
+                    {config.title}
                   </text>
+                  <g
+                    transform={`translate(${compass}) scale(${layout.compass.size * scale})`}
+                    strokeWidth=".04"
+                  >
+                    <path
+                      d="M0,-1 L.2,-.15 L1,0 L.2,.15 L0,1 L-.2,.15 L-1,0 L-.2,-.15 Z"
+                      fill="#e9d9af"
+                    />
+                    <path d="M0,-1 V1 M-1,0 H1" />
+                    <text
+                      y="-1.15"
+                      textAnchor="middle"
+                      stroke="none"
+                      fontSize=".45"
+                    >
+                      N
+                    </text>
+                  </g>
                 </g>
               </g>
             )}

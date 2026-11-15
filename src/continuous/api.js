@@ -3,8 +3,10 @@ export async function request(
   body,
   method = body === undefined ? "GET" : "POST",
   signal,
+  options = {},
 ) {
   const response = await fetch(`/api/${path}`, {
+    ...options,
     method,
     signal,
     headers: { "Content-Type": "application/json" },
@@ -24,7 +26,7 @@ export async function request(
 export const defaults = {
   version: "continuous-3",
   reliefVersion: 2,
-  climateVersion: 1,
+  climateVersion: 4,
   seed: "",
   preset: "earthlike",
   radiusKm: 6371,

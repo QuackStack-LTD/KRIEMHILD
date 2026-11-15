@@ -37,15 +37,15 @@ type, language, script, cultural/geographical context and validity without new i
   prevent location or institutional types between two characters.
 - **Organizations:** searchable directory and dedicated institutional profiles; see below.
 - **Culture & Religion and Library:** reserved workspace pages using the shared registry.
-- **Writing:** World-associated manuscript projects, ordered chapters/scenes, rich-text
-  drafting, revision-safe autosave, recovery, planning views and optional Age-aware
-  references. Legacy drafts migrate to unassigned Loose Drafts. Manuscripts are not
-  fictional entities and use a separate project backup instead of World ZIPs.
-  See [Writer workspace](WRITER-WORKSPACE.md) for workflows, API and backup format.
+- **Writer's Archive:** a World-level file browser with folders, document editing,
+  automatic saves, file/image import, DOCX/PDF/TXT/Markdown export, and recoverable
+  deletion. Inworld Archive links to each Age's Library folders and documents.
+  World ZIPs include the archive, file originals, and revision history.
+  See [Writer's Archive](WRITER-WORKSPACE.md) for workflows and persistence.
 
 The main navigation and Age context are shared. Builders/generators hide the worldbuilding
 sidebar and timeline. Profiles show their own Age indicator without the timeline. Time
-Graph and Writing also hide the global timeline.
+Graph and Writer's Archive also hide the global timeline.
 
 ## Representations and persistence
 
@@ -177,7 +177,8 @@ Terrains, maps and the separate Writing workspace do not create Year events.
 ## Navigation and connection editing
 
 Navigation order is Atlas, Biosphere, Magic & Technology, Culture & Religion,
-Characters, Organizations, Library; Writing and World export remain at the bottom.
+Characters, Organizations, Library. The World header separates Ages from Writer's
+Archive; World export remains at the bottom of the Age navigation.
 Biosphere provides habitat-based generation, species profiles and ecological rules;
 `flora` remains a compatibility route. Magic & Technology is the System Designer
 workbench for rules, capabilities, dependencies and consistency analysis. Library

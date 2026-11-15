@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { registerNavigationGuard, confirmAction } from "../ui/feedback.js";
 import { request, orderedNodes, inlineReferences } from "./model.js";
 import { useAuth } from "../../auth/AuthProvider.jsx";
-export default function useWriter(worldId) {
+export default function useWriter(worldId, { autoLoad = true } = {}) {
   const account = useAuth();
   const [projects, setProjects] = useState([]),
     [project, setProject] = useState(null),
@@ -50,15 +50,21 @@ export default function useWriter(worldId) {
     setProjects(p);
     return p;
   }
-  async function load(id) {
+  async function load(id, nodeId = "") {
     const b = await request("/projects/" + id);
     setProject(b.project);
     state.current.project = b.project;
     setNodes(b.nodes);
     const ordered = orderedNodes(b.nodes);
-    accept(ordered.find((n) => n.type === "scene") || ordered[0] || null);
+    accept(
+      b.nodes.find((n) => n.id === nodeId) ||
+        ordered.find((n) => n.type === "scene") ||
+        ordered[0] ||
+        null,
+    );
   }
   useEffect(() => {
+    if (!autoLoad) return;
     let live = true;
     refreshProjects()
       .then(async (p) => {
@@ -301,6 +307,8 @@ export default function useWriter(worldId) {
   }
   const visible = nodes.map((n) => (n.id === draft?.id ? draft : n));
   return {
+    current: () => state.current.draft,
+    clear: () => accept(null),
     accept: (n) => {
       setNodes((prev) => [...prev.filter((x) => x.id !== n.id), n]);
       accept(n);

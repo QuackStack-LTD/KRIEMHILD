@@ -18,6 +18,10 @@ function vendorChunk(id) {
     return "vendor-react";
   if (name === "three") return "vendor-three";
   if (name === "xlsx") return "vendor-spreadsheets";
+  if (name === "fontkit" || name === "restructure") return "vendor-fontkit";
+  if (name === "brotli") return "vendor-font-compression";
+  if (["unicode-properties", "unicode-trie", "dfa"].includes(name))
+    return "vendor-font-unicode";
   if (
     name === "pdf-lib" ||
     name.startsWith("@pdf-lib/") ||

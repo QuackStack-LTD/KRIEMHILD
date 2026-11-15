@@ -97,12 +97,25 @@ func (s *Server) acceptSettlement(w http.ResponseWriter, r *http.Request) {
 	for _, shape := range draft.Entities {
 		changes.Entities[shape.ID] = shape
 	}
-	if err := s.publishBuilderEntities(v, changes); err != nil {
-		fail(w, 503, "Could not persist settlement: "+err.Error())
-		return
+	autosave := v.planet != nil && v.historical != nil
+	if !autosave {
+		if err := s.publishBuilderEntities(v, changes); err != nil {
+			fail(w, 503, "Could not persist settlement: "+err.Error())
+			return
+		}
 	}
+	previous := v.world
+	wasUnsaved := v.unsaved
 	v.world = next
-	v.settlement = nil
 	v.unsaved = true
-	respond(w, 201, map[string]any{"project": v.world.Header, "entities": draft.Entities, "unsaved": true})
+	if autosave {
+		if err := s.saveWorld(v, false); err != nil {
+			v.world = previous
+			v.unsaved = wasUnsaved
+			fail(w, 503, "Could not automatically save settlement. Retry adding the layout.")
+			return
+		}
+	}
+	v.settlement = nil
+	respond(w, 201, map[string]any{"project": v.world.Header, "entities": draft.Entities, "unsaved": v.unsaved, "historyRevision": v.historyRevision, "historicalMap": v.historical})
 }

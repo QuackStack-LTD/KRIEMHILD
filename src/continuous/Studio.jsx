@@ -29,6 +29,7 @@ import {
 } from "./geometry.js";
 import { riverFeatures, riverWidth } from "./rivers.js";
 import { generationSpec } from "./seed.js";
+import { biomeName } from "./biomes.js";
 import { GeographicQuery } from "./geographic-query.js";
 import {
   CartographicGeometry,
@@ -47,6 +48,7 @@ import {
 } from "./preview-quality.js";
 import { bounds as geometryBounds } from "./geometry.js";
 import { newIllustration, buildIllustration } from "./illustration.js";
+import { illustrationPageBounds } from "./illustration-layout.js";
 import IllustrationScene from "./IllustrationScene.jsx";
 import IllustrationPanel from "./IllustrationPanel.jsx";
 import { exportTerrain, illustrationAssets } from "./illustration-export.js";
@@ -59,12 +61,27 @@ import {
   illustrationMeshBounds,
 } from "./land-selection.js";
 import Dialog from "../worldbuilding/ui/Dialog.jsx";
+import { confirmAction, requestText } from "../worldbuilding/ui/feedback.js";
+import useWorldNames, {
+  announceWorldChange,
+} from "../worldbuilding/useWorldNames.js";
+import WaterBodies from "./WaterBodies.jsx";
+import { isWaterBody } from "./water-bodies.js";
 import "./studio.css";
 import TerrainResourceReport from "./TerrainResourceReport.jsx";
+import {
+  mergeTerrainEntities,
+  patchRiverNames,
+  patchTerrainNames,
+  terrainRenderRevision,
+} from "./terrain-updates.js";
+import { applyWorldNameChange } from "../worldbuilding/name-changes.js";
 import {
   resourceDistance,
   resourceRing,
   resourceQuery,
+  resourceArea,
+  resourceRadiusForArea,
 } from "./terrain-resources.js";
 
 const uid = () => crypto.randomUUID().replaceAll("-", "");
@@ -106,8 +123,13 @@ export default function Studio({ initialState, onExit }) {
     [spec, setSpec] = useState({
       ...defaults,
       ...initialState?.continuous?.spec,
-      version: defaults.version,
-      reliefVersion: defaults.reliefVersion,
+      version: initialState?.continuous?.spec?.version ?? defaults.version,
+      reliefVersion: initialState?.continuous
+        ? (initialState.continuous.spec.reliefVersion ?? 0)
+        : defaults.reliefVersion,
+      climateVersion: initialState?.continuous
+        ? (initialState.continuous.spec.climateVersion ?? 0)
+        : defaults.climateVersion,
       seed: "",
     });
   const [hillshade, setHillshade] = useState(
@@ -122,6 +144,8 @@ export default function Studio({ initialState, onExit }) {
     [artSelected, setArtSelected] = useState(null),
     [artTerrain, setArtTerrain] = useState(null);
   const [worldContext, setWorldContext] = useState(null);
+  const [waterKind, setWaterKind] = useState("sea");
+  const entitiesRef = useRef([]);
   const [savedIllustration, setSavedIllustration] = useState(null);
   const [illustrationProgress, setIllustrationProgress] = useState(null);
   const imageAssets = useRef(null);
@@ -165,8 +189,12 @@ export default function Studio({ initialState, onExit }) {
     [rivers, setRivers] = useState([]),
     [coasts, setCoasts] = useState(null),
     [selected, setSelected] = useState(null);
+  const featureSource = useRef(""),
+    featureSequence = useRef(0),
+    riverNameOverrides = useRef(null);
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
+    [viewSaving, setViewSaving] = useState(false),
     [job, setJob] = useState(null),
     [loading, setLoading] = useState(0);
   const [tool, setTool] = useState("inspect"),
@@ -187,17 +215,17 @@ export default function Studio({ initialState, onExit }) {
       archetype: "organic",
     });
   const [showRivers, setShowRivers] = useState(savedView.showRivers !== false),
-    [panel, setPanel] = useState(true),
-    [autoSave, setAutoSave] = useState(true);
+    [panel, setPanel] = useState(true);
   const [invalidations, setInvalidations] = useState([]);
+  const [resourceLabelRevision, setResourceLabelRevision] = useState(0);
   const svg = useRef(null),
     stage = useRef(null),
     drag = useRef(null),
     jobRef = useRef(null),
     active = useRef(state),
     accepted = useRef(initialState || null),
-    attachment = useRef(null),
     viewWriter = useRef({ client: crypto.randomUUID(), sequence: 0 }),
+    viewAutosave = useRef({ pending: null, inFlight: Promise.resolve() }),
     cancelled = useRef(false),
     geographicQuery = useRef(null);
   geographicQuery.current ||= new GeographicQuery();
@@ -206,6 +234,14 @@ export default function Studio({ initialState, onExit }) {
   const [inspectionPoint, setInspectionPoint] = useState(null);
   active.current = state;
   const query = useRef(new URLSearchParams(location.search));
+  useEffect(() => {
+    const kind = query.current.get("createKind");
+    if (!state?.historicalMap || !isWaterBody(kind)) return;
+    setWaterKind(kind);
+    setMode("map");
+    setTool("water-name");
+    setName(query.current.get("entityName") || "New feature");
+  }, [state?.id]);
   useEffect(() => {
     if (query.current.get("tileDebug") !== "1") return;
     // Reproducible geographic views for diagnostics, independent of event timing.
@@ -297,11 +333,24 @@ export default function Studio({ initialState, onExit }) {
       });
     return () => abort.abort();
   }, [illustrating, art?.id, art?.bounds?.join(","), state?.id, invalidations]);
+  useWorldNames(
+    state?.historyWorldId || query.current.get("world"),
+    Math.max(worldContext?.world.revision ?? -1, state?.historyRevision ?? -1),
+    (doc) => {
+      void syncWorldNames(doc).catch((e) => setError(e.message));
+    },
+    busy,
+    "metadata",
+    (change) => {
+      const next = applyWorldNameChange(worldContext, change);
+      if (next) void syncWorldNames(next).catch((e) => setError(e.message));
+    },
+  );
   useEffect(() => {
     const id = state?.historyWorldId || query.current.get("world");
     if (!id) return;
     const abort = new AbortController();
-    request(`worlds/${id}`, undefined, "GET", abort.signal)
+    request(`worlds/${id}?view=metadata`, undefined, "GET", abort.signal)
       .then(setWorldContext)
       .catch((e) => {
         if (e.name !== "AbortError") setError(e.message);
@@ -363,7 +412,7 @@ export default function Studio({ initialState, onExit }) {
       next.objects = art.objects;
     }
     changeArt(next, true);
-    setCamera(extent);
+    setCamera(illustrationPageBounds(next));
     setArtSelected(null);
     setIllustrating(true);
     setTool("select");
@@ -401,12 +450,7 @@ export default function Studio({ initialState, onExit }) {
         );
         setup.resume = false;
       } else {
-        setCamera({
-          x: art.bounds[0],
-          y: art.bounds[1],
-          w: art.bounds[2],
-          h: art.bounds[3],
-        });
+        setCamera(illustrationPageBounds(art));
         setIllustrating(true);
         setMapSetup(null);
         return;
@@ -495,26 +539,135 @@ export default function Studio({ initialState, onExit }) {
     const result = await request(
       `sessions/${s.id}/world/entities?detail=8&all=1`,
     );
-    if (active.current?.id === s.id) setEntities(result.entities || []);
+    if (
+      active.current?.id === s.id &&
+      active.current?.project.revision === result.revision
+    ) {
+      entitiesRef.current = result.entities || [];
+      setEntities(entitiesRef.current);
+    }
   }, []);
+  const loadPhysicalFeatures = useCallback(async (id) => {
+    const sequence = ++featureSequence.current;
+    const r = await request(`sessions/${id}/terrain/features`);
+    if (active.current?.id !== id || sequence !== featureSequence.current)
+      return;
+    featureSource.current = r.terrainSource || "";
+    setRivers(patchRiverNames(r.rivers || [], riverNameOverrides.current));
+    setCoasts(r.coasts);
+    setLegend(r.legend || {});
+    setHydrologyDiagnostics(r.hydrology || null);
+  }, []);
+  function patchEntities(changes) {
+    const prior = entitiesRef.current;
+    entitiesRef.current = mergeTerrainEntities(prior, changes);
+    setEntities(entitiesRef.current);
+    setSelected((current) => {
+      if (!current) return current;
+      const change = changes?.find((e) => e.id === current.id);
+      if (!change) return current;
+      if (change.deleted) return null;
+      return current === prior.find((e) => e.id === current.id)
+        ? change
+        : current;
+    });
+  }
+  async function syncWorldNames(doc) {
+    const current = active.current;
+    if (!current?.historicalMap) {
+      setWorldContext(doc);
+      return;
+    }
+    const names = await request(
+      `sessions/${current.id}/world/names?revision=${current.historyRevision ?? -1}`,
+    );
+    if (active.current?.id !== current.id) return;
+    setWorldContext(doc);
+    if (names.unchanged) {
+      const next = {
+        ...active.current,
+        historyRevision: names.historyRevision,
+        historicalMap: names.historicalMap || active.current.historicalMap,
+      };
+      active.current = next;
+      setState(next);
+      return;
+    }
+    riverNameOverrides.current = names.names;
+    const oldEntities = entitiesRef.current;
+    const byID = new Map(names.names.map((n) => [n.id, n]));
+    setSelected((selected) => {
+      const old = oldEntities.find((e) => e.id === selected?.id),
+        renamed = byID.get(selected?.id);
+      return old && renamed && selected.name === old.name
+        ? { ...selected, name: renamed.name }
+        : selected;
+    });
+    const next = {
+      ...active.current,
+      historicalMap: names.historicalMap,
+      historyRevision: names.historyRevision,
+      continuous: active.current.continuous
+        ? { ...active.current.continuous, analysisStale: names.analysisStale }
+        : active.current.continuous,
+      project: {
+        ...active.current.project,
+        name: names.name,
+        revision: Math.max(names.revision, active.current.project.revision),
+        illustrations:
+          names.illustrations || active.current.project.illustrations,
+      },
+    };
+    active.current = next;
+    setState(next);
+    if (names.namesOnly) {
+      geographicQuery.current.invalidate();
+      if (names.ecologyNamesChanged) setResourceLabelRevision((v) => v + 1);
+      entitiesRef.current = patchTerrainNames(entitiesRef.current, names.names);
+      setEntities(entitiesRef.current);
+    } else await refresh(next);
+    if (
+      names.terrainSource &&
+      featureSource.current &&
+      names.terrainSource !== featureSource.current
+    ) {
+      await loadPhysicalFeatures(current.id);
+    } else {
+      setRivers((old) => patchRiverNames(old, names.names));
+      setRiverSelection((old) =>
+        old ? patchRiverNames([old], names.names)[0] : old,
+      );
+    }
+  }
+  async function renameRecord(kind, id, name) {
+    const current = await ensureWorldMap();
+    const doc = await request(`worlds/${current.historyWorldId}?view=metadata`);
+    const updated = await request(
+      `worlds/${current.historyWorldId}?view=changes`,
+      {
+        kind,
+        ageId: current.historicalMap.ageId,
+        name,
+        revision: doc.world.revision,
+        ...(kind === "rename-terrain" ? { terrainId: id } : { entityId: id }),
+      },
+    );
+    const next =
+      applyWorldNameChange(worldContext, updated.nameChange) ||
+      (await request(`worlds/${current.historyWorldId}?view=metadata`));
+    await syncWorldNames(next);
+    announceWorldChange(current.historyWorldId);
+  }
   useEffect(() => {
     if (!state?.id) return;
-    let alive = true;
+    featureSource.current = "";
+    riverNameOverrides.current = null;
     refresh(state).catch((e) => setError(e.message));
-    request(`sessions/${state.id}/terrain/features`)
-      .then((r) => {
-        if (alive) {
-          setRivers(r.rivers || []);
-          setCoasts(r.coasts);
-          setLegend(r.legend || {});
-          setHydrologyDiagnostics(r.hydrology || null);
-        }
-      })
-      .catch((e) => setError(e.message));
+    loadPhysicalFeatures(state.id).catch((e) => setError(e.message));
     return () => {
-      alive = false;
+      featureSequence.current++;
     };
-  }, [state?.id, invalidations, refresh]);
+  }, [state?.id, refresh, loadPhysicalFeatures]);
   useLayoutEffect(() => {
     const element = svg.current;
     const measure = () => {
@@ -548,7 +701,7 @@ export default function Studio({ initialState, onExit }) {
   );
   useEffect(() => {
     const warn = (e) => {
-      if (active.current?.unsaved) {
+      if (active.current?.historicalMap && active.current?.unsaved) {
         e.preventDefault();
         e.returnValue = "";
       }
@@ -566,15 +719,16 @@ export default function Studio({ initialState, onExit }) {
       ...body,
       revision: s.project.revision,
     });
-    if (result.dirty) {
+    if (result.project.revision > s.project.revision) {
       const b = result.dirty;
       setInvalidations((v) => [
-        ...v,
+        ...v.slice(-127),
         {
-          x: (b.x / (s.W - 1)) * 2,
-          y: b.y / (s.H - 1),
-          w: (b.width / (s.W - 1)) * 2,
-          h: b.height / (s.H - 1),
+          x: b ? (b.x / (s.W - 1)) * 2 : 3,
+          y: b ? b.y / (s.H - 1) : 2,
+          w: b ? (b.width / (s.W - 1)) * 2 : 0,
+          h: b ? b.height / (s.H - 1) : 0,
+          raster: !!b,
           revision: result.project.revision,
         },
       ]);
@@ -585,20 +739,26 @@ export default function Studio({ initialState, onExit }) {
       continuous: s.continuous
         ? { ...s.continuous, analysisStale: result.analysisStale }
         : s.continuous,
-      unsaved: true,
+      unsaved: result.unsaved,
+      historyRevision: result.historyRevision ?? s.historyRevision,
+      historicalMap: result.historicalMap || s.historicalMap,
     };
     active.current = next;
     setState(next);
-    await refresh(s);
+    if (result.entities) {
+      patchEntities(result.entities);
+    } else await refresh(next);
     return result;
   }
   async function save() {
-    const s = await ensureWorldMap();
+    const s = active.current?.historicalMap
+      ? active.current
+      : await attachWorldMap(active.current);
     if (!s) return;
     const sequence = ++viewWriter.current.sequence;
     const result = await request(`sessions/${s.id}/save`, {
       revision: s.project.revision,
-      view: { camera: savedCamera, style, mode, showRivers, hillshade },
+      view: { camera: savedCamera, style, mode: "map", showRivers, hillshade },
       client: viewWriter.current.client,
       sequence,
     });
@@ -612,43 +772,86 @@ export default function Studio({ initialState, onExit }) {
     active.current = next;
     setState(next);
   }
+  function flushView(keepalive = false) {
+    const writer = viewAutosave.current;
+    const pending = writer.pending;
+    if (!pending) return writer.inFlight;
+    writer.pending = null;
+    writer.inFlight = request(
+      `sessions/${pending.id}/view`,
+      pending.body,
+      "POST",
+      undefined,
+      { keepalive },
+    )
+      .then((result) => {
+        if (
+          active.current?.id === pending.id &&
+          pending.sequence === viewWriter.current.sequence
+        ) {
+          const next = {
+            ...active.current,
+            unsaved: result.unsaved,
+            historyRevision:
+              result.historyRevision ?? active.current.historyRevision,
+          };
+          active.current = next;
+          setState(next);
+          setViewSaving(false);
+        }
+      })
+      .catch((e) => {
+        if (active.current?.id === pending.id) {
+          viewAutosave.current.pending ||= pending;
+          const next = { ...active.current, unsaved: true };
+          active.current = next;
+          setState(next);
+          setError(e.message);
+          setViewSaving(false);
+        }
+        throw e;
+      });
+    return writer.inFlight;
+  }
   useEffect(() => {
     if (!state?.id) return;
+    setViewSaving(true);
     const id = state.id,
-      sequence = ++viewWriter.current.sequence,
-      timer = setTimeout(
-        () =>
-          request(`sessions/${id}/view`, {
-            ui: {
-              continuousView: {
-                camera: savedCamera,
-                style,
-                mode,
-                showRivers,
-                hillshade,
-              },
-            },
-            merge: true,
-            client: viewWriter.current.client,
-            sequence,
-          })
-            .then((result) => {
-              if (
-                active.current?.id === id &&
-                sequence === viewWriter.current.sequence
-              )
-                setState((v) => ({ ...v, unsaved: result.unsaved }));
-            })
-            .catch((e) => setError(e.message)),
-        700,
-      );
+      sequence = ++viewWriter.current.sequence;
+    viewAutosave.current.pending = {
+      id,
+      sequence,
+      body: {
+        ui: {
+          continuousView: {
+            camera: savedCamera,
+            style,
+            mode,
+            showRivers,
+            hillshade,
+          },
+        },
+        merge: true,
+        client: viewWriter.current.client,
+        sequence,
+      },
+    };
+    const timer = setTimeout(() => void flushView().catch(() => {}), 700);
     return () => clearTimeout(timer);
   }, [state?.id, savedCamera, style, mode, showRivers, hillshade]);
   useEffect(() => {
-    if (!autoSave || !state?.historicalMap || !state.unsaved || busy) return;
-    const timer = setTimeout(() => run(save), 30000);
-    return () => clearTimeout(timer);
-  }, [state?.project?.revision, state?.unsaved, autoSave, busy]);
+    const flush = () => void flushView(true).catch(() => {});
+    const hidden = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", hidden);
+    return () => {
+      flush();
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", hidden);
+    };
+  }, []);
   useEffect(() => {
     const key = (e) => {
       if (e.target.matches("input,textarea,select")) return;
@@ -666,7 +869,9 @@ export default function Studio({ initialState, onExit }) {
       }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
         e.preventDefault();
-        run(save);
+        if (illustrating) leaveIllustration();
+        setResourcesOpen(false);
+        setMode("generate");
       }
     };
     window.addEventListener("keydown", key);
@@ -679,11 +884,7 @@ export default function Studio({ initialState, onExit }) {
     setSettlement(null);
     cancelled.current = false;
     try {
-      if (
-        active.current?.unsaved &&
-        (active.current.historicalMap || entities.length)
-      )
-        await save();
+      if (active.current?.historicalMap) accepted.current = active.current;
       const started = await request("terrain/generation-jobs", {
         spec: generationSpec(spec),
       });
@@ -695,7 +896,7 @@ export default function Studio({ initialState, onExit }) {
         if (progress.status === "cancelled") break;
         if (progress.status === "ready") {
           const next = await request(
-            `sessions/${progress.session}/world/state`,
+            `sessions/${progress.session}/world/state?view=terrain`,
           );
           if (active.current && !active.current.historicalMap)
             await request(`sessions/${active.current.id}`, undefined, "DELETE");
@@ -719,31 +920,22 @@ export default function Studio({ initialState, onExit }) {
     const s = active.current;
     if (!s) return;
     if (s.historicalMap) return s;
-    if (attachment.current?.session === s.id) return attachment.current.promise;
-    const promise = attachWorldMap(s);
-    attachment.current = { session: s.id, promise };
-    try {
-      return await promise;
-    } finally {
-      if (attachment.current?.promise === promise) attachment.current = null;
-    }
+    throw Error(
+      "Save terrain in the Terrain Generator before using this editor.",
+    );
   }
   async function attachWorldMap(s) {
-    let worldId = query.current.get("world"),
+    if (!s) return;
+    const worldId = query.current.get("world"),
       ageId = query.current.get("age");
-    if (!worldId) {
-      const doc = await request("worlds", { name: "New World" });
-      worldId = doc.world.id;
-      ageId = doc.world.currentAge;
-      query.current.set("world", worldId);
-      query.current.set("age", ageId);
-    }
+    if (!worldId || !ageId)
+      throw Error("Open a World and Age before saving terrain.");
     await request(`worlds/${worldId}/accept`, {
       session: s.id,
       ageId,
       name: `Terrain · ${s.continuous.spec.seed}`,
     });
-    const next = await request(`sessions/${s.id}/world/state`);
+    const next = await request(`sessions/${s.id}/world/state?view=terrain`);
     active.current = next;
     setState(next);
     accepted.current = next;
@@ -754,8 +946,8 @@ export default function Studio({ initialState, onExit }) {
     );
     return next;
   }
-  async function accept() {
-    await ensureWorldMap();
+  async function saveTerrain() {
+    await save();
     setMode("map");
     setTool("inspect");
   }
@@ -799,6 +991,10 @@ export default function Studio({ initialState, onExit }) {
       )
       .catch((e) => setError(e.message));
   }
+  useEffect(() => {
+    if (inspectionPoint?.identity === sourceIdentity)
+      inspect(inspectionPoint.point);
+  }, [sourceIdentity, state?.project?.revision]);
   async function clickMap(p) {
     if (!state || p[0] < 0 || p[0] > 2 || p[1] < 0 || p[1] > 1) return;
     setCursor(p);
@@ -831,15 +1027,21 @@ export default function Studio({ initialState, onExit }) {
       setDraft((d) => [...d, toWorld(p)]);
       return;
     }
-    if (["landmark", "label", "house"].includes(tool)) {
+    if (["landmark", "label", "house", "water-name"].includes(tool)) {
       const id = uid();
       const shape = {
         id,
-        name: name === "New feature" ? `${tool} ${id.slice(0, 8)}` : name,
-        kind: tool,
+        name:
+          name === "New feature"
+            ? `${tool === "water-name" ? waterKind : tool} ${id.slice(0, 8)}`
+            : name,
+        kind: tool === "water-name" ? waterKind : tool,
+        ...(tool === "water-name" && query.current.get("logicalId")
+          ? { logicalId: query.current.get("logicalId") }
+          : {}),
         geometry: "point",
         points: [toWorld(p)],
-        layer: layerFor(tool),
+        layer: tool === "water-name" ? "natural-features" : layerFor(tool),
         color: "#e4c989",
         minDetail: 0,
       };
@@ -1139,6 +1341,18 @@ export default function Studio({ initialState, onExit }) {
       String((exportWidth * outputCamera.h) / outputCamera.w),
     );
     const exportBounds = projection.box(outputCamera);
+    if (illustrating && art) {
+      const geographic = projection.box({
+        x: art.bounds[0],
+        y: art.bounds[1],
+        w: art.bounds[2],
+        h: art.bounds[3],
+      });
+      clone.setAttribute(
+        "data-illustration-map-bounds",
+        `${geographic.x} ${geographic.y} ${geographic.w} ${geographic.h}`,
+      );
+    }
     const landMask = clone.querySelector("#selected-illustration-land path");
     if (landMask && art?.regions)
       landMask.setAttribute(
@@ -1240,7 +1454,6 @@ export default function Studio({ initialState, onExit }) {
       JSON.stringify(design)
     )
       await command({ kind: "illustration", illustration: design });
-    if (active.current.unsaved) await save();
     const source = active.current;
     const sourceMs = performance.now() - started;
     const assetKey = JSON.stringify([
@@ -1262,12 +1475,7 @@ export default function Studio({ initialState, onExit }) {
     const cached = imageAssets.current?.key === assetKey;
     const assets = cached
       ? imageAssets.current.assets
-      : await exportMap("assets", {
-          x: design.bounds[0],
-          y: design.bounds[1],
-          w: design.bounds[2],
-          h: design.bounds[3],
-        });
+      : await exportMap("assets", illustrationPageBounds(design));
     imageAssets.current = { key: assetKey, assets };
     const rasterMs = performance.now() - started - sourceMs;
     if (
@@ -1346,7 +1554,6 @@ export default function Studio({ initialState, onExit }) {
     () =>
       geometryCache.current.derive({
         identity: sourceIdentity,
-        revision: state?.project?.revision,
         rivers,
         coasts,
         level: detailLevel,
@@ -1355,7 +1562,6 @@ export default function Studio({ initialState, onExit }) {
       }),
     [
       sourceIdentity,
-      state?.project?.revision,
       rivers,
       coasts,
       detailLevel,
@@ -1582,7 +1788,9 @@ export default function Studio({ initialState, onExit }) {
           className="studio-brand"
           onClick={() =>
             run(async () => {
-              if (state?.unsaved) await save();
+              await flushView();
+              if (active.current?.historicalMap && active.current?.unsaved)
+                await save();
               onExit?.(query.current.get("world"));
             })
           }
@@ -1597,6 +1805,32 @@ export default function Studio({ initialState, onExit }) {
               : "Generation preview"}
           </small>
         </span>
+        {state?.historicalMap && (
+          <button
+            disabled={busy}
+            onClick={() =>
+              run(async () => {
+                const terrain = worldContext?.terrains.find(
+                  (t) =>
+                    t.id === state.historicalMap.terrainId &&
+                    t.ageId === state.historicalMap.ageId,
+                );
+                const name = await requestText(
+                  "Terrain name",
+                  terrain?.name || state.project.name,
+                );
+                if (name)
+                  await renameRecord(
+                    "rename-terrain",
+                    state.historicalMap.terrainId,
+                    name,
+                  );
+              })
+            }
+          >
+            Rename terrain
+          </button>
+        )}
         <nav aria-label="World editors">
           {[
             ["atlas", "Atlas"],
@@ -1607,7 +1841,7 @@ export default function Studio({ initialState, onExit }) {
             <button
               key={id}
               aria-current={mode === id ? "page" : undefined}
-              disabled={busy || (id !== "generate" && !state)}
+              disabled={busy || (id !== "generate" && !state?.historicalMap)}
               onClick={() =>
                 run(async () => {
                   if (id !== "generate") await ensureWorldMap();
@@ -1627,15 +1861,14 @@ export default function Studio({ initialState, onExit }) {
         <span className="studio-save" role="status">
           {busy
             ? "Working…"
-            : state?.unsaved
-              ? "Unsaved changes"
-              : state
-                ? "Saved"
-                : ""}
+            : viewSaving
+              ? "Saving…"
+              : state?.unsaved
+                ? "Unsaved changes"
+                : state
+                  ? "Saved"
+                  : ""}
         </span>
-        <button disabled={!state || busy} onClick={() => run(save)}>
-          Save
-        </button>
         <button disabled={!state} onClick={() => setShow3D(true)}>
           3D Terrain
         </button>
@@ -1715,6 +1948,7 @@ export default function Studio({ initialState, onExit }) {
                   "border",
                   "landmark",
                   "label",
+                  "water-name",
                   "raise",
                   "lower",
                   "smooth",
@@ -1737,11 +1971,21 @@ export default function Studio({ initialState, onExit }) {
                   ? "State"
                   : t === "settlement"
                     ? "Settlement"
-                    : t}
+                    : t === "water-name"
+                      ? "Water body"
+                      : t}
             </button>
           ))}
           <hr />
-          <button onClick={() => setCamera(initialCamera)}>Fit world</button>
+          <button
+            onClick={() =>
+              setCamera(
+                illustrating ? illustrationPageBounds(art) : initialCamera,
+              )
+            }
+          >
+            {illustrating ? "Fit map" : "Fit world"}
+          </button>
           <button
             disabled={!state || busy}
             onClick={() => run(() => command({ kind: "undo" }))}
@@ -2246,7 +2490,16 @@ export default function Studio({ initialState, onExit }) {
                 </button>
               </div>
               <label className="resource-radius-label">
-                Observed radius <output>{resourceRadius.toFixed(2)} km</output>
+                Observed area{" "}
+                <output aria-label="Observed area">
+                  {resourceArea(
+                    resourceRadius,
+                    state.continuous.spec.radiusKm,
+                  ).toLocaleString(undefined, {
+                    maximumFractionDigits: 2,
+                  })}{" "}
+                  km²
+                </output>
                 <input
                   aria-label="Terrain resource radius"
                   type="range"
@@ -2257,14 +2510,25 @@ export default function Studio({ initialState, onExit }) {
                   onChange={(e) => setResourceRadius(Number(e.target.value))}
                 />
                 <input
-                  aria-label="Terrain resource radius in kilometres"
+                  aria-label="Terrain resource area in square kilometres"
                   type="number"
-                  min={0.05}
-                  max={resourceMaximum}
-                  step={0.05}
-                  value={resourceRadius}
+                  min={resourceArea(0.05, state.continuous.spec.radiusKm)}
+                  max={resourceArea(
+                    resourceMaximum,
+                    state.continuous.spec.radiusKm,
+                  )}
+                  step="any"
+                  value={Number(
+                    resourceArea(
+                      resourceRadius,
+                      state.continuous.spec.radiusKm,
+                    ).toFixed(4),
+                  )}
                   onChange={(e) => {
-                    const r = Number(e.target.value);
+                    const r = resourceRadiusForArea(
+                      Number(e.target.value),
+                      state.continuous.spec.radiusKm,
+                    );
                     if (r >= 0.05 && r <= resourceMaximum) setResourceRadius(r);
                   }}
                 />
@@ -2272,7 +2536,7 @@ export default function Studio({ initialState, onExit }) {
               <TerrainResourceReport
                 path={
                   resourceCenter
-                    ? `${base}/terrain/resources?${resourceQuery(resourceCenter, resourceRadius)}&revision=${state.project.revision}`
+                    ? `${base}/terrain/resources?${resourceQuery(resourceCenter, resourceRadius)}&revision=${terrainRenderRevision(state.project.revision, invalidations)}&labels=${resourceLabelRevision}`
                     : null
                 }
               />
@@ -2489,11 +2753,12 @@ export default function Studio({ initialState, onExit }) {
                   <label>
                     Climate model
                     <select
-                      value={spec.climateVersion || 1}
+                      value={spec.climateVersion ?? 0}
                       onChange={(e) =>
                         setSpec({ ...spec, climateVersion: +e.target.value })
                       }
                     >
+                      <option value={0}>Version 0 (historical)</option>
                       <option value={1}>Version 1</option>
                       <option value={2}>
                         Version 2 — corrected elevation and moisture
@@ -2501,6 +2766,9 @@ export default function Studio({ initialState, onExit }) {
                       </option>
                       <option value={3}>
                         Version 3 — seasonal heat and rain uplift (experimental)
+                      </option>
+                      <option value={4}>
+                        Version 4 — seasonal climates and vegetation (default)
                       </option>
                     </select>
                     {state?.continuous?.spec && (
@@ -2568,14 +2836,16 @@ export default function Studio({ initialState, onExit }) {
                 >
                   Generate preview
                 </button>
-                {state && !state.historicalMap && (
+                {state && (
                   <div className="studio-actions">
-                    <button disabled={busy} onClick={() => run(accept)}>
-                      Accept terrain
+                    <button disabled={busy} onClick={() => run(saveTerrain)}>
+                      Save terrain
                     </button>
-                    <button disabled={busy} onClick={() => run(discard)}>
-                      Discard preview
-                    </button>
+                    {!state.historicalMap && (
+                      <button disabled={busy} onClick={() => run(discard)}>
+                        Discard preview
+                      </button>
+                    )}
                   </div>
                 )}
                 {diagnostics && (
@@ -2770,10 +3040,12 @@ export default function Studio({ initialState, onExit }) {
                           setState((v) => ({
                             ...v,
                             project: r.project,
-                            unsaved: true,
+                            unsaved: r.unsaved,
+                            historyRevision: r.historyRevision,
+                            historicalMap: r.historicalMap || v.historicalMap,
                           }));
                           setSettlement(null);
-                          await refresh();
+                          patchEntities(r.entities);
                         })
                       }
                     >
@@ -2845,6 +3117,22 @@ export default function Studio({ initialState, onExit }) {
                     }
                   />
                 </label>
+                {selected.recordStatus !== "draft" && (
+                  <button
+                    disabled={busy || !selected.name.trim()}
+                    onClick={() =>
+                      run(() =>
+                        renameRecord(
+                          "rename-entity",
+                          selected.logicalId || selected.id,
+                          selected.name,
+                        ),
+                      )
+                    }
+                  >
+                    Rename entity
+                  </button>
+                )}
                 <label>
                   Notes
                   <textarea
@@ -2974,13 +3262,6 @@ export default function Studio({ initialState, onExit }) {
             )}
             <section>
               <h3>Map appearance</h3>
-              {state?.continuous?.analysisStale && (
-                <p role="status">
-                  Landscape edits changed the terrain. Saved drainage and
-                  climate require revalidation; their original graph is
-                  retained. Undo restores the original analysis.
-                </p>
-              )}
               {hydrologyDiagnostics && (
                 <details>
                   <summary>River topology diagnostics</summary>
@@ -3172,7 +3453,7 @@ export default function Studio({ initialState, onExit }) {
                           background: `rgb(${rgb.join(",")})`,
                         }}
                       />{" "}
-                      {name}
+                      {biomeName(name, state?.continuous?.spec.climateVersion)}
                     </div>
                   ))}
                 </div>
@@ -3278,7 +3559,11 @@ export default function Studio({ initialState, onExit }) {
                   <dl>
                     <dt>Surface</dt>
                     <dd>
-                      {sample.biome} · {sample.water}
+                      {biomeName(
+                        sample.biome,
+                        state?.continuous?.spec.climateVersion,
+                      )}{" "}
+                      · {sample.water}
                     </dd>
                     <dt>Coordinates</dt>
                     <dd>
@@ -3332,7 +3617,11 @@ export default function Studio({ initialState, onExit }) {
                   Discharge {riverSelection.discharge?.at(-1)?.toFixed(1)} m³/s
                   · width {riverSelection.width?.at(-1)?.toFixed(1)} m
                 </p>
-                <p>Outlet: {riverSelection.destination}</p>
+                <p>
+                  Outlet:{" "}
+                  {rivers.find((r) => r.id === riverSelection.destination)
+                    ?.name || riverSelection.destination}
+                </p>
                 {riverSelection.order > 0 && (
                   <p>Stream order: {riverSelection.order}</p>
                 )}
@@ -3341,6 +3630,31 @@ export default function Studio({ initialState, onExit }) {
                   outlet elevation {riverSelection.bed?.at(-1)?.toFixed(0)} m
                 </p>
               </section>
+            )}
+            {state?.continuous && (
+              <WaterBodies
+                state={state}
+                revision={worldContext?.world.revision}
+                selectedSource={riverSelection?.id}
+                onNamed={async (doc) => {
+                  await syncWorldNames(doc);
+                  announceWorldChange(doc.world.id);
+                }}
+                onFocus={(p) =>
+                  setCamera({ x: p[0] - 0.1, y: p[1] - 0.05, w: 0.2, h: 0.1 })
+                }
+                onProfile={(id) =>
+                  onExit?.(state.historyWorldId, id, state.historicalMap.ageId)
+                }
+                onCreate={(kind) => {
+                  if (illustrating) leaveIllustration();
+                  setMapSetup(null);
+                  setWaterKind(kind);
+                  setMode("map");
+                  setTool("water-name");
+                  setName("New feature");
+                }}
+              />
             )}
             {state && (
               <section>
@@ -3358,14 +3672,6 @@ export default function Studio({ initialState, onExit }) {
                     ))}
                   </select>
                 </label>
-                <label className="studio-check">
-                  <input
-                    type="checkbox"
-                    checked={autoSave}
-                    onChange={(e) => setAutoSave(e.target.checked)}
-                  />{" "}
-                  Autosave accepted terrain after 30 seconds
-                </label>
                 <div className="studio-actions">
                   {["png", "svg", "pdf"].map((f) => (
                     <button key={f} onClick={() => run(() => exportMap(f))}>
@@ -3375,7 +3681,7 @@ export default function Studio({ initialState, onExit }) {
                   <button
                     onClick={() =>
                       run(async () => {
-                        await save();
+                        await ensureWorldMap();
                         const worldId = query.current.get("world");
                         const r = await fetch(
                           state.historicalMap && worldId

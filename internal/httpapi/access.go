@@ -240,6 +240,14 @@ func (s *Server) authorizeSession(w http.ResponseWriter, r *http.Request, id str
 			return false
 		}
 		if revision != v.historyRevision {
+			if s.projects.MapUnchangedSince(r.Context(), v.historyWorld, v.historyRevision, revision) {
+				v.historyRevision = revision
+				return s.authorizeCurrentMapRevision(w, r, v, id, route)
+			}
+			if change, err := s.projects.NameChangesSince(r.Context(), v.historyWorld, v.historyRevision, revision); err == nil && change != nil {
+				applySessionNameChange(v, change)
+				return s.authorizeCurrentMapRevision(w, r, v, id, route)
+			}
 			if mutating(r) {
 				fail(w, 409, "World history changed; reopen the map before editing")
 				return false
@@ -253,6 +261,9 @@ func (s *Server) authorizeSession(w http.ResponseWriter, r *http.Request, id str
 			}
 		}
 	}
+	return s.authorizeCurrentMapRevision(w, r, v, id, route)
+}
+func (s *Server) authorizeCurrentMapRevision(w http.ResponseWriter, r *http.Request, v *session, id string, route bool) bool {
 	if route && mutating(r) && r.Method != "DELETE" && (s.auth.Config.Mode == "oidc" || r.Header.Get("If-Match") != "") {
 		expected, e := strconv.Atoi(r.Header.Get("If-Match"))
 		if e != nil {
@@ -321,6 +332,10 @@ func (s *Server) secureServe(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	if isTerrainRead(r) {
+		s.serveTerrainRead(w, r)
+		return
+	}
 	// The map engine has one authoritative cache. One server replica is enforced
 	// operationally; SQL revisions additionally protect durable historical writes.
 	s.accessMu.Lock()
@@ -336,7 +351,7 @@ func (s *Server) secureServe(w http.ResponseWriter, r *http.Request) {
 	if strings.HasPrefix(r.URL.Path, "/api/sessions/") && mutating(r) && r.Method != "DELETE" {
 		recorder := &bufferedResponse{header: make(http.Header)}
 		s.mux.ServeHTTP(recorder, r)
-		if recorder.Code < 300 {
+		if recorder.Code < 300 && !strings.HasSuffix(r.URL.Path, "/terrain/resource-reports") {
 			p := strings.Split(r.URL.Path, "/")
 			s.mu.Lock()
 			v := s.sessions[p[3]]
@@ -344,7 +359,9 @@ func (s *Server) secureServe(w http.ResponseWriter, r *http.Request) {
 			if v != nil {
 				v.mu.Lock()
 				v.collabRevision++
-				if s.auth.Config.Mode == "oidc" && v.unsaved {
+				// Attached continuous maps save in their handlers in local and
+				// hosted mode. Unattached generation previews remain temporary.
+				if s.auth.Config.Mode == "oidc" && v.unsaved && v.planet == nil {
 					e = s.saveWorld(v, true)
 				}
 				w.Header().Set("X-Map-Revision", strconv.Itoa(v.collabRevision))

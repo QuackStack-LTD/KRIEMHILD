@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { activeEntities, registry, label } from "./model.js";
 import { newLibraryFile } from "./library-files.js";
 import LibraryEditor from "./LibraryEditor.jsx";
+import ResourceArchiveReview from "./ResourceArchiveReview.jsx";
+import { surveyLabel } from "../continuous/resource-report-text.js";
 import "./library.css";
 import {
   ArchiveOwnerField,
@@ -53,6 +55,12 @@ export default function Library({
     [dirty, setDirty] = useState(false),
     [content, setContent] = useState(null),
     [version, setVersion] = useState("");
+  const [resourceReview, setResourceReview] = useState(
+    query?.get("resources") || "",
+  );
+  const [resourceArea, setResourceArea] = useState(query?.get("area") || "");
+  const [resourceHome, setResourceHome] = useState(""),
+    [resourceDocuments, setResourceDocuments] = useState(false);
   const [archiveDialog, setArchiveDialog] = useState("");
   const [filters, setFilters] = useState({
     age: "",
@@ -75,9 +83,13 @@ export default function Library({
   );
   const url = (entity, hash = "") =>
     `/api/worlds/${doc.world.id}/library/${entity}?age=${age.id}${hash ? "&version=" + hash : ""}`;
-  async function openFolder(value) {
+  async function openFolder(value, documents = false) {
     if (!(await mayLeave())) return;
     setDirty(false);
+    setResourceReview("");
+    setResourceArea("");
+    setResourceHome("");
+    setResourceDocuments(documents);
     setFolder(value);
     setFilters({ age: "", type: "", entity: "", year: "", recorded: "" });
     setShowArchives(false);
@@ -218,6 +230,68 @@ export default function Library({
         </div>
       ));
   }
+  function reviewArchive(id, area = "") {
+    setResourceArea(area);
+    setResourceReview(id);
+  }
+  if (resourceReview)
+    return (
+      <main className="world-page">
+        <ResourceArchiveReview
+          world={doc.world.id}
+          ageId={age.id}
+          archiveId={resourceReview}
+          initialArea={resourceArea}
+          onBack={() => setResourceReview("")}
+          onDocuments={(id) => {
+            if (id) openFolder(id, true);
+            else {
+              setResourceHome(resourceReview);
+              setResourceReview("");
+              setResourceDocuments(true);
+            }
+          }}
+        />
+      </main>
+    );
+  if (resourceHome)
+    return (
+      <main className="world-page">
+        <header className="workspace-heading">
+          <div>
+            <span className="eyebrow">
+              {archives.find((a) => a.id === resourceHome)?.name} / Resources
+            </span>
+            <h1>{resourceDocuments ? "Resource documents" : "Resources"}</h1>
+          </div>
+          <button
+            onClick={() => {
+              if (resourceDocuments) setResourceDocuments(false);
+              else setResourceHome("");
+            }}
+          >
+            ← {resourceDocuments ? "Resources" : "Archive"}
+          </button>
+        </header>
+        {resourceDocuments ? (
+          <p>
+            No resource reports yet. Observe an area in the Atlas and choose
+            Archive information.
+          </p>
+        ) : (
+          <ResourceFolderOptions
+            archive={{
+              properties: {
+                resourceFolder: "resources",
+                parentArchive: resourceHome,
+              },
+            }}
+            onReview={reviewArchive}
+            onDocuments={() => setResourceDocuments(true)}
+          />
+        )}
+      </main>
+    );
   return (
     <main className="world-page library-workspace">
       <header className="workspace-heading">
@@ -372,6 +446,45 @@ export default function Library({
                 doc={doc}
                 onProfile={onProfile}
               />
+              {file.resourceSurvey && (
+                <section className="resource-knowledge-note">
+                  <strong>Terrain resource observation</strong>
+                  <p>
+                    {surveyLabel(file.resourceSurvey)} ·{" "}
+                    {
+                      doc.ages.find(
+                        (a) => a.id === file.resourceSurvey.sourceAge,
+                      )?.name
+                    }{" "}
+                    ·{" "}
+                    {file.resourceSurvey.year == null
+                      ? "Undated"
+                      : `Year ${file.resourceSurvey.year}`}
+                  </p>
+                  <button
+                    disabled={["lost", "destroyed"].includes(file.status)}
+                    onClick={async () => {
+                      if (!(await mayLeave())) return;
+                      let owner = file.archiveId;
+                      const visited = new Set();
+                      while (owner && !visited.has(owner)) {
+                        visited.add(owner);
+                        const a = archives.find((a) => a.id === owner);
+                        if (!a?.properties?.resourceFolder) break;
+                        owner = a.properties.parentArchive;
+                      }
+                      setResourceArea(file.id);
+                      setResourceReview(owner);
+                    }}
+                  >
+                    Review this terrain area
+                  </button>
+                  <p>
+                    Charts use the original captured observations. Editing the
+                    document does not alter the survey data.
+                  </p>
+                </section>
+              )}
               {["lost", "destroyed"].includes(file.status) && (
                 <p>
                   This is a preserved historical view of a {file.status}{" "}
@@ -602,8 +715,32 @@ export default function Library({
                 </>
               )}
               <div className="archive-list">
+                {archive &&
+                  !archive.properties?.resourceFolder &&
+                  !archives.some(
+                    (a) =>
+                      a.properties?.parentArchive === archive.id &&
+                      a.properties?.resourceFolder === "resources",
+                  ) && (
+                    <button
+                      onClick={() => {
+                        setResourceHome(archive.id);
+                        setResourceDocuments(false);
+                      }}
+                    >
+                      ▱ Resources
+                      <small>
+                        Review recorded areas and resource documents
+                      </small>
+                    </button>
+                  )}
                 {archives
-                  .filter((a) => (a.properties?.parentArchive || "") === folder)
+                  .filter(
+                    (a) =>
+                      (a.properties?.parentArchive || "") === folder &&
+                      (archive?.properties?.resourceFolder !== "resources" ||
+                        resourceDocuments),
+                  )
                   .map((a) => (
                     <button key={a.id} onClick={() => openFolder(a.id)}>
                       ▱ {a.name}
@@ -615,6 +752,22 @@ export default function Library({
                     </button>
                   ))}
               </div>
+              {archive && !resourceDocuments && (
+                <ResourceFolderOptions
+                  archive={archive}
+                  onReview={reviewArchive}
+                  onDocuments={() => setResourceDocuments(true)}
+                />
+              )}
+              {archive?.properties?.resourceFolder === "resources" &&
+                resourceDocuments && (
+                  <div className="library-toolbar">
+                    <button onClick={() => setResourceDocuments(false)}>
+                      ← Resources
+                    </button>
+                    <h3>Resource documents</h3>
+                  </div>
+                )}
               {archive && (
                 <div className="library-file-list">
                   {files
@@ -810,6 +963,26 @@ export default function Library({
         />
       )}
     </main>
+  );
+}
+
+function ResourceFolderOptions({ archive, onReview, onDocuments }) {
+  const isResources = archive.properties?.resourceFolder === "resources";
+  if (!isResources) return null;
+  return (
+    <section className="library-resources-home">
+      <h3>Terrain resources</h3>
+      <p>
+        Review knowledge retained by this archive, or browse complete reports
+        organized by Age and year.
+      </p>
+      <div>
+        <button onClick={() => onReview(archive.properties.parentArchive)}>
+          Review Terrain Resources
+        </button>
+        <button onClick={onDocuments}>Resource documents</button>
+      </div>
+    </section>
   );
 }
 export function LibraryDialog({

@@ -4,7 +4,6 @@ import { archivePixels } from "./archive-preview.js";
 
 export default function ArchivedTerrain({ initialState, onOpen, onExit }) {
   const [state, setState] = useState(initialState),
-    [projects, setProjects] = useState([]),
     [entities, setEntities] = useState([]),
     [preview, setPreview] = useState(""),
     [error, setError] = useState(""),
@@ -20,11 +19,6 @@ export default function ArchivedTerrain({ initialState, onOpen, onExit }) {
       setBusy(false);
     }
   };
-  useEffect(() => {
-    request("projects")
-      .then((r) => setProjects(r.projects || []))
-      .catch((e) => setError(e.message));
-  }, []);
   useEffect(() => {
     if (!state) return;
     try {
@@ -100,17 +94,6 @@ export default function ArchivedTerrain({ initialState, onOpen, onExit }) {
             archive does not regenerate or replace it.
           </p>
           <div className="form-actions">
-            <button
-              disabled={busy}
-              onClick={() =>
-                run(async () => {
-                  await request(`sessions/${state.id}/save`, {});
-                  setState({ ...state, unsaved: false });
-                })
-              }
-            >
-              {state.unsaved ? "Save imported archive" : "Save archive"}
-            </button>
             <button disabled={busy} onClick={() => run(exportArchive)}>
               Export original archive
             </button>
@@ -202,20 +185,6 @@ export default function ArchivedTerrain({ initialState, onOpen, onExit }) {
               onChange={(e) => importFiles([...e.target.files], true)}
             />
           </label>
-          <h2>Saved terrain projects</h2>
-          {projects.map((p) => (
-            <button
-              key={p.id}
-              disabled={busy}
-              onClick={() =>
-                run(async () =>
-                  onOpen(await request(`projects/${p.id}/open`, {})),
-                )
-              }
-            >
-              {p.name || p.id}
-            </button>
-          ))}
         </>
       )}
     </main>

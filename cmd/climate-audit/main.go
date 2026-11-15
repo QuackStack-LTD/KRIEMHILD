@@ -66,6 +66,7 @@ func main() {
 	climateVersion := flag.Int("climate-version", model.ClimateVersion, "0 reproduces the frozen pre-repair climate")
 	rainScale := flag.Float64("rainfall", model.DefaultSpec().Rainfall, "rainfall setting for paired experiments")
 	relief := flag.Float64("relief", model.DefaultSpec().Relief, "relief setting for paired experiments")
+	surfaceWidth := flag.Int("surface-width", 4096, "materialized surface width")
 	load := flag.String("load", "", "read an existing planet's metadata and fields from this directory; never generate")
 	flag.Parse()
 	if err := os.MkdirAll(*out, 0755); err != nil {
@@ -76,6 +77,7 @@ func main() {
 		spec.ClimateVersion = *climateVersion
 		spec.Seed = seed
 		spec.Rainfall, spec.Relief = *rainScale, *relief
+		spec.SurfaceWidth = *surfaceWidth
 		start := time.Now()
 		var p *model.Planet
 		var err error

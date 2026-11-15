@@ -90,7 +90,7 @@ func TestSettlementBatchMoveUndoRedoPublishesEveryRecord(t *testing.T) {
 		}
 	}
 	check(false, 0, 0)
-	// Failed publication must retain pending writes from the accepted batch.
+	// Failed publication must retain the already autosaved batch.
 	broken := shapes[0]
 	broken.ID = "bad-region"
 	broken.LogicalID = "missing-identity"
@@ -103,8 +103,13 @@ func TestSettlementBatchMoveUndoRedoPublishesEveryRecord(t *testing.T) {
 	if _, exists := v.world.Entities[broken.ID]; exists {
 		t.Fatal("failed publication left an orphan")
 	}
-	if v.world.Parts(false)["builder/entity/capital"] == nil {
-		t.Fatal("failed publication discarded pending writes")
+	saved, e := db.History(ctx, d.World.ID)
+	if e != nil {
+		t.Fatal(e)
+	}
+	savedParts, e := db.SnapshotParts(ctx, saved.Project(v.worldID).Snapshot)
+	if e != nil || savedParts["builder/entity/capital"] == nil {
+		t.Fatal("failed publication discarded saved writes", e)
 	}
 	send("move-family")
 	check(false, 1, 2)

@@ -47,6 +47,7 @@ func (s *Server) historyRoutes() {
 	s.mux.HandleFunc("POST /api/worlds/{world}/child", s.childMap)
 	s.mux.HandleFunc("GET /api/worlds/{world}/export", s.exportHistory)
 	s.mux.HandleFunc("GET /api/map-context/{project}", s.mapHistoryContext)
+	s.mux.HandleFunc("GET /api/worlds/{world}/names", s.worldNames)
 }
 func (s *Server) historyStore(w http.ResponseWriter) bool {
 	if s.projects == nil {
@@ -108,12 +109,12 @@ func (s *Server) getHistory(w http.ResponseWriter, r *http.Request) {
 	if !s.historyStore(w) {
 		return
 	}
-	d, err := s.projects.History(r.Context(), r.PathValue("world"))
+	d, err := s.readHistoryView(r.Context(), r.PathValue("world"), r.URL.Query().Get("view"))
 	if err != nil {
 		fail(w, 404, "World not found")
 		return
 	}
-	respond(w, 200, d)
+	respondHistory(w, r, 200, d)
 }
 func (s *Server) commandHistory(w http.ResponseWriter, r *http.Request) {
 	if !s.historyStore(w) {
@@ -124,12 +125,32 @@ func (s *Server) commandHistory(w http.ResponseWriter, r *http.Request) {
 		fail(w, 400, err.Error())
 		return
 	}
+	if req.Kind == "rename-entity" || req.Kind == "rename-terrain" {
+		change, err := s.projects.RenameHistory(storage.WithOperation(r.Context(), req.Kind), r.PathValue("world"), req)
+		if err != nil {
+			fail(w, 409, err.Error())
+			return
+		}
+		s.refreshNameSessions(change)
+		if r.URL.Query().Get("view") == "changes" {
+			respondHistory(w, r, 200, map[string]any{"nameChange": change})
+			return
+		}
+		d, err := s.readHistoryView(r.Context(), r.PathValue("world"), r.URL.Query().Get("view"))
+		if err != nil {
+			fail(w, 503, err.Error())
+			return
+		}
+		respondHistory(w, r, 200, d)
+		return
+	}
 	d, err := s.projects.UpdateHistory(storage.WithOperation(r.Context(), req.Kind), r.PathValue("world"), req.Revision, func(d *history.Document) error { return d.Apply(req) })
 	if err != nil {
 		fail(w, 409, err.Error())
 		return
 	}
-	respond(w, 200, d)
+	s.refreshHistorySessions(d, req.Kind != "age")
+	respondHistory(w, r, 200, historyResponseView(d, r))
 }
 func (s *Server) deleteHistory(w http.ResponseWriter, r *http.Request) {
 	if !s.historyStore(w) {
@@ -256,7 +277,7 @@ func (s *Server) mapHistoryContext(w http.ResponseWriter, r *http.Request) {
 	if !s.historyStore(w) {
 		return
 	}
-	d, m, err := s.projects.MapContext(r.Context(), r.PathValue("project"))
+	d, m, err := s.projects.MapHeader(r.Context(), r.PathValue("project"))
 	if errors.Is(err, sql.ErrNoRows) {
 		respond(w, 200, map[string]any{"map": nil})
 		return
@@ -271,7 +292,7 @@ func (s *Server) applyHistoricalMap(ctx context.Context, v *session) error {
 	if s.projects == nil {
 		return nil
 	}
-	d, m, err := s.projects.MapContext(ctx, v.worldID)
+	d, m, err := s.projects.MapProjection(ctx, v.worldID)
 	if errors.Is(err, sql.ErrNoRows) {
 		if v.historical != nil {
 			return fmt.Errorf("this historical map was deleted")
@@ -282,6 +303,12 @@ func (s *Server) applyHistoricalMap(ctx context.Context, v *session) error {
 	if err != nil {
 		return err
 	}
+	s.projectHistoricalMap(v, d, m)
+	return nil
+}
+
+// Reuse an already loaded, committed document when refreshing open maps.
+func (s *Server) projectHistoricalMap(v *session, d *history.Document, m *history.Map) {
 	v.historical = m
 	v.historyWorld = d.World.ID
 	v.historyRevision = d.World.Revision
@@ -306,10 +333,43 @@ func (s *Server) applyHistoricalMap(ctx context.Context, v *session) error {
 	}
 	model.Header.MapID = m.ID
 	model.Header.Name = m.Name
+	restoreSavedIllustrationDesigns(model, d, *m)
 	model.RefreshRepresentations(d.Shapes(*m))
 	model.MarkRecoveredParts()
 	v.composed = nil
-	return nil
+}
+
+// Save illustration stores its design alongside the Library image, independently
+// of terrain. Recover it on open without persisting pending terrain operations.
+func restoreSavedIllustrationDesigns(model *world.State, d *history.Document, m history.Map) {
+	baseline := model.Header.Revision
+	for _, entity := range d.Entities {
+		if entity.Deleted || entity.AgeID != m.AgeID || entity.Kind != "illustrated-map" {
+			continue
+		}
+		var properties struct {
+			Illustration struct {
+				SourceMapID    string             `json:"sourceMapId"`
+				SourceRevision int                `json:"sourceRevision"`
+				Design         world.Illustration `json:"design"`
+			} `json:"illustration"`
+		}
+		if json.Unmarshal(entity.Properties, &properties) != nil {
+			continue
+		}
+		a := properties.Illustration
+		if a.SourceMapID != m.ID || a.Design.Validate() != nil {
+			continue
+		}
+		_, exists := model.Header.Illustrations[a.Design.ID]
+		if !exists || a.SourceRevision >= baseline {
+			if model.Header.Illustrations == nil {
+				model.Header.Illustrations = map[string]world.Illustration{}
+			}
+			model.Header.Illustrations[a.Design.ID] = a.Design
+			model.Header.Revision = max(model.Header.Revision, a.SourceRevision)
+		}
+	}
 }
 func (s *Server) exportHistory(w http.ResponseWriter, r *http.Request) {
 	if !s.historyStore(w) {

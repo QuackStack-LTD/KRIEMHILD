@@ -1,5 +1,6 @@
 import { visibleTiles, visibleViewport, canonicalTileX } from "./camera.js";
 import { requestTile } from "./tile-request.js";
+import { previewRaster } from "./preview-raster.js";
 
 // Lazy, immutable raster representations of the authoritative terrain sampler.
 // Levels share world coordinates and sample centers with the server's physical
@@ -276,7 +277,12 @@ export async function renderViewport(
           throw failure.reason;
         }
         signal.throwIfAborted();
-        output = createCanvas(pixels.width, pixels.height);
+        output = previewRaster(
+          pixels.width,
+          pixels.height,
+          createCanvas,
+          !!r.preview,
+        );
         const dest = output.getContext("2d", { willReadFrequently: true });
         let startedStage = performance.now();
         if (nodes.length)

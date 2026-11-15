@@ -39,6 +39,9 @@ func materializedMoisture(g *model.Grid, spec model.Spec) {
 		for i, t := range g.Fields[temperatureMonths[m]] {
 			lat := g.Point(i%g.Width, i/g.Width)[1]
 			pet := math.Max(4, 38+t*3.8) * (1 + .15*math.Cos(lat-decl))
+			if spec.ClimateVersion >= 4 {
+				pet = potentialEvaporationV4(t, lat, decl, g.Fields["coast"][i])
+			}
 			rain := g.Fields[rainfallMonths[m]][i]
 			g.Fields[key][i] = pet
 			g.Fields["pet"][i] += pet

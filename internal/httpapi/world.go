@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"kriemhild/internal/history"
 	"kriemhild/internal/legacyterrain"
 	"kriemhild/internal/storage"
 	"kriemhild/internal/terrain/detail"
@@ -49,21 +48,34 @@ func (v *session) terrainAnalysisStale() bool {
 }
 
 func sessionState(v *session) map[string]any {
-	out := view(v.solver, true)
+	return sessionStateView(v, false)
+}
+
+func sessionStateView(v *session, terrainView bool) map[string]any {
+	compact := terrainView && v.planet != nil
+	var out map[string]any
+	if compact {
+		out = map[string]any{"W": v.solver.W, "H": v.solver.H, "N": v.solver.N, "status": v.solver.Status, "wrapX": v.solver.WrapX}
+	} else {
+		out = view(v.solver, true)
+	}
 	if v.planet != nil {
 		out["continuous"] = map[string]any{"schema": v.planet.Schema, "spec": v.planet.Spec, "diagnostics": v.planet.Diagnostics, "analysisStale": v.terrainAnalysisStale()}
 	}
-	e := v.authored().Environment(v.solver.Environment)
-	if e != nil {
-		composed := *e
-		composed.Climate = v.climateLayer()
-		e = &composed
+	if !compact {
+		e := v.authored().Environment(v.solver.Environment)
+		if e != nil {
+			composed := *e
+			composed.Climate = v.climateLayer()
+			e = &composed
+		}
+		out["environment"] = renderEnvironment(e)
 	}
-	out["environment"] = renderEnvironment(e)
 	out["worldId"] = v.worldID
 	out["mapRevision"] = v.collabRevision
 	out["historicalMap"] = v.historical
 	out["historyWorldId"] = v.historyWorld
+	out["historyRevision"] = v.historyRevision
 	out["unsaved"] = v.unsaved
 	out["project"] = v.authored().Header
 	if count := v.authored().RecoveredParts(); count > 0 {
@@ -102,9 +114,23 @@ func (s *Server) worldState(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer v.mu.Unlock()
-	out := sessionState(v)
+	if v.historical != nil && s.projects != nil {
+		revision, err := s.projects.CurrentRevision(r.Context(), v.historyWorld)
+		if err != nil {
+			fail(w, 409, "World is no longer available")
+			return
+		}
+		if revision != v.historyRevision {
+			if err := s.applyHistoricalMap(r.Context(), v); err != nil {
+				fail(w, 409, err.Error())
+				return
+			}
+			v.authored().Header.Revision++
+		}
+	}
+	out := sessionStateView(v, r.URL.Query().Get("view") == "terrain")
 	out["id"] = r.PathValue("id")
-	respond(w, 200, out)
+	respondHistory(w, r, 200, out)
 }
 func (s *Server) worldEntities(w http.ResponseWriter, r *http.Request) {
 	v := s.worldSession(w, r)
@@ -158,6 +184,14 @@ func (s *Server) worldCommand(w http.ResponseWriter, r *http.Request) {
 	}
 	defer v.mu.Unlock()
 	model := v.authored()
+	viewport := world.Bounds{Width: model.W, Height: model.H}
+	beforeEntities, _ := model.QueryLimit(viewport, 8, len(model.Entities)+1)
+	autosave := v.planet != nil && v.historical != nil
+	wasUnsaved := v.unsaved
+	if req.Kind == "save" && v.planet != nil && v.historical == nil {
+		fail(w, 409, "Save terrain to a World from the Terrain Generator first.")
+		return
+	}
 	if req.Revision != model.Header.Revision && req.Kind != "save" {
 		respond(w, 409, map[string]any{"error": "World changed; refresh and retry.", "project": model.Header})
 		return
@@ -170,7 +204,7 @@ func (s *Server) worldCommand(w http.ResponseWriter, r *http.Request) {
 	}
 	publishEntities := req.Kind == "entity" || req.Kind == "move-family" || req.Kind == "undo" || req.Kind == "redo"
 	var previous *world.State
-	if publishEntities && v.historical != nil {
+	if autosave || publishEntities && v.historical != nil {
 		previous, err = model.Clone()
 		if err != nil {
 			fail(w, 500, "Could not prepare entity transaction")
@@ -302,9 +336,8 @@ func (s *Server) worldCommand(w http.ResponseWriter, r *http.Request) {
 		fail(w, 400, err.Error())
 		return
 	}
-	// Publish entity identity and representation immediately. Terrain, explored
-	// tiles and artwork still use the explicit Save action.
-	if publishEntities && v.historical != nil {
+	// Attached terrain commits the snapshot and identities in one transaction.
+	if publishEntities && v.historical != nil && !autosave {
 		changes := world.New(v.solver.W, v.solver.H)
 		for id, shape := range model.Entities {
 			if old, exists := previous.Entities[id]; !exists || !reflect.DeepEqual(old, shape) {
@@ -323,25 +356,53 @@ func (s *Server) worldCommand(w http.ResponseWriter, r *http.Request) {
 
 	if dirty != nil {
 		expanded := dirty.Expand(2)
-		dirty = &expanded
+		if v.planet == nil {
+			dirty = &expanded
+		}
 		for key := range v.composed {
 			var l, x, y int
 			fmt.Sscanf(key, "%d/%d/%d", &l, &x, &y)
 			step := math.Exp2(-float64(l))
-			if (world.Bounds{X: float64(x) * 32 * step, Y: float64(y) * 32 * step, Width: 32 * step, Height: 32 * step}).Intersects(*dirty) {
+			if (world.Bounds{X: float64(x) * 32 * step, Y: float64(y) * 32 * step, Width: 32 * step, Height: 32 * step}).Intersects(expanded) {
 				delete(v.composed, key)
 			}
 		}
 	}
-	if req.Kind == "save" {
-		if err = s.saveWorld(v, false); err != nil {
-			fail(w, 503, "Could not save world; click Save to retry.")
-			return
-		}
-	} else if req.Kind != "view" || !sameJSON(previousView, req.View) {
+	if req.Kind != "view" || !sameJSON(previousView, req.View) {
 		v.unsaved = true
 	}
-	respond(w, 200, map[string]any{"unsaved": v.unsaved, "project": model.Header, "dirty": dirty, "entityId": req.Entity.ID, "operationId": req.Operation.ID, "analysisStale": v.terrainAnalysisStale()})
+	if req.Kind == "save" || autosave && v.unsaved {
+		if err = s.saveWorld(v, false); err != nil {
+			if previous != nil {
+				*model = *previous
+				v.unsaved = wasUnsaved
+			}
+			fail(w, 503, "Could not automatically save terrain. Retry the change or use Save terrain.")
+			return
+		}
+	}
+	afterEntities, _ := model.QueryLimit(viewport, 8, len(model.Entities)+1)
+	delta := entityDelta(beforeEntities, afterEntities)
+	respond(w, 200, map[string]any{"unsaved": v.unsaved, "project": model.Header, "dirty": dirty, "entities": delta, "historyRevision": v.historyRevision, "historicalMap": v.historical, "entityId": req.Entity.ID, "operationId": req.Operation.ID, "analysisStale": v.terrainAnalysisStale()})
+}
+
+func entityDelta(before, after []world.Entity) []world.Entity {
+	old := make(map[string]world.Entity, len(before))
+	for _, e := range before {
+		old[e.ID] = e
+	}
+	delta := []world.Entity{}
+	for _, e := range after {
+		if prior, exists := old[e.ID]; !exists || !reflect.DeepEqual(prior, e) {
+			delta = append(delta, e)
+		}
+		delete(old, e.ID)
+	}
+	for _, e := range old {
+		e.Deleted = true
+		delta = append(delta, e)
+	}
+	return delta
 }
 
 // One publication path for individual drawings, generated settlements, grouped
@@ -354,24 +415,14 @@ func (s *Server) publishBuilderEntities(v *session, state *world.State) error {
 	if s.auth != nil {
 		revision = v.historyRevision
 	}
-	updated, err := s.projects.UpdateHistory(storage.WithActor(context.Background(), v.actorID), v.historyWorld, revision, func(d *history.Document) error {
-		m := d.Map(v.historical.AgeID, v.historical.ID)
-		if m == nil {
-			return fmt.Errorf("map no longer exists in this Age")
-		}
-		for _, shape := range state.Entities {
-			if shape.LogicalID != "" && !shape.Deleted {
-				e := d.Entity(m.AgeID, shape.LogicalID)
-				if e == nil || e.Deleted || (e.Kind != shape.Kind && !samePlaceFamily(e.Kind, shape.Kind)) {
-					return fmt.Errorf("invalid logical entity reference")
-				}
-			}
-		}
-		d.Sync(*m, state)
-		return nil
-	})
+	updated, err := s.projects.SyncMapEntities(storage.WithActor(context.Background(), v.actorID), v.worldID, revision, state)
 	if err == nil {
 		v.historyRevision = updated.World.Revision
+		if m := updated.Project(v.worldID); m != nil {
+			view := *m
+			v.historical = &view
+			v.authored().Header.Name = m.Name
+		}
 	}
 	return err
 }

@@ -69,6 +69,17 @@ func (c *Cache) writeDisk(key string, data []byte) {
 	if os.Rename(name, path) != nil {
 		return
 	}
+	c.diskUsed += int64(len(data) + 32)
+	if c.diskIndexed && c.diskUsed <= c.diskLimit {
+		return
+	}
+	c.pruneDisk()
+}
+
+// Scan at initialization and when the byte budget fills, rather than sorting
+// the entire tile directory after every generated tile. Leave headroom so a
+// full cache does not trigger another complete scan on its very next write.
+func (c *Cache) pruneDisk() {
 	entries, err := os.ReadDir(c.diskRoot)
 	if err != nil {
 		return
@@ -91,13 +102,19 @@ func (c *Cache) writeDisk(key string, data []byte) {
 		files = append(files, file{e.Name(), i.Size(), i.ModTime()})
 		total += i.Size()
 	}
+	c.diskUsed, c.diskIndexed = total, true
+	if total <= c.diskLimit {
+		return
+	}
 	sort.Slice(files, func(i, j int) bool { return files[i].modified.Before(files[j].modified) })
+	target := c.diskLimit - c.diskLimit/10
 	for _, f := range files {
-		if total <= c.diskLimit {
+		if total <= target {
 			break
 		}
 		if os.Remove(filepath.Join(c.diskRoot, f.name)) == nil {
 			total -= f.size
 		}
 	}
+	c.diskUsed = total
 }

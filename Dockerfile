@@ -7,7 +7,7 @@ RUN npm ci
 COPY index.html vite.config.js ./
 COPY src ./src
 COPY internal/history/registry.json ./internal/history/registry.json
-COPY tests/world-project.test.mjs tests/worldbuilding.test.mjs tests/library-files.test.mjs ./tests/
+COPY tests/world-project.test.mjs tests/worldbuilding.test.mjs tests/library-files.test.mjs tests/pdf-fontkit.test.mjs ./tests/
 RUN node --test tests/*.test.mjs && npm run build
 
 FROM --platform=$BUILDPLATFORM golang:1.27-alpine AS backend
@@ -17,7 +17,8 @@ COPY go.mod go.sum ./
 RUN go mod download && go mod verify
 COPY cmd ./cmd
 COPY internal ./internal
-RUN go test ./... && go vet ./...
+# The legacy terrain simulations exceed Go's default package-wide 10m limit.
+RUN go test -timeout 30m ./... && go vet ./...
 ARG TARGETOS
 ARG TARGETARCH
 RUN GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags="-s -w" -o /out/kriemhild ./cmd/kriemhild

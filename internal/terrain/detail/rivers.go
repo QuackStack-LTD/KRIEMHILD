@@ -4,7 +4,6 @@ import (
 	"kriemhild/internal/terrain/landmass"
 	"kriemhild/internal/terrain/model"
 	"math"
-	"sync"
 )
 
 type segment struct {
@@ -15,36 +14,18 @@ type segment struct {
 }
 
 // Sampler's spatial index is derived, disposable and never changes any sample.
-// Each request owns its index; there are no global mutable generation caches.
+// The immutable planet owns its index; closing it releases both together.
 type Sampler struct {
 	field  *landmass.Field
 	planet *model.Planet
 	bins   [128 * 64][]segment
 }
 
-var indexes struct {
-	sync.Mutex
-	entries []*Sampler
-}
-
 func New(p *model.Planet) *Sampler {
 	if p.Surface == nil {
 		return newSampler(p)
 	}
-	indexes.Lock()
-	defer indexes.Unlock()
-	for i, s := range indexes.entries {
-		if s.planet == p {
-			indexes.entries = append(append(indexes.entries[:i:i], indexes.entries[i+1:]...), s)
-			return s
-		}
-	}
-	s := newSampler(p)
-	indexes.entries = append(indexes.entries, s)
-	if len(indexes.entries) > 2 {
-		indexes.entries = indexes.entries[1:]
-	}
-	return s
+	return p.Derived("detail.rivers", func() any { return newSampler(p) }).(*Sampler)
 }
 func newSampler(p *model.Planet) *Sampler {
 	s := &Sampler{planet: p, field: landmass.NewField(p)}

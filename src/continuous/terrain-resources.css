@@ -3,6 +3,14 @@
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
+.resource-report-actions {
+  margin: 1rem 0;
+  border-bottom: 1px solid #72829350;
+  padding-bottom: 1rem;
+}
+.resource-report-actions p {
+  font-size: 0.8rem;
+}
 .terrain-resource-report section {
   margin: 1rem 0;
   border-bottom: 1px solid #72829350;

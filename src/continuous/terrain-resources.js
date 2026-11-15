@@ -1,5 +1,28 @@
 const tau = 2 * Math.PI;
 const wrap = (x) => x - 2 * Math.floor((x + 1) / 2);
+// Spherical cap area, consistent with the geodesic circle and server report.
+// This form avoids cancellation when the selected circle is very small.
+export function resourceArea(radiusKm, planetRadius) {
+  return (
+    4 *
+    Math.PI *
+    planetRadius ** 2 *
+    Math.sin(radiusKm / (2 * planetRadius)) ** 2
+  );
+}
+export function resourceRadiusForArea(areaKm2, planetRadius) {
+  if (
+    !Number.isFinite(areaKm2) ||
+    areaKm2 < 0 ||
+    areaKm2 > 4 * Math.PI * planetRadius ** 2
+  )
+    return NaN;
+  return (
+    2 *
+    planetRadius *
+    Math.asin(Math.sqrt(areaKm2 / (4 * Math.PI * planetRadius ** 2)))
+  );
+}
 export function resourceDistance(a, b, planetRadius) {
   const latA = (0.5 - a[1]) * Math.PI,
     latB = (0.5 - b[1]) * Math.PI;

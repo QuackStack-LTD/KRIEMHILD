@@ -1,5 +1,6 @@
 import { anchor, contains, bounds, projectToMap } from "./geometry.js";
 import { riverFeatures, riverVisible } from "./rivers.js";
+import { isWaterBody } from "./water-bodies.js";
 import { placeLabel } from "./label-placement.js";
 import { landContains, illustrationPoints } from "./land-selection.js";
 export const layerNames = [
@@ -82,6 +83,7 @@ export function scopeEntities(entities, state, config) {
       return false;
     if (whole)
       return (
+        isWaterBody(e.kind) ||
         countryKinds.has(e.kind) ||
         e.kind === "capital" ||
         e.kind === "city" ||
